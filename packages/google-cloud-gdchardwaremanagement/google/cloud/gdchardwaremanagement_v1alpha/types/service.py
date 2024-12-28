@@ -38,6 +38,7 @@ __protobuf__ = proto.module(
         "GetSiteRequest",
         "CreateSiteRequest",
         "UpdateSiteRequest",
+        "DeleteSiteRequest",
         "ListHardwareGroupsRequest",
         "ListHardwareGroupsResponse",
         "GetHardwareGroupRequest",
@@ -54,6 +55,7 @@ __protobuf__ = proto.module(
         "ListCommentsResponse",
         "GetCommentRequest",
         "CreateCommentRequest",
+        "RecordActionOnCommentRequest",
         "ListChangeLogEntriesRequest",
         "ListChangeLogEntriesResponse",
         "GetChangeLogEntryRequest",
@@ -79,6 +81,10 @@ class ListOrdersRequest(proto.Message):
         parent (str):
             Required. The project and location to list orders in.
             Format: ``projects/{project}/locations/{location}``
+
+            To list orders across all locations, substitute ``-`` (the
+            hyphen or dash character) for the location and check the
+            unreachable field in the response message.
         page_size (int):
             Optional. Requested page size. Server may
             return fewer items than requested. If
@@ -126,7 +132,9 @@ class ListOrdersResponse(proto.Message):
             A token identifying a page of results the
             server should return.
         unreachable (MutableSequence[str]):
-            Locations that could not be reached.
+            Locations that could not be reached. Only used for queries
+            to the wildcard location ``-``. If non-empty, it indicates
+            that the results are incomplete.
     """
 
     @property
@@ -280,7 +288,43 @@ class SubmitOrderRequest(proto.Message):
         request_id (str):
             Optional. An optional unique identifier for this request.
             See `AIP-155 <https://google.aip.dev/155>`__.
+        type_ (google.cloud.gdchardwaremanagement_v1alpha.types.SubmitOrderRequest.Type):
+            Optional. Type of this request. If unset, the request type
+            is assumed to be ``INFO_PENDING``.
     """
+
+    class Type(proto.Enum):
+        r"""Valid types of submit order request.
+
+        Values:
+            TYPE_UNSPECIFIED (0):
+                Request type is unspecified. This should not
+                be used.
+            INFO_PENDING (1):
+                Use this request type to submit your order
+                and initiate conversation with Google. After
+                this submission, you will not be able to modify
+                the number or SKU of your ordered hardware.
+                Please note that this order will not be ready
+                for fulfillment yet until you provide more
+                information, such as zone network configuration,
+                hardware physical and installation information,
+                etc.
+                If you are submitting an order for a SKU type of
+                RACK, please use this request type, as
+                additional information will be required outside
+                of the API.
+            INFO_COMPLETE (2):
+                Use this request type if and when you are ready to submit
+                your order for fulfillment. In addition to the information
+                required for ``INFO_PENDING``, the order must contain all
+                required information, such as zone network configuration,
+                hardware physical and installation information, etc. Further
+                changes to any order information will no longer be allowed.
+        """
+        TYPE_UNSPECIFIED = 0
+        INFO_PENDING = 1
+        INFO_COMPLETE = 2
 
     name: str = proto.Field(
         proto.STRING,
@@ -289,6 +333,11 @@ class SubmitOrderRequest(proto.Message):
     request_id: str = proto.Field(
         proto.STRING,
         number=2,
+    )
+    type_: Type = proto.Field(
+        proto.ENUM,
+        number=3,
+        enum=Type,
     )
 
 
@@ -299,6 +348,10 @@ class ListSitesRequest(proto.Message):
         parent (str):
             Required. The project and location to list sites in. Format:
             ``projects/{project}/locations/{location}``
+
+            To list sites across all locations, substitute ``-`` (the
+            hyphen or dash character) for the location and check the
+            unreachable field in the response message.
         page_size (int):
             Optional. Requested page size. Server may
             return fewer items than requested. If
@@ -346,7 +399,9 @@ class ListSitesResponse(proto.Message):
             A token identifying a page of results the
             server should return.
         unreachable (MutableSequence[str]):
-            Locations that could not be reached.
+            Locations that could not be reached. Only used for queries
+            to the wildcard location ``-``. If non-empty, it indicates
+            that the results are incomplete.
     """
 
     @property
@@ -455,6 +510,28 @@ class UpdateSiteRequest(proto.Message):
     request_id: str = proto.Field(
         proto.STRING,
         number=3,
+    )
+
+
+class DeleteSiteRequest(proto.Message):
+    r"""A request to delete a site.
+
+    Attributes:
+        name (str):
+            Required. The name of the site. Format:
+            ``projects/{project}/locations/{location}/sites/{site}``
+        request_id (str):
+            Optional. An optional unique identifier for this request.
+            See `AIP-155 <https://google.aip.dev/155>`__.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=2,
     )
 
 
@@ -655,6 +732,10 @@ class ListHardwareRequest(proto.Message):
         parent (str):
             Required. The project and location to list hardware in.
             Format: ``projects/{project}/locations/{location}``
+
+            To list hardware across all locations, substitute ``-`` (the
+            hyphen or dash character) for the location and check the
+            unreachable field in the response message.
         page_size (int):
             Optional. Requested page size. Server may
             return fewer items than requested. If
@@ -702,7 +783,9 @@ class ListHardwareResponse(proto.Message):
             A token identifying a page of results the
             server should return.
         unreachable (MutableSequence[str]):
-            Locations that could not be reached.
+            Locations that could not be reached. Only used for queries
+            to the wildcard location ``-``. If non-empty, it indicates
+            that the results are incomplete.
     """
 
     @property
@@ -963,6 +1046,44 @@ class CreateCommentRequest(proto.Message):
     )
 
 
+class RecordActionOnCommentRequest(proto.Message):
+    r"""A request to record an action on a comment.
+
+    Attributes:
+        name (str):
+            Required. The name of the comment. Format:
+            ``projects/{project}/locations/{location}/orders/{order}/comments/{comment}``
+        action_type (google.cloud.gdchardwaremanagement_v1alpha.types.RecordActionOnCommentRequest.ActionType):
+            Required. The action type of the recorded
+            action.
+    """
+
+    class ActionType(proto.Enum):
+        r"""Valid action types of Comment.
+
+        Values:
+            ACTION_TYPE_UNSPECIFIED (0):
+                Action is unspecified.
+            READ (1):
+                Mark comment as read.
+            UNREAD (2):
+                Mark comment as unread.
+        """
+        ACTION_TYPE_UNSPECIFIED = 0
+        READ = 1
+        UNREAD = 2
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    action_type: ActionType = proto.Field(
+        proto.ENUM,
+        number=2,
+        enum=ActionType,
+    )
+
+
 class ListChangeLogEntriesRequest(proto.Message):
     r"""A request to list change log entries.
 
@@ -1061,6 +1182,10 @@ class ListSkusRequest(proto.Message):
         parent (str):
             Required. The project and location to list SKUs in. Format:
             ``projects/{project}/locations/{location}``
+
+            To list SKUs across all locations, substitute ``-`` (the
+            hyphen or dash character) for the location and check the
+            unreachable field in the response message.
         page_size (int):
             Optional. Requested page size. Server may
             return fewer items than requested. If
@@ -1108,7 +1233,9 @@ class ListSkusResponse(proto.Message):
             A token identifying a page of results the
             server should return.
         unreachable (MutableSequence[str]):
-            Locations that could not be reached.
+            Locations that could not be reached. Only used for queries
+            to the wildcard location ``-``. If non-empty, it indicates
+            that the results are incomplete.
     """
 
     @property
@@ -1152,6 +1279,10 @@ class ListZonesRequest(proto.Message):
         parent (str):
             Required. The project and location to list zones in. Format:
             ``projects/{project}/locations/{location}``
+
+            To list zones across all locations, substitute ``-`` (the
+            hyphen or dash character) for the location and check the
+            unreachable field in the response message.
         page_size (int):
             Optional. Requested page size. Server may
             return fewer items than requested. If
@@ -1199,7 +1330,9 @@ class ListZonesResponse(proto.Message):
             A token identifying a page of results the
             server should return.
         unreachable (MutableSequence[str]):
-            Locations that could not be reached.
+            Locations that could not be reached. Only used for queries
+            to the wildcard location ``-``. If non-empty, it indicates
+            that the results are incomplete.
     """
 
     @property
@@ -1344,8 +1477,13 @@ class SignalZoneStateRequest(proto.Message):
             Optional. An optional unique identifier for this request.
             See `AIP-155 <https://google.aip.dev/155>`__.
         state_signal (google.cloud.gdchardwaremanagement_v1alpha.types.SignalZoneStateRequest.StateSignal):
-            Required. The state signal to send for this
-            zone.
+            Optional. The state signal to send for this zone. Either
+            state_signal or provisioning_state_signal must be set, but
+            not both.
+        provisioning_state_signal (google.cloud.gdchardwaremanagement_v1alpha.types.SignalZoneStateRequest.ProvisioningStateSignal):
+            Optional. The provisioning state signal to send for this
+            zone. Either state_signal or provisioning_state_signal must
+            be set, but not both.
     """
 
     class StateSignal(proto.Enum):
@@ -1354,14 +1492,34 @@ class SignalZoneStateRequest(proto.Message):
         Values:
             STATE_SIGNAL_UNSPECIFIED (0):
                 State signal of the zone is unspecified.
+            FACTORY_TURNUP_CHECKS_PASSED (1):
+                The Zone is ready for site turnup.
             READY_FOR_SITE_TURNUP (1):
                 The Zone is ready for site turnup.
+                Deprecated, but not deleted.
             FACTORY_TURNUP_CHECKS_FAILED (2):
                 The Zone failed in factory turnup checks.
         """
+        _pb_options = {"allow_alias": True}
         STATE_SIGNAL_UNSPECIFIED = 0
+        FACTORY_TURNUP_CHECKS_PASSED = 1
         READY_FOR_SITE_TURNUP = 1
         FACTORY_TURNUP_CHECKS_FAILED = 2
+
+    class ProvisioningStateSignal(proto.Enum):
+        r"""Valid provisioning state signals for a zone.
+
+        Values:
+            PROVISIONING_STATE_SIGNAL_UNSPECIFIED (0):
+                Provisioning state signal is unspecified.
+            PROVISIONING_IN_PROGRESS (1):
+                Provisioning is in progress.
+            PROVISIONING_COMPLETE (2):
+                Provisioning is complete.
+        """
+        PROVISIONING_STATE_SIGNAL_UNSPECIFIED = 0
+        PROVISIONING_IN_PROGRESS = 1
+        PROVISIONING_COMPLETE = 2
 
     name: str = proto.Field(
         proto.STRING,
@@ -1375,6 +1533,11 @@ class SignalZoneStateRequest(proto.Message):
         proto.ENUM,
         number=3,
         enum=StateSignal,
+    )
+    provisioning_state_signal: ProvisioningStateSignal = proto.Field(
+        proto.ENUM,
+        number=4,
+        enum=ProvisioningStateSignal,
     )
 
 

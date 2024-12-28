@@ -13,47 +13,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import (
-    gapic_v1,
-    operations_v1,
-    path_template,
-    rest_helpers,
-    rest_streaming,
-)
+from google.api_core import gapic_v1, operations_v1, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.cloud.assuredworkloads_v1.types import assuredworkloads
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseAssuredWorkloadsServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.longrunning import operations_pb2  # type: ignore
-from google.protobuf import empty_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.cloud.assuredworkloads_v1.types import assuredworkloads
-
-from .base import AssuredWorkloadsServiceTransport
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -149,8 +147,10 @@ class AssuredWorkloadsServiceRestInterceptor:
     def pre_create_workload(
         self,
         request: assuredworkloads.CreateWorkloadRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[assuredworkloads.CreateWorkloadRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        assuredworkloads.CreateWorkloadRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for create_workload
 
         Override in a subclass to manipulate the request or metadata
@@ -172,8 +172,10 @@ class AssuredWorkloadsServiceRestInterceptor:
     def pre_delete_workload(
         self,
         request: assuredworkloads.DeleteWorkloadRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[assuredworkloads.DeleteWorkloadRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        assuredworkloads.DeleteWorkloadRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for delete_workload
 
         Override in a subclass to manipulate the request or metadata
@@ -184,8 +186,10 @@ class AssuredWorkloadsServiceRestInterceptor:
     def pre_get_workload(
         self,
         request: assuredworkloads.GetWorkloadRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[assuredworkloads.GetWorkloadRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        assuredworkloads.GetWorkloadRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_workload
 
         Override in a subclass to manipulate the request or metadata
@@ -207,8 +211,10 @@ class AssuredWorkloadsServiceRestInterceptor:
     def pre_list_workloads(
         self,
         request: assuredworkloads.ListWorkloadsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[assuredworkloads.ListWorkloadsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        assuredworkloads.ListWorkloadsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_workloads
 
         Override in a subclass to manipulate the request or metadata
@@ -230,9 +236,10 @@ class AssuredWorkloadsServiceRestInterceptor:
     def pre_restrict_allowed_resources(
         self,
         request: assuredworkloads.RestrictAllowedResourcesRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        assuredworkloads.RestrictAllowedResourcesRequest, Sequence[Tuple[str, str]]
+        assuredworkloads.RestrictAllowedResourcesRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for restrict_allowed_resources
 
@@ -255,8 +262,10 @@ class AssuredWorkloadsServiceRestInterceptor:
     def pre_update_workload(
         self,
         request: assuredworkloads.UpdateWorkloadRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[assuredworkloads.UpdateWorkloadRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        assuredworkloads.UpdateWorkloadRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for update_workload
 
         Override in a subclass to manipulate the request or metadata
@@ -278,8 +287,10 @@ class AssuredWorkloadsServiceRestInterceptor:
     def pre_get_operation(
         self,
         request: operations_pb2.GetOperationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[operations_pb2.GetOperationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        operations_pb2.GetOperationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_operation
 
         Override in a subclass to manipulate the request or metadata
@@ -301,8 +312,10 @@ class AssuredWorkloadsServiceRestInterceptor:
     def pre_list_operations(
         self,
         request: operations_pb2.ListOperationsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[operations_pb2.ListOperationsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        operations_pb2.ListOperationsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_operations
 
         Override in a subclass to manipulate the request or metadata
@@ -329,8 +342,8 @@ class AssuredWorkloadsServiceRestStub:
     _interceptor: AssuredWorkloadsServiceRestInterceptor
 
 
-class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
-    """REST backend transport for AssuredWorkloadsService.
+class AssuredWorkloadsServiceRestTransport(_BaseAssuredWorkloadsServiceRestTransport):
+    """REST backend synchronous transport for AssuredWorkloadsService.
 
     Service to manage AssuredWorkloads.
 
@@ -339,7 +352,6 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -393,21 +405,12 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -459,9 +462,12 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
         # Return the client from cache.
         return self._operations_client
 
-    class _AcknowledgeViolation(AssuredWorkloadsServiceRestStub):
+    class _AcknowledgeViolation(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseAcknowledgeViolation,
+        AssuredWorkloadsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("AcknowledgeViolation")
+            return hash("AssuredWorkloadsServiceRestTransport.AcknowledgeViolation")
 
         def __call__(
             self,
@@ -469,25 +475,41 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> assuredworkloads.AcknowledgeViolationResponse:
             raise NotImplementedError(
                 "Method AcknowledgeViolation is not available over REST transport"
             )
 
-    class _CreateWorkload(AssuredWorkloadsServiceRestStub):
+    class _CreateWorkload(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseCreateWorkload,
+        AssuredWorkloadsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateWorkload")
+            return hash("AssuredWorkloadsServiceRestTransport.CreateWorkload")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -495,7 +517,7 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the create workload method over HTTP.
 
@@ -505,8 +527,10 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.operations_pb2.Operation:
@@ -516,45 +540,62 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/workloads",
-                    "body": "workload",
-                },
-            ]
-            request, metadata = self._interceptor.pre_create_workload(request, metadata)
-            pb_request = assuredworkloads.CreateWorkloadRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            http_options = (
+                _BaseAssuredWorkloadsServiceRestTransport._BaseCreateWorkload._get_http_options()
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            request, metadata = self._interceptor.pre_create_workload(request, metadata)
+            transcoded_request = _BaseAssuredWorkloadsServiceRestTransport._BaseCreateWorkload._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseAssuredWorkloadsServiceRestTransport._BaseCreateWorkload._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAssuredWorkloadsServiceRestTransport._BaseCreateWorkload._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.CreateWorkload",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "CreateWorkload",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                AssuredWorkloadsServiceRestTransport._CreateWorkload._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -565,22 +606,59 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             # Return the response
             resp = operations_pb2.Operation()
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_workload(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.create_workload",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "CreateWorkload",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _DeleteWorkload(AssuredWorkloadsServiceRestStub):
+    class _DeleteWorkload(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseDeleteWorkload,
+        AssuredWorkloadsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("DeleteWorkload")
+            return hash("AssuredWorkloadsServiceRestTransport.DeleteWorkload")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -588,7 +666,7 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete workload method over HTTP.
 
@@ -598,42 +676,63 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=organizations/*/locations/*/workloads/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_delete_workload(request, metadata)
-            pb_request = assuredworkloads.DeleteWorkloadRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseAssuredWorkloadsServiceRestTransport._BaseDeleteWorkload._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_delete_workload(request, metadata)
+            transcoded_request = _BaseAssuredWorkloadsServiceRestTransport._BaseDeleteWorkload._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAssuredWorkloadsServiceRestTransport._BaseDeleteWorkload._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.DeleteWorkload",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "DeleteWorkload",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                AssuredWorkloadsServiceRestTransport._DeleteWorkload._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -641,9 +740,12 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _GetViolation(AssuredWorkloadsServiceRestStub):
+    class _GetViolation(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseGetViolation,
+        AssuredWorkloadsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetViolation")
+            return hash("AssuredWorkloadsServiceRestTransport.GetViolation")
 
         def __call__(
             self,
@@ -651,25 +753,40 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> assuredworkloads.Violation:
             raise NotImplementedError(
                 "Method GetViolation is not available over REST transport"
             )
 
-    class _GetWorkload(AssuredWorkloadsServiceRestStub):
+    class _GetWorkload(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseGetWorkload,
+        AssuredWorkloadsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetWorkload")
+            return hash("AssuredWorkloadsServiceRestTransport.GetWorkload")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -677,7 +794,7 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> assuredworkloads.Workload:
             r"""Call the get workload method over HTTP.
 
@@ -687,8 +804,10 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.assuredworkloads.Workload:
@@ -697,38 +816,55 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/workloads/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_workload(request, metadata)
-            pb_request = assuredworkloads.GetWorkloadRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseAssuredWorkloadsServiceRestTransport._BaseGetWorkload._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_workload(request, metadata)
+            transcoded_request = _BaseAssuredWorkloadsServiceRestTransport._BaseGetWorkload._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAssuredWorkloadsServiceRestTransport._BaseGetWorkload._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.GetWorkload",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "GetWorkload",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = AssuredWorkloadsServiceRestTransport._GetWorkload._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -741,12 +877,37 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             pb_resp = assuredworkloads.Workload.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_workload(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = assuredworkloads.Workload.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.get_workload",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "GetWorkload",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListViolations(AssuredWorkloadsServiceRestStub):
+    class _ListViolations(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseListViolations,
+        AssuredWorkloadsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListViolations")
+            return hash("AssuredWorkloadsServiceRestTransport.ListViolations")
 
         def __call__(
             self,
@@ -754,25 +915,40 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> assuredworkloads.ListViolationsResponse:
             raise NotImplementedError(
                 "Method ListViolations is not available over REST transport"
             )
 
-    class _ListWorkloads(AssuredWorkloadsServiceRestStub):
+    class _ListWorkloads(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseListWorkloads,
+        AssuredWorkloadsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListWorkloads")
+            return hash("AssuredWorkloadsServiceRestTransport.ListWorkloads")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -780,7 +956,7 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> assuredworkloads.ListWorkloadsResponse:
             r"""Call the list workloads method over HTTP.
 
@@ -791,46 +967,67 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.assuredworkloads.ListWorkloadsResponse:
                     Response of ListWorkloads endpoint.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/workloads",
-                },
-            ]
-            request, metadata = self._interceptor.pre_list_workloads(request, metadata)
-            pb_request = assuredworkloads.ListWorkloadsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseAssuredWorkloadsServiceRestTransport._BaseListWorkloads._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_list_workloads(request, metadata)
+            transcoded_request = _BaseAssuredWorkloadsServiceRestTransport._BaseListWorkloads._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAssuredWorkloadsServiceRestTransport._BaseListWorkloads._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.ListWorkloads",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "ListWorkloads",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                AssuredWorkloadsServiceRestTransport._ListWorkloads._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -843,22 +1040,62 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             pb_resp = assuredworkloads.ListWorkloadsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_workloads(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = assuredworkloads.ListWorkloadsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.list_workloads",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "ListWorkloads",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _RestrictAllowedResources(AssuredWorkloadsServiceRestStub):
+    class _RestrictAllowedResources(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseRestrictAllowedResources,
+        AssuredWorkloadsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("RestrictAllowedResources")
+            return hash("AssuredWorkloadsServiceRestTransport.RestrictAllowedResources")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -866,7 +1103,7 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> assuredworkloads.RestrictAllowedResourcesResponse:
             r"""Call the restrict allowed
             resources method over HTTP.
@@ -879,8 +1116,10 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.assuredworkloads.RestrictAllowedResourcesResponse:
@@ -889,47 +1128,62 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=organizations/*/locations/*/workloads/*}:restrictAllowedResources",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseAssuredWorkloadsServiceRestTransport._BaseRestrictAllowedResources._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_restrict_allowed_resources(
                 request, metadata
             )
-            pb_request = assuredworkloads.RestrictAllowedResourcesRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseAssuredWorkloadsServiceRestTransport._BaseRestrictAllowedResources._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseAssuredWorkloadsServiceRestTransport._BaseRestrictAllowedResources._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAssuredWorkloadsServiceRestTransport._BaseRestrictAllowedResources._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.RestrictAllowedResources",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "RestrictAllowedResources",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = AssuredWorkloadsServiceRestTransport._RestrictAllowedResources._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -942,24 +1196,64 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             pb_resp = assuredworkloads.RestrictAllowedResourcesResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_restrict_allowed_resources(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        assuredworkloads.RestrictAllowedResourcesResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.restrict_allowed_resources",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "RestrictAllowedResources",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateWorkload(AssuredWorkloadsServiceRestStub):
+    class _UpdateWorkload(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseUpdateWorkload,
+        AssuredWorkloadsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateWorkload")
+            return hash("AssuredWorkloadsServiceRestTransport.UpdateWorkload")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "updateMask": {},
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -967,7 +1261,7 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> assuredworkloads.Workload:
             r"""Call the update workload method over HTTP.
 
@@ -977,8 +1271,10 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.assuredworkloads.Workload:
@@ -987,45 +1283,62 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{workload.name=organizations/*/locations/*/workloads/*}",
-                    "body": "workload",
-                },
-            ]
-            request, metadata = self._interceptor.pre_update_workload(request, metadata)
-            pb_request = assuredworkloads.UpdateWorkloadRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            http_options = (
+                _BaseAssuredWorkloadsServiceRestTransport._BaseUpdateWorkload._get_http_options()
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            request, metadata = self._interceptor.pre_update_workload(request, metadata)
+            transcoded_request = _BaseAssuredWorkloadsServiceRestTransport._BaseUpdateWorkload._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseAssuredWorkloadsServiceRestTransport._BaseUpdateWorkload._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAssuredWorkloadsServiceRestTransport._BaseUpdateWorkload._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.UpdateWorkload",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "UpdateWorkload",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                AssuredWorkloadsServiceRestTransport._UpdateWorkload._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1038,7 +1351,29 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             pb_resp = assuredworkloads.Workload.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_workload(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = assuredworkloads.Workload.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.update_workload",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "UpdateWorkload",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property
@@ -1128,14 +1463,42 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
     def get_operation(self):
         return self._GetOperation(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _GetOperation(AssuredWorkloadsServiceRestStub):
+    class _GetOperation(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseGetOperation,
+        AssuredWorkloadsServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("AssuredWorkloadsServiceRestTransport.GetOperation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: operations_pb2.GetOperationRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the get operation method over HTTP.
 
@@ -1145,39 +1508,64 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 operations_pb2.Operation: Response from GetOperation method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/operations/*}",
-                },
-            ]
+            http_options = (
+                _BaseAssuredWorkloadsServiceRestTransport._BaseGetOperation._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_get_operation(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseAssuredWorkloadsServiceRestTransport._BaseGetOperation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BaseAssuredWorkloadsServiceRestTransport._BaseGetOperation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.GetOperation",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "GetOperation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = AssuredWorkloadsServiceRestTransport._GetOperation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1185,23 +1573,73 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = operations_pb2.Operation()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_get_operation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceAsyncClient.GetOperation",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "GetOperation",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property
     def list_operations(self):
         return self._ListOperations(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _ListOperations(AssuredWorkloadsServiceRestStub):
+    class _ListOperations(
+        _BaseAssuredWorkloadsServiceRestTransport._BaseListOperations,
+        AssuredWorkloadsServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("AssuredWorkloadsServiceRestTransport.ListOperations")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: operations_pb2.ListOperationsRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.ListOperationsResponse:
             r"""Call the list operations method over HTTP.
 
@@ -1211,39 +1649,66 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 operations_pb2.ListOperationsResponse: Response from ListOperations method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*}/operations",
-                },
-            ]
+            http_options = (
+                _BaseAssuredWorkloadsServiceRestTransport._BaseListOperations._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_list_operations(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseAssuredWorkloadsServiceRestTransport._BaseListOperations._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BaseAssuredWorkloadsServiceRestTransport._BaseListOperations._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceClient.ListOperations",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "ListOperations",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = (
+                AssuredWorkloadsServiceRestTransport._ListOperations._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1251,9 +1716,31 @@ class AssuredWorkloadsServiceRestTransport(AssuredWorkloadsServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = operations_pb2.ListOperationsResponse()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_list_operations(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.assuredworkloads_v1.AssuredWorkloadsServiceAsyncClient.ListOperations",
+                    extra={
+                        "serviceName": "google.cloud.assuredworkloads.v1.AssuredWorkloadsService",
+                        "rpcName": "ListOperations",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property

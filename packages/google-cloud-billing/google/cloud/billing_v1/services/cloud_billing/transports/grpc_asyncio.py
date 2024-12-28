@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -23,13 +27,92 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.billing_v1.types import cloud_billing
 
 from .base import DEFAULT_CLIENT_INFO, CloudBillingTransport
 from .grpc import CloudBillingGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.billing.v1.CloudBilling",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.billing.v1.CloudBilling",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
@@ -228,7 +311,13 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -265,7 +354,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_billing_account" not in self._stubs:
-            self._stubs["get_billing_account"] = self.grpc_channel.unary_unary(
+            self._stubs["get_billing_account"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/GetBillingAccount",
                 request_serializer=cloud_billing.GetBillingAccountRequest.serialize,
                 response_deserializer=cloud_billing.BillingAccount.deserialize,
@@ -296,7 +385,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_billing_accounts" not in self._stubs:
-            self._stubs["list_billing_accounts"] = self.grpc_channel.unary_unary(
+            self._stubs["list_billing_accounts"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/ListBillingAccounts",
                 request_serializer=cloud_billing.ListBillingAccountsRequest.serialize,
                 response_deserializer=cloud_billing.ListBillingAccountsResponse.deserialize,
@@ -330,7 +419,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_billing_account" not in self._stubs:
-            self._stubs["update_billing_account"] = self.grpc_channel.unary_unary(
+            self._stubs["update_billing_account"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/UpdateBillingAccount",
                 request_serializer=cloud_billing.UpdateBillingAccountRequest.serialize,
                 response_deserializer=cloud_billing.BillingAccount.deserialize,
@@ -372,7 +461,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_billing_account" not in self._stubs:
-            self._stubs["create_billing_account"] = self.grpc_channel.unary_unary(
+            self._stubs["create_billing_account"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/CreateBillingAccount",
                 request_serializer=cloud_billing.CreateBillingAccountRequest.serialize,
                 response_deserializer=cloud_billing.BillingAccount.deserialize,
@@ -405,7 +494,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_project_billing_info" not in self._stubs:
-            self._stubs["list_project_billing_info"] = self.grpc_channel.unary_unary(
+            self._stubs["list_project_billing_info"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/ListProjectBillingInfo",
                 request_serializer=cloud_billing.ListProjectBillingInfoRequest.serialize,
                 response_deserializer=cloud_billing.ListProjectBillingInfoResponse.deserialize,
@@ -439,7 +528,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_project_billing_info" not in self._stubs:
-            self._stubs["get_project_billing_info"] = self.grpc_channel.unary_unary(
+            self._stubs["get_project_billing_info"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/GetProjectBillingInfo",
                 request_serializer=cloud_billing.GetProjectBillingInfoRequest.serialize,
                 response_deserializer=cloud_billing.ProjectBillingInfo.deserialize,
@@ -503,7 +592,9 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_project_billing_info" not in self._stubs:
-            self._stubs["update_project_billing_info"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "update_project_billing_info"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/UpdateProjectBillingInfo",
                 request_serializer=cloud_billing.UpdateProjectBillingInfoRequest.serialize,
                 response_deserializer=cloud_billing.ProjectBillingInfo.deserialize,
@@ -532,7 +623,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_iam_policy" not in self._stubs:
-            self._stubs["get_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["get_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/GetIamPolicy",
                 request_serializer=iam_policy_pb2.GetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -562,7 +653,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "set_iam_policy" not in self._stubs:
-            self._stubs["set_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["set_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/SetIamPolicy",
                 request_serializer=iam_policy_pb2.SetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -595,7 +686,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "test_iam_permissions" not in self._stubs:
-            self._stubs["test_iam_permissions"] = self.grpc_channel.unary_unary(
+            self._stubs["test_iam_permissions"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/TestIamPermissions",
                 request_serializer=iam_policy_pb2.TestIamPermissionsRequest.SerializeToString,
                 response_deserializer=iam_policy_pb2.TestIamPermissionsResponse.FromString,
@@ -625,7 +716,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "move_billing_account" not in self._stubs:
-            self._stubs["move_billing_account"] = self.grpc_channel.unary_unary(
+            self._stubs["move_billing_account"] = self._logged_channel.unary_unary(
                 "/google.cloud.billing.v1.CloudBilling/MoveBillingAccount",
                 request_serializer=cloud_billing.MoveBillingAccountRequest.serialize,
                 response_deserializer=cloud_billing.BillingAccount.deserialize,
@@ -635,7 +726,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.get_billing_account: gapic_v1.method_async.wrap_method(
+            self.get_billing_account: self._wrap_method(
                 self.get_billing_account,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -650,7 +741,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_billing_accounts: gapic_v1.method_async.wrap_method(
+            self.list_billing_accounts: self._wrap_method(
                 self.list_billing_accounts,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -665,7 +756,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_billing_account: gapic_v1.method_async.wrap_method(
+            self.update_billing_account: self._wrap_method(
                 self.update_billing_account,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -680,12 +771,12 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_billing_account: gapic_v1.method_async.wrap_method(
+            self.create_billing_account: self._wrap_method(
                 self.create_billing_account,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_project_billing_info: gapic_v1.method_async.wrap_method(
+            self.list_project_billing_info: self._wrap_method(
                 self.list_project_billing_info,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -700,7 +791,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_project_billing_info: gapic_v1.method_async.wrap_method(
+            self.get_project_billing_info: self._wrap_method(
                 self.get_project_billing_info,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -715,7 +806,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_project_billing_info: gapic_v1.method_async.wrap_method(
+            self.update_project_billing_info: self._wrap_method(
                 self.update_project_billing_info,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -730,7 +821,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_iam_policy: gapic_v1.method_async.wrap_method(
+            self.get_iam_policy: self._wrap_method(
                 self.get_iam_policy,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -745,7 +836,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.set_iam_policy: gapic_v1.method_async.wrap_method(
+            self.set_iam_policy: self._wrap_method(
                 self.set_iam_policy,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -760,7 +851,7 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.test_iam_permissions: gapic_v1.method_async.wrap_method(
+            self.test_iam_permissions: self._wrap_method(
                 self.test_iam_permissions,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -775,15 +866,24 @@ class CloudBillingGrpcAsyncIOTransport(CloudBillingTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.move_billing_account: gapic_v1.method_async.wrap_method(
+            self.move_billing_account: self._wrap_method(
                 self.move_billing_account,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("CloudBillingGrpcAsyncIOTransport",)

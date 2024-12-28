@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -48,6 +48,15 @@ from google.cloud.language_v2.types import language_service
 from .client import LanguageServiceClient
 from .transports.base import DEFAULT_CLIENT_INFO, LanguageServiceTransport
 from .transports.grpc_asyncio import LanguageServiceGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class LanguageServiceAsyncClient:
@@ -186,9 +195,7 @@ class LanguageServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(LanguageServiceClient).get_transport_class, type(LanguageServiceClient)
-    )
+    get_transport_class = LanguageServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -258,6 +265,28 @@ class LanguageServiceAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.cloud.language_v2.LanguageServiceAsyncClient`.",
+                extra={
+                    "serviceName": "google.cloud.language.v2.LanguageService",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.cloud.language.v2.LanguageService",
+                    "credentialsType": None,
+                },
+            )
+
     async def analyze_sentiment(
         self,
         request: Optional[Union[language_service.AnalyzeSentimentRequest, dict]] = None,
@@ -266,7 +295,7 @@ class LanguageServiceAsyncClient:
         encoding_type: Optional[language_service.EncodingType] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> language_service.AnalyzeSentimentResponse:
         r"""Analyzes the sentiment of the provided text.
 
@@ -318,8 +347,10 @@ class LanguageServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.language_v2.types.AnalyzeSentimentResponse:
@@ -377,7 +408,7 @@ class LanguageServiceAsyncClient:
         encoding_type: Optional[language_service.EncodingType] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> language_service.AnalyzeEntitiesResponse:
         r"""Finds named entities (currently proper names and
         common nouns) in the text along with entity types,
@@ -431,8 +462,10 @@ class LanguageServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.language_v2.types.AnalyzeEntitiesResponse:
@@ -487,7 +520,7 @@ class LanguageServiceAsyncClient:
         document: Optional[language_service.Document] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> language_service.ClassifyTextResponse:
         r"""Classifies a document into categories.
 
@@ -532,8 +565,10 @@ class LanguageServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.language_v2.types.ClassifyTextResponse:
@@ -588,7 +623,7 @@ class LanguageServiceAsyncClient:
         document: Optional[language_service.Document] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> language_service.ModerateTextResponse:
         r"""Moderates a document for harmful and sensitive
         categories.
@@ -634,8 +669,10 @@ class LanguageServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.language_v2.types.ModerateTextResponse:
@@ -692,7 +729,7 @@ class LanguageServiceAsyncClient:
         encoding_type: Optional[language_service.EncodingType] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> language_service.AnnotateTextResponse:
         r"""A convenience method that provides all features in
         one call.
@@ -751,8 +788,10 @@ class LanguageServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.language_v2.types.AnnotateTextResponse:

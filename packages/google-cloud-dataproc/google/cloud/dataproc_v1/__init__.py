@@ -115,6 +115,7 @@ from .types.jobs import (
     CancelJobRequest,
     DeleteJobRequest,
     DriverSchedulingConfig,
+    FlinkJob,
     GetJobRequest,
     HadoopJob,
     HiveJob,
@@ -168,6 +169,7 @@ from .types.sessions import (
     ListSessionsRequest,
     ListSessionsResponse,
     Session,
+    SparkConnectConfig,
     TerminateSessionRequest,
 )
 from .types.shared import (
@@ -271,6 +273,7 @@ __all__ = (
     "EnvironmentConfig",
     "ExecutionConfig",
     "FailureAction",
+    "FlinkJob",
     "GceClusterConfig",
     "GetAutoscalingPolicyRequest",
     "GetBatchRequest",
@@ -351,6 +354,7 @@ __all__ = (
     "ShieldedInstanceConfig",
     "SoftwareConfig",
     "SparkBatch",
+    "SparkConnectConfig",
     "SparkHistoryServerConfig",
     "SparkJob",
     "SparkRBatch",

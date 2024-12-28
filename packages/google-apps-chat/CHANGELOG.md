@@ -1,5 +1,75 @@
 # Changelog
 
+## [0.2.0](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.1.14...google-apps-chat-v0.2.0) (2024-12-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* Changed field behavior for an existing field `update_mask` and `emoji`
+
+### Features
+
+* Add support for opt-in debug logging ([06e3ecc](https://github.com/googleapis/google-cloud-python/commit/06e3ecc2631cd5bf18873cb90c4b5026caf7d9d5))
+* Chat Apps can now retrieve the import mode expire time information to know when to complete the import mode properly ([06e3ecc](https://github.com/googleapis/google-cloud-python/commit/06e3ecc2631cd5bf18873cb90c4b5026caf7d9d5))
+
+
+### Bug Fixes
+
+* Changed field behavior for an existing field `update_mask` and `emoji` ([06e3ecc](https://github.com/googleapis/google-cloud-python/commit/06e3ecc2631cd5bf18873cb90c4b5026caf7d9d5))
+
+
+### Documentation
+
+* Update reference documentation to include import_mode_expire_time field ([06e3ecc](https://github.com/googleapis/google-cloud-python/commit/06e3ecc2631cd5bf18873cb90c4b5026caf7d9d5))
+
+## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.1.13...google-apps-chat-v0.1.14) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([85c7512](https://github.com/googleapis/google-cloud-python/commit/85c7512bbdde2b9cc60b4ad42b8c36c4558a07a5))
+
+## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.1.12...google-apps-chat-v0.1.13) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13199](https://github.com/googleapis/google-cloud-python/issues/13199)) ([2fc3726](https://github.com/googleapis/google-cloud-python/commit/2fc372685731141ca1ed2a917dd18bacd79db88e))
+
+## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.1.11...google-apps-chat-v0.1.12) (2024-10-08)
+
+
+### Features
+
+* Add doc for import mode external users support ([3881914](https://github.com/googleapis/google-cloud-python/commit/3881914b43b47bf2ee187f62447ef9eccc851749))
+* Add doc for permission settings & announcement space support ([3881914](https://github.com/googleapis/google-cloud-python/commit/3881914b43b47bf2ee187f62447ef9eccc851749))
+
+
+### Documentation
+
+* Discoverable space docs improvement ([3881914](https://github.com/googleapis/google-cloud-python/commit/3881914b43b47bf2ee187f62447ef9eccc851749))
+* Memberships API dev docs improvement ([3881914](https://github.com/googleapis/google-cloud-python/commit/3881914b43b47bf2ee187f62447ef9eccc851749))
+* Messages API dev docs improvement ([3881914](https://github.com/googleapis/google-cloud-python/commit/3881914b43b47bf2ee187f62447ef9eccc851749))
+
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.1.10...google-apps-chat-v0.1.11) (2024-09-16)
+
+
+### Features
+
+* If you're a domain administrator or a delegated administrator, you can now include the `useAdminAccess` parameter when you call the Chat API with your administrator privileges with the following methods to manage Chat spaces and memberships in your Workspace organization: ([a20b1e5](https://github.com/googleapis/google-cloud-python/commit/a20b1e508068845c36b1701836ba17a699cb10ac))
+
+
+### Documentation
+
+* A comment for field `filter` in message `.google.chat.v1.ListMembershipsRequest` is updated to support `!=` operator ([a20b1e5](https://github.com/googleapis/google-cloud-python/commit/a20b1e508068845c36b1701836ba17a699cb10ac))
+
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.1.9...google-apps-chat-v0.1.10) (2024-09-05)
+
+
+### Features
+
+* [google-apps-chat] Add CHAT_SPACE link type support for GA launch ([#13064](https://github.com/googleapis/google-cloud-python/issues/13064)) ([0ee300a](https://github.com/googleapis/google-cloud-python/commit/0ee300a0497968aa2c85969924b37f95f67675f0))
+
 ## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.1.8...google-apps-chat-v0.1.9) (2024-07-30)
 
 

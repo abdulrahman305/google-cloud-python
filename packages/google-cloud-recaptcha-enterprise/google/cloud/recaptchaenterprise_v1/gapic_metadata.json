@@ -10,6 +10,11 @@
         "grpc": {
           "libraryClient": "RecaptchaEnterpriseServiceClient",
           "rpcs": {
+            "AddIpOverride": {
+              "methods": [
+                "add_ip_override"
+              ]
+            },
             "AnnotateAssessment": {
               "methods": [
                 "annotate_assessment"
@@ -60,6 +65,11 @@
                 "list_firewall_policies"
               ]
             },
+            "ListIpOverrides": {
+              "methods": [
+                "list_ip_overrides"
+              ]
+            },
             "ListKeys": {
               "methods": [
                 "list_keys"
@@ -78,6 +88,11 @@
             "MigrateKey": {
               "methods": [
                 "migrate_key"
+              ]
+            },
+            "RemoveIpOverride": {
+              "methods": [
+                "remove_ip_override"
               ]
             },
             "ReorderFirewallPolicies": {
@@ -110,6 +125,11 @@
         "grpc-async": {
           "libraryClient": "RecaptchaEnterpriseServiceAsyncClient",
           "rpcs": {
+            "AddIpOverride": {
+              "methods": [
+                "add_ip_override"
+              ]
+            },
             "AnnotateAssessment": {
               "methods": [
                 "annotate_assessment"
@@ -160,6 +180,11 @@
                 "list_firewall_policies"
               ]
             },
+            "ListIpOverrides": {
+              "methods": [
+                "list_ip_overrides"
+              ]
+            },
             "ListKeys": {
               "methods": [
                 "list_keys"
@@ -178,6 +203,11 @@
             "MigrateKey": {
               "methods": [
                 "migrate_key"
+              ]
+            },
+            "RemoveIpOverride": {
+              "methods": [
+                "remove_ip_override"
               ]
             },
             "ReorderFirewallPolicies": {

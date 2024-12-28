@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -55,6 +55,15 @@ from .client import AlphaAnalyticsDataClient
 from .transports.base import DEFAULT_CLIENT_INFO, AlphaAnalyticsDataTransport
 from .transports.grpc_asyncio import AlphaAnalyticsDataGrpcAsyncIOTransport
 
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
 
 class AlphaAnalyticsDataAsyncClient:
     """Google Analytics reporting data service."""
@@ -71,6 +80,12 @@ class AlphaAnalyticsDataAsyncClient:
     audience_list_path = staticmethod(AlphaAnalyticsDataClient.audience_list_path)
     parse_audience_list_path = staticmethod(
         AlphaAnalyticsDataClient.parse_audience_list_path
+    )
+    property_quotas_snapshot_path = staticmethod(
+        AlphaAnalyticsDataClient.property_quotas_snapshot_path
+    )
+    parse_property_quotas_snapshot_path = staticmethod(
+        AlphaAnalyticsDataClient.parse_property_quotas_snapshot_path
     )
     recurring_audience_list_path = staticmethod(
         AlphaAnalyticsDataClient.recurring_audience_list_path
@@ -204,10 +219,7 @@ class AlphaAnalyticsDataAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(AlphaAnalyticsDataClient).get_transport_class,
-        type(AlphaAnalyticsDataClient),
-    )
+    get_transport_class = AlphaAnalyticsDataClient.get_transport_class
 
     def __init__(
         self,
@@ -279,6 +291,28 @@ class AlphaAnalyticsDataAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.analytics.data_v1alpha.AlphaAnalyticsDataAsyncClient`.",
+                extra={
+                    "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                    "credentialsType": None,
+                },
+            )
+
     async def run_funnel_report(
         self,
         request: Optional[
@@ -287,7 +321,7 @@ class AlphaAnalyticsDataAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.RunFunnelReportResponse:
         r"""Returns a customized funnel report of your Google Analytics
         event data. The data returned from the API is as a table with
@@ -339,8 +373,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.types.RunFunnelReportResponse:
@@ -392,7 +428,7 @@ class AlphaAnalyticsDataAsyncClient:
         audience_list: Optional[analytics_data_api.AudienceList] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Creates an audience list for later retrieval. This method
         quickly returns the audience list's resource name and initiates
@@ -476,8 +512,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -553,7 +591,7 @@ class AlphaAnalyticsDataAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.QueryAudienceListResponse:
         r"""Retrieves an audience list of users. After creating an audience,
         the users are not immediately available for listing. First, a
@@ -616,8 +654,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.types.QueryAudienceListResponse:
@@ -678,7 +718,7 @@ class AlphaAnalyticsDataAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.SheetExportAudienceListResponse:
         r"""Exports an audience list of users to a Google Sheet. After
         creating an audience, the users are not immediately available
@@ -742,8 +782,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.types.SheetExportAudienceListResponse:
@@ -806,7 +848,7 @@ class AlphaAnalyticsDataAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.AudienceList:
         r"""Gets configuration metadata about a specific audience list. This
         method can be used to understand an audience list after it has
@@ -862,8 +904,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.types.AudienceList:
@@ -929,7 +973,7 @@ class AlphaAnalyticsDataAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListAudienceListsAsyncPager:
         r"""Lists all audience lists for a property. This method can be used
         for you to find and reuse existing audience lists rather than
@@ -989,8 +1033,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.services.alpha_analytics_data.pagers.ListAudienceListsAsyncPager:
@@ -1070,7 +1116,7 @@ class AlphaAnalyticsDataAsyncClient:
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.RecurringAudienceList:
         r"""Creates a recurring audience list. Recurring audience lists
         produces new audience lists each day. Audience lists are users
@@ -1144,8 +1190,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.types.RecurringAudienceList:
@@ -1217,7 +1265,7 @@ class AlphaAnalyticsDataAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.RecurringAudienceList:
         r"""Gets configuration metadata about a specific recurring audience
         list. This method can be used to understand a recurring audience
@@ -1274,8 +1322,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.types.RecurringAudienceList:
@@ -1343,7 +1393,7 @@ class AlphaAnalyticsDataAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListRecurringAudienceListsAsyncPager:
         r"""Lists all recurring audience lists for a property. This method
         can be used for you to find and reuse existing recurring
@@ -1401,8 +1451,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.services.alpha_analytics_data.pagers.ListRecurringAudienceListsAsyncPager:
@@ -1472,6 +1524,120 @@ class AlphaAnalyticsDataAsyncClient:
         # Done; return the response.
         return response
 
+    async def get_property_quotas_snapshot(
+        self,
+        request: Optional[
+            Union[analytics_data_api.GetPropertyQuotasSnapshotRequest, dict]
+        ] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> analytics_data_api.PropertyQuotasSnapshot:
+        r"""Get all property quotas organized by quota category
+        for a given property. This will charge 1 property quota
+        from the category with the most quota.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.analytics import data_v1alpha
+
+            async def sample_get_property_quotas_snapshot():
+                # Create a client
+                client = data_v1alpha.AlphaAnalyticsDataAsyncClient()
+
+                # Initialize request argument(s)
+                request = data_v1alpha.GetPropertyQuotasSnapshotRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = await client.get_property_quotas_snapshot(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.analytics.data_v1alpha.types.GetPropertyQuotasSnapshotRequest, dict]]):
+                The request object. A request to return the
+                PropertyQuotasSnapshot for a given
+                category.
+            name (:class:`str`):
+                Required. Quotas from this property will be listed in
+                the response. Format:
+                ``properties/{property}/propertyQuotasSnapshot``
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.analytics.data_v1alpha.types.PropertyQuotasSnapshot:
+                Current state of all Property Quotas
+                organized by quota category.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, analytics_data_api.GetPropertyQuotasSnapshotRequest):
+            request = analytics_data_api.GetPropertyQuotasSnapshotRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if name is not None:
+            request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.get_property_quotas_snapshot
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
     async def create_report_task(
         self,
         request: Optional[
@@ -1482,12 +1648,18 @@ class AlphaAnalyticsDataAsyncClient:
         report_task: Optional[analytics_data_api.ReportTask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Initiates the creation of a report task. This method
         quickly returns a report task and initiates a long
         running asynchronous request to form a customized report
         of your Google Analytics event data.
+
+        A report task will be retained and available for
+        querying for 72 hours after it has been created.
+
+        A report task created by one user can be listed and
+        queried by all users who have access to the property.
 
         .. code-block:: python
 
@@ -1539,8 +1711,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -1616,7 +1790,7 @@ class AlphaAnalyticsDataAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.QueryReportTaskResponse:
         r"""Retrieves a report task's content. After requesting the
         ``CreateReportTask``, you are able to retrieve the report
@@ -1665,8 +1839,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.types.QueryReportTaskResponse:
@@ -1727,7 +1903,7 @@ class AlphaAnalyticsDataAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.ReportTask:
         r"""Gets report metadata about a specific report task.
         After creating a report task, use this method to check
@@ -1773,8 +1949,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.types.ReportTask:
@@ -1835,7 +2013,7 @@ class AlphaAnalyticsDataAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListReportTasksAsyncPager:
         r"""Lists all report tasks for a property.
 
@@ -1881,8 +2059,10 @@ class AlphaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1alpha.services.alpha_analytics_data.pagers.ListReportTasksAsyncPager:

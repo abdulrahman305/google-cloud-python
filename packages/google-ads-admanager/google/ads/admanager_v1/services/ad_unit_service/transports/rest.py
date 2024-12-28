@@ -13,40 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.ads.admanager_v1.types import ad_unit_messages, ad_unit_service
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseAdUnitServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.longrunning import operations_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.ads.admanager_v1.types import ad_unit_service
-
-from .base import AdUnitServiceTransport
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -81,6 +85,14 @@ class AdUnitServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_list_ad_unit_sizes(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_ad_unit_sizes(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
         transport = AdUnitServiceRestTransport(interceptor=MyCustomAdUnitServiceInterceptor())
         client = AdUnitServiceClient(transport=transport)
 
@@ -90,8 +102,10 @@ class AdUnitServiceRestInterceptor:
     def pre_get_ad_unit(
         self,
         request: ad_unit_service.GetAdUnitRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[ad_unit_service.GetAdUnitRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        ad_unit_service.GetAdUnitRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_ad_unit
 
         Override in a subclass to manipulate the request or metadata
@@ -100,8 +114,8 @@ class AdUnitServiceRestInterceptor:
         return request, metadata
 
     def post_get_ad_unit(
-        self, response: ad_unit_service.AdUnit
-    ) -> ad_unit_service.AdUnit:
+        self, response: ad_unit_messages.AdUnit
+    ) -> ad_unit_messages.AdUnit:
         """Post-rpc interceptor for get_ad_unit
 
         Override in a subclass to manipulate the response
@@ -113,8 +127,10 @@ class AdUnitServiceRestInterceptor:
     def pre_list_ad_units(
         self,
         request: ad_unit_service.ListAdUnitsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[ad_unit_service.ListAdUnitsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        ad_unit_service.ListAdUnitsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_ad_units
 
         Override in a subclass to manipulate the request or metadata
@@ -133,11 +149,38 @@ class AdUnitServiceRestInterceptor:
         """
         return response
 
+    def pre_list_ad_unit_sizes(
+        self,
+        request: ad_unit_service.ListAdUnitSizesRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        ad_unit_service.ListAdUnitSizesRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for list_ad_unit_sizes
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AdUnitService server.
+        """
+        return request, metadata
+
+    def post_list_ad_unit_sizes(
+        self, response: ad_unit_service.ListAdUnitSizesResponse
+    ) -> ad_unit_service.ListAdUnitSizesResponse:
+        """Post-rpc interceptor for list_ad_unit_sizes
+
+        Override in a subclass to manipulate the response
+        after it is returned by the AdUnitService server but before
+        it is returned to user code.
+        """
+        return response
+
     def pre_get_operation(
         self,
         request: operations_pb2.GetOperationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[operations_pb2.GetOperationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        operations_pb2.GetOperationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_operation
 
         Override in a subclass to manipulate the request or metadata
@@ -164,8 +207,8 @@ class AdUnitServiceRestStub:
     _interceptor: AdUnitServiceRestInterceptor
 
 
-class AdUnitServiceRestTransport(AdUnitServiceTransport):
-    """REST backend transport for AdUnitService.
+class AdUnitServiceRestTransport(_BaseAdUnitServiceRestTransport):
+    """REST backend synchronous transport for AdUnitService.
 
     Provides methods for handling AdUnit objects.
 
@@ -174,7 +217,6 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -228,21 +270,12 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -253,19 +286,33 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
         self._interceptor = interceptor or AdUnitServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _GetAdUnit(AdUnitServiceRestStub):
+    class _GetAdUnit(
+        _BaseAdUnitServiceRestTransport._BaseGetAdUnit, AdUnitServiceRestStub
+    ):
         def __hash__(self):
-            return hash("GetAdUnit")
+            return hash("AdUnitServiceRestTransport.GetAdUnit")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -273,8 +320,8 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
-        ) -> ad_unit_service.AdUnit:
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> ad_unit_messages.AdUnit:
             r"""Call the get ad unit method over HTTP.
 
             Args:
@@ -283,46 +330,69 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
-                ~.ad_unit_service.AdUnit:
+                ~.ad_unit_messages.AdUnit:
                     The AdUnit resource.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=networks/*/adUnits/*}",
-                },
-            ]
+            http_options = (
+                _BaseAdUnitServiceRestTransport._BaseGetAdUnit._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_ad_unit(request, metadata)
-            pb_request = ad_unit_service.GetAdUnitRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
-
-            # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
+            transcoded_request = (
+                _BaseAdUnitServiceRestTransport._BaseGetAdUnit._get_transcoded_request(
+                    http_options, request
                 )
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            # Jsonify the query params
+            query_params = (
+                _BaseAdUnitServiceRestTransport._BaseGetAdUnit._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.AdUnitServiceClient.GetAdUnit",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.AdUnitService",
+                        "rpcName": "GetAdUnit",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = AdUnitServiceRestTransport._GetAdUnit._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -331,26 +401,62 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
                 raise core_exceptions.from_http_response(response)
 
             # Return the response
-            resp = ad_unit_service.AdUnit()
-            pb_resp = ad_unit_service.AdUnit.pb(resp)
+            resp = ad_unit_messages.AdUnit()
+            pb_resp = ad_unit_messages.AdUnit.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_ad_unit(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = ad_unit_messages.AdUnit.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.AdUnitServiceClient.get_ad_unit",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.AdUnitService",
+                        "rpcName": "GetAdUnit",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListAdUnits(AdUnitServiceRestStub):
+    class _ListAdUnits(
+        _BaseAdUnitServiceRestTransport._BaseListAdUnits, AdUnitServiceRestStub
+    ):
         def __hash__(self):
-            return hash("ListAdUnits")
+            return hash("AdUnitServiceRestTransport.ListAdUnits")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -358,7 +464,7 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> ad_unit_service.ListAdUnitsResponse:
             r"""Call the list ad units method over HTTP.
 
@@ -369,8 +475,10 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.ad_unit_service.ListAdUnitsResponse:
@@ -380,38 +488,57 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=networks/*}/adUnits",
-                },
-            ]
-            request, metadata = self._interceptor.pre_list_ad_units(request, metadata)
-            pb_request = ad_unit_service.ListAdUnitsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseAdUnitServiceRestTransport._BaseListAdUnits._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_list_ad_units(request, metadata)
+            transcoded_request = _BaseAdUnitServiceRestTransport._BaseListAdUnits._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
+            query_params = (
+                _BaseAdUnitServiceRestTransport._BaseListAdUnits._get_query_params_json(
+                    transcoded_request
                 )
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.AdUnitServiceClient.ListAdUnits",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.AdUnitService",
+                        "rpcName": "ListAdUnits",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = AdUnitServiceRestTransport._ListAdUnits._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -424,13 +551,185 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
             pb_resp = ad_unit_service.ListAdUnitsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_ad_units(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = ad_unit_service.ListAdUnitsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.AdUnitServiceClient.list_ad_units",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.AdUnitService",
+                        "rpcName": "ListAdUnits",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListAdUnitSizes(
+        _BaseAdUnitServiceRestTransport._BaseListAdUnitSizes, AdUnitServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("AdUnitServiceRestTransport.ListAdUnitSizes")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: ad_unit_service.ListAdUnitSizesRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> ad_unit_service.ListAdUnitSizesResponse:
+            r"""Call the list ad unit sizes method over HTTP.
+
+            Args:
+                request (~.ad_unit_service.ListAdUnitSizesRequest):
+                    The request object. Request object for ListAdUnitSizes
+                method.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.ad_unit_service.ListAdUnitSizesResponse:
+                    Response object for
+                ListAdUnitSizesRequest containing
+                matching AdUnitSizes.
+
+            """
+
+            http_options = (
+                _BaseAdUnitServiceRestTransport._BaseListAdUnitSizes._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_ad_unit_sizes(
+                request, metadata
+            )
+            transcoded_request = _BaseAdUnitServiceRestTransport._BaseListAdUnitSizes._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAdUnitServiceRestTransport._BaseListAdUnitSizes._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.AdUnitServiceClient.ListAdUnitSizes",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.AdUnitService",
+                        "rpcName": "ListAdUnitSizes",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AdUnitServiceRestTransport._ListAdUnitSizes._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = ad_unit_service.ListAdUnitSizesResponse()
+            pb_resp = ad_unit_service.ListAdUnitSizesResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_ad_unit_sizes(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = ad_unit_service.ListAdUnitSizesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.AdUnitServiceClient.list_ad_unit_sizes",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.AdUnitService",
+                        "rpcName": "ListAdUnitSizes",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property
     def get_ad_unit(
         self,
-    ) -> Callable[[ad_unit_service.GetAdUnitRequest], ad_unit_service.AdUnit]:
+    ) -> Callable[[ad_unit_service.GetAdUnitRequest], ad_unit_messages.AdUnit]:
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetAdUnit(self._session, self._host, self._interceptor)  # type: ignore
@@ -446,17 +745,55 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
         return self._ListAdUnits(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def list_ad_unit_sizes(
+        self,
+    ) -> Callable[
+        [ad_unit_service.ListAdUnitSizesRequest],
+        ad_unit_service.ListAdUnitSizesResponse,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListAdUnitSizes(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def get_operation(self):
         return self._GetOperation(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _GetOperation(AdUnitServiceRestStub):
+    class _GetOperation(
+        _BaseAdUnitServiceRestTransport._BaseGetOperation, AdUnitServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("AdUnitServiceRestTransport.GetOperation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: operations_pb2.GetOperationRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the get operation method over HTTP.
 
@@ -466,43 +803,64 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 operations_pb2.Operation: Response from GetOperation method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=networks/*/operations/reports/exports/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=networks/*/operations/reports/runs/*}",
-                },
-            ]
+            http_options = (
+                _BaseAdUnitServiceRestTransport._BaseGetOperation._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_get_operation(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseAdUnitServiceRestTransport._BaseGetOperation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BaseAdUnitServiceRestTransport._BaseGetOperation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.AdUnitServiceClient.GetOperation",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.AdUnitService",
+                        "rpcName": "GetOperation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = AdUnitServiceRestTransport._GetOperation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -510,9 +868,31 @@ class AdUnitServiceRestTransport(AdUnitServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = operations_pb2.Operation()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_get_operation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.AdUnitServiceAsyncClient.GetOperation",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.AdUnitService",
+                        "rpcName": "GetOperation",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property

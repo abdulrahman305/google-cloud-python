@@ -4,6 +4,39 @@
 
 [1]: https://pypi.org/project/google-cloud-asset/#history
 
+## [3.28.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.27.1...google-cloud-asset-v3.28.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([b1dfc55](https://github.com/googleapis/google-cloud-python/commit/b1dfc556d4652a48564ff37becb31d5a06ee2b5b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([b1dfc55](https://github.com/googleapis/google-cloud-python/commit/b1dfc556d4652a48564ff37becb31d5a06ee2b5b))
+
+## [3.27.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.27.0...google-cloud-asset-v3.27.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([85c7512](https://github.com/googleapis/google-cloud-python/commit/85c7512bbdde2b9cc60b4ad42b8c36c4558a07a5))
+
+## [3.27.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.26.4...google-cloud-asset-v3.27.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13200](https://github.com/googleapis/google-cloud-python/issues/13200)) ([19dc048](https://github.com/googleapis/google-cloud-python/commit/19dc0485852406b90743297bcf257020e6012593))
+
+## [3.26.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.26.3...google-cloud-asset-v3.26.4) (2024-09-16)
+
+
+### Documentation
+
+* [google-cloud-asset] Comments are clarified for certain fields in messages `QueryAssetsResponse` and `ResourceSearchResult` ([#13076](https://github.com/googleapis/google-cloud-python/issues/13076)) ([35b2c45](https://github.com/googleapis/google-cloud-python/commit/35b2c456c6791bc47ffe894f3ef966558cb6c98e))
+
 ## [3.26.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.26.2...google-cloud-asset-v3.26.3) (2024-07-30)
 
 

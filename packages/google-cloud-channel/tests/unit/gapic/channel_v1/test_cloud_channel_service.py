@@ -24,6 +24,20 @@ except ImportError:  # pragma: NO COVER
 
 import math
 
+from google.api_core import api_core_version
+import grpc
+from grpc.experimental import aio
+from proto.marshal.rules import wrappers
+from proto.marshal.rules.dates import DurationRule, TimestampRule
+import pytest
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
 from google.api_core import (
     future,
     gapic_v1,
@@ -33,7 +47,7 @@ from google.api_core import (
     operations_v1,
     path_template,
 )
-from google.api_core import api_core_version, client_options
+from google.api_core import client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
 from google.api_core import retry as retries
@@ -49,11 +63,6 @@ from google.protobuf import timestamp_pb2  # type: ignore
 from google.type import date_pb2  # type: ignore
 from google.type import decimal_pb2  # type: ignore
 from google.type import postal_address_pb2  # type: ignore
-import grpc
-from grpc.experimental import aio
-from proto.marshal.rules import wrappers
-from proto.marshal.rules.dates import DurationRule, TimestampRule
-import pytest
 
 from google.cloud.channel_v1.services.cloud_channel_service import (
     CloudChannelServiceAsyncClient,
@@ -75,8 +84,22 @@ from google.cloud.channel_v1.types import (
 )
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -331,89 +354,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         CloudChannelServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            CloudChannelServiceClient,
-            transports.CloudChannelServiceGrpcTransport,
-            "grpc",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1199,25 +1139,6 @@ def test_list_customers(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_customers_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_customers), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_customers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListCustomersRequest()
-
-
 def test_list_customers_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1286,29 +1207,6 @@ def test_list_customers_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_customers_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_customers), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListCustomersResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_customers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListCustomersRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_customers_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1316,7 +1214,7 @@ async def test_list_customers_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1331,22 +1229,23 @@ async def test_list_customers_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_customers
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_customers(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_customers(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1354,7 +1253,7 @@ async def test_list_customers_async(
     transport: str = "grpc_asyncio", request_type=service.ListCustomersRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1420,7 +1319,7 @@ def test_list_customers_field_headers():
 @pytest.mark.asyncio
 async def test_list_customers_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1547,7 +1446,7 @@ def test_list_customers_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_customers_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1597,7 +1496,7 @@ async def test_list_customers_async_pager():
 @pytest.mark.asyncio
 async def test_list_customers_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1693,25 +1592,6 @@ def test_get_customer(request_type, transport: str = "grpc"):
     assert response.correlation_id == "correlation_id_value"
 
 
-def test_get_customer_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_customer), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetCustomerRequest()
-
-
 def test_get_customer_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1776,36 +1656,6 @@ def test_get_customer_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_customer_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_customer), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            customers.Customer(
-                name="name_value",
-                org_display_name="org_display_name_value",
-                alternate_email="alternate_email_value",
-                domain="domain_value",
-                cloud_identity_id="cloud_identity_id_value",
-                language_code="language_code_value",
-                channel_partner_id="channel_partner_id_value",
-                correlation_id="correlation_id_value",
-            )
-        )
-        response = await client.get_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetCustomerRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_customer_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1813,7 +1663,7 @@ async def test_get_customer_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1828,22 +1678,23 @@ async def test_get_customer_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_customer
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_customer(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_customer(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1851,7 +1702,7 @@ async def test_get_customer_async(
     transport: str = "grpc_asyncio", request_type=service.GetCustomerRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1931,7 +1782,7 @@ def test_get_customer_field_headers():
 @pytest.mark.asyncio
 async def test_get_customer_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1999,7 +1850,7 @@ def test_get_customer_flattened_error():
 @pytest.mark.asyncio
 async def test_get_customer_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2026,7 +1877,7 @@ async def test_get_customer_flattened_async():
 @pytest.mark.asyncio
 async def test_get_customer_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2073,27 +1924,6 @@ def test_check_cloud_identity_accounts_exist(request_type, transport: str = "grp
     assert isinstance(response, service.CheckCloudIdentityAccountsExistResponse)
 
 
-def test_check_cloud_identity_accounts_exist_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.check_cloud_identity_accounts_exist), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.check_cloud_identity_accounts_exist()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CheckCloudIdentityAccountsExistRequest()
-
-
 def test_check_cloud_identity_accounts_exist_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2108,6 +1938,7 @@ def test_check_cloud_identity_accounts_exist_non_empty_request_with_auto_populat
     request = service.CheckCloudIdentityAccountsExistRequest(
         parent="parent_value",
         domain="domain_value",
+        primary_admin_email="primary_admin_email_value",
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2123,6 +1954,7 @@ def test_check_cloud_identity_accounts_exist_non_empty_request_with_auto_populat
         assert args[0] == service.CheckCloudIdentityAccountsExistRequest(
             parent="parent_value",
             domain="domain_value",
+            primary_admin_email="primary_admin_email_value",
         )
 
 
@@ -2167,29 +1999,6 @@ def test_check_cloud_identity_accounts_exist_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_check_cloud_identity_accounts_exist_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.check_cloud_identity_accounts_exist), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.CheckCloudIdentityAccountsExistResponse()
-        )
-        response = await client.check_cloud_identity_accounts_exist()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CheckCloudIdentityAccountsExistRequest()
-
-
-@pytest.mark.asyncio
 async def test_check_cloud_identity_accounts_exist_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2197,7 +2006,7 @@ async def test_check_cloud_identity_accounts_exist_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2212,22 +2021,23 @@ async def test_check_cloud_identity_accounts_exist_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.check_cloud_identity_accounts_exist
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.check_cloud_identity_accounts_exist(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.check_cloud_identity_accounts_exist(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2236,7 +2046,7 @@ async def test_check_cloud_identity_accounts_exist_async(
     request_type=service.CheckCloudIdentityAccountsExistRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2303,7 +2113,7 @@ def test_check_cloud_identity_accounts_exist_field_headers():
 @pytest.mark.asyncio
 async def test_check_cloud_identity_accounts_exist_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2384,25 +2194,6 @@ def test_create_customer(request_type, transport: str = "grpc"):
     assert response.correlation_id == "correlation_id_value"
 
 
-def test_create_customer_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_customer), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateCustomerRequest()
-
-
 def test_create_customer_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2467,36 +2258,6 @@ def test_create_customer_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_customer_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_customer), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            customers.Customer(
-                name="name_value",
-                org_display_name="org_display_name_value",
-                alternate_email="alternate_email_value",
-                domain="domain_value",
-                cloud_identity_id="cloud_identity_id_value",
-                language_code="language_code_value",
-                channel_partner_id="channel_partner_id_value",
-                correlation_id="correlation_id_value",
-            )
-        )
-        response = await client.create_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateCustomerRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_customer_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2504,7 +2265,7 @@ async def test_create_customer_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2519,22 +2280,23 @@ async def test_create_customer_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_customer
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_customer(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_customer(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2542,7 +2304,7 @@ async def test_create_customer_async(
     transport: str = "grpc_asyncio", request_type=service.CreateCustomerRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2622,7 +2384,7 @@ def test_create_customer_field_headers():
 @pytest.mark.asyncio
 async def test_create_customer_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2699,25 +2461,6 @@ def test_update_customer(request_type, transport: str = "grpc"):
     assert response.correlation_id == "correlation_id_value"
 
 
-def test_update_customer_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_customer), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UpdateCustomerRequest()
-
-
 def test_update_customer_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2778,36 +2521,6 @@ def test_update_customer_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_customer_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_customer), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            customers.Customer(
-                name="name_value",
-                org_display_name="org_display_name_value",
-                alternate_email="alternate_email_value",
-                domain="domain_value",
-                cloud_identity_id="cloud_identity_id_value",
-                language_code="language_code_value",
-                channel_partner_id="channel_partner_id_value",
-                correlation_id="correlation_id_value",
-            )
-        )
-        response = await client.update_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UpdateCustomerRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_customer_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2815,7 +2528,7 @@ async def test_update_customer_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2830,22 +2543,23 @@ async def test_update_customer_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_customer
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_customer(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_customer(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2853,7 +2567,7 @@ async def test_update_customer_async(
     transport: str = "grpc_asyncio", request_type=service.UpdateCustomerRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2933,7 +2647,7 @@ def test_update_customer_field_headers():
 @pytest.mark.asyncio
 async def test_update_customer_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2991,25 +2705,6 @@ def test_delete_customer(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_customer_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_customer), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.DeleteCustomerRequest()
 
 
 def test_delete_customer_non_empty_request_with_auto_populated_field():
@@ -3076,25 +2771,6 @@ def test_delete_customer_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_customer_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_customer), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.DeleteCustomerRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_customer_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3102,7 +2778,7 @@ async def test_delete_customer_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3117,22 +2793,23 @@ async def test_delete_customer_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_customer
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_customer(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_customer(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3140,7 +2817,7 @@ async def test_delete_customer_async(
     transport: str = "grpc_asyncio", request_type=service.DeleteCustomerRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3201,7 +2878,7 @@ def test_delete_customer_field_headers():
 @pytest.mark.asyncio
 async def test_delete_customer_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3269,7 +2946,7 @@ def test_delete_customer_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_customer_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3296,7 +2973,7 @@ async def test_delete_customer_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_customer_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3358,25 +3035,6 @@ def test_import_customer(request_type, transport: str = "grpc"):
     assert response.correlation_id == "correlation_id_value"
 
 
-def test_import_customer_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.import_customer), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.import_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ImportCustomerRequest()
-
-
 def test_import_customer_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3391,6 +3049,7 @@ def test_import_customer_non_empty_request_with_auto_populated_field():
     request = service.ImportCustomerRequest(
         domain="domain_value",
         cloud_identity_id="cloud_identity_id_value",
+        primary_admin_email="primary_admin_email_value",
         parent="parent_value",
         auth_token="auth_token_value",
         channel_partner_id="channel_partner_id_value",
@@ -3408,6 +3067,7 @@ def test_import_customer_non_empty_request_with_auto_populated_field():
         assert args[0] == service.ImportCustomerRequest(
             domain="domain_value",
             cloud_identity_id="cloud_identity_id_value",
+            primary_admin_email="primary_admin_email_value",
             parent="parent_value",
             auth_token="auth_token_value",
             channel_partner_id="channel_partner_id_value",
@@ -3451,36 +3111,6 @@ def test_import_customer_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_import_customer_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.import_customer), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            customers.Customer(
-                name="name_value",
-                org_display_name="org_display_name_value",
-                alternate_email="alternate_email_value",
-                domain="domain_value",
-                cloud_identity_id="cloud_identity_id_value",
-                language_code="language_code_value",
-                channel_partner_id="channel_partner_id_value",
-                correlation_id="correlation_id_value",
-            )
-        )
-        response = await client.import_customer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ImportCustomerRequest()
-
-
-@pytest.mark.asyncio
 async def test_import_customer_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3488,7 +3118,7 @@ async def test_import_customer_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3503,22 +3133,23 @@ async def test_import_customer_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.import_customer
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.import_customer(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.import_customer(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3526,7 +3157,7 @@ async def test_import_customer_async(
     transport: str = "grpc_asyncio", request_type=service.ImportCustomerRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3606,7 +3237,7 @@ def test_import_customer_field_headers():
 @pytest.mark.asyncio
 async def test_import_customer_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3666,27 +3297,6 @@ def test_provision_cloud_identity(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_provision_cloud_identity_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.provision_cloud_identity), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.provision_cloud_identity()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ProvisionCloudIdentityRequest()
 
 
 def test_provision_cloud_identity_non_empty_request_with_auto_populated_field():
@@ -3752,8 +3362,9 @@ def test_provision_cloud_identity_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.provision_cloud_identity(request)
@@ -3764,29 +3375,6 @@ def test_provision_cloud_identity_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_provision_cloud_identity_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.provision_cloud_identity), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.provision_cloud_identity()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ProvisionCloudIdentityRequest()
-
-
-@pytest.mark.asyncio
 async def test_provision_cloud_identity_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3794,7 +3382,7 @@ async def test_provision_cloud_identity_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3809,26 +3397,28 @@ async def test_provision_cloud_identity_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.provision_cloud_identity
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.provision_cloud_identity(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.provision_cloud_identity(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3836,7 +3426,7 @@ async def test_provision_cloud_identity_async(
     transport: str = "grpc_asyncio", request_type=service.ProvisionCloudIdentityRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3903,7 +3493,7 @@ def test_provision_cloud_identity_field_headers():
 @pytest.mark.asyncio
 async def test_provision_cloud_identity_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3970,27 +3560,6 @@ def test_list_entitlements(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListEntitlementsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_entitlements_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_entitlements), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_entitlements()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListEntitlementsRequest()
 
 
 def test_list_entitlements_non_empty_request_with_auto_populated_field():
@@ -4063,31 +3632,6 @@ def test_list_entitlements_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_entitlements_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_entitlements), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListEntitlementsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_entitlements()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListEntitlementsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_entitlements_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4095,7 +3639,7 @@ async def test_list_entitlements_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4110,22 +3654,23 @@ async def test_list_entitlements_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_entitlements
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_entitlements(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_entitlements(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4133,7 +3678,7 @@ async def test_list_entitlements_async(
     transport: str = "grpc_asyncio", request_type=service.ListEntitlementsRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4203,7 +3748,7 @@ def test_list_entitlements_field_headers():
 @pytest.mark.asyncio
 async def test_list_entitlements_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4336,7 +3881,7 @@ def test_list_entitlements_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_entitlements_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4388,7 +3933,7 @@ async def test_list_entitlements_async_pager():
 @pytest.mark.asyncio
 async def test_list_entitlements_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4474,27 +4019,6 @@ def test_list_transferable_skus(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_transferable_skus_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_transferable_skus), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_transferable_skus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListTransferableSkusRequest()
-
-
 def test_list_transferable_skus_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -4576,31 +4100,6 @@ def test_list_transferable_skus_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_transferable_skus_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_transferable_skus), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListTransferableSkusResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_transferable_skus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListTransferableSkusRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_transferable_skus_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4608,7 +4107,7 @@ async def test_list_transferable_skus_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4623,22 +4122,23 @@ async def test_list_transferable_skus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_transferable_skus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_transferable_skus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_transferable_skus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4646,7 +4146,7 @@ async def test_list_transferable_skus_async(
     transport: str = "grpc_asyncio", request_type=service.ListTransferableSkusRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4716,7 +4216,7 @@ def test_list_transferable_skus_field_headers():
 @pytest.mark.asyncio
 async def test_list_transferable_skus_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4849,7 +4349,7 @@ def test_list_transferable_skus_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_transferable_skus_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4901,7 +4401,7 @@ async def test_list_transferable_skus_async_pager():
 @pytest.mark.asyncio
 async def test_list_transferable_skus_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4987,27 +4487,6 @@ def test_list_transferable_offers(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_transferable_offers_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_transferable_offers), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_transferable_offers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListTransferableOffersRequest()
-
-
 def test_list_transferable_offers_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5091,31 +4570,6 @@ def test_list_transferable_offers_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_transferable_offers_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_transferable_offers), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListTransferableOffersResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_transferable_offers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListTransferableOffersRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_transferable_offers_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5123,7 +4577,7 @@ async def test_list_transferable_offers_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5138,22 +4592,23 @@ async def test_list_transferable_offers_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_transferable_offers
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_transferable_offers(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_transferable_offers(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5161,7 +4616,7 @@ async def test_list_transferable_offers_async(
     transport: str = "grpc_asyncio", request_type=service.ListTransferableOffersRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5231,7 +4686,7 @@ def test_list_transferable_offers_field_headers():
 @pytest.mark.asyncio
 async def test_list_transferable_offers_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5366,7 +4821,7 @@ def test_list_transferable_offers_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_transferable_offers_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5418,7 +4873,7 @@ async def test_list_transferable_offers_async_pager():
 @pytest.mark.asyncio
 async def test_list_transferable_offers_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5518,25 +4973,6 @@ def test_get_entitlement(request_type, transport: str = "grpc"):
     assert response.billing_account == "billing_account_value"
 
 
-def test_get_entitlement_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_entitlement), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetEntitlementRequest()
-
-
 def test_get_entitlement_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5601,36 +5037,6 @@ def test_get_entitlement_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_entitlement_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_entitlement), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            entitlements.Entitlement(
-                name="name_value",
-                offer="offer_value",
-                provisioning_state=entitlements.Entitlement.ProvisioningState.ACTIVE,
-                suspension_reasons=[
-                    entitlements.Entitlement.SuspensionReason.RESELLER_INITIATED
-                ],
-                purchase_order_id="purchase_order_id_value",
-                billing_account="billing_account_value",
-            )
-        )
-        response = await client.get_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetEntitlementRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_entitlement_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5638,7 +5044,7 @@ async def test_get_entitlement_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5653,22 +5059,23 @@ async def test_get_entitlement_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_entitlement
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_entitlement(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_entitlement(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5676,7 +5083,7 @@ async def test_get_entitlement_async(
     transport: str = "grpc_asyncio", request_type=service.GetEntitlementRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5758,7 +5165,7 @@ def test_get_entitlement_field_headers():
 @pytest.mark.asyncio
 async def test_get_entitlement_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5820,27 +5227,6 @@ def test_create_entitlement(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_create_entitlement_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_entitlement), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateEntitlementRequest()
 
 
 def test_create_entitlement_non_empty_request_with_auto_populated_field():
@@ -5907,8 +5293,9 @@ def test_create_entitlement_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_entitlement(request)
@@ -5919,29 +5306,6 @@ def test_create_entitlement_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_entitlement_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_entitlement), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.create_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateEntitlementRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_entitlement_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5949,7 +5313,7 @@ async def test_create_entitlement_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5964,26 +5328,28 @@ async def test_create_entitlement_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_entitlement
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_entitlement(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_entitlement(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5991,7 +5357,7 @@ async def test_create_entitlement_async(
     transport: str = "grpc_asyncio", request_type=service.CreateEntitlementRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6058,7 +5424,7 @@ def test_create_entitlement_field_headers():
 @pytest.mark.asyncio
 async def test_create_entitlement_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6122,27 +5488,6 @@ def test_change_parameters(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_change_parameters_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.change_parameters), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.change_parameters()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ChangeParametersRequest()
 
 
 def test_change_parameters_non_empty_request_with_auto_populated_field():
@@ -6209,8 +5554,9 @@ def test_change_parameters_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.change_parameters(request)
@@ -6221,29 +5567,6 @@ def test_change_parameters_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_change_parameters_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.change_parameters), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.change_parameters()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ChangeParametersRequest()
-
-
-@pytest.mark.asyncio
 async def test_change_parameters_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6251,7 +5574,7 @@ async def test_change_parameters_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6266,26 +5589,28 @@ async def test_change_parameters_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.change_parameters
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.change_parameters(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.change_parameters(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6293,7 +5618,7 @@ async def test_change_parameters_async(
     transport: str = "grpc_asyncio", request_type=service.ChangeParametersRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6360,7 +5685,7 @@ def test_change_parameters_field_headers():
 @pytest.mark.asyncio
 async def test_change_parameters_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6424,27 +5749,6 @@ def test_change_renewal_settings(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_change_renewal_settings_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.change_renewal_settings), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.change_renewal_settings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ChangeRenewalSettingsRequest()
 
 
 def test_change_renewal_settings_non_empty_request_with_auto_populated_field():
@@ -6512,8 +5816,9 @@ def test_change_renewal_settings_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.change_renewal_settings(request)
@@ -6524,29 +5829,6 @@ def test_change_renewal_settings_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_change_renewal_settings_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.change_renewal_settings), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.change_renewal_settings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ChangeRenewalSettingsRequest()
-
-
-@pytest.mark.asyncio
 async def test_change_renewal_settings_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6554,7 +5836,7 @@ async def test_change_renewal_settings_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6569,26 +5851,28 @@ async def test_change_renewal_settings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.change_renewal_settings
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.change_renewal_settings(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.change_renewal_settings(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6596,7 +5880,7 @@ async def test_change_renewal_settings_async(
     transport: str = "grpc_asyncio", request_type=service.ChangeRenewalSettingsRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6663,7 +5947,7 @@ def test_change_renewal_settings_field_headers():
 @pytest.mark.asyncio
 async def test_change_renewal_settings_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6725,25 +6009,6 @@ def test_change_offer(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_change_offer_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.change_offer), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.change_offer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ChangeOfferRequest()
 
 
 def test_change_offer_non_empty_request_with_auto_populated_field():
@@ -6810,8 +6075,9 @@ def test_change_offer_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.change_offer(request)
@@ -6822,27 +6088,6 @@ def test_change_offer_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_change_offer_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.change_offer), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.change_offer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ChangeOfferRequest()
-
-
-@pytest.mark.asyncio
 async def test_change_offer_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6850,7 +6095,7 @@ async def test_change_offer_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6865,26 +6110,28 @@ async def test_change_offer_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.change_offer
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.change_offer(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.change_offer(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6892,7 +6139,7 @@ async def test_change_offer_async(
     transport: str = "grpc_asyncio", request_type=service.ChangeOfferRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6955,7 +6202,7 @@ def test_change_offer_field_headers():
 @pytest.mark.asyncio
 async def test_change_offer_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7017,27 +6264,6 @@ def test_start_paid_service(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_start_paid_service_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.start_paid_service), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.start_paid_service()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.StartPaidServiceRequest()
 
 
 def test_start_paid_service_non_empty_request_with_auto_populated_field():
@@ -7104,8 +6330,9 @@ def test_start_paid_service_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.start_paid_service(request)
@@ -7116,29 +6343,6 @@ def test_start_paid_service_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_start_paid_service_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.start_paid_service), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.start_paid_service()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.StartPaidServiceRequest()
-
-
-@pytest.mark.asyncio
 async def test_start_paid_service_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7146,7 +6350,7 @@ async def test_start_paid_service_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7161,26 +6365,28 @@ async def test_start_paid_service_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.start_paid_service
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.start_paid_service(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.start_paid_service(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7188,7 +6394,7 @@ async def test_start_paid_service_async(
     transport: str = "grpc_asyncio", request_type=service.StartPaidServiceRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7255,7 +6461,7 @@ def test_start_paid_service_field_headers():
 @pytest.mark.asyncio
 async def test_start_paid_service_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7319,27 +6525,6 @@ def test_suspend_entitlement(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_suspend_entitlement_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.suspend_entitlement), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.suspend_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.SuspendEntitlementRequest()
 
 
 def test_suspend_entitlement_non_empty_request_with_auto_populated_field():
@@ -7406,8 +6591,9 @@ def test_suspend_entitlement_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.suspend_entitlement(request)
@@ -7418,29 +6604,6 @@ def test_suspend_entitlement_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_suspend_entitlement_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.suspend_entitlement), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.suspend_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.SuspendEntitlementRequest()
-
-
-@pytest.mark.asyncio
 async def test_suspend_entitlement_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7448,7 +6611,7 @@ async def test_suspend_entitlement_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7463,26 +6626,28 @@ async def test_suspend_entitlement_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.suspend_entitlement
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.suspend_entitlement(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.suspend_entitlement(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7490,7 +6655,7 @@ async def test_suspend_entitlement_async(
     transport: str = "grpc_asyncio", request_type=service.SuspendEntitlementRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7557,7 +6722,7 @@ def test_suspend_entitlement_field_headers():
 @pytest.mark.asyncio
 async def test_suspend_entitlement_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7621,27 +6786,6 @@ def test_cancel_entitlement(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_cancel_entitlement_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.cancel_entitlement), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.cancel_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CancelEntitlementRequest()
 
 
 def test_cancel_entitlement_non_empty_request_with_auto_populated_field():
@@ -7708,8 +6852,9 @@ def test_cancel_entitlement_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.cancel_entitlement(request)
@@ -7720,29 +6865,6 @@ def test_cancel_entitlement_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_cancel_entitlement_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.cancel_entitlement), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.cancel_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CancelEntitlementRequest()
-
-
-@pytest.mark.asyncio
 async def test_cancel_entitlement_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7750,7 +6872,7 @@ async def test_cancel_entitlement_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7765,26 +6887,28 @@ async def test_cancel_entitlement_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.cancel_entitlement
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.cancel_entitlement(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.cancel_entitlement(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7792,7 +6916,7 @@ async def test_cancel_entitlement_async(
     transport: str = "grpc_asyncio", request_type=service.CancelEntitlementRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7859,7 +6983,7 @@ def test_cancel_entitlement_field_headers():
 @pytest.mark.asyncio
 async def test_cancel_entitlement_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7923,27 +7047,6 @@ def test_activate_entitlement(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_activate_entitlement_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.activate_entitlement), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.activate_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ActivateEntitlementRequest()
 
 
 def test_activate_entitlement_non_empty_request_with_auto_populated_field():
@@ -8010,8 +7113,9 @@ def test_activate_entitlement_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.activate_entitlement(request)
@@ -8022,29 +7126,6 @@ def test_activate_entitlement_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_activate_entitlement_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.activate_entitlement), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.activate_entitlement()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ActivateEntitlementRequest()
-
-
-@pytest.mark.asyncio
 async def test_activate_entitlement_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8052,7 +7133,7 @@ async def test_activate_entitlement_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8067,26 +7148,28 @@ async def test_activate_entitlement_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.activate_entitlement
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.activate_entitlement(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.activate_entitlement(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8094,7 +7177,7 @@ async def test_activate_entitlement_async(
     transport: str = "grpc_asyncio", request_type=service.ActivateEntitlementRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8161,7 +7244,7 @@ def test_activate_entitlement_field_headers():
 @pytest.mark.asyncio
 async def test_activate_entitlement_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8225,27 +7308,6 @@ def test_transfer_entitlements(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_transfer_entitlements_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.transfer_entitlements), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.transfer_entitlements()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.TransferEntitlementsRequest()
 
 
 def test_transfer_entitlements_non_empty_request_with_auto_populated_field():
@@ -8315,8 +7377,9 @@ def test_transfer_entitlements_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.transfer_entitlements(request)
@@ -8327,29 +7390,6 @@ def test_transfer_entitlements_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_transfer_entitlements_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.transfer_entitlements), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.transfer_entitlements()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.TransferEntitlementsRequest()
-
-
-@pytest.mark.asyncio
 async def test_transfer_entitlements_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8357,7 +7397,7 @@ async def test_transfer_entitlements_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8372,26 +7412,28 @@ async def test_transfer_entitlements_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.transfer_entitlements
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.transfer_entitlements(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.transfer_entitlements(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8399,7 +7441,7 @@ async def test_transfer_entitlements_async(
     transport: str = "grpc_asyncio", request_type=service.TransferEntitlementsRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8466,7 +7508,7 @@ def test_transfer_entitlements_field_headers():
 @pytest.mark.asyncio
 async def test_transfer_entitlements_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8530,27 +7572,6 @@ def test_transfer_entitlements_to_google(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_transfer_entitlements_to_google_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.transfer_entitlements_to_google), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.transfer_entitlements_to_google()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.TransferEntitlementsToGoogleRequest()
 
 
 def test_transfer_entitlements_to_google_non_empty_request_with_auto_populated_field():
@@ -8618,8 +7639,9 @@ def test_transfer_entitlements_to_google_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.transfer_entitlements_to_google(request)
@@ -8630,29 +7652,6 @@ def test_transfer_entitlements_to_google_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_transfer_entitlements_to_google_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.transfer_entitlements_to_google), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.transfer_entitlements_to_google()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.TransferEntitlementsToGoogleRequest()
-
-
-@pytest.mark.asyncio
 async def test_transfer_entitlements_to_google_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8660,7 +7659,7 @@ async def test_transfer_entitlements_to_google_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8675,26 +7674,28 @@ async def test_transfer_entitlements_to_google_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.transfer_entitlements_to_google
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.transfer_entitlements_to_google(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.transfer_entitlements_to_google(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8703,7 +7704,7 @@ async def test_transfer_entitlements_to_google_async(
     request_type=service.TransferEntitlementsToGoogleRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8770,7 +7771,7 @@ def test_transfer_entitlements_to_google_field_headers():
 @pytest.mark.asyncio
 async def test_transfer_entitlements_to_google_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8837,27 +7838,6 @@ def test_list_channel_partner_links(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListChannelPartnerLinksPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_channel_partner_links_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_channel_partner_links), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_channel_partner_links()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListChannelPartnerLinksRequest()
 
 
 def test_list_channel_partner_links_non_empty_request_with_auto_populated_field():
@@ -8933,31 +7913,6 @@ def test_list_channel_partner_links_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_channel_partner_links_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_channel_partner_links), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListChannelPartnerLinksResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_channel_partner_links()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListChannelPartnerLinksRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_channel_partner_links_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8965,7 +7920,7 @@ async def test_list_channel_partner_links_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8980,22 +7935,23 @@ async def test_list_channel_partner_links_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_channel_partner_links
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_channel_partner_links(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_channel_partner_links(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9003,7 +7959,7 @@ async def test_list_channel_partner_links_async(
     transport: str = "grpc_asyncio", request_type=service.ListChannelPartnerLinksRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9073,7 +8029,7 @@ def test_list_channel_partner_links_field_headers():
 @pytest.mark.asyncio
 async def test_list_channel_partner_links_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9210,7 +8166,7 @@ def test_list_channel_partner_links_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_channel_partner_links_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9264,7 +8220,7 @@ async def test_list_channel_partner_links_async_pager():
 @pytest.mark.asyncio
 async def test_list_channel_partner_links_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9358,27 +8314,6 @@ def test_get_channel_partner_link(request_type, transport: str = "grpc"):
     assert response.public_id == "public_id_value"
 
 
-def test_get_channel_partner_link_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_channel_partner_link), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_channel_partner_link()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetChannelPartnerLinkRequest()
-
-
 def test_get_channel_partner_link_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -9450,35 +8385,6 @@ def test_get_channel_partner_link_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_channel_partner_link_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_channel_partner_link), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            channel_partner_links.ChannelPartnerLink(
-                name="name_value",
-                reseller_cloud_identity_id="reseller_cloud_identity_id_value",
-                link_state=channel_partner_links.ChannelPartnerLinkState.INVITED,
-                invite_link_uri="invite_link_uri_value",
-                public_id="public_id_value",
-            )
-        )
-        response = await client.get_channel_partner_link()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetChannelPartnerLinkRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_channel_partner_link_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -9486,7 +8392,7 @@ async def test_get_channel_partner_link_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -9501,22 +8407,23 @@ async def test_get_channel_partner_link_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_channel_partner_link
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_channel_partner_link(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_channel_partner_link(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9524,7 +8431,7 @@ async def test_get_channel_partner_link_async(
     transport: str = "grpc_asyncio", request_type=service.GetChannelPartnerLinkRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9602,7 +8509,7 @@ def test_get_channel_partner_link_field_headers():
 @pytest.mark.asyncio
 async def test_get_channel_partner_link_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9679,27 +8586,6 @@ def test_create_channel_partner_link(request_type, transport: str = "grpc"):
     assert response.public_id == "public_id_value"
 
 
-def test_create_channel_partner_link_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_channel_partner_link), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_channel_partner_link()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateChannelPartnerLinkRequest()
-
-
 def test_create_channel_partner_link_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -9771,35 +8657,6 @@ def test_create_channel_partner_link_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_channel_partner_link_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_channel_partner_link), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            channel_partner_links.ChannelPartnerLink(
-                name="name_value",
-                reseller_cloud_identity_id="reseller_cloud_identity_id_value",
-                link_state=channel_partner_links.ChannelPartnerLinkState.INVITED,
-                invite_link_uri="invite_link_uri_value",
-                public_id="public_id_value",
-            )
-        )
-        response = await client.create_channel_partner_link()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateChannelPartnerLinkRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_channel_partner_link_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -9807,7 +8664,7 @@ async def test_create_channel_partner_link_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -9822,22 +8679,23 @@ async def test_create_channel_partner_link_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_channel_partner_link
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_channel_partner_link(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_channel_partner_link(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9846,7 +8704,7 @@ async def test_create_channel_partner_link_async(
     request_type=service.CreateChannelPartnerLinkRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9924,7 +8782,7 @@ def test_create_channel_partner_link_field_headers():
 @pytest.mark.asyncio
 async def test_create_channel_partner_link_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -10001,27 +8859,6 @@ def test_update_channel_partner_link(request_type, transport: str = "grpc"):
     assert response.public_id == "public_id_value"
 
 
-def test_update_channel_partner_link_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_channel_partner_link), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_channel_partner_link()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UpdateChannelPartnerLinkRequest()
-
-
 def test_update_channel_partner_link_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -10093,35 +8930,6 @@ def test_update_channel_partner_link_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_channel_partner_link_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_channel_partner_link), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            channel_partner_links.ChannelPartnerLink(
-                name="name_value",
-                reseller_cloud_identity_id="reseller_cloud_identity_id_value",
-                link_state=channel_partner_links.ChannelPartnerLinkState.INVITED,
-                invite_link_uri="invite_link_uri_value",
-                public_id="public_id_value",
-            )
-        )
-        response = await client.update_channel_partner_link()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UpdateChannelPartnerLinkRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_channel_partner_link_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -10129,7 +8937,7 @@ async def test_update_channel_partner_link_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -10144,22 +8952,23 @@ async def test_update_channel_partner_link_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_channel_partner_link
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_channel_partner_link(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_channel_partner_link(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -10168,7 +8977,7 @@ async def test_update_channel_partner_link_async(
     request_type=service.UpdateChannelPartnerLinkRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -10246,7 +9055,7 @@ def test_update_channel_partner_link_field_headers():
 @pytest.mark.asyncio
 async def test_update_channel_partner_link_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -10313,27 +9122,6 @@ def test_get_customer_repricing_config(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, repricing.CustomerRepricingConfig)
     assert response.name == "name_value"
-
-
-def test_get_customer_repricing_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_customer_repricing_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_customer_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetCustomerRepricingConfigRequest()
 
 
 def test_get_customer_repricing_config_non_empty_request_with_auto_populated_field():
@@ -10407,31 +9195,6 @@ def test_get_customer_repricing_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_customer_repricing_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_customer_repricing_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            repricing.CustomerRepricingConfig(
-                name="name_value",
-            )
-        )
-        response = await client.get_customer_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetCustomerRepricingConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_customer_repricing_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -10439,7 +9202,7 @@ async def test_get_customer_repricing_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -10454,22 +9217,23 @@ async def test_get_customer_repricing_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_customer_repricing_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_customer_repricing_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_customer_repricing_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -10478,7 +9242,7 @@ async def test_get_customer_repricing_config_async(
     request_type=service.GetCustomerRepricingConfigRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -10548,7 +9312,7 @@ def test_get_customer_repricing_config_field_headers():
 @pytest.mark.asyncio
 async def test_get_customer_repricing_config_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -10622,7 +9386,7 @@ def test_get_customer_repricing_config_flattened_error():
 @pytest.mark.asyncio
 async def test_get_customer_repricing_config_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10653,7 +9417,7 @@ async def test_get_customer_repricing_config_flattened_async():
 @pytest.mark.asyncio
 async def test_get_customer_repricing_config_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -10701,27 +9465,6 @@ def test_list_customer_repricing_configs(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListCustomerRepricingConfigsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_customer_repricing_configs_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_customer_repricing_configs), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_customer_repricing_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListCustomerRepricingConfigsRequest()
 
 
 def test_list_customer_repricing_configs_non_empty_request_with_auto_populated_field():
@@ -10799,31 +9542,6 @@ def test_list_customer_repricing_configs_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_customer_repricing_configs_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_customer_repricing_configs), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListCustomerRepricingConfigsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_customer_repricing_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListCustomerRepricingConfigsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_customer_repricing_configs_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -10831,7 +9549,7 @@ async def test_list_customer_repricing_configs_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -10846,22 +9564,23 @@ async def test_list_customer_repricing_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_customer_repricing_configs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_customer_repricing_configs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_customer_repricing_configs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -10870,7 +9589,7 @@ async def test_list_customer_repricing_configs_async(
     request_type=service.ListCustomerRepricingConfigsRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -10940,7 +9659,7 @@ def test_list_customer_repricing_configs_field_headers():
 @pytest.mark.asyncio
 async def test_list_customer_repricing_configs_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11014,7 +9733,7 @@ def test_list_customer_repricing_configs_flattened_error():
 @pytest.mark.asyncio
 async def test_list_customer_repricing_configs_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -11045,7 +9764,7 @@ async def test_list_customer_repricing_configs_flattened_async():
 @pytest.mark.asyncio
 async def test_list_customer_repricing_configs_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -11161,7 +9880,7 @@ def test_list_customer_repricing_configs_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_customer_repricing_configs_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -11213,7 +9932,7 @@ async def test_list_customer_repricing_configs_async_pager():
 @pytest.mark.asyncio
 async def test_list_customer_repricing_configs_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -11299,27 +10018,6 @@ def test_create_customer_repricing_config(request_type, transport: str = "grpc")
     assert response.name == "name_value"
 
 
-def test_create_customer_repricing_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_customer_repricing_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_customer_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateCustomerRepricingConfigRequest()
-
-
 def test_create_customer_repricing_config_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -11391,31 +10089,6 @@ def test_create_customer_repricing_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_customer_repricing_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_customer_repricing_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            repricing.CustomerRepricingConfig(
-                name="name_value",
-            )
-        )
-        response = await client.create_customer_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateCustomerRepricingConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_customer_repricing_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -11423,7 +10096,7 @@ async def test_create_customer_repricing_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -11438,22 +10111,23 @@ async def test_create_customer_repricing_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_customer_repricing_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_customer_repricing_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_customer_repricing_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -11462,7 +10136,7 @@ async def test_create_customer_repricing_config_async(
     request_type=service.CreateCustomerRepricingConfigRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11532,7 +10206,7 @@ def test_create_customer_repricing_config_field_headers():
 @pytest.mark.asyncio
 async def test_create_customer_repricing_config_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11615,7 +10289,7 @@ def test_create_customer_repricing_config_flattened_error():
 @pytest.mark.asyncio
 async def test_create_customer_repricing_config_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -11652,7 +10326,7 @@ async def test_create_customer_repricing_config_flattened_async():
 @pytest.mark.asyncio
 async def test_create_customer_repricing_config_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -11703,27 +10377,6 @@ def test_update_customer_repricing_config(request_type, transport: str = "grpc")
     # Establish that the response is the type that we expect.
     assert isinstance(response, repricing.CustomerRepricingConfig)
     assert response.name == "name_value"
-
-
-def test_update_customer_repricing_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_customer_repricing_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_customer_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UpdateCustomerRepricingConfigRequest()
 
 
 def test_update_customer_repricing_config_non_empty_request_with_auto_populated_field():
@@ -11793,31 +10446,6 @@ def test_update_customer_repricing_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_customer_repricing_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_customer_repricing_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            repricing.CustomerRepricingConfig(
-                name="name_value",
-            )
-        )
-        response = await client.update_customer_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UpdateCustomerRepricingConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_customer_repricing_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -11825,7 +10453,7 @@ async def test_update_customer_repricing_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -11840,22 +10468,23 @@ async def test_update_customer_repricing_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_customer_repricing_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_customer_repricing_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_customer_repricing_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -11864,7 +10493,7 @@ async def test_update_customer_repricing_config_async(
     request_type=service.UpdateCustomerRepricingConfigRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11934,7 +10563,7 @@ def test_update_customer_repricing_config_field_headers():
 @pytest.mark.asyncio
 async def test_update_customer_repricing_config_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -12012,7 +10641,7 @@ def test_update_customer_repricing_config_flattened_error():
 @pytest.mark.asyncio
 async def test_update_customer_repricing_config_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -12045,7 +10674,7 @@ async def test_update_customer_repricing_config_flattened_async():
 @pytest.mark.asyncio
 async def test_update_customer_repricing_config_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -12092,27 +10721,6 @@ def test_delete_customer_repricing_config(request_type, transport: str = "grpc")
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_customer_repricing_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_customer_repricing_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_customer_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.DeleteCustomerRepricingConfigRequest()
 
 
 def test_delete_customer_repricing_config_non_empty_request_with_auto_populated_field():
@@ -12186,27 +10794,6 @@ def test_delete_customer_repricing_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_customer_repricing_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_customer_repricing_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_customer_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.DeleteCustomerRepricingConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_customer_repricing_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -12214,7 +10801,7 @@ async def test_delete_customer_repricing_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -12229,22 +10816,23 @@ async def test_delete_customer_repricing_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_customer_repricing_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_customer_repricing_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_customer_repricing_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -12253,7 +10841,7 @@ async def test_delete_customer_repricing_config_async(
     request_type=service.DeleteCustomerRepricingConfigRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -12318,7 +10906,7 @@ def test_delete_customer_repricing_config_field_headers():
 @pytest.mark.asyncio
 async def test_delete_customer_repricing_config_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -12390,7 +10978,7 @@ def test_delete_customer_repricing_config_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_customer_repricing_config_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -12419,7 +11007,7 @@ async def test_delete_customer_repricing_config_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_customer_repricing_config_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -12467,27 +11055,6 @@ def test_get_channel_partner_repricing_config(request_type, transport: str = "gr
     # Establish that the response is the type that we expect.
     assert isinstance(response, repricing.ChannelPartnerRepricingConfig)
     assert response.name == "name_value"
-
-
-def test_get_channel_partner_repricing_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_channel_partner_repricing_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_channel_partner_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetChannelPartnerRepricingConfigRequest()
 
 
 def test_get_channel_partner_repricing_config_non_empty_request_with_auto_populated_field():
@@ -12561,31 +11128,6 @@ def test_get_channel_partner_repricing_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_channel_partner_repricing_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_channel_partner_repricing_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            repricing.ChannelPartnerRepricingConfig(
-                name="name_value",
-            )
-        )
-        response = await client.get_channel_partner_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetChannelPartnerRepricingConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_channel_partner_repricing_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -12593,7 +11135,7 @@ async def test_get_channel_partner_repricing_config_async_use_cached_wrapped_rpc
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -12608,22 +11150,23 @@ async def test_get_channel_partner_repricing_config_async_use_cached_wrapped_rpc
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_channel_partner_repricing_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_channel_partner_repricing_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_channel_partner_repricing_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -12632,7 +11175,7 @@ async def test_get_channel_partner_repricing_config_async(
     request_type=service.GetChannelPartnerRepricingConfigRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -12702,7 +11245,7 @@ def test_get_channel_partner_repricing_config_field_headers():
 @pytest.mark.asyncio
 async def test_get_channel_partner_repricing_config_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -12776,7 +11319,7 @@ def test_get_channel_partner_repricing_config_flattened_error():
 @pytest.mark.asyncio
 async def test_get_channel_partner_repricing_config_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -12807,7 +11350,7 @@ async def test_get_channel_partner_repricing_config_flattened_async():
 @pytest.mark.asyncio
 async def test_get_channel_partner_repricing_config_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -12855,27 +11398,6 @@ def test_list_channel_partner_repricing_configs(request_type, transport: str = "
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListChannelPartnerRepricingConfigsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_channel_partner_repricing_configs_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_channel_partner_repricing_configs), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_channel_partner_repricing_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListChannelPartnerRepricingConfigsRequest()
 
 
 def test_list_channel_partner_repricing_configs_non_empty_request_with_auto_populated_field():
@@ -12953,31 +11475,6 @@ def test_list_channel_partner_repricing_configs_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_channel_partner_repricing_configs_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_channel_partner_repricing_configs), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListChannelPartnerRepricingConfigsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_channel_partner_repricing_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListChannelPartnerRepricingConfigsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_channel_partner_repricing_configs_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -12985,7 +11482,7 @@ async def test_list_channel_partner_repricing_configs_async_use_cached_wrapped_r
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -13000,22 +11497,23 @@ async def test_list_channel_partner_repricing_configs_async_use_cached_wrapped_r
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_channel_partner_repricing_configs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_channel_partner_repricing_configs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_channel_partner_repricing_configs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -13024,7 +11522,7 @@ async def test_list_channel_partner_repricing_configs_async(
     request_type=service.ListChannelPartnerRepricingConfigsRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -13094,7 +11592,7 @@ def test_list_channel_partner_repricing_configs_field_headers():
 @pytest.mark.asyncio
 async def test_list_channel_partner_repricing_configs_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -13168,7 +11666,7 @@ def test_list_channel_partner_repricing_configs_flattened_error():
 @pytest.mark.asyncio
 async def test_list_channel_partner_repricing_configs_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -13199,7 +11697,7 @@ async def test_list_channel_partner_repricing_configs_flattened_async():
 @pytest.mark.asyncio
 async def test_list_channel_partner_repricing_configs_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -13317,7 +11815,7 @@ def test_list_channel_partner_repricing_configs_pages(transport_name: str = "grp
 @pytest.mark.asyncio
 async def test_list_channel_partner_repricing_configs_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -13371,7 +11869,7 @@ async def test_list_channel_partner_repricing_configs_async_pager():
 @pytest.mark.asyncio
 async def test_list_channel_partner_repricing_configs_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -13457,27 +11955,6 @@ def test_create_channel_partner_repricing_config(request_type, transport: str = 
     assert response.name == "name_value"
 
 
-def test_create_channel_partner_repricing_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_channel_partner_repricing_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_channel_partner_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateChannelPartnerRepricingConfigRequest()
-
-
 def test_create_channel_partner_repricing_config_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -13549,31 +12026,6 @@ def test_create_channel_partner_repricing_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_channel_partner_repricing_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_channel_partner_repricing_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            repricing.ChannelPartnerRepricingConfig(
-                name="name_value",
-            )
-        )
-        response = await client.create_channel_partner_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateChannelPartnerRepricingConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_channel_partner_repricing_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -13581,7 +12033,7 @@ async def test_create_channel_partner_repricing_config_async_use_cached_wrapped_
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -13596,22 +12048,23 @@ async def test_create_channel_partner_repricing_config_async_use_cached_wrapped_
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_channel_partner_repricing_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_channel_partner_repricing_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_channel_partner_repricing_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -13620,7 +12073,7 @@ async def test_create_channel_partner_repricing_config_async(
     request_type=service.CreateChannelPartnerRepricingConfigRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -13690,7 +12143,7 @@ def test_create_channel_partner_repricing_config_field_headers():
 @pytest.mark.asyncio
 async def test_create_channel_partner_repricing_config_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -13773,7 +12226,7 @@ def test_create_channel_partner_repricing_config_flattened_error():
 @pytest.mark.asyncio
 async def test_create_channel_partner_repricing_config_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -13810,7 +12263,7 @@ async def test_create_channel_partner_repricing_config_flattened_async():
 @pytest.mark.asyncio
 async def test_create_channel_partner_repricing_config_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -13861,27 +12314,6 @@ def test_update_channel_partner_repricing_config(request_type, transport: str = 
     # Establish that the response is the type that we expect.
     assert isinstance(response, repricing.ChannelPartnerRepricingConfig)
     assert response.name == "name_value"
-
-
-def test_update_channel_partner_repricing_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_channel_partner_repricing_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_channel_partner_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UpdateChannelPartnerRepricingConfigRequest()
 
 
 def test_update_channel_partner_repricing_config_non_empty_request_with_auto_populated_field():
@@ -13951,31 +12383,6 @@ def test_update_channel_partner_repricing_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_channel_partner_repricing_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_channel_partner_repricing_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            repricing.ChannelPartnerRepricingConfig(
-                name="name_value",
-            )
-        )
-        response = await client.update_channel_partner_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UpdateChannelPartnerRepricingConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_channel_partner_repricing_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -13983,7 +12390,7 @@ async def test_update_channel_partner_repricing_config_async_use_cached_wrapped_
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -13998,22 +12405,23 @@ async def test_update_channel_partner_repricing_config_async_use_cached_wrapped_
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_channel_partner_repricing_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_channel_partner_repricing_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_channel_partner_repricing_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -14022,7 +12430,7 @@ async def test_update_channel_partner_repricing_config_async(
     request_type=service.UpdateChannelPartnerRepricingConfigRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -14092,7 +12500,7 @@ def test_update_channel_partner_repricing_config_field_headers():
 @pytest.mark.asyncio
 async def test_update_channel_partner_repricing_config_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -14170,7 +12578,7 @@ def test_update_channel_partner_repricing_config_flattened_error():
 @pytest.mark.asyncio
 async def test_update_channel_partner_repricing_config_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -14203,7 +12611,7 @@ async def test_update_channel_partner_repricing_config_flattened_async():
 @pytest.mark.asyncio
 async def test_update_channel_partner_repricing_config_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -14250,27 +12658,6 @@ def test_delete_channel_partner_repricing_config(request_type, transport: str = 
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_channel_partner_repricing_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_channel_partner_repricing_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_channel_partner_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.DeleteChannelPartnerRepricingConfigRequest()
 
 
 def test_delete_channel_partner_repricing_config_non_empty_request_with_auto_populated_field():
@@ -14344,27 +12731,6 @@ def test_delete_channel_partner_repricing_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_channel_partner_repricing_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_channel_partner_repricing_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_channel_partner_repricing_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.DeleteChannelPartnerRepricingConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_channel_partner_repricing_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -14372,7 +12738,7 @@ async def test_delete_channel_partner_repricing_config_async_use_cached_wrapped_
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -14387,22 +12753,23 @@ async def test_delete_channel_partner_repricing_config_async_use_cached_wrapped_
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_channel_partner_repricing_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_channel_partner_repricing_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_channel_partner_repricing_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -14411,7 +12778,7 @@ async def test_delete_channel_partner_repricing_config_async(
     request_type=service.DeleteChannelPartnerRepricingConfigRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -14476,7 +12843,7 @@ def test_delete_channel_partner_repricing_config_field_headers():
 @pytest.mark.asyncio
 async def test_delete_channel_partner_repricing_config_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -14548,7 +12915,7 @@ def test_delete_channel_partner_repricing_config_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_channel_partner_repricing_config_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -14577,7 +12944,7 @@ async def test_delete_channel_partner_repricing_config_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_channel_partner_repricing_config_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -14623,25 +12990,6 @@ def test_list_sku_groups(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListSkuGroupsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_sku_groups_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_sku_groups), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_sku_groups()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListSkuGroupsRequest()
 
 
 def test_list_sku_groups_non_empty_request_with_auto_populated_field():
@@ -14710,29 +13058,6 @@ def test_list_sku_groups_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_sku_groups_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_sku_groups), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListSkuGroupsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_sku_groups()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListSkuGroupsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_sku_groups_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -14740,7 +13065,7 @@ async def test_list_sku_groups_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -14755,22 +13080,23 @@ async def test_list_sku_groups_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_sku_groups
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_sku_groups(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_sku_groups(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -14778,7 +13104,7 @@ async def test_list_sku_groups_async(
     transport: str = "grpc_asyncio", request_type=service.ListSkuGroupsRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -14844,7 +13170,7 @@ def test_list_sku_groups_field_headers():
 @pytest.mark.asyncio
 async def test_list_sku_groups_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -14914,7 +13240,7 @@ def test_list_sku_groups_flattened_error():
 @pytest.mark.asyncio
 async def test_list_sku_groups_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -14943,7 +13269,7 @@ async def test_list_sku_groups_flattened_async():
 @pytest.mark.asyncio
 async def test_list_sku_groups_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -15053,7 +13379,7 @@ def test_list_sku_groups_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_sku_groups_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -15103,7 +13429,7 @@ async def test_list_sku_groups_async_pager():
 @pytest.mark.asyncio
 async def test_list_sku_groups_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -15187,27 +13513,6 @@ def test_list_sku_group_billable_skus(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_sku_group_billable_skus_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_sku_group_billable_skus), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_sku_group_billable_skus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListSkuGroupBillableSkusRequest()
-
-
 def test_list_sku_group_billable_skus_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -15281,31 +13586,6 @@ def test_list_sku_group_billable_skus_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_sku_group_billable_skus_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_sku_group_billable_skus), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListSkuGroupBillableSkusResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_sku_group_billable_skus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListSkuGroupBillableSkusRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_sku_group_billable_skus_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -15313,7 +13593,7 @@ async def test_list_sku_group_billable_skus_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -15328,22 +13608,23 @@ async def test_list_sku_group_billable_skus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_sku_group_billable_skus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_sku_group_billable_skus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_sku_group_billable_skus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -15352,7 +13633,7 @@ async def test_list_sku_group_billable_skus_async(
     request_type=service.ListSkuGroupBillableSkusRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -15422,7 +13703,7 @@ def test_list_sku_group_billable_skus_field_headers():
 @pytest.mark.asyncio
 async def test_list_sku_group_billable_skus_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -15496,7 +13777,7 @@ def test_list_sku_group_billable_skus_flattened_error():
 @pytest.mark.asyncio
 async def test_list_sku_group_billable_skus_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -15527,7 +13808,7 @@ async def test_list_sku_group_billable_skus_flattened_async():
 @pytest.mark.asyncio
 async def test_list_sku_group_billable_skus_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -15643,7 +13924,7 @@ def test_list_sku_group_billable_skus_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_sku_group_billable_skus_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -15695,7 +13976,7 @@ async def test_list_sku_group_billable_skus_async_pager():
 @pytest.mark.asyncio
 async def test_list_sku_group_billable_skus_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -15781,25 +14062,6 @@ def test_lookup_offer(request_type, transport: str = "grpc"):
     assert response.deal_code == "deal_code_value"
 
 
-def test_lookup_offer_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.lookup_offer), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.lookup_offer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.LookupOfferRequest()
-
-
 def test_lookup_offer_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -15864,30 +14126,6 @@ def test_lookup_offer_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_lookup_offer_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.lookup_offer), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            offers.Offer(
-                name="name_value",
-                deal_code="deal_code_value",
-            )
-        )
-        response = await client.lookup_offer()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.LookupOfferRequest()
-
-
-@pytest.mark.asyncio
 async def test_lookup_offer_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -15895,7 +14133,7 @@ async def test_lookup_offer_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -15910,22 +14148,23 @@ async def test_lookup_offer_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.lookup_offer
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.lookup_offer(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.lookup_offer(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -15933,7 +14172,7 @@ async def test_lookup_offer_async(
     transport: str = "grpc_asyncio", request_type=service.LookupOfferRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -16001,7 +14240,7 @@ def test_lookup_offer_field_headers():
 @pytest.mark.asyncio
 async def test_lookup_offer_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -16062,25 +14301,6 @@ def test_list_products(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListProductsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_products_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_products), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_products()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListProductsRequest()
 
 
 def test_list_products_non_empty_request_with_auto_populated_field():
@@ -16151,29 +14371,6 @@ def test_list_products_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_products_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_products), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListProductsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_products()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListProductsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_products_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -16181,7 +14378,7 @@ async def test_list_products_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -16196,22 +14393,23 @@ async def test_list_products_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_products
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_products(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_products(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -16219,7 +14417,7 @@ async def test_list_products_async(
     transport: str = "grpc_asyncio", request_type=service.ListProductsRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -16348,7 +14546,7 @@ def test_list_products_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_products_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -16398,7 +14596,7 @@ async def test_list_products_async_pager():
 @pytest.mark.asyncio
 async def test_list_products_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -16480,25 +14678,6 @@ def test_list_skus(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_skus_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_skus), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_skus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListSkusRequest()
-
-
 def test_list_skus_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -16569,35 +14748,12 @@ def test_list_skus_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_skus_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_skus), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListSkusResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_skus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListSkusRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_skus_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -16612,22 +14768,23 @@ async def test_list_skus_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_skus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_skus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_skus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -16635,7 +14792,7 @@ async def test_list_skus_async(
     transport: str = "grpc_asyncio", request_type=service.ListSkusRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -16701,7 +14858,7 @@ def test_list_skus_field_headers():
 @pytest.mark.asyncio
 async def test_list_skus_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -16828,7 +14985,7 @@ def test_list_skus_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_skus_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -16878,7 +15035,7 @@ async def test_list_skus_async_pager():
 @pytest.mark.asyncio
 async def test_list_skus_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -16960,25 +15117,6 @@ def test_list_offers(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_offers_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_offers), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_offers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListOffersRequest()
-
-
 def test_list_offers_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -17049,29 +15187,6 @@ def test_list_offers_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_offers_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_offers), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListOffersResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_offers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListOffersRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_offers_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -17079,7 +15194,7 @@ async def test_list_offers_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -17094,22 +15209,23 @@ async def test_list_offers_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_offers
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_offers(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_offers(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -17117,7 +15233,7 @@ async def test_list_offers_async(
     transport: str = "grpc_asyncio", request_type=service.ListOffersRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -17183,7 +15299,7 @@ def test_list_offers_field_headers():
 @pytest.mark.asyncio
 async def test_list_offers_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -17310,7 +15426,7 @@ def test_list_offers_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_offers_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -17360,7 +15476,7 @@ async def test_list_offers_async_pager():
 @pytest.mark.asyncio
 async def test_list_offers_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -17444,27 +15560,6 @@ def test_list_purchasable_skus(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_purchasable_skus_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_purchasable_skus), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_purchasable_skus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListPurchasableSkusRequest()
-
-
 def test_list_purchasable_skus_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -17540,31 +15635,6 @@ def test_list_purchasable_skus_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_purchasable_skus_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_purchasable_skus), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListPurchasableSkusResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_purchasable_skus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListPurchasableSkusRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_purchasable_skus_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -17572,7 +15642,7 @@ async def test_list_purchasable_skus_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -17587,22 +15657,23 @@ async def test_list_purchasable_skus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_purchasable_skus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_purchasable_skus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_purchasable_skus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -17610,7 +15681,7 @@ async def test_list_purchasable_skus_async(
     transport: str = "grpc_asyncio", request_type=service.ListPurchasableSkusRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -17680,7 +15751,7 @@ def test_list_purchasable_skus_field_headers():
 @pytest.mark.asyncio
 async def test_list_purchasable_skus_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -17813,7 +15884,7 @@ def test_list_purchasable_skus_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_purchasable_skus_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -17865,7 +15936,7 @@ async def test_list_purchasable_skus_async_pager():
 @pytest.mark.asyncio
 async def test_list_purchasable_skus_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -17951,27 +16022,6 @@ def test_list_purchasable_offers(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_purchasable_offers_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_purchasable_offers), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_purchasable_offers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListPurchasableOffersRequest()
-
-
 def test_list_purchasable_offers_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -18047,31 +16097,6 @@ def test_list_purchasable_offers_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_purchasable_offers_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_purchasable_offers), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListPurchasableOffersResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_purchasable_offers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListPurchasableOffersRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_purchasable_offers_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -18079,7 +16104,7 @@ async def test_list_purchasable_offers_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -18094,22 +16119,23 @@ async def test_list_purchasable_offers_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_purchasable_offers
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_purchasable_offers(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_purchasable_offers(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -18117,7 +16143,7 @@ async def test_list_purchasable_offers_async(
     transport: str = "grpc_asyncio", request_type=service.ListPurchasableOffersRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -18187,7 +16213,7 @@ def test_list_purchasable_offers_field_headers():
 @pytest.mark.asyncio
 async def test_list_purchasable_offers_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -18320,7 +16346,7 @@ def test_list_purchasable_offers_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_purchasable_offers_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -18372,7 +16398,7 @@ async def test_list_purchasable_offers_async_pager():
 @pytest.mark.asyncio
 async def test_list_purchasable_offers_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -18455,27 +16481,6 @@ def test_query_eligible_billing_accounts(request_type, transport: str = "grpc"):
     assert isinstance(response, service.QueryEligibleBillingAccountsResponse)
 
 
-def test_query_eligible_billing_accounts_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.query_eligible_billing_accounts), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.query_eligible_billing_accounts()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.QueryEligibleBillingAccountsRequest()
-
-
 def test_query_eligible_billing_accounts_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -18547,29 +16552,6 @@ def test_query_eligible_billing_accounts_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_query_eligible_billing_accounts_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.query_eligible_billing_accounts), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.QueryEligibleBillingAccountsResponse()
-        )
-        response = await client.query_eligible_billing_accounts()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.QueryEligibleBillingAccountsRequest()
-
-
-@pytest.mark.asyncio
 async def test_query_eligible_billing_accounts_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -18577,7 +16559,7 @@ async def test_query_eligible_billing_accounts_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -18592,22 +16574,23 @@ async def test_query_eligible_billing_accounts_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.query_eligible_billing_accounts
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.query_eligible_billing_accounts(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.query_eligible_billing_accounts(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -18616,7 +16599,7 @@ async def test_query_eligible_billing_accounts_async(
     request_type=service.QueryEligibleBillingAccountsRequest,
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -18683,7 +16666,7 @@ def test_query_eligible_billing_accounts_field_headers():
 @pytest.mark.asyncio
 async def test_query_eligible_billing_accounts_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -18750,27 +16733,6 @@ def test_register_subscriber(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, service.RegisterSubscriberResponse)
     assert response.topic == "topic_value"
-
-
-def test_register_subscriber_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.register_subscriber), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.register_subscriber()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.RegisterSubscriberRequest()
 
 
 def test_register_subscriber_non_empty_request_with_auto_populated_field():
@@ -18845,31 +16807,6 @@ def test_register_subscriber_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_register_subscriber_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.register_subscriber), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.RegisterSubscriberResponse(
-                topic="topic_value",
-            )
-        )
-        response = await client.register_subscriber()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.RegisterSubscriberRequest()
-
-
-@pytest.mark.asyncio
 async def test_register_subscriber_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -18877,7 +16814,7 @@ async def test_register_subscriber_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -18892,22 +16829,23 @@ async def test_register_subscriber_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.register_subscriber
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.register_subscriber(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.register_subscriber(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -18915,7 +16853,7 @@ async def test_register_subscriber_async(
     transport: str = "grpc_asyncio", request_type=service.RegisterSubscriberRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -18985,7 +16923,7 @@ def test_register_subscriber_field_headers():
 @pytest.mark.asyncio
 async def test_register_subscriber_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -19052,27 +16990,6 @@ def test_unregister_subscriber(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, service.UnregisterSubscriberResponse)
     assert response.topic == "topic_value"
-
-
-def test_unregister_subscriber_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.unregister_subscriber), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.unregister_subscriber()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UnregisterSubscriberRequest()
 
 
 def test_unregister_subscriber_non_empty_request_with_auto_populated_field():
@@ -19148,31 +17065,6 @@ def test_unregister_subscriber_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_unregister_subscriber_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.unregister_subscriber), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.UnregisterSubscriberResponse(
-                topic="topic_value",
-            )
-        )
-        response = await client.unregister_subscriber()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.UnregisterSubscriberRequest()
-
-
-@pytest.mark.asyncio
 async def test_unregister_subscriber_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -19180,7 +17072,7 @@ async def test_unregister_subscriber_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -19195,22 +17087,23 @@ async def test_unregister_subscriber_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.unregister_subscriber
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.unregister_subscriber(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.unregister_subscriber(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -19218,7 +17111,7 @@ async def test_unregister_subscriber_async(
     transport: str = "grpc_asyncio", request_type=service.UnregisterSubscriberRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -19288,7 +17181,7 @@ def test_unregister_subscriber_field_headers():
 @pytest.mark.asyncio
 async def test_unregister_subscriber_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -19359,25 +17252,6 @@ def test_list_subscribers(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_subscribers_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_subscribers), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_subscribers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListSubscribersRequest()
-
-
 def test_list_subscribers_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -19446,31 +17320,6 @@ def test_list_subscribers_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_subscribers_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_subscribers), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListSubscribersResponse(
-                topic="topic_value",
-                service_accounts=["service_accounts_value"],
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_subscribers()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListSubscribersRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_subscribers_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -19478,7 +17327,7 @@ async def test_list_subscribers_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -19493,22 +17342,23 @@ async def test_list_subscribers_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_subscribers
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_subscribers(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_subscribers(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -19516,7 +17366,7 @@ async def test_list_subscribers_async(
     transport: str = "grpc_asyncio", request_type=service.ListSubscribersRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -19586,7 +17436,7 @@ def test_list_subscribers_field_headers():
 @pytest.mark.asyncio
 async def test_list_subscribers_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -19713,7 +17563,7 @@ def test_list_subscribers_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_subscribers_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -19763,7 +17613,7 @@ async def test_list_subscribers_async_pager():
 @pytest.mark.asyncio
 async def test_list_subscribers_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -19847,27 +17697,6 @@ def test_list_entitlement_changes(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_entitlement_changes_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_entitlement_changes), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_entitlement_changes()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListEntitlementChangesRequest()
-
-
 def test_list_entitlement_changes_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -19943,31 +17772,6 @@ def test_list_entitlement_changes_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_entitlement_changes_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_entitlement_changes), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListEntitlementChangesResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_entitlement_changes()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListEntitlementChangesRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_entitlement_changes_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -19975,7 +17779,7 @@ async def test_list_entitlement_changes_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = CloudChannelServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -19990,22 +17794,23 @@ async def test_list_entitlement_changes_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_entitlement_changes
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_entitlement_changes(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_entitlement_changes(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -20013,7 +17818,7 @@ async def test_list_entitlement_changes_async(
     transport: str = "grpc_asyncio", request_type=service.ListEntitlementChangesRequest
 ):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -20083,7 +17888,7 @@ def test_list_entitlement_changes_field_headers():
 @pytest.mark.asyncio
 async def test_list_entitlement_changes_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -20157,7 +17962,7 @@ def test_list_entitlement_changes_flattened_error():
 @pytest.mark.asyncio
 async def test_list_entitlement_changes_flattened_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -20188,7 +17993,7 @@ async def test_list_entitlement_changes_flattened_async():
 @pytest.mark.asyncio
 async def test_list_entitlement_changes_flattened_error_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -20306,7 +18111,7 @@ def test_list_entitlement_changes_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_entitlement_changes_async_pager():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -20360,7 +18165,7 @@ async def test_list_entitlement_changes_async_pager():
 @pytest.mark.asyncio
 async def test_list_entitlement_changes_async_pages():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -20499,17 +18304,2536 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "transport_name",
-    [
-        "grpc",
-    ],
-)
-def test_transport_kind(transport_name):
-    transport = CloudChannelServiceClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_transport_kind_grpc():
+    transport = CloudChannelServiceClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
     )
-    assert transport.kind == transport_name
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_customers_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_customers), "__call__") as call:
+        call.return_value = service.ListCustomersResponse()
+        client.list_customers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListCustomersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_customer_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_customer), "__call__") as call:
+        call.return_value = customers.Customer()
+        client.get_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_check_cloud_identity_accounts_exist_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.check_cloud_identity_accounts_exist), "__call__"
+    ) as call:
+        call.return_value = service.CheckCloudIdentityAccountsExistResponse()
+        client.check_cloud_identity_accounts_exist(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CheckCloudIdentityAccountsExistRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_customer_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_customer), "__call__") as call:
+        call.return_value = customers.Customer()
+        client.create_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_customer_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_customer), "__call__") as call:
+        call.return_value = customers.Customer()
+        client.update_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UpdateCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_customer_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_customer), "__call__") as call:
+        call.return_value = None
+        client.delete_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.DeleteCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_import_customer_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.import_customer), "__call__") as call:
+        call.return_value = customers.Customer()
+        client.import_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ImportCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_provision_cloud_identity_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.provision_cloud_identity), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.provision_cloud_identity(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ProvisionCloudIdentityRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_entitlements_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_entitlements), "__call__"
+    ) as call:
+        call.return_value = service.ListEntitlementsResponse()
+        client.list_entitlements(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListEntitlementsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_transferable_skus_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transferable_skus), "__call__"
+    ) as call:
+        call.return_value = service.ListTransferableSkusResponse()
+        client.list_transferable_skus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTransferableSkusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_transferable_offers_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transferable_offers), "__call__"
+    ) as call:
+        call.return_value = service.ListTransferableOffersResponse()
+        client.list_transferable_offers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTransferableOffersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_entitlement_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_entitlement), "__call__") as call:
+        call.return_value = entitlements.Entitlement()
+        client.get_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_entitlement_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_entitlement), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_change_parameters_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.change_parameters), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.change_parameters(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ChangeParametersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_change_renewal_settings_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.change_renewal_settings), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.change_renewal_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ChangeRenewalSettingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_change_offer_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.change_offer), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.change_offer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ChangeOfferRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_start_paid_service_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.start_paid_service), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.start_paid_service(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.StartPaidServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_suspend_entitlement_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.suspend_entitlement), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.suspend_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.SuspendEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_cancel_entitlement_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.cancel_entitlement), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.cancel_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CancelEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_activate_entitlement_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.activate_entitlement), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.activate_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ActivateEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_transfer_entitlements_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.transfer_entitlements), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.transfer_entitlements(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.TransferEntitlementsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_transfer_entitlements_to_google_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.transfer_entitlements_to_google), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.transfer_entitlements_to_google(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.TransferEntitlementsToGoogleRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_channel_partner_links_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_channel_partner_links), "__call__"
+    ) as call:
+        call.return_value = service.ListChannelPartnerLinksResponse()
+        client.list_channel_partner_links(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListChannelPartnerLinksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_channel_partner_link_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_channel_partner_link), "__call__"
+    ) as call:
+        call.return_value = channel_partner_links.ChannelPartnerLink()
+        client.get_channel_partner_link(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetChannelPartnerLinkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_channel_partner_link_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_channel_partner_link), "__call__"
+    ) as call:
+        call.return_value = channel_partner_links.ChannelPartnerLink()
+        client.create_channel_partner_link(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateChannelPartnerLinkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_channel_partner_link_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_channel_partner_link), "__call__"
+    ) as call:
+        call.return_value = channel_partner_links.ChannelPartnerLink()
+        client.update_channel_partner_link(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UpdateChannelPartnerLinkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_customer_repricing_config_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_customer_repricing_config), "__call__"
+    ) as call:
+        call.return_value = repricing.CustomerRepricingConfig()
+        client.get_customer_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetCustomerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_customer_repricing_configs_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_customer_repricing_configs), "__call__"
+    ) as call:
+        call.return_value = service.ListCustomerRepricingConfigsResponse()
+        client.list_customer_repricing_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListCustomerRepricingConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_customer_repricing_config_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_customer_repricing_config), "__call__"
+    ) as call:
+        call.return_value = repricing.CustomerRepricingConfig()
+        client.create_customer_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateCustomerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_customer_repricing_config_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_customer_repricing_config), "__call__"
+    ) as call:
+        call.return_value = repricing.CustomerRepricingConfig()
+        client.update_customer_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UpdateCustomerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_customer_repricing_config_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_customer_repricing_config), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_customer_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.DeleteCustomerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_channel_partner_repricing_config_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_channel_partner_repricing_config), "__call__"
+    ) as call:
+        call.return_value = repricing.ChannelPartnerRepricingConfig()
+        client.get_channel_partner_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetChannelPartnerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_channel_partner_repricing_configs_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_channel_partner_repricing_configs), "__call__"
+    ) as call:
+        call.return_value = service.ListChannelPartnerRepricingConfigsResponse()
+        client.list_channel_partner_repricing_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListChannelPartnerRepricingConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_channel_partner_repricing_config_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_channel_partner_repricing_config), "__call__"
+    ) as call:
+        call.return_value = repricing.ChannelPartnerRepricingConfig()
+        client.create_channel_partner_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateChannelPartnerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_channel_partner_repricing_config_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_channel_partner_repricing_config), "__call__"
+    ) as call:
+        call.return_value = repricing.ChannelPartnerRepricingConfig()
+        client.update_channel_partner_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UpdateChannelPartnerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_channel_partner_repricing_config_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_channel_partner_repricing_config), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_channel_partner_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.DeleteChannelPartnerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_sku_groups_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_sku_groups), "__call__") as call:
+        call.return_value = service.ListSkuGroupsResponse()
+        client.list_sku_groups(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListSkuGroupsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_sku_group_billable_skus_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_sku_group_billable_skus), "__call__"
+    ) as call:
+        call.return_value = service.ListSkuGroupBillableSkusResponse()
+        client.list_sku_group_billable_skus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListSkuGroupBillableSkusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_lookup_offer_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.lookup_offer), "__call__") as call:
+        call.return_value = offers.Offer()
+        client.lookup_offer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.LookupOfferRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_products_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_products), "__call__") as call:
+        call.return_value = service.ListProductsResponse()
+        client.list_products(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListProductsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_skus_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_skus), "__call__") as call:
+        call.return_value = service.ListSkusResponse()
+        client.list_skus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListSkusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_offers_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_offers), "__call__") as call:
+        call.return_value = service.ListOffersResponse()
+        client.list_offers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListOffersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_purchasable_skus_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_purchasable_skus), "__call__"
+    ) as call:
+        call.return_value = service.ListPurchasableSkusResponse()
+        client.list_purchasable_skus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListPurchasableSkusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_purchasable_offers_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_purchasable_offers), "__call__"
+    ) as call:
+        call.return_value = service.ListPurchasableOffersResponse()
+        client.list_purchasable_offers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListPurchasableOffersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_query_eligible_billing_accounts_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.query_eligible_billing_accounts), "__call__"
+    ) as call:
+        call.return_value = service.QueryEligibleBillingAccountsResponse()
+        client.query_eligible_billing_accounts(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.QueryEligibleBillingAccountsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_register_subscriber_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.register_subscriber), "__call__"
+    ) as call:
+        call.return_value = service.RegisterSubscriberResponse()
+        client.register_subscriber(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.RegisterSubscriberRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_unregister_subscriber_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.unregister_subscriber), "__call__"
+    ) as call:
+        call.return_value = service.UnregisterSubscriberResponse()
+        client.unregister_subscriber(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UnregisterSubscriberRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_subscribers_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_subscribers), "__call__") as call:
+        call.return_value = service.ListSubscribersResponse()
+        client.list_subscribers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListSubscribersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_entitlement_changes_empty_call_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_entitlement_changes), "__call__"
+    ) as call:
+        call.return_value = service.ListEntitlementChangesResponse()
+        client.list_entitlement_changes(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListEntitlementChangesRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = CloudChannelServiceAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_customers_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_customers), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListCustomersResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_customers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListCustomersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_customer_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_customer), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            customers.Customer(
+                name="name_value",
+                org_display_name="org_display_name_value",
+                alternate_email="alternate_email_value",
+                domain="domain_value",
+                cloud_identity_id="cloud_identity_id_value",
+                language_code="language_code_value",
+                channel_partner_id="channel_partner_id_value",
+                correlation_id="correlation_id_value",
+            )
+        )
+        await client.get_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_check_cloud_identity_accounts_exist_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.check_cloud_identity_accounts_exist), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.CheckCloudIdentityAccountsExistResponse()
+        )
+        await client.check_cloud_identity_accounts_exist(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CheckCloudIdentityAccountsExistRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_customer_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_customer), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            customers.Customer(
+                name="name_value",
+                org_display_name="org_display_name_value",
+                alternate_email="alternate_email_value",
+                domain="domain_value",
+                cloud_identity_id="cloud_identity_id_value",
+                language_code="language_code_value",
+                channel_partner_id="channel_partner_id_value",
+                correlation_id="correlation_id_value",
+            )
+        )
+        await client.create_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_customer_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_customer), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            customers.Customer(
+                name="name_value",
+                org_display_name="org_display_name_value",
+                alternate_email="alternate_email_value",
+                domain="domain_value",
+                cloud_identity_id="cloud_identity_id_value",
+                language_code="language_code_value",
+                channel_partner_id="channel_partner_id_value",
+                correlation_id="correlation_id_value",
+            )
+        )
+        await client.update_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UpdateCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_customer_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_customer), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.DeleteCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_import_customer_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.import_customer), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            customers.Customer(
+                name="name_value",
+                org_display_name="org_display_name_value",
+                alternate_email="alternate_email_value",
+                domain="domain_value",
+                cloud_identity_id="cloud_identity_id_value",
+                language_code="language_code_value",
+                channel_partner_id="channel_partner_id_value",
+                correlation_id="correlation_id_value",
+            )
+        )
+        await client.import_customer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ImportCustomerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_provision_cloud_identity_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.provision_cloud_identity), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.provision_cloud_identity(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ProvisionCloudIdentityRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_entitlements_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_entitlements), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListEntitlementsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_entitlements(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListEntitlementsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_transferable_skus_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transferable_skus), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListTransferableSkusResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_transferable_skus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTransferableSkusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_transferable_offers_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transferable_offers), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListTransferableOffersResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_transferable_offers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTransferableOffersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_entitlement_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_entitlement), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            entitlements.Entitlement(
+                name="name_value",
+                offer="offer_value",
+                provisioning_state=entitlements.Entitlement.ProvisioningState.ACTIVE,
+                suspension_reasons=[
+                    entitlements.Entitlement.SuspensionReason.RESELLER_INITIATED
+                ],
+                purchase_order_id="purchase_order_id_value",
+                billing_account="billing_account_value",
+            )
+        )
+        await client.get_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_entitlement_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_entitlement), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.create_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_change_parameters_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.change_parameters), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.change_parameters(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ChangeParametersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_change_renewal_settings_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.change_renewal_settings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.change_renewal_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ChangeRenewalSettingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_change_offer_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.change_offer), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.change_offer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ChangeOfferRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_start_paid_service_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.start_paid_service), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.start_paid_service(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.StartPaidServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_suspend_entitlement_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.suspend_entitlement), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.suspend_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.SuspendEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_cancel_entitlement_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.cancel_entitlement), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.cancel_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CancelEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_activate_entitlement_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.activate_entitlement), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.activate_entitlement(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ActivateEntitlementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_transfer_entitlements_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.transfer_entitlements), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.transfer_entitlements(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.TransferEntitlementsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_transfer_entitlements_to_google_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.transfer_entitlements_to_google), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.transfer_entitlements_to_google(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.TransferEntitlementsToGoogleRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_channel_partner_links_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_channel_partner_links), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListChannelPartnerLinksResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_channel_partner_links(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListChannelPartnerLinksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_channel_partner_link_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_channel_partner_link), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            channel_partner_links.ChannelPartnerLink(
+                name="name_value",
+                reseller_cloud_identity_id="reseller_cloud_identity_id_value",
+                link_state=channel_partner_links.ChannelPartnerLinkState.INVITED,
+                invite_link_uri="invite_link_uri_value",
+                public_id="public_id_value",
+            )
+        )
+        await client.get_channel_partner_link(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetChannelPartnerLinkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_channel_partner_link_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_channel_partner_link), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            channel_partner_links.ChannelPartnerLink(
+                name="name_value",
+                reseller_cloud_identity_id="reseller_cloud_identity_id_value",
+                link_state=channel_partner_links.ChannelPartnerLinkState.INVITED,
+                invite_link_uri="invite_link_uri_value",
+                public_id="public_id_value",
+            )
+        )
+        await client.create_channel_partner_link(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateChannelPartnerLinkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_channel_partner_link_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_channel_partner_link), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            channel_partner_links.ChannelPartnerLink(
+                name="name_value",
+                reseller_cloud_identity_id="reseller_cloud_identity_id_value",
+                link_state=channel_partner_links.ChannelPartnerLinkState.INVITED,
+                invite_link_uri="invite_link_uri_value",
+                public_id="public_id_value",
+            )
+        )
+        await client.update_channel_partner_link(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UpdateChannelPartnerLinkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_customer_repricing_config_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_customer_repricing_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            repricing.CustomerRepricingConfig(
+                name="name_value",
+            )
+        )
+        await client.get_customer_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetCustomerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_customer_repricing_configs_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_customer_repricing_configs), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListCustomerRepricingConfigsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_customer_repricing_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListCustomerRepricingConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_customer_repricing_config_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_customer_repricing_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            repricing.CustomerRepricingConfig(
+                name="name_value",
+            )
+        )
+        await client.create_customer_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateCustomerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_customer_repricing_config_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_customer_repricing_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            repricing.CustomerRepricingConfig(
+                name="name_value",
+            )
+        )
+        await client.update_customer_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UpdateCustomerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_customer_repricing_config_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_customer_repricing_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_customer_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.DeleteCustomerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_channel_partner_repricing_config_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_channel_partner_repricing_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            repricing.ChannelPartnerRepricingConfig(
+                name="name_value",
+            )
+        )
+        await client.get_channel_partner_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetChannelPartnerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_channel_partner_repricing_configs_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_channel_partner_repricing_configs), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListChannelPartnerRepricingConfigsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_channel_partner_repricing_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListChannelPartnerRepricingConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_channel_partner_repricing_config_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_channel_partner_repricing_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            repricing.ChannelPartnerRepricingConfig(
+                name="name_value",
+            )
+        )
+        await client.create_channel_partner_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateChannelPartnerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_channel_partner_repricing_config_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_channel_partner_repricing_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            repricing.ChannelPartnerRepricingConfig(
+                name="name_value",
+            )
+        )
+        await client.update_channel_partner_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UpdateChannelPartnerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_channel_partner_repricing_config_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_channel_partner_repricing_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_channel_partner_repricing_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.DeleteChannelPartnerRepricingConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_sku_groups_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_sku_groups), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListSkuGroupsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_sku_groups(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListSkuGroupsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_sku_group_billable_skus_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_sku_group_billable_skus), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListSkuGroupBillableSkusResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_sku_group_billable_skus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListSkuGroupBillableSkusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_lookup_offer_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.lookup_offer), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            offers.Offer(
+                name="name_value",
+                deal_code="deal_code_value",
+            )
+        )
+        await client.lookup_offer(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.LookupOfferRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_products_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_products), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListProductsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_products(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListProductsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_skus_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_skus), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListSkusResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_skus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListSkusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_offers_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_offers), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListOffersResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_offers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListOffersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_purchasable_skus_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_purchasable_skus), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListPurchasableSkusResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_purchasable_skus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListPurchasableSkusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_purchasable_offers_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_purchasable_offers), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListPurchasableOffersResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_purchasable_offers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListPurchasableOffersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_query_eligible_billing_accounts_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.query_eligible_billing_accounts), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.QueryEligibleBillingAccountsResponse()
+        )
+        await client.query_eligible_billing_accounts(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.QueryEligibleBillingAccountsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_register_subscriber_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.register_subscriber), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.RegisterSubscriberResponse(
+                topic="topic_value",
+            )
+        )
+        await client.register_subscriber(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.RegisterSubscriberRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_unregister_subscriber_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.unregister_subscriber), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.UnregisterSubscriberResponse(
+                topic="topic_value",
+            )
+        )
+        await client.unregister_subscriber(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.UnregisterSubscriberRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_subscribers_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_subscribers), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListSubscribersResponse(
+                topic="topic_value",
+                service_accounts=["service_accounts_value"],
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_subscribers(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListSubscribersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_entitlement_changes_empty_call_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_entitlement_changes), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListEntitlementChangesResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_entitlement_changes(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListEntitlementChangesRequest()
+
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -21354,20 +21678,6 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-    with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
-    ) as close:
-        async with client:
-            close.assert_not_called()
-        close.assert_called_once()
-
-
 def test_delete_operation(transport: str = "grpc"):
     client = CloudChannelServiceClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -21395,7 +21705,7 @@ def test_delete_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_delete_operation_async(transport: str = "grpc_asyncio"):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -21448,7 +21758,7 @@ def test_delete_operation_field_headers():
 @pytest.mark.asyncio
 async def test_delete_operation_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -21493,7 +21803,7 @@ def test_delete_operation_from_dict():
 @pytest.mark.asyncio
 async def test_delete_operation_from_dict_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.delete_operation), "__call__") as call:
@@ -21534,7 +21844,7 @@ def test_cancel_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_cancel_operation_async(transport: str = "grpc_asyncio"):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -21587,7 +21897,7 @@ def test_cancel_operation_field_headers():
 @pytest.mark.asyncio
 async def test_cancel_operation_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -21632,7 +21942,7 @@ def test_cancel_operation_from_dict():
 @pytest.mark.asyncio
 async def test_cancel_operation_from_dict_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.cancel_operation), "__call__") as call:
@@ -21673,7 +21983,7 @@ def test_get_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_get_operation_async(transport: str = "grpc_asyncio"):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -21728,7 +22038,7 @@ def test_get_operation_field_headers():
 @pytest.mark.asyncio
 async def test_get_operation_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -21775,7 +22085,7 @@ def test_get_operation_from_dict():
 @pytest.mark.asyncio
 async def test_get_operation_from_dict_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
@@ -21818,7 +22128,7 @@ def test_list_operations(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_operations_async(transport: str = "grpc_asyncio"):
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -21873,7 +22183,7 @@ def test_list_operations_field_headers():
 @pytest.mark.asyncio
 async def test_list_operations_field_headers_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -21920,7 +22230,7 @@ def test_list_operations_from_dict():
 @pytest.mark.asyncio
 async def test_list_operations_from_dict_async():
     client = CloudChannelServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
@@ -21936,21 +22246,29 @@ async def test_list_operations_from_dict_async():
         call.assert_called()
 
 
-def test_transport_close():
-    transports = {
-        "grpc": "_grpc_channel",
-    }
+def test_transport_close_grpc():
+    client = CloudChannelServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
-    for transport, close_name in transports.items():
-        client = CloudChannelServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = CloudChannelServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        async with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

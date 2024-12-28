@@ -1,5 +1,79 @@
 # Changelog
 
+
+## [0.10.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.13...google-cloud-run-v0.10.14) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+## [0.10.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.12...google-cloud-run-v0.10.13) (2024-11-21)
+
+
+### Features
+
+* support manual instance count in Cloud Run for manual scaling feature ([16b5ba7](https://github.com/googleapis/google-cloud-python/commit/16b5ba78a7316bd792be6f4a1608e7280b2ea0ce))
+
+## [0.10.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.11...google-cloud-run-v0.10.12) (2024-11-14)
+
+
+### Features
+
+* add EncryptionKeyRevocationAction and shutdown duration configuration to Services ([579e338](https://github.com/googleapis/google-cloud-python/commit/579e3383972c29e991b319a674822e676376691f))
+
+
+### Documentation
+
+* fixed formatting of some documentation ([579e338](https://github.com/googleapis/google-cloud-python/commit/579e3383972c29e991b319a674822e676376691f))
+
+## [0.10.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.10...google-cloud-run-v0.10.11) (2024-11-11)
+
+
+### Features
+
+* support advanced configurations options for cloud storage volumes by setting mount_options in the GCSVolumeSource configuration ([97b9b6b](https://github.com/googleapis/google-cloud-python/commit/97b9b6b9f1092fc46545aa8f46d2cd3f6af46012))
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13245](https://github.com/googleapis/google-cloud-python/issues/13245)) ([875f712](https://github.com/googleapis/google-cloud-python/commit/875f712265a36919409964f5ade218330f1d0147))
+
+
+### Documentation
+
+* A comment for field `max_instance_request_concurrency` in message `.google.cloud.run.v2.RevisionTemplate` is changed ([97b9b6b](https://github.com/googleapis/google-cloud-python/commit/97b9b6b9f1092fc46545aa8f46d2cd3f6af46012))
+* For field `invoker_iam_disabled` in message `.google.cloud.run.v2.Service`, clarify that feature is available by invitation only ([97b9b6b](https://github.com/googleapis/google-cloud-python/commit/97b9b6b9f1092fc46545aa8f46d2cd3f6af46012))
+* Update docs for field `value` in message `.google.cloud.run.v2.EnvVar` to reflect Cloud Run product capabilities ([97b9b6b](https://github.com/googleapis/google-cloud-python/commit/97b9b6b9f1092fc46545aa8f46d2cd3f6af46012))
+
+## [0.10.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.9...google-cloud-run-v0.10.10) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13209](https://github.com/googleapis/google-cloud-python/issues/13209)) ([5f2e30d](https://github.com/googleapis/google-cloud-python/commit/5f2e30d62eea6080f5707ee18755f2bb812ad00b))
+
+## [0.10.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.8...google-cloud-run-v0.10.9) (2024-10-08)
+
+
+### Features
+
+* add Builds API ([6dde382](https://github.com/googleapis/google-cloud-python/commit/6dde3826c7c13ff1fcc840495811f58648e0678e))
+* add GPU configuration to Services ([6dde382](https://github.com/googleapis/google-cloud-python/commit/6dde3826c7c13ff1fcc840495811f58648e0678e))
+* add INGRESS_TRAFFIC_NONE to Services ([6dde382](https://github.com/googleapis/google-cloud-python/commit/6dde3826c7c13ff1fcc840495811f58648e0678e))
+* add Service Mesh configuration to Services ([6dde382](https://github.com/googleapis/google-cloud-python/commit/6dde3826c7c13ff1fcc840495811f58648e0678e))
+* add ServiceScaling to Services ([6dde382](https://github.com/googleapis/google-cloud-python/commit/6dde3826c7c13ff1fcc840495811f58648e0678e))
+
+
+### Documentation
+
+* fixed formatting of some documentation ([6dde382](https://github.com/googleapis/google-cloud-python/commit/6dde3826c7c13ff1fcc840495811f58648e0678e))
+
 ## [0.10.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.7...google-cloud-run-v0.10.8) (2024-07-30)
 
 

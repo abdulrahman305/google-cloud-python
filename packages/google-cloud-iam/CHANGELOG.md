@@ -4,6 +4,32 @@
 
 [1]: https://pypi.org/project/google-cloud-iam/#history
 
+## [2.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.16.1...google-cloud-iam-v2.17.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+
+## [2.16.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.16.0...google-cloud-iam-v2.16.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13243](https://github.com/googleapis/google-cloud-python/issues/13243)) ([d794dec](https://github.com/googleapis/google-cloud-python/commit/d794dec5eff5f23a1ff926012bf9e6cad719e020))
+
+## [2.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.15.2...google-cloud-iam-v2.16.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13207](https://github.com/googleapis/google-cloud-python/issues/13207)) ([ceb9be8](https://github.com/googleapis/google-cloud-python/commit/ceb9be8f89ac7355d842bac1d77b2926eb0b649c))
+
 ## [2.15.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.15.1...google-cloud-iam-v2.15.2) (2024-07-30)
 
 

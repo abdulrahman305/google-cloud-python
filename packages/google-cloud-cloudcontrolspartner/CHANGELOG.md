@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.2.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.2.2...google-cloud-cloudcontrolspartner-v0.2.3) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [0.2.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.2.1...google-cloud-cloudcontrolspartner-v0.2.2) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [0.2.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.2.0...google-cloud-cloudcontrolspartner-v0.2.1) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
+## [0.2.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.1.3...google-cloud-cloudcontrolspartner-v0.2.0) (2024-09-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* [google-cloud-cloudcontrolspartner] Field behavior for field display_name in message .google.cloud.cloudcontrolspartner.v1beta.Customer is changed
+
+### Features
+
+* A new value `ACCESS_TRANSPARENCY_LOGS_SUPPORT_CASE_VIEWER` is added to enum `.google.cloud.cloudcontrolspartner.v1beta.PartnerPermissions.Permission` ([c03c441](https://github.com/googleapis/google-cloud-python/commit/c03c4411287ee195fd5c99aff94d812381a908f3))
+* Field behavior for field `customer_onboarding_state` in message `.google.cloud.cloudcontrolspartner.v1beta.Customer` is changed ([c03c441](https://github.com/googleapis/google-cloud-python/commit/c03c4411287ee195fd5c99aff94d812381a908f3))
+* Field behavior for field `is_onboarded` in message `.google.cloud.cloudcontrolspartner.v1beta.Customer` is changed ([c03c441](https://github.com/googleapis/google-cloud-python/commit/c03c4411287ee195fd5c99aff94d812381a908f3))
+
+
+### Bug Fixes
+
+* [google-cloud-cloudcontrolspartner] Field behavior for field display_name in message .google.cloud.cloudcontrolspartner.v1beta.Customer is changed ([c03c441](https://github.com/googleapis/google-cloud-python/commit/c03c4411287ee195fd5c99aff94d812381a908f3))
+
+
+### Documentation
+
+* A comment for field `display_name` in message `.google.cloud.cloudcontrolspartner.v1beta.Customer` is changed ([c03c441](https://github.com/googleapis/google-cloud-python/commit/c03c4411287ee195fd5c99aff94d812381a908f3))
+
 ## [0.1.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.1.2...google-cloud-cloudcontrolspartner-v0.1.3) (2024-07-30)
 
 

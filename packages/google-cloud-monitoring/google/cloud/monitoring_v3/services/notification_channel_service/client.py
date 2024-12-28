@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+import logging as std_logging
 import os
 import re
 from typing import (
@@ -47,6 +48,15 @@ try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 from google.api import label_pb2  # type: ignore
 from google.api import launch_stage_pb2  # type: ignore
@@ -493,36 +503,6 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             raise ValueError("Universe Domain cannot be an empty string.")
         return universe_domain
 
-    @staticmethod
-    def _compare_universes(
-        client_universe: str, credentials: ga_credentials.Credentials
-    ) -> bool:
-        """Returns True iff the universe domains used by the client and credentials match.
-
-        Args:
-            client_universe (str): The universe domain configured via the client options.
-            credentials (ga_credentials.Credentials): The credentials being used in the client.
-
-        Returns:
-            bool: True iff client_universe matches the universe in credentials.
-
-        Raises:
-            ValueError: when client_universe does not match the universe in credentials.
-        """
-
-        default_universe = NotificationChannelServiceClient._DEFAULT_UNIVERSE
-        credentials_universe = getattr(credentials, "universe_domain", default_universe)
-
-        if client_universe != credentials_universe:
-            raise ValueError(
-                "The configured universe domain "
-                f"({client_universe}) does not match the universe domain "
-                f"found in the credentials ({credentials_universe}). "
-                "If you haven't configured the universe domain explicitly, "
-                f"`{default_universe}` is the default."
-            )
-        return True
-
     def _validate_universe_domain(self):
         """Validates client's and credentials' universe domains are consistent.
 
@@ -532,13 +512,9 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         Raises:
             ValueError: If the configured universe domain is not valid.
         """
-        self._is_universe_domain_valid = (
-            self._is_universe_domain_valid
-            or NotificationChannelServiceClient._compare_universes(
-                self.universe_domain, self.transport._credentials
-            )
-        )
-        return self._is_universe_domain_valid
+
+        # NOTE (b/349488459): universe validation is disabled until further notice.
+        return True
 
     @property
     def api_endpoint(self):
@@ -650,6 +626,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         # Initialize the universe domain validation.
         self._is_universe_domain_valid = False
 
+        if CLIENT_LOGGING_SUPPORTED:  # pragma: NO COVER
+            # Setup logging.
+            client_logging.initialize_logging()
+
         api_key_value = getattr(self._client_options, "api_key", None)
         if api_key_value and credentials:
             raise ValueError(
@@ -699,7 +679,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
                 Type[NotificationChannelServiceTransport],
                 Callable[..., NotificationChannelServiceTransport],
             ] = (
-                type(self).get_transport_class(transport)
+                NotificationChannelServiceClient.get_transport_class(transport)
                 if isinstance(transport, str) or transport is None
                 else cast(Callable[..., NotificationChannelServiceTransport], transport)
             )
@@ -716,6 +696,29 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
                 api_audience=self._client_options.api_audience,
             )
 
+        if "async" not in str(self._transport):
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                std_logging.DEBUG
+            ):  # pragma: NO COVER
+                _LOGGER.debug(
+                    "Created client `google.monitoring_v3.NotificationChannelServiceClient`.",
+                    extra={
+                        "serviceName": "google.monitoring.v3.NotificationChannelService",
+                        "universeDomain": getattr(
+                            self._transport._credentials, "universe_domain", ""
+                        ),
+                        "credentialsType": f"{type(self._transport._credentials).__module__}.{type(self._transport._credentials).__qualname__}",
+                        "credentialsInfo": getattr(
+                            self.transport._credentials, "get_cred_info", lambda: None
+                        )(),
+                    }
+                    if hasattr(self._transport, "_credentials")
+                    else {
+                        "serviceName": "google.monitoring.v3.NotificationChannelService",
+                        "credentialsType": None,
+                    },
+                )
+
     def list_notification_channel_descriptors(
         self,
         request: Optional[
@@ -725,7 +728,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListNotificationChannelDescriptorsPager:
         r"""Lists the descriptors for supported channel types.
         The use of descriptors makes it possible for new channel
@@ -784,8 +787,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.services.notification_channel_service.pagers.ListNotificationChannelDescriptorsPager:
@@ -864,7 +869,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> notification.NotificationChannelDescriptor:
         r"""Gets a single channel descriptor. The descriptor
         indicates which fields are expected / permitted for a
@@ -913,8 +918,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.types.NotificationChannelDescriptor:
@@ -983,7 +990,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListNotificationChannelsPager:
         r"""Lists the notification channels that have been created for the
         project. To list the types of notification channels that are
@@ -1042,8 +1049,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.services.notification_channel_service.pagers.ListNotificationChannelsPager:
@@ -1120,7 +1129,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> notification.NotificationChannel:
         r"""Gets a single notification channel. The channel
         includes the relevant configuration details with which
@@ -1173,8 +1182,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.types.NotificationChannel:
@@ -1240,7 +1251,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         notification_channel: Optional[notification.NotificationChannel] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> notification.NotificationChannel:
         r"""Creates a new notification channel, representing a
         single notification endpoint such as an email address,
@@ -1310,8 +1321,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.types.NotificationChannel:
@@ -1383,7 +1396,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         notification_channel: Optional[notification.NotificationChannel] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> notification.NotificationChannel:
         r"""Updates a notification channel. Fields not specified
         in the field mask remain unchanged.
@@ -1423,7 +1436,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             request (Union[google.cloud.monitoring_v3.types.UpdateNotificationChannelRequest, dict]):
                 The request object. The ``UpdateNotificationChannel`` request.
             update_mask (google.protobuf.field_mask_pb2.FieldMask):
-                The fields to update.
+                Optional. The fields to update.
                 This corresponds to the ``update_mask`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -1440,8 +1453,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.types.NotificationChannel:
@@ -1515,7 +1530,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         force: Optional[bool] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Deletes a notification channel.
 
@@ -1567,10 +1582,9 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
                 will be deleted regardless of its use in
                 alert policies (the policies will be
                 updated to remove the channel). If
-                false, channels that are still
-                referenced by an existing alerting
-                policy will fail to be deleted in a
-                delete operation.
+                false, this operation will fail if the
+                notification channel is referenced by
+                existing alerting policies.
 
                 This corresponds to the ``force`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1578,8 +1592,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
@@ -1639,7 +1655,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Causes a verification code to be delivered to the channel. The
         code can then be supplied in ``VerifyNotificationChannel`` to
@@ -1681,8 +1697,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
@@ -1743,7 +1761,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> notification_service.GetNotificationChannelVerificationCodeResponse:
         r"""Requests a verification code for an already verified
         channel that can then be used in a call to
@@ -1817,8 +1835,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.types.GetNotificationChannelVerificationCodeResponse:
@@ -1885,7 +1905,7 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
         code: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> notification.NotificationChannel:
         r"""Verifies a ``NotificationChannel`` by proving receipt of the
         code delivered to the channel as a result of calling
@@ -1945,8 +1965,10 @@ class NotificationChannelServiceClient(metaclass=NotificationChannelServiceClien
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.types.NotificationChannel:

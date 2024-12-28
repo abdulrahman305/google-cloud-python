@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+import logging as std_logging
 import os
 import re
 from typing import (
@@ -48,10 +49,22 @@ try:
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
 from google.api_core import operation  # type: ignore
 from google.api_core import operation_async  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf import field_mask_pb2  # type: ignore
+from google.protobuf import timestamp_pb2  # type: ignore
 
+from google.ads.admanager_v1.services.report_service import pagers
 from google.ads.admanager_v1.types import report_service
 
 from .transports.base import DEFAULT_CLIENT_INFO, ReportServiceTransport
@@ -92,7 +105,7 @@ class ReportServiceClientMeta(type):
 
 
 class ReportServiceClient(metaclass=ReportServiceClientMeta):
-    """Provides methods for interacting with Reports."""
+    """Provides methods for interacting with reports."""
 
     @staticmethod
     def _get_default_mtls_endpoint(api_endpoint):
@@ -179,6 +192,21 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
                 instance.
         """
         return self._transport
+
+    @staticmethod
+    def network_path(
+        network_code: str,
+    ) -> str:
+        """Returns a fully-qualified network string."""
+        return "networks/{network_code}".format(
+            network_code=network_code,
+        )
+
+    @staticmethod
+    def parse_network_path(path: str) -> Dict[str, str]:
+        """Parses a network path into its component segments."""
+        m = re.match(r"^networks/(?P<network_code>.+?)$", path)
+        return m.groupdict() if m else {}
 
     @staticmethod
     def report_path(
@@ -453,36 +481,6 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
             raise ValueError("Universe Domain cannot be an empty string.")
         return universe_domain
 
-    @staticmethod
-    def _compare_universes(
-        client_universe: str, credentials: ga_credentials.Credentials
-    ) -> bool:
-        """Returns True iff the universe domains used by the client and credentials match.
-
-        Args:
-            client_universe (str): The universe domain configured via the client options.
-            credentials (ga_credentials.Credentials): The credentials being used in the client.
-
-        Returns:
-            bool: True iff client_universe matches the universe in credentials.
-
-        Raises:
-            ValueError: when client_universe does not match the universe in credentials.
-        """
-
-        default_universe = ReportServiceClient._DEFAULT_UNIVERSE
-        credentials_universe = getattr(credentials, "universe_domain", default_universe)
-
-        if client_universe != credentials_universe:
-            raise ValueError(
-                "The configured universe domain "
-                f"({client_universe}) does not match the universe domain "
-                f"found in the credentials ({credentials_universe}). "
-                "If you haven't configured the universe domain explicitly, "
-                f"`{default_universe}` is the default."
-            )
-        return True
-
     def _validate_universe_domain(self):
         """Validates client's and credentials' universe domains are consistent.
 
@@ -492,13 +490,9 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         Raises:
             ValueError: If the configured universe domain is not valid.
         """
-        self._is_universe_domain_valid = (
-            self._is_universe_domain_valid
-            or ReportServiceClient._compare_universes(
-                self.universe_domain, self.transport._credentials
-            )
-        )
-        return self._is_universe_domain_valid
+
+        # NOTE (b/349488459): universe validation is disabled until further notice.
+        return True
 
     @property
     def api_endpoint(self):
@@ -604,6 +598,10 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         # Initialize the universe domain validation.
         self._is_universe_domain_valid = False
 
+        if CLIENT_LOGGING_SUPPORTED:  # pragma: NO COVER
+            # Setup logging.
+            client_logging.initialize_logging()
+
         api_key_value = getattr(self._client_options, "api_key", None)
         if api_key_value and credentials:
             raise ValueError(
@@ -652,7 +650,7 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
             transport_init: Union[
                 Type[ReportServiceTransport], Callable[..., ReportServiceTransport]
             ] = (
-                type(self).get_transport_class(transport)
+                ReportServiceClient.get_transport_class(transport)
                 if isinstance(transport, str) or transport is None
                 else cast(Callable[..., ReportServiceTransport], transport)
             )
@@ -669,22 +667,39 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
                 api_audience=self._client_options.api_audience,
             )
 
-    def export_saved_report(
+        if "async" not in str(self._transport):
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                std_logging.DEBUG
+            ):  # pragma: NO COVER
+                _LOGGER.debug(
+                    "Created client `google.ads.admanager_v1.ReportServiceClient`.",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "universeDomain": getattr(
+                            self._transport._credentials, "universe_domain", ""
+                        ),
+                        "credentialsType": f"{type(self._transport._credentials).__module__}.{type(self._transport._credentials).__qualname__}",
+                        "credentialsInfo": getattr(
+                            self.transport._credentials, "get_cred_info", lambda: None
+                        )(),
+                    }
+                    if hasattr(self._transport, "_credentials")
+                    else {
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "credentialsType": None,
+                    },
+                )
+
+    def get_report(
         self,
-        request: Optional[Union[report_service.ExportSavedReportRequest, dict]] = None,
+        request: Optional[Union[report_service.GetReportRequest, dict]] = None,
         *,
-        report: Optional[str] = None,
+        name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
-    ) -> operation.Operation:
-        r"""Initiates the execution and export of a report
-        asynchronously. Users can get the report by polling this
-        operation via OperationsService.GetOperation.
-        Intervals of at least 2 seconds are recommended, with an
-        exponential backoff. Once a report is complete, the
-        operation will contain a ExportSavedReportResponse in
-        its response field.
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> report_service.Report:
+        r"""API to retrieve a ``Report`` object.
 
         .. code-block:: python
 
@@ -697,17 +712,478 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
             #   https://googleapis.dev/python/google-api-core/latest/client_options.html
             from google.ads import admanager_v1
 
-            def sample_export_saved_report():
+            def sample_get_report():
                 # Create a client
                 client = admanager_v1.ReportServiceClient()
 
                 # Initialize request argument(s)
-                request = admanager_v1.ExportSavedReportRequest(
-                    format_="XML",
+                request = admanager_v1.GetReportRequest(
+                    name="name_value",
                 )
 
                 # Make the request
-                operation = client.export_saved_report(request=request)
+                response = client.get_report(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.ads.admanager_v1.types.GetReportRequest, dict]):
+                The request object. Request object for ``GetReport`` method.
+            name (str):
+                Required. The resource name of the report. Format:
+                ``networks/{network_code}/reports/{report_id}``
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.ads.admanager_v1.types.Report:
+                The Report resource.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, report_service.GetReportRequest):
+            request = report_service.GetReportRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_report]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_reports(
+        self,
+        request: Optional[Union[report_service.ListReportsRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListReportsPager:
+        r"""API to retrieve a list of ``Report`` objects.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.ads import admanager_v1
+
+            def sample_list_reports():
+                # Create a client
+                client = admanager_v1.ReportServiceClient()
+
+                # Initialize request argument(s)
+                request = admanager_v1.ListReportsRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_reports(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.ads.admanager_v1.types.ListReportsRequest, dict]):
+                The request object. Request object for ``ListReports`` method.
+            parent (str):
+                Required. The parent, which owns this collection of
+                reports. Format: ``networks/{network_code}``
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.ads.admanager_v1.services.report_service.pagers.ListReportsPager:
+                Response object for ListReportsResponse containing matching Report
+                   objects.
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, report_service.ListReportsRequest):
+            request = report_service.ListReportsRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.list_reports]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListReportsPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def create_report(
+        self,
+        request: Optional[Union[report_service.CreateReportRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        report: Optional[report_service.Report] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> report_service.Report:
+        r"""API to create a ``Report`` object.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.ads import admanager_v1
+
+            def sample_create_report():
+                # Create a client
+                client = admanager_v1.ReportServiceClient()
+
+                # Initialize request argument(s)
+                report = admanager_v1.Report()
+                report.report_definition.dimensions = ['CUSTOM_DIMENSION_9_VALUE']
+                report.report_definition.metrics = ['YIELD_GROUP_MEDIATION_THIRD_PARTY_ECPM']
+                report.report_definition.report_type = "HISTORICAL"
+
+                request = admanager_v1.CreateReportRequest(
+                    parent="parent_value",
+                    report=report,
+                )
+
+                # Make the request
+                response = client.create_report(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.ads.admanager_v1.types.CreateReportRequest, dict]):
+                The request object. Request object for ``CreateReport`` method.
+            parent (str):
+                Required. The parent resource where this ``Report`` will
+                be created. Format: ``networks/{network_code}``
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            report (google.ads.admanager_v1.types.Report):
+                Required. The ``Report`` to create.
+                This corresponds to the ``report`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.ads.admanager_v1.types.Report:
+                The Report resource.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent, report])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, report_service.CreateReportRequest):
+            request = report_service.CreateReportRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+            if report is not None:
+                request.report = report
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.create_report]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def update_report(
+        self,
+        request: Optional[Union[report_service.UpdateReportRequest, dict]] = None,
+        *,
+        report: Optional[report_service.Report] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> report_service.Report:
+        r"""API to update a ``Report`` object.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.ads import admanager_v1
+
+            def sample_update_report():
+                # Create a client
+                client = admanager_v1.ReportServiceClient()
+
+                # Initialize request argument(s)
+                report = admanager_v1.Report()
+                report.report_definition.dimensions = ['CUSTOM_DIMENSION_9_VALUE']
+                report.report_definition.metrics = ['YIELD_GROUP_MEDIATION_THIRD_PARTY_ECPM']
+                report.report_definition.report_type = "HISTORICAL"
+
+                request = admanager_v1.UpdateReportRequest(
+                    report=report,
+                )
+
+                # Make the request
+                response = client.update_report(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.ads.admanager_v1.types.UpdateReportRequest, dict]):
+                The request object. Request object for ``UpdateReport`` method.
+            report (google.ads.admanager_v1.types.Report):
+                Required. The ``Report`` to update.
+                This corresponds to the ``report`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Required. The list of fields to
+                update.
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.ads.admanager_v1.types.Report:
+                The Report resource.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([report, update_mask])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, report_service.UpdateReportRequest):
+            request = report_service.UpdateReportRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if report is not None:
+                request.report = report
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_report]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("report.name", request.report.name),)
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def run_report(
+        self,
+        request: Optional[Union[report_service.RunReportRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Initiates the execution of an existing report asynchronously.
+        Users can get the report by polling this operation via
+        ``OperationsService.GetOperation``. Poll every 5 seconds
+        initially, with an exponential backoff. Once a report is
+        complete, the operation will contain a ``RunReportResponse`` in
+        its response field containing a report_result that can be passed
+        to the ``FetchReportResultRows`` method to retrieve the report
+        data.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.ads import admanager_v1
+
+            def sample_run_report():
+                # Create a client
+                client = admanager_v1.ReportServiceClient()
+
+                # Initialize request argument(s)
+                request = admanager_v1.RunReportRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.run_report(request=request)
 
                 print("Waiting for operation to complete...")
 
@@ -717,37 +1193,37 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
                 print(response)
 
         Args:
-            request (Union[google.ads.admanager_v1.types.ExportSavedReportRequest, dict]):
-                The request object. Request proto for the configuration
-                of a report run.
-            report (str):
-                The name of a particular saved report resource.
+            request (Union[google.ads.admanager_v1.types.RunReportRequest, dict]):
+                The request object. Request message for a running a
+                report.
+            name (str):
+                Required. The report to run. Format:
+                ``networks/{network_code}/reports/{report_id}``
 
-                A report will be run based on the specification of this
-                saved report. It must have the format of
-                "networks/{network_code}/reports/{report_id}"
-
-                This corresponds to the ``report`` field
+                This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
                 An object representing a long-running operation.
 
-                The result type for the operation will be :class:`google.ads.admanager_v1.types.ExportSavedReportResponse` Message included in the longrunning Operation result.response field when
-                   the report completes successfully.
+                The result type for the operation will be
+                :class:`google.ads.admanager_v1.types.RunReportResponse`
+                Response message for a completed RunReport operation.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([report])
+        has_flattened_params = any([name])
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -756,21 +1232,21 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
 
         # - Use the request object if provided (there's no risk of modifying the input as
         #   there are no flattened fields), or create one.
-        if not isinstance(request, report_service.ExportSavedReportRequest):
-            request = report_service.ExportSavedReportRequest(request)
+        if not isinstance(request, report_service.RunReportRequest):
+            request = report_service.RunReportRequest(request)
             # If we have keyword arguments corresponding to fields on the
             # request, apply these.
-            if report is not None:
-                request.report = report
+            if name is not None:
+                request.name = name
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = self._transport._wrapped_methods[self._transport.export_saved_report]
+        rpc = self._transport._wrapped_methods[self._transport.run_report]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
         metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("report", request.report),)),
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
         )
 
         # Validate the universe domain.
@@ -788,8 +1264,133 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         response = operation.from_gapic(
             response,
             self._transport.operations_client,
-            report_service.ExportSavedReportResponse,
-            metadata_type=report_service.ExportSavedReportMetadata,
+            report_service.RunReportResponse,
+            metadata_type=report_service.RunReportMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def fetch_report_result_rows(
+        self,
+        request: Optional[
+            Union[report_service.FetchReportResultRowsRequest, dict]
+        ] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.FetchReportResultRowsPager:
+        r"""Returns the result rows from a completed report. The caller must
+        have previously called ``RunReport`` and waited for that
+        operation to complete. The rows will be returned according to
+        the order specified by the ``sorts`` member of the report
+        definition.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.ads import admanager_v1
+
+            def sample_fetch_report_result_rows():
+                # Create a client
+                client = admanager_v1.ReportServiceClient()
+
+                # Initialize request argument(s)
+                request = admanager_v1.FetchReportResultRowsRequest(
+                )
+
+                # Make the request
+                page_result = client.fetch_report_result_rows(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.ads.admanager_v1.types.FetchReportResultRowsRequest, dict]):
+                The request object. The request message for the fetch
+                report result rows endpoint.
+            name (str):
+                The report result being fetched. Format:
+                ``networks/{network_code}/reports/{report_id}/results/{report_result_id}``
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.ads.admanager_v1.services.report_service.pagers.FetchReportResultRowsPager:
+                The response message for the fetch
+                report result rows endpoint.
+                Iterating over this object will yield
+                results and resolve additional pages
+                automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, report_service.FetchReportResultRowsRequest):
+            request = report_service.FetchReportResultRowsRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.fetch_report_result_rows]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.FetchReportResultRowsPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
         )
 
         # Done; return the response.
@@ -814,7 +1415,7 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.Operation:
         r"""Gets the latest state of a long-running operation.
 
@@ -825,8 +1426,10 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.Operation:
                 An ``Operation`` object.
@@ -839,11 +1442,7 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.get_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.get_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.

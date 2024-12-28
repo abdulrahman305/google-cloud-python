@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.3.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-lineage-v0.3.10...google-cloud-datacatalog-lineage-v0.3.11) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [0.3.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-lineage-v0.3.9...google-cloud-datacatalog-lineage-v0.3.10) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [0.3.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-lineage-v0.3.8...google-cloud-datacatalog-lineage-v0.3.9) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
 ## [0.3.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-lineage-v0.3.7...google-cloud-datacatalog-lineage-v0.3.8) (2024-07-30)
 
 

@@ -13,40 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.cloud.osconfig_v1.types import patch_deployments, patch_jobs
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseOsConfigServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.protobuf import empty_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.cloud.osconfig_v1.types import patch_deployments, patch_jobs
-
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import OsConfigServiceTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -166,8 +170,10 @@ class OsConfigServiceRestInterceptor:
     def pre_cancel_patch_job(
         self,
         request: patch_jobs.CancelPatchJobRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[patch_jobs.CancelPatchJobRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        patch_jobs.CancelPatchJobRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for cancel_patch_job
 
         Override in a subclass to manipulate the request or metadata
@@ -189,9 +195,10 @@ class OsConfigServiceRestInterceptor:
     def pre_create_patch_deployment(
         self,
         request: patch_deployments.CreatePatchDeploymentRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        patch_deployments.CreatePatchDeploymentRequest, Sequence[Tuple[str, str]]
+        patch_deployments.CreatePatchDeploymentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for create_patch_deployment
 
@@ -214,9 +221,10 @@ class OsConfigServiceRestInterceptor:
     def pre_delete_patch_deployment(
         self,
         request: patch_deployments.DeletePatchDeploymentRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        patch_deployments.DeletePatchDeploymentRequest, Sequence[Tuple[str, str]]
+        patch_deployments.DeletePatchDeploymentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for delete_patch_deployment
 
@@ -228,8 +236,10 @@ class OsConfigServiceRestInterceptor:
     def pre_execute_patch_job(
         self,
         request: patch_jobs.ExecutePatchJobRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[patch_jobs.ExecutePatchJobRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        patch_jobs.ExecutePatchJobRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for execute_patch_job
 
         Override in a subclass to manipulate the request or metadata
@@ -251,8 +261,11 @@ class OsConfigServiceRestInterceptor:
     def pre_get_patch_deployment(
         self,
         request: patch_deployments.GetPatchDeploymentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[patch_deployments.GetPatchDeploymentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        patch_deployments.GetPatchDeploymentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for get_patch_deployment
 
         Override in a subclass to manipulate the request or metadata
@@ -274,8 +287,8 @@ class OsConfigServiceRestInterceptor:
     def pre_get_patch_job(
         self,
         request: patch_jobs.GetPatchJobRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[patch_jobs.GetPatchJobRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[patch_jobs.GetPatchJobRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for get_patch_job
 
         Override in a subclass to manipulate the request or metadata
@@ -295,9 +308,10 @@ class OsConfigServiceRestInterceptor:
     def pre_list_patch_deployments(
         self,
         request: patch_deployments.ListPatchDeploymentsRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        patch_deployments.ListPatchDeploymentsRequest, Sequence[Tuple[str, str]]
+        patch_deployments.ListPatchDeploymentsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_patch_deployments
 
@@ -320,9 +334,10 @@ class OsConfigServiceRestInterceptor:
     def pre_list_patch_job_instance_details(
         self,
         request: patch_jobs.ListPatchJobInstanceDetailsRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        patch_jobs.ListPatchJobInstanceDetailsRequest, Sequence[Tuple[str, str]]
+        patch_jobs.ListPatchJobInstanceDetailsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_patch_job_instance_details
 
@@ -345,8 +360,10 @@ class OsConfigServiceRestInterceptor:
     def pre_list_patch_jobs(
         self,
         request: patch_jobs.ListPatchJobsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[patch_jobs.ListPatchJobsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        patch_jobs.ListPatchJobsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_patch_jobs
 
         Override in a subclass to manipulate the request or metadata
@@ -368,9 +385,10 @@ class OsConfigServiceRestInterceptor:
     def pre_pause_patch_deployment(
         self,
         request: patch_deployments.PausePatchDeploymentRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        patch_deployments.PausePatchDeploymentRequest, Sequence[Tuple[str, str]]
+        patch_deployments.PausePatchDeploymentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for pause_patch_deployment
 
@@ -393,9 +411,10 @@ class OsConfigServiceRestInterceptor:
     def pre_resume_patch_deployment(
         self,
         request: patch_deployments.ResumePatchDeploymentRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        patch_deployments.ResumePatchDeploymentRequest, Sequence[Tuple[str, str]]
+        patch_deployments.ResumePatchDeploymentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for resume_patch_deployment
 
@@ -418,9 +437,10 @@ class OsConfigServiceRestInterceptor:
     def pre_update_patch_deployment(
         self,
         request: patch_deployments.UpdatePatchDeploymentRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        patch_deployments.UpdatePatchDeploymentRequest, Sequence[Tuple[str, str]]
+        patch_deployments.UpdatePatchDeploymentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for update_patch_deployment
 
@@ -448,8 +468,8 @@ class OsConfigServiceRestStub:
     _interceptor: OsConfigServiceRestInterceptor
 
 
-class OsConfigServiceRestTransport(OsConfigServiceTransport):
-    """REST backend transport for OsConfigService.
+class OsConfigServiceRestTransport(_BaseOsConfigServiceRestTransport):
+    """REST backend synchronous transport for OsConfigService.
 
     OS Config API
 
@@ -462,7 +482,6 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -516,21 +535,12 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -541,19 +551,34 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
         self._interceptor = interceptor or OsConfigServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _CancelPatchJob(OsConfigServiceRestStub):
+    class _CancelPatchJob(
+        _BaseOsConfigServiceRestTransport._BaseCancelPatchJob, OsConfigServiceRestStub
+    ):
         def __hash__(self):
-            return hash("CancelPatchJob")
+            return hash("OsConfigServiceRestTransport.CancelPatchJob")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -561,7 +586,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_jobs.PatchJob:
             r"""Call the cancel patch job method over HTTP.
 
@@ -571,8 +596,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_jobs.PatchJob:
@@ -589,47 +616,62 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=projects/*/patchJobs/*}:cancel",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseCancelPatchJob._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_cancel_patch_job(
                 request, metadata
             )
-            pb_request = patch_jobs.CancelPatchJobRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseCancelPatchJob._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseOsConfigServiceRestTransport._BaseCancelPatchJob._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseCancelPatchJob._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.CancelPatchJob",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "CancelPatchJob",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = OsConfigServiceRestTransport._CancelPatchJob._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -642,24 +684,60 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_jobs.PatchJob.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_cancel_patch_job(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = patch_jobs.PatchJob.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.cancel_patch_job",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "CancelPatchJob",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CreatePatchDeployment(OsConfigServiceRestStub):
+    class _CreatePatchDeployment(
+        _BaseOsConfigServiceRestTransport._BaseCreatePatchDeployment,
+        OsConfigServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("CreatePatchDeployment")
+            return hash("OsConfigServiceRestTransport.CreatePatchDeployment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "patchDeploymentId": "",
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -667,7 +745,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_deployments.PatchDeployment:
             r"""Call the create patch deployment method over HTTP.
 
@@ -678,8 +756,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_deployments.PatchDeployment:
@@ -692,47 +772,64 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*}/patchDeployments",
-                    "body": "patch_deployment",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseCreatePatchDeployment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_patch_deployment(
                 request, metadata
             )
-            pb_request = patch_deployments.CreatePatchDeploymentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseCreatePatchDeployment._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseOsConfigServiceRestTransport._BaseCreatePatchDeployment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseCreatePatchDeployment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.CreatePatchDeployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "CreatePatchDeployment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                OsConfigServiceRestTransport._CreatePatchDeployment._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -745,22 +842,61 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_deployments.PatchDeployment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_patch_deployment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = patch_deployments.PatchDeployment.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.create_patch_deployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "CreatePatchDeployment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _DeletePatchDeployment(OsConfigServiceRestStub):
+    class _DeletePatchDeployment(
+        _BaseOsConfigServiceRestTransport._BaseDeletePatchDeployment,
+        OsConfigServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("DeletePatchDeployment")
+            return hash("OsConfigServiceRestTransport.DeletePatchDeployment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -768,7 +904,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete patch deployment method over HTTP.
 
@@ -779,44 +915,65 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=projects/*/patchDeployments/*}",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseDeletePatchDeployment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_patch_deployment(
                 request, metadata
             )
-            pb_request = patch_deployments.DeletePatchDeploymentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseDeletePatchDeployment._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseDeletePatchDeployment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.DeletePatchDeployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "DeletePatchDeployment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                OsConfigServiceRestTransport._DeletePatchDeployment._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -824,19 +981,34 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _ExecutePatchJob(OsConfigServiceRestStub):
+    class _ExecutePatchJob(
+        _BaseOsConfigServiceRestTransport._BaseExecutePatchJob, OsConfigServiceRestStub
+    ):
         def __hash__(self):
-            return hash("ExecutePatchJob")
+            return hash("OsConfigServiceRestTransport.ExecutePatchJob")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -844,7 +1016,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_jobs.PatchJob:
             r"""Call the execute patch job method over HTTP.
 
@@ -856,8 +1028,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_jobs.PatchJob:
@@ -874,47 +1048,62 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*}/patchJobs:execute",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseExecutePatchJob._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_execute_patch_job(
                 request, metadata
             )
-            pb_request = patch_jobs.ExecutePatchJobRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseExecutePatchJob._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseOsConfigServiceRestTransport._BaseExecutePatchJob._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseExecutePatchJob._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.ExecutePatchJob",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ExecutePatchJob",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = OsConfigServiceRestTransport._ExecutePatchJob._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -927,22 +1116,59 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_jobs.PatchJob.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_execute_patch_job(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = patch_jobs.PatchJob.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.execute_patch_job",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ExecutePatchJob",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetPatchDeployment(OsConfigServiceRestStub):
+    class _GetPatchDeployment(
+        _BaseOsConfigServiceRestTransport._BaseGetPatchDeployment,
+        OsConfigServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetPatchDeployment")
+            return hash("OsConfigServiceRestTransport.GetPatchDeployment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -950,7 +1176,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_deployments.PatchDeployment:
             r"""Call the get patch deployment method over HTTP.
 
@@ -961,8 +1187,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_deployments.PatchDeployment:
@@ -975,40 +1203,57 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/patchDeployments/*}",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseGetPatchDeployment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_patch_deployment(
                 request, metadata
             )
-            pb_request = patch_deployments.GetPatchDeploymentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseGetPatchDeployment._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseGetPatchDeployment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.GetPatchDeployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "GetPatchDeployment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = OsConfigServiceRestTransport._GetPatchDeployment._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1021,22 +1266,60 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_deployments.PatchDeployment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_patch_deployment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = patch_deployments.PatchDeployment.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.get_patch_deployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "GetPatchDeployment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetPatchJob(OsConfigServiceRestStub):
+    class _GetPatchJob(
+        _BaseOsConfigServiceRestTransport._BaseGetPatchJob, OsConfigServiceRestStub
+    ):
         def __hash__(self):
-            return hash("GetPatchJob")
+            return hash("OsConfigServiceRestTransport.GetPatchJob")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1044,7 +1327,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_jobs.PatchJob:
             r"""Call the get patch job method over HTTP.
 
@@ -1055,8 +1338,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_jobs.PatchJob:
@@ -1073,38 +1358,55 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/patchJobs/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_patch_job(request, metadata)
-            pb_request = patch_jobs.GetPatchJobRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseGetPatchJob._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_patch_job(request, metadata)
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseGetPatchJob._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseGetPatchJob._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.GetPatchJob",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "GetPatchJob",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = OsConfigServiceRestTransport._GetPatchJob._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1117,22 +1419,59 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_jobs.PatchJob.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_patch_job(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = patch_jobs.PatchJob.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.get_patch_job",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "GetPatchJob",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListPatchDeployments(OsConfigServiceRestStub):
+    class _ListPatchDeployments(
+        _BaseOsConfigServiceRestTransport._BaseListPatchDeployments,
+        OsConfigServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListPatchDeployments")
+            return hash("OsConfigServiceRestTransport.ListPatchDeployments")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1140,7 +1479,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_deployments.ListPatchDeploymentsResponse:
             r"""Call the list patch deployments method over HTTP.
 
@@ -1151,8 +1490,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_deployments.ListPatchDeploymentsResponse:
@@ -1161,40 +1502,57 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*}/patchDeployments",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseListPatchDeployments._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_patch_deployments(
                 request, metadata
             )
-            pb_request = patch_deployments.ListPatchDeploymentsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseListPatchDeployments._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseListPatchDeployments._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.ListPatchDeployments",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ListPatchDeployments",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = OsConfigServiceRestTransport._ListPatchDeployments._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1207,22 +1565,61 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_deployments.ListPatchDeploymentsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_patch_deployments(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        patch_deployments.ListPatchDeploymentsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.list_patch_deployments",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ListPatchDeployments",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListPatchJobInstanceDetails(OsConfigServiceRestStub):
+    class _ListPatchJobInstanceDetails(
+        _BaseOsConfigServiceRestTransport._BaseListPatchJobInstanceDetails,
+        OsConfigServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListPatchJobInstanceDetails")
+            return hash("OsConfigServiceRestTransport.ListPatchJobInstanceDetails")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1230,7 +1627,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_jobs.ListPatchJobInstanceDetailsResponse:
             r"""Call the list patch job instance
             details method over HTTP.
@@ -1242,8 +1639,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.patch_jobs.ListPatchJobInstanceDetailsResponse:
@@ -1252,40 +1651,59 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/patchJobs/*}/instanceDetails",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseListPatchJobInstanceDetails._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_patch_job_instance_details(
                 request, metadata
             )
-            pb_request = patch_jobs.ListPatchJobInstanceDetailsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseListPatchJobInstanceDetails._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseListPatchJobInstanceDetails._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.ListPatchJobInstanceDetails",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ListPatchJobInstanceDetails",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                OsConfigServiceRestTransport._ListPatchJobInstanceDetails._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1298,22 +1716,60 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_jobs.ListPatchJobInstanceDetailsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_patch_job_instance_details(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        patch_jobs.ListPatchJobInstanceDetailsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.list_patch_job_instance_details",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ListPatchJobInstanceDetails",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListPatchJobs(OsConfigServiceRestStub):
+    class _ListPatchJobs(
+        _BaseOsConfigServiceRestTransport._BaseListPatchJobs, OsConfigServiceRestStub
+    ):
         def __hash__(self):
-            return hash("ListPatchJobs")
+            return hash("OsConfigServiceRestTransport.ListPatchJobs")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1321,7 +1777,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_jobs.ListPatchJobsResponse:
             r"""Call the list patch jobs method over HTTP.
 
@@ -1332,8 +1788,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_jobs.ListPatchJobsResponse:
@@ -1342,38 +1800,55 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*}/patchJobs",
-                },
-            ]
-            request, metadata = self._interceptor.pre_list_patch_jobs(request, metadata)
-            pb_request = patch_jobs.ListPatchJobsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseListPatchJobs._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_list_patch_jobs(request, metadata)
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseListPatchJobs._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseListPatchJobs._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.ListPatchJobs",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ListPatchJobs",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = OsConfigServiceRestTransport._ListPatchJobs._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1386,22 +1861,62 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_jobs.ListPatchJobsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_patch_jobs(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = patch_jobs.ListPatchJobsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.list_patch_jobs",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ListPatchJobs",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _PausePatchDeployment(OsConfigServiceRestStub):
+    class _PausePatchDeployment(
+        _BaseOsConfigServiceRestTransport._BasePausePatchDeployment,
+        OsConfigServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("PausePatchDeployment")
+            return hash("OsConfigServiceRestTransport.PausePatchDeployment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1409,7 +1924,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_deployments.PatchDeployment:
             r"""Call the pause patch deployment method over HTTP.
 
@@ -1420,8 +1935,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_deployments.PatchDeployment:
@@ -1434,47 +1951,62 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=projects/*/patchDeployments/*}:pause",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BasePausePatchDeployment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_pause_patch_deployment(
                 request, metadata
             )
-            pb_request = patch_deployments.PausePatchDeploymentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseOsConfigServiceRestTransport._BasePausePatchDeployment._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseOsConfigServiceRestTransport._BasePausePatchDeployment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BasePausePatchDeployment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.PausePatchDeployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "PausePatchDeployment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = OsConfigServiceRestTransport._PausePatchDeployment._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1487,22 +2019,62 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_deployments.PatchDeployment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_pause_patch_deployment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = patch_deployments.PatchDeployment.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.pause_patch_deployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "PausePatchDeployment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ResumePatchDeployment(OsConfigServiceRestStub):
+    class _ResumePatchDeployment(
+        _BaseOsConfigServiceRestTransport._BaseResumePatchDeployment,
+        OsConfigServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ResumePatchDeployment")
+            return hash("OsConfigServiceRestTransport.ResumePatchDeployment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1510,7 +2082,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_deployments.PatchDeployment:
             r"""Call the resume patch deployment method over HTTP.
 
@@ -1521,8 +2093,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_deployments.PatchDeployment:
@@ -1535,47 +2109,64 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=projects/*/patchDeployments/*}:resume",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseResumePatchDeployment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_resume_patch_deployment(
                 request, metadata
             )
-            pb_request = patch_deployments.ResumePatchDeploymentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseResumePatchDeployment._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseOsConfigServiceRestTransport._BaseResumePatchDeployment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseResumePatchDeployment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.ResumePatchDeployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ResumePatchDeployment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                OsConfigServiceRestTransport._ResumePatchDeployment._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1588,22 +2179,62 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_deployments.PatchDeployment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_resume_patch_deployment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = patch_deployments.PatchDeployment.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.resume_patch_deployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "ResumePatchDeployment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdatePatchDeployment(OsConfigServiceRestStub):
+    class _UpdatePatchDeployment(
+        _BaseOsConfigServiceRestTransport._BaseUpdatePatchDeployment,
+        OsConfigServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdatePatchDeployment")
+            return hash("OsConfigServiceRestTransport.UpdatePatchDeployment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1611,7 +2242,7 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> patch_deployments.PatchDeployment:
             r"""Call the update patch deployment method over HTTP.
 
@@ -1622,8 +2253,10 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.patch_deployments.PatchDeployment:
@@ -1636,47 +2269,64 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{patch_deployment.name=projects/*/patchDeployments/*}",
-                    "body": "patch_deployment",
-                },
-            ]
+            http_options = (
+                _BaseOsConfigServiceRestTransport._BaseUpdatePatchDeployment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_update_patch_deployment(
                 request, metadata
             )
-            pb_request = patch_deployments.UpdatePatchDeploymentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseOsConfigServiceRestTransport._BaseUpdatePatchDeployment._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseOsConfigServiceRestTransport._BaseUpdatePatchDeployment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsConfigServiceRestTransport._BaseUpdatePatchDeployment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.osconfig_v1.OsConfigServiceClient.UpdatePatchDeployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "UpdatePatchDeployment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                OsConfigServiceRestTransport._UpdatePatchDeployment._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1689,7 +2339,31 @@ class OsConfigServiceRestTransport(OsConfigServiceTransport):
             pb_resp = patch_deployments.PatchDeployment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_patch_deployment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = patch_deployments.PatchDeployment.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.osconfig_v1.OsConfigServiceClient.update_patch_deployment",
+                    extra={
+                        "serviceName": "google.cloud.osconfig.v1.OsConfigService",
+                        "rpcName": "UpdatePatchDeployment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property

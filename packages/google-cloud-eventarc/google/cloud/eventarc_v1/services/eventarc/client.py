@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+import logging as std_logging
 import os
 import re
 from typing import (
@@ -48,6 +49,15 @@ try:
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
 from google.api_core import operation  # type: ignore
 from google.api_core import operation_async  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
@@ -59,14 +69,24 @@ from google.protobuf import timestamp_pb2  # type: ignore
 
 from google.cloud.eventarc_v1.services.eventarc import pagers
 from google.cloud.eventarc_v1.types import channel_connection as gce_channel_connection
+from google.cloud.eventarc_v1.types import google_api_source as gce_google_api_source
 from google.cloud.eventarc_v1.types import (
     google_channel_config as gce_google_channel_config,
 )
 from google.cloud.eventarc_v1.types import channel
 from google.cloud.eventarc_v1.types import channel as gce_channel
 from google.cloud.eventarc_v1.types import channel_connection
-from google.cloud.eventarc_v1.types import discovery, eventarc
+from google.cloud.eventarc_v1.types import discovery
+from google.cloud.eventarc_v1.types import enrollment
+from google.cloud.eventarc_v1.types import enrollment as gce_enrollment
+from google.cloud.eventarc_v1.types import eventarc
+from google.cloud.eventarc_v1.types import google_api_source
 from google.cloud.eventarc_v1.types import google_channel_config
+from google.cloud.eventarc_v1.types import logging_config
+from google.cloud.eventarc_v1.types import message_bus
+from google.cloud.eventarc_v1.types import message_bus as gce_message_bus
+from google.cloud.eventarc_v1.types import pipeline
+from google.cloud.eventarc_v1.types import pipeline as gce_pipeline
 from google.cloud.eventarc_v1.types import trigger
 from google.cloud.eventarc_v1.types import trigger as gce_trigger
 
@@ -294,6 +314,52 @@ class EventarcClient(metaclass=EventarcClientMeta):
         return m.groupdict() if m else {}
 
     @staticmethod
+    def enrollment_path(
+        project: str,
+        location: str,
+        enrollment: str,
+    ) -> str:
+        """Returns a fully-qualified enrollment string."""
+        return (
+            "projects/{project}/locations/{location}/enrollments/{enrollment}".format(
+                project=project,
+                location=location,
+                enrollment=enrollment,
+            )
+        )
+
+    @staticmethod
+    def parse_enrollment_path(path: str) -> Dict[str, str]:
+        """Parses a enrollment path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/enrollments/(?P<enrollment>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def google_api_source_path(
+        project: str,
+        location: str,
+        google_api_source: str,
+    ) -> str:
+        """Returns a fully-qualified google_api_source string."""
+        return "projects/{project}/locations/{location}/googleApiSources/{google_api_source}".format(
+            project=project,
+            location=location,
+            google_api_source=google_api_source,
+        )
+
+    @staticmethod
+    def parse_google_api_source_path(path: str) -> Dict[str, str]:
+        """Parses a google_api_source path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/googleApiSources/(?P<google_api_source>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
     def google_channel_config_path(
         project: str,
         location: str,
@@ -309,6 +375,74 @@ class EventarcClient(metaclass=EventarcClientMeta):
         """Parses a google_channel_config path into its component segments."""
         m = re.match(
             r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/googleChannelConfig$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def message_bus_path(
+        project: str,
+        location: str,
+        message_bus: str,
+    ) -> str:
+        """Returns a fully-qualified message_bus string."""
+        return (
+            "projects/{project}/locations/{location}/messageBuses/{message_bus}".format(
+                project=project,
+                location=location,
+                message_bus=message_bus,
+            )
+        )
+
+    @staticmethod
+    def parse_message_bus_path(path: str) -> Dict[str, str]:
+        """Parses a message_bus path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/messageBuses/(?P<message_bus>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def network_attachment_path(
+        project: str,
+        region: str,
+        networkattachment: str,
+    ) -> str:
+        """Returns a fully-qualified network_attachment string."""
+        return "projects/{project}/regions/{region}/networkAttachments/{networkattachment}".format(
+            project=project,
+            region=region,
+            networkattachment=networkattachment,
+        )
+
+    @staticmethod
+    def parse_network_attachment_path(path: str) -> Dict[str, str]:
+        """Parses a network_attachment path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/regions/(?P<region>.+?)/networkAttachments/(?P<networkattachment>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def pipeline_path(
+        project: str,
+        location: str,
+        pipeline: str,
+    ) -> str:
+        """Returns a fully-qualified pipeline string."""
+        return "projects/{project}/locations/{location}/pipelines/{pipeline}".format(
+            project=project,
+            location=location,
+            pipeline=pipeline,
+        )
+
+    @staticmethod
+    def parse_pipeline_path(path: str) -> Dict[str, str]:
+        """Parses a pipeline path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/pipelines/(?P<pipeline>.+?)$",
             path,
         )
         return m.groupdict() if m else {}
@@ -364,6 +498,23 @@ class EventarcClient(metaclass=EventarcClientMeta):
             r"^projects/(?P<project>.+?)/serviceAccounts/(?P<service_account>.+?)$",
             path,
         )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def topic_path(
+        project: str,
+        topic: str,
+    ) -> str:
+        """Returns a fully-qualified topic string."""
+        return "projects/{project}/topics/{topic}".format(
+            project=project,
+            topic=topic,
+        )
+
+    @staticmethod
+    def parse_topic_path(path: str) -> Dict[str, str]:
+        """Parses a topic path into its component segments."""
+        m = re.match(r"^projects/(?P<project>.+?)/topics/(?P<topic>.+?)$", path)
         return m.groupdict() if m else {}
 
     @staticmethod
@@ -666,36 +817,6 @@ class EventarcClient(metaclass=EventarcClientMeta):
             raise ValueError("Universe Domain cannot be an empty string.")
         return universe_domain
 
-    @staticmethod
-    def _compare_universes(
-        client_universe: str, credentials: ga_credentials.Credentials
-    ) -> bool:
-        """Returns True iff the universe domains used by the client and credentials match.
-
-        Args:
-            client_universe (str): The universe domain configured via the client options.
-            credentials (ga_credentials.Credentials): The credentials being used in the client.
-
-        Returns:
-            bool: True iff client_universe matches the universe in credentials.
-
-        Raises:
-            ValueError: when client_universe does not match the universe in credentials.
-        """
-
-        default_universe = EventarcClient._DEFAULT_UNIVERSE
-        credentials_universe = getattr(credentials, "universe_domain", default_universe)
-
-        if client_universe != credentials_universe:
-            raise ValueError(
-                "The configured universe domain "
-                f"({client_universe}) does not match the universe domain "
-                f"found in the credentials ({credentials_universe}). "
-                "If you haven't configured the universe domain explicitly, "
-                f"`{default_universe}` is the default."
-            )
-        return True
-
     def _validate_universe_domain(self):
         """Validates client's and credentials' universe domains are consistent.
 
@@ -705,13 +826,9 @@ class EventarcClient(metaclass=EventarcClientMeta):
         Raises:
             ValueError: If the configured universe domain is not valid.
         """
-        self._is_universe_domain_valid = (
-            self._is_universe_domain_valid
-            or EventarcClient._compare_universes(
-                self.universe_domain, self.transport._credentials
-            )
-        )
-        return self._is_universe_domain_valid
+
+        # NOTE (b/349488459): universe validation is disabled until further notice.
+        return True
 
     @property
     def api_endpoint(self):
@@ -817,6 +934,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
         # Initialize the universe domain validation.
         self._is_universe_domain_valid = False
 
+        if CLIENT_LOGGING_SUPPORTED:  # pragma: NO COVER
+            # Setup logging.
+            client_logging.initialize_logging()
+
         api_key_value = getattr(self._client_options, "api_key", None)
         if api_key_value and credentials:
             raise ValueError(
@@ -862,7 +983,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
             transport_init: Union[
                 Type[EventarcTransport], Callable[..., EventarcTransport]
             ] = (
-                type(self).get_transport_class(transport)
+                EventarcClient.get_transport_class(transport)
                 if isinstance(transport, str) or transport is None
                 else cast(Callable[..., EventarcTransport], transport)
             )
@@ -879,6 +1000,29 @@ class EventarcClient(metaclass=EventarcClientMeta):
                 api_audience=self._client_options.api_audience,
             )
 
+        if "async" not in str(self._transport):
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                std_logging.DEBUG
+            ):  # pragma: NO COVER
+                _LOGGER.debug(
+                    "Created client `google.cloud.eventarc_v1.EventarcClient`.",
+                    extra={
+                        "serviceName": "google.cloud.eventarc.v1.Eventarc",
+                        "universeDomain": getattr(
+                            self._transport._credentials, "universe_domain", ""
+                        ),
+                        "credentialsType": f"{type(self._transport._credentials).__module__}.{type(self._transport._credentials).__qualname__}",
+                        "credentialsInfo": getattr(
+                            self.transport._credentials, "get_cred_info", lambda: None
+                        )(),
+                    }
+                    if hasattr(self._transport, "_credentials")
+                    else {
+                        "serviceName": "google.cloud.eventarc.v1.Eventarc",
+                        "credentialsType": None,
+                    },
+                )
+
     def get_trigger(
         self,
         request: Optional[Union[eventarc.GetTriggerRequest, dict]] = None,
@@ -886,7 +1030,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> trigger.Trigger:
         r"""Get a single trigger.
 
@@ -930,8 +1074,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.types.Trigger:
@@ -989,7 +1135,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListTriggersPager:
         r"""List triggers.
 
@@ -1034,8 +1180,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.services.eventarc.pagers.ListTriggersPager:
@@ -1108,7 +1256,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         trigger_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
         r"""Create a new trigger in a particular project and
         location.
@@ -1140,7 +1288,6 @@ class EventarcClient(metaclass=EventarcClientMeta):
                     parent="parent_value",
                     trigger=trigger,
                     trigger_id="trigger_id_value",
-                    validate_only=True,
                 )
 
                 # Make the request
@@ -1179,8 +1326,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -1255,7 +1404,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         allow_missing: Optional[bool] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
         r"""Update a single trigger.
 
@@ -1276,7 +1425,6 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
                 # Initialize request argument(s)
                 request = eventarc_v1.UpdateTriggerRequest(
-                    validate_only=True,
                 )
 
                 # Make the request
@@ -1318,8 +1466,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -1395,7 +1545,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         allow_missing: Optional[bool] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
         r"""Delete a single trigger.
 
@@ -1417,7 +1567,6 @@ class EventarcClient(metaclass=EventarcClientMeta):
                 # Initialize request argument(s)
                 request = eventarc_v1.DeleteTriggerRequest(
                     name="name_value",
-                    validate_only=True,
                 )
 
                 # Make the request
@@ -1452,8 +1601,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -1524,7 +1675,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> channel.Channel:
         r"""Get a single Channel.
 
@@ -1568,8 +1719,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.types.Channel:
@@ -1633,7 +1786,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListChannelsPager:
         r"""List channels.
 
@@ -1678,8 +1831,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.services.eventarc.pagers.ListChannelsPager:
@@ -1752,7 +1907,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         channel_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
         r"""Create a new channel in a particular project and
         location.
@@ -1781,7 +1936,6 @@ class EventarcClient(metaclass=EventarcClientMeta):
                     parent="parent_value",
                     channel=channel,
                     channel_id="channel_id_value",
-                    validate_only=True,
                 )
 
                 # Make the request
@@ -1820,8 +1974,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -1898,7 +2054,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
         r"""Update a single channel.
 
@@ -1919,7 +2075,6 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
                 # Initialize request argument(s)
                 request = eventarc_v1.UpdateChannelRequest(
-                    validate_only=True,
                 )
 
                 # Make the request
@@ -1953,8 +2108,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -2030,7 +2187,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
         r"""Delete a single channel.
 
@@ -2052,7 +2209,6 @@ class EventarcClient(metaclass=EventarcClientMeta):
                 # Initialize request argument(s)
                 request = eventarc_v1.DeleteChannelRequest(
                     name="name_value",
-                    validate_only=True,
                 )
 
                 # Make the request
@@ -2079,8 +2235,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -2152,7 +2310,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> discovery.Provider:
         r"""Get a single Provider.
 
@@ -2196,8 +2354,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.types.Provider:
@@ -2255,7 +2415,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListProvidersPager:
         r"""List providers.
 
@@ -2300,8 +2460,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.services.eventarc.pagers.ListProvidersPager:
@@ -2372,7 +2534,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> channel_connection.ChannelConnection:
         r"""Get a single ChannelConnection.
 
@@ -2416,8 +2578,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.types.ChannelConnection:
@@ -2480,7 +2644,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListChannelConnectionsPager:
         r"""List channel connections.
 
@@ -2525,8 +2689,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.services.eventarc.pagers.ListChannelConnectionsPager:
@@ -2600,7 +2766,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         channel_connection_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
         r"""Create a new ChannelConnection in a particular
         project and location.
@@ -2669,8 +2835,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -2747,7 +2915,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
         r"""Delete a single ChannelConnection.
 
@@ -2795,8 +2963,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -2869,7 +3039,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> google_channel_config.GoogleChannelConfig:
         r"""Get a GoogleChannelConfig
 
@@ -2913,8 +3083,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.types.GoogleChannelConfig:
@@ -2985,7 +3157,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> gce_google_channel_config.GoogleChannelConfig:
         r"""Update a single GoogleChannelConfig
 
@@ -3039,8 +3211,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_v1.types.GoogleChannelConfig:
@@ -3103,6 +3277,2702 @@ class EventarcClient(metaclass=EventarcClientMeta):
         # Done; return the response.
         return response
 
+    def get_message_bus(
+        self,
+        request: Optional[Union[eventarc.GetMessageBusRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> message_bus.MessageBus:
+        r"""Get a single MessageBus.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_get_message_bus():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.GetMessageBusRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = client.get_message_bus(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.GetMessageBusRequest, dict]):
+                The request object. The request message for the
+                GetMessageBus method.
+            name (str):
+                Required. The name of the message bus
+                to get.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_v1.types.MessageBus:
+                MessageBus for the messages flowing
+                through the system. The admin has
+                visibility and control over the messages
+                being published and consumed and can
+                restrict publishers and subscribers to
+                only a subset of data available in the
+                system by defining authorization
+                policies.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.GetMessageBusRequest):
+            request = eventarc.GetMessageBusRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_message_bus]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_message_buses(
+        self,
+        request: Optional[Union[eventarc.ListMessageBusesRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListMessageBusesPager:
+        r"""List message buses.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_list_message_buses():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.ListMessageBusesRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_message_buses(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.ListMessageBusesRequest, dict]):
+                The request object. The request message for the
+                ListMessageBuses method.
+            parent (str):
+                Required. The parent collection to
+                list triggers on.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_v1.services.eventarc.pagers.ListMessageBusesPager:
+                The response message for the ListMessageBuses method.
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.ListMessageBusesRequest):
+            request = eventarc.ListMessageBusesRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.list_message_buses]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListMessageBusesPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_message_bus_enrollments(
+        self,
+        request: Optional[
+            Union[eventarc.ListMessageBusEnrollmentsRequest, dict]
+        ] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListMessageBusEnrollmentsPager:
+        r"""List message bus enrollments.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_list_message_bus_enrollments():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.ListMessageBusEnrollmentsRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_message_bus_enrollments(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.ListMessageBusEnrollmentsRequest, dict]):
+                The request object. The request message for the
+                ``ListMessageBusEnrollments`` method.
+            parent (str):
+                Required. The parent message bus to
+                list enrollments on.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_v1.services.eventarc.pagers.ListMessageBusEnrollmentsPager:
+                The response message for the ListMessageBusEnrollments
+                method.\`
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.ListMessageBusEnrollmentsRequest):
+            request = eventarc.ListMessageBusEnrollmentsRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.list_message_bus_enrollments
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListMessageBusEnrollmentsPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def create_message_bus(
+        self,
+        request: Optional[Union[eventarc.CreateMessageBusRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        message_bus: Optional[gce_message_bus.MessageBus] = None,
+        message_bus_id: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Create a new MessageBus in a particular project and
+        location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_create_message_bus():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.CreateMessageBusRequest(
+                    parent="parent_value",
+                    message_bus_id="message_bus_id_value",
+                )
+
+                # Make the request
+                operation = client.create_message_bus(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.CreateMessageBusRequest, dict]):
+                The request object. The request message for the
+                CreateMessageBus method.
+            parent (str):
+                Required. The parent collection in
+                which to add this message bus.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            message_bus (google.cloud.eventarc_v1.types.MessageBus):
+                Required. The message bus to create.
+                This corresponds to the ``message_bus`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            message_bus_id (str):
+                Required. The user-provided ID to be assigned to the
+                MessageBus. It should match the format
+                (^`a-z <[a-z0-9-]{0,61}[a-z0-9]>`__?$)
+
+                This corresponds to the ``message_bus_id`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.eventarc_v1.types.MessageBus` MessageBus for the messages flowing through the system. The admin has
+                   visibility and control over the messages being
+                   published and consumed and can restrict publishers
+                   and subscribers to only a subset of data available in
+                   the system by defining authorization policies.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent, message_bus, message_bus_id])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.CreateMessageBusRequest):
+            request = eventarc.CreateMessageBusRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+            if message_bus is not None:
+                request.message_bus = message_bus
+            if message_bus_id is not None:
+                request.message_bus_id = message_bus_id
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.create_message_bus]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gce_message_bus.MessageBus,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def update_message_bus(
+        self,
+        request: Optional[Union[eventarc.UpdateMessageBusRequest, dict]] = None,
+        *,
+        message_bus: Optional[gce_message_bus.MessageBus] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Update a single message bus.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_update_message_bus():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.UpdateMessageBusRequest(
+                )
+
+                # Make the request
+                operation = client.update_message_bus(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.UpdateMessageBusRequest, dict]):
+                The request object. The request message for the
+                UpdateMessageBus method.
+            message_bus (google.cloud.eventarc_v1.types.MessageBus):
+                Required. The MessageBus to be
+                updated.
+
+                This corresponds to the ``message_bus`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Optional. The fields to be updated; only fields
+                explicitly provided are updated. If no field mask is
+                provided, all provided fields in the request are
+                updated. To update all fields, provide a field mask of
+                "*".
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.eventarc_v1.types.MessageBus` MessageBus for the messages flowing through the system. The admin has
+                   visibility and control over the messages being
+                   published and consumed and can restrict publishers
+                   and subscribers to only a subset of data available in
+                   the system by defining authorization policies.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([message_bus, update_mask])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.UpdateMessageBusRequest):
+            request = eventarc.UpdateMessageBusRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if message_bus is not None:
+                request.message_bus = message_bus
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_message_bus]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("message_bus.name", request.message_bus.name),)
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gce_message_bus.MessageBus,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def delete_message_bus(
+        self,
+        request: Optional[Union[eventarc.DeleteMessageBusRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        etag: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Delete a single message bus.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_delete_message_bus():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.DeleteMessageBusRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.delete_message_bus(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.DeleteMessageBusRequest, dict]):
+                The request object. The request message for the
+                DeleteMessageBus method.
+            name (str):
+                Required. The name of the MessageBus
+                to be deleted.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            etag (str):
+                Optional. If provided, the MessageBus
+                will only be deleted if the etag matches
+                the current etag on the resource.
+
+                This corresponds to the ``etag`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.eventarc_v1.types.MessageBus` MessageBus for the messages flowing through the system. The admin has
+                   visibility and control over the messages being
+                   published and consumed and can restrict publishers
+                   and subscribers to only a subset of data available in
+                   the system by defining authorization policies.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name, etag])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.DeleteMessageBusRequest):
+            request = eventarc.DeleteMessageBusRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+            if etag is not None:
+                request.etag = etag
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.delete_message_bus]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            message_bus.MessageBus,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def get_enrollment(
+        self,
+        request: Optional[Union[eventarc.GetEnrollmentRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> enrollment.Enrollment:
+        r"""Get a single Enrollment.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_get_enrollment():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.GetEnrollmentRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = client.get_enrollment(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.GetEnrollmentRequest, dict]):
+                The request object. The request message for the
+                GetEnrollment method.
+            name (str):
+                Required. The name of the Enrollment
+                to get.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_v1.types.Enrollment:
+                An enrollment represents a
+                subscription for messages on a
+                particular message bus. It defines a
+                matching criteria for messages on the
+                bus and the subscriber endpoint where
+                matched messages should be delivered.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.GetEnrollmentRequest):
+            request = eventarc.GetEnrollmentRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_enrollment]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_enrollments(
+        self,
+        request: Optional[Union[eventarc.ListEnrollmentsRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListEnrollmentsPager:
+        r"""List Enrollments.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_list_enrollments():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.ListEnrollmentsRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_enrollments(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.ListEnrollmentsRequest, dict]):
+                The request object. The request message for the
+                ListEnrollments method.
+            parent (str):
+                Required. The parent collection to
+                list triggers on.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_v1.services.eventarc.pagers.ListEnrollmentsPager:
+                The response message for the ListEnrollments method.
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.ListEnrollmentsRequest):
+            request = eventarc.ListEnrollmentsRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.list_enrollments]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListEnrollmentsPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def create_enrollment(
+        self,
+        request: Optional[Union[eventarc.CreateEnrollmentRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        enrollment: Optional[gce_enrollment.Enrollment] = None,
+        enrollment_id: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Create a new Enrollment in a particular project and
+        location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_create_enrollment():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                enrollment = eventarc_v1.Enrollment()
+                enrollment.cel_match = "cel_match_value"
+                enrollment.message_bus = "message_bus_value"
+                enrollment.destination = "destination_value"
+
+                request = eventarc_v1.CreateEnrollmentRequest(
+                    parent="parent_value",
+                    enrollment=enrollment,
+                    enrollment_id="enrollment_id_value",
+                )
+
+                # Make the request
+                operation = client.create_enrollment(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.CreateEnrollmentRequest, dict]):
+                The request object. The request message for the
+                CreateEnrollment method.
+            parent (str):
+                Required. The parent collection in
+                which to add this enrollment.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            enrollment (google.cloud.eventarc_v1.types.Enrollment):
+                Required. The enrollment to create.
+                This corresponds to the ``enrollment`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            enrollment_id (str):
+                Required. The user-provided ID to be assigned to the
+                Enrollment. It should match the format
+                (^`a-z <[a-z0-9-]{0,61}[a-z0-9]>`__?$).
+
+                This corresponds to the ``enrollment_id`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.eventarc_v1.types.Enrollment` An enrollment represents a subscription for messages on a particular message
+                   bus. It defines a matching criteria for messages on
+                   the bus and the subscriber endpoint where matched
+                   messages should be delivered.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent, enrollment, enrollment_id])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.CreateEnrollmentRequest):
+            request = eventarc.CreateEnrollmentRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+            if enrollment is not None:
+                request.enrollment = enrollment
+            if enrollment_id is not None:
+                request.enrollment_id = enrollment_id
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.create_enrollment]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gce_enrollment.Enrollment,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def update_enrollment(
+        self,
+        request: Optional[Union[eventarc.UpdateEnrollmentRequest, dict]] = None,
+        *,
+        enrollment: Optional[gce_enrollment.Enrollment] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Update a single Enrollment.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_update_enrollment():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                enrollment = eventarc_v1.Enrollment()
+                enrollment.cel_match = "cel_match_value"
+                enrollment.message_bus = "message_bus_value"
+                enrollment.destination = "destination_value"
+
+                request = eventarc_v1.UpdateEnrollmentRequest(
+                    enrollment=enrollment,
+                )
+
+                # Make the request
+                operation = client.update_enrollment(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.UpdateEnrollmentRequest, dict]):
+                The request object. The request message for the
+                UpdateEnrollment method.
+            enrollment (google.cloud.eventarc_v1.types.Enrollment):
+                Required. The Enrollment to be
+                updated.
+
+                This corresponds to the ``enrollment`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Optional. The fields to be updated; only fields
+                explicitly provided are updated. If no field mask is
+                provided, all provided fields in the request are
+                updated. To update all fields, provide a field mask of
+                "*".
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.eventarc_v1.types.Enrollment` An enrollment represents a subscription for messages on a particular message
+                   bus. It defines a matching criteria for messages on
+                   the bus and the subscriber endpoint where matched
+                   messages should be delivered.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([enrollment, update_mask])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.UpdateEnrollmentRequest):
+            request = eventarc.UpdateEnrollmentRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if enrollment is not None:
+                request.enrollment = enrollment
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_enrollment]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("enrollment.name", request.enrollment.name),)
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gce_enrollment.Enrollment,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def delete_enrollment(
+        self,
+        request: Optional[Union[eventarc.DeleteEnrollmentRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        etag: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Delete a single Enrollment.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_delete_enrollment():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.DeleteEnrollmentRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.delete_enrollment(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.DeleteEnrollmentRequest, dict]):
+                The request object. The request message for the
+                DeleteEnrollment method.
+            name (str):
+                Required. The name of the Enrollment
+                to be deleted.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            etag (str):
+                Optional. If provided, the Enrollment
+                will only be deleted if the etag matches
+                the current etag on the resource.
+
+                This corresponds to the ``etag`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.eventarc_v1.types.Enrollment` An enrollment represents a subscription for messages on a particular message
+                   bus. It defines a matching criteria for messages on
+                   the bus and the subscriber endpoint where matched
+                   messages should be delivered.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name, etag])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.DeleteEnrollmentRequest):
+            request = eventarc.DeleteEnrollmentRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+            if etag is not None:
+                request.etag = etag
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.delete_enrollment]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            enrollment.Enrollment,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def get_pipeline(
+        self,
+        request: Optional[Union[eventarc.GetPipelineRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pipeline.Pipeline:
+        r"""Get a single Pipeline.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_get_pipeline():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.GetPipelineRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = client.get_pipeline(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.GetPipelineRequest, dict]):
+                The request object. The request message for the
+                GetPipeline method.
+            name (str):
+                Required. The name of the pipeline to
+                get.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_v1.types.Pipeline:
+                A representation of the Pipeline
+                resource.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.GetPipelineRequest):
+            request = eventarc.GetPipelineRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_pipeline]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_pipelines(
+        self,
+        request: Optional[Union[eventarc.ListPipelinesRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListPipelinesPager:
+        r"""List pipelines.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_list_pipelines():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.ListPipelinesRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_pipelines(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.ListPipelinesRequest, dict]):
+                The request object. The request message for the
+                ListPipelines method.
+            parent (str):
+                Required. The parent collection to
+                list pipelines on.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_v1.services.eventarc.pagers.ListPipelinesPager:
+                The response message for the
+                ListPipelines method.
+                Iterating over this object will yield
+                results and resolve additional pages
+                automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.ListPipelinesRequest):
+            request = eventarc.ListPipelinesRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.list_pipelines]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListPipelinesPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def create_pipeline(
+        self,
+        request: Optional[Union[eventarc.CreatePipelineRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        pipeline: Optional[gce_pipeline.Pipeline] = None,
+        pipeline_id: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Create a new Pipeline in a particular project and
+        location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_create_pipeline():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                pipeline = eventarc_v1.Pipeline()
+                pipeline.destinations.http_endpoint.uri = "uri_value"
+
+                request = eventarc_v1.CreatePipelineRequest(
+                    parent="parent_value",
+                    pipeline=pipeline,
+                    pipeline_id="pipeline_id_value",
+                )
+
+                # Make the request
+                operation = client.create_pipeline(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.CreatePipelineRequest, dict]):
+                The request object. The request message for the
+                CreatePipeline method.
+            parent (str):
+                Required. The parent collection in
+                which to add this pipeline.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            pipeline (google.cloud.eventarc_v1.types.Pipeline):
+                Required. The pipeline to create.
+                This corresponds to the ``pipeline`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            pipeline_id (str):
+                Required. The user-provided ID to be
+                assigned to the Pipeline.
+
+                This corresponds to the ``pipeline_id`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be
+                :class:`google.cloud.eventarc_v1.types.Pipeline` A
+                representation of the Pipeline resource.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent, pipeline, pipeline_id])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.CreatePipelineRequest):
+            request = eventarc.CreatePipelineRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+            if pipeline is not None:
+                request.pipeline = pipeline
+            if pipeline_id is not None:
+                request.pipeline_id = pipeline_id
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.create_pipeline]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gce_pipeline.Pipeline,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def update_pipeline(
+        self,
+        request: Optional[Union[eventarc.UpdatePipelineRequest, dict]] = None,
+        *,
+        pipeline: Optional[gce_pipeline.Pipeline] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Update a single pipeline.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_update_pipeline():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                pipeline = eventarc_v1.Pipeline()
+                pipeline.destinations.http_endpoint.uri = "uri_value"
+
+                request = eventarc_v1.UpdatePipelineRequest(
+                    pipeline=pipeline,
+                )
+
+                # Make the request
+                operation = client.update_pipeline(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.UpdatePipelineRequest, dict]):
+                The request object. The request message for the
+                UpdatePipeline method.
+            pipeline (google.cloud.eventarc_v1.types.Pipeline):
+                Required. The Pipeline to be updated.
+                This corresponds to the ``pipeline`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Optional. The fields to be updated; only fields
+                explicitly provided are updated. If no field mask is
+                provided, all provided fields in the request are
+                updated. To update all fields, provide a field mask of
+                "*".
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be
+                :class:`google.cloud.eventarc_v1.types.Pipeline` A
+                representation of the Pipeline resource.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([pipeline, update_mask])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.UpdatePipelineRequest):
+            request = eventarc.UpdatePipelineRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if pipeline is not None:
+                request.pipeline = pipeline
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_pipeline]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("pipeline.name", request.pipeline.name),)
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gce_pipeline.Pipeline,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def delete_pipeline(
+        self,
+        request: Optional[Union[eventarc.DeletePipelineRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        etag: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Delete a single pipeline.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_delete_pipeline():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.DeletePipelineRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.delete_pipeline(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.DeletePipelineRequest, dict]):
+                The request object. The request message for the
+                DeletePipeline method.
+            name (str):
+                Required. The name of the Pipeline to
+                be deleted.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            etag (str):
+                Optional. If provided, the Pipeline
+                will only be deleted if the etag matches
+                the current etag on the resource.
+
+                This corresponds to the ``etag`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be
+                :class:`google.cloud.eventarc_v1.types.Pipeline` A
+                representation of the Pipeline resource.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name, etag])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.DeletePipelineRequest):
+            request = eventarc.DeletePipelineRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+            if etag is not None:
+                request.etag = etag
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.delete_pipeline]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            pipeline.Pipeline,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def get_google_api_source(
+        self,
+        request: Optional[Union[eventarc.GetGoogleApiSourceRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> google_api_source.GoogleApiSource:
+        r"""Get a single GoogleApiSource.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_get_google_api_source():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.GetGoogleApiSourceRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = client.get_google_api_source(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.GetGoogleApiSourceRequest, dict]):
+                The request object. The request message for the
+                GetGoogleApiSource method.
+            name (str):
+                Required. The name of the google api
+                source to get.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_v1.types.GoogleApiSource:
+                A GoogleApiSource represents a
+                subscription of 1P events from a
+                MessageBus.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.GetGoogleApiSourceRequest):
+            request = eventarc.GetGoogleApiSourceRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_google_api_source]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_google_api_sources(
+        self,
+        request: Optional[Union[eventarc.ListGoogleApiSourcesRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListGoogleApiSourcesPager:
+        r"""List GoogleApiSources.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_list_google_api_sources():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.ListGoogleApiSourcesRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_google_api_sources(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.ListGoogleApiSourcesRequest, dict]):
+                The request object. The request message for the
+                ListGoogleApiSources method.
+            parent (str):
+                Required. The parent collection to
+                list GoogleApiSources on.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_v1.services.eventarc.pagers.ListGoogleApiSourcesPager:
+                The response message for the ListGoogleApiSources
+                method.
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.ListGoogleApiSourcesRequest):
+            request = eventarc.ListGoogleApiSourcesRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.list_google_api_sources]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListGoogleApiSourcesPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def create_google_api_source(
+        self,
+        request: Optional[Union[eventarc.CreateGoogleApiSourceRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        google_api_source: Optional[gce_google_api_source.GoogleApiSource] = None,
+        google_api_source_id: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Create a new GoogleApiSource in a particular project
+        and location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_create_google_api_source():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                google_api_source = eventarc_v1.GoogleApiSource()
+                google_api_source.destination = "destination_value"
+
+                request = eventarc_v1.CreateGoogleApiSourceRequest(
+                    parent="parent_value",
+                    google_api_source=google_api_source,
+                    google_api_source_id="google_api_source_id_value",
+                )
+
+                # Make the request
+                operation = client.create_google_api_source(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.CreateGoogleApiSourceRequest, dict]):
+                The request object. The request message for the
+                CreateGoogleApiSource method.
+            parent (str):
+                Required. The parent collection in
+                which to add this google api source.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            google_api_source (google.cloud.eventarc_v1.types.GoogleApiSource):
+                Required. The google api source to
+                create.
+
+                This corresponds to the ``google_api_source`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            google_api_source_id (str):
+                Required. The user-provided ID to be assigned to the
+                GoogleApiSource. It should match the format
+                (^`a-z <[a-z0-9-]{0,61}[a-z0-9]>`__?$).
+
+                This corresponds to the ``google_api_source_id`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be
+                :class:`google.cloud.eventarc_v1.types.GoogleApiSource`
+                A GoogleApiSource represents a subscription of 1P events
+                from a MessageBus.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent, google_api_source, google_api_source_id])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.CreateGoogleApiSourceRequest):
+            request = eventarc.CreateGoogleApiSourceRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+            if google_api_source is not None:
+                request.google_api_source = google_api_source
+            if google_api_source_id is not None:
+                request.google_api_source_id = google_api_source_id
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.create_google_api_source]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gce_google_api_source.GoogleApiSource,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def update_google_api_source(
+        self,
+        request: Optional[Union[eventarc.UpdateGoogleApiSourceRequest, dict]] = None,
+        *,
+        google_api_source: Optional[gce_google_api_source.GoogleApiSource] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Update a single GoogleApiSource.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_update_google_api_source():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                google_api_source = eventarc_v1.GoogleApiSource()
+                google_api_source.destination = "destination_value"
+
+                request = eventarc_v1.UpdateGoogleApiSourceRequest(
+                    google_api_source=google_api_source,
+                )
+
+                # Make the request
+                operation = client.update_google_api_source(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.UpdateGoogleApiSourceRequest, dict]):
+                The request object. The request message for the
+                UpdateGoogleApiSource method.
+            google_api_source (google.cloud.eventarc_v1.types.GoogleApiSource):
+                Required. The GoogleApiSource to be
+                updated.
+
+                This corresponds to the ``google_api_source`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Optional. The fields to be updated; only fields
+                explicitly provided are updated. If no field mask is
+                provided, all provided fields in the request are
+                updated. To update all fields, provide a field mask of
+                "*".
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be
+                :class:`google.cloud.eventarc_v1.types.GoogleApiSource`
+                A GoogleApiSource represents a subscription of 1P events
+                from a MessageBus.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([google_api_source, update_mask])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.UpdateGoogleApiSourceRequest):
+            request = eventarc.UpdateGoogleApiSourceRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if google_api_source is not None:
+                request.google_api_source = google_api_source
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_google_api_source]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("google_api_source.name", request.google_api_source.name),)
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gce_google_api_source.GoogleApiSource,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def delete_google_api_source(
+        self,
+        request: Optional[Union[eventarc.DeleteGoogleApiSourceRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        etag: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Delete a single GoogleApiSource.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_v1
+
+            def sample_delete_google_api_source():
+                # Create a client
+                client = eventarc_v1.EventarcClient()
+
+                # Initialize request argument(s)
+                request = eventarc_v1.DeleteGoogleApiSourceRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.delete_google_api_source(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.eventarc_v1.types.DeleteGoogleApiSourceRequest, dict]):
+                The request object. The request message for the
+                DeleteGoogleApiSource method.
+            name (str):
+                Required. The name of the
+                GoogleApiSource to be deleted.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            etag (str):
+                Optional. If provided, the MessageBus
+                will only be deleted if the etag matches
+                the current etag on the resource.
+
+                This corresponds to the ``etag`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be
+                :class:`google.cloud.eventarc_v1.types.GoogleApiSource`
+                A GoogleApiSource represents a subscription of 1P events
+                from a MessageBus.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name, etag])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, eventarc.DeleteGoogleApiSourceRequest):
+            request = eventarc.DeleteGoogleApiSourceRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+            if etag is not None:
+                request.etag = etag
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.delete_google_api_source]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            google_api_source.GoogleApiSource,
+            metadata_type=eventarc.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
     def __enter__(self) -> "EventarcClient":
         return self
 
@@ -3122,7 +5992,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.ListOperationsResponse:
         r"""Lists operations that match the specified filter in the request.
 
@@ -3133,8 +6003,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.ListOperationsResponse:
                 Response message for ``ListOperations`` method.
@@ -3147,11 +6019,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.list_operations,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.list_operations]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3179,7 +6047,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.Operation:
         r"""Gets the latest state of a long-running operation.
 
@@ -3190,8 +6058,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.Operation:
                 An ``Operation`` object.
@@ -3204,11 +6074,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.get_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.get_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3236,7 +6102,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Deletes a long-running operation.
 
@@ -3252,8 +6118,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             None
         """
@@ -3265,11 +6133,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.delete_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.delete_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3294,7 +6158,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Starts asynchronous cancellation on a long-running operation.
 
@@ -3309,8 +6173,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             None
         """
@@ -3322,11 +6188,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.cancel_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.cancel_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3351,7 +6213,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> policy_pb2.Policy:
         r"""Sets the IAM access control policy on the specified function.
 
@@ -3364,8 +6226,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.policy_pb2.Policy:
                 Defines an Identity and Access Management (IAM) policy.
@@ -3442,11 +6306,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.set_iam_policy,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.set_iam_policy]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3474,7 +6334,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> policy_pb2.Policy:
         r"""Gets the IAM access control policy for a function.
 
@@ -3488,8 +6348,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if
                 any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.policy_pb2.Policy:
                 Defines an Identity and Access Management (IAM) policy.
@@ -3566,11 +6428,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.get_iam_policy,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.get_iam_policy]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3598,7 +6456,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> iam_policy_pb2.TestIamPermissionsResponse:
         r"""Tests the specified IAM permissions against the IAM access control
             policy for a function.
@@ -3613,8 +6471,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.iam_policy_pb2.TestIamPermissionsResponse:
                 Response message for ``TestIamPermissions`` method.
@@ -3628,11 +6488,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.test_iam_permissions,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.test_iam_permissions]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3660,7 +6516,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.Location:
         r"""Gets information about a location.
 
@@ -3671,8 +6527,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.Location:
                 Location object.
@@ -3685,11 +6543,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.get_location,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.get_location]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3717,7 +6571,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.ListLocationsResponse:
         r"""Lists information about the supported locations for this service.
 
@@ -3728,8 +6582,10 @@ class EventarcClient(metaclass=EventarcClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.ListLocationsResponse:
                 Response message for ``ListLocations`` method.
@@ -3742,11 +6598,7 @@ class EventarcClient(metaclass=EventarcClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.list_locations,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.list_locations]
 
         # Certain fields should be provided within the metadata header;
         # add these here.

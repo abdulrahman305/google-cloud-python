@@ -276,7 +276,7 @@ class CryptoKey(proto.Message):
             state before transitioning to
             [DESTROYED][google.cloud.kms.v1.CryptoKeyVersion.CryptoKeyVersionState.DESTROYED].
             If not specified at creation time, the default duration is
-            24 hours.
+            30 days.
         crypto_key_backend (str):
             Immutable. The resource name of the backend environment
             where the key material for all
@@ -288,7 +288,7 @@ class CryptoKey(proto.Message):
             [CryptoKeyVersions][google.cloud.kms.v1.CryptoKeyVersion]
             have a
             [ProtectionLevel][google.cloud.kms.v1.ProtectionLevel] of
-            [EXTERNAL_VPC][CryptoKeyVersion.ProtectionLevel.EXTERNAL_VPC],
+            [EXTERNAL_VPC][google.cloud.kms.v1.ProtectionLevel.EXTERNAL_VPC],
             with the resource name in the format
             ``projects/*/locations/*/ekmConnections/*``. Note, this list
             is non-exhaustive and may apply to additional
@@ -692,6 +692,8 @@ class CryptoKeyVersion(proto.Message):
 
         The suffix following ``HMAC_`` corresponds to the hash algorithm
         being used (eg. SHA256).
+
+        Algorithms beginning with ``PQ_`` are post-quantum.
 
         For more information, see [Key purposes and algorithms]
         (https://cloud.google.com/kms/docs/algorithms).

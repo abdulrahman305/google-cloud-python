@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -25,14 +29,93 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.dataplex_v1.types import data_taxonomy
 from google.cloud.dataplex_v1.types import data_taxonomy as gcd_data_taxonomy
 
 from .base import DEFAULT_CLIENT_INFO, DataTaxonomyServiceTransport
 from .grpc import DataTaxonomyServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.dataplex.v1.DataTaxonomyService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.dataplex.v1.DataTaxonomyService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
@@ -233,7 +316,13 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -256,7 +345,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -284,7 +373,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_data_taxonomy" not in self._stubs:
-            self._stubs["create_data_taxonomy"] = self.grpc_channel.unary_unary(
+            self._stubs["create_data_taxonomy"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/CreateDataTaxonomy",
                 request_serializer=gcd_data_taxonomy.CreateDataTaxonomyRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -313,7 +402,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_data_taxonomy" not in self._stubs:
-            self._stubs["update_data_taxonomy"] = self.grpc_channel.unary_unary(
+            self._stubs["update_data_taxonomy"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/UpdateDataTaxonomy",
                 request_serializer=gcd_data_taxonomy.UpdateDataTaxonomyRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -343,7 +432,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_data_taxonomy" not in self._stubs:
-            self._stubs["delete_data_taxonomy"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_data_taxonomy"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/DeleteDataTaxonomy",
                 request_serializer=data_taxonomy.DeleteDataTaxonomyRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -373,7 +462,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_data_taxonomies" not in self._stubs:
-            self._stubs["list_data_taxonomies"] = self.grpc_channel.unary_unary(
+            self._stubs["list_data_taxonomies"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/ListDataTaxonomies",
                 request_serializer=data_taxonomy.ListDataTaxonomiesRequest.serialize,
                 response_deserializer=data_taxonomy.ListDataTaxonomiesResponse.deserialize,
@@ -401,7 +490,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_data_taxonomy" not in self._stubs:
-            self._stubs["get_data_taxonomy"] = self.grpc_channel.unary_unary(
+            self._stubs["get_data_taxonomy"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/GetDataTaxonomy",
                 request_serializer=data_taxonomy.GetDataTaxonomyRequest.serialize,
                 response_deserializer=data_taxonomy.DataTaxonomy.deserialize,
@@ -432,7 +521,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         if "create_data_attribute_binding" not in self._stubs:
             self._stubs[
                 "create_data_attribute_binding"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/CreateDataAttributeBinding",
                 request_serializer=data_taxonomy.CreateDataAttributeBindingRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -463,7 +552,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         if "update_data_attribute_binding" not in self._stubs:
             self._stubs[
                 "update_data_attribute_binding"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/UpdateDataAttributeBinding",
                 request_serializer=data_taxonomy.UpdateDataAttributeBindingRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -496,7 +585,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         if "delete_data_attribute_binding" not in self._stubs:
             self._stubs[
                 "delete_data_attribute_binding"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/DeleteDataAttributeBinding",
                 request_serializer=data_taxonomy.DeleteDataAttributeBindingRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -526,7 +615,9 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_data_attribute_bindings" not in self._stubs:
-            self._stubs["list_data_attribute_bindings"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "list_data_attribute_bindings"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/ListDataAttributeBindings",
                 request_serializer=data_taxonomy.ListDataAttributeBindingsRequest.serialize,
                 response_deserializer=data_taxonomy.ListDataAttributeBindingsResponse.deserialize,
@@ -555,7 +646,9 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_data_attribute_binding" not in self._stubs:
-            self._stubs["get_data_attribute_binding"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "get_data_attribute_binding"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/GetDataAttributeBinding",
                 request_serializer=data_taxonomy.GetDataAttributeBindingRequest.serialize,
                 response_deserializer=data_taxonomy.DataAttributeBinding.deserialize,
@@ -583,7 +676,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_data_attribute" not in self._stubs:
-            self._stubs["create_data_attribute"] = self.grpc_channel.unary_unary(
+            self._stubs["create_data_attribute"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/CreateDataAttribute",
                 request_serializer=data_taxonomy.CreateDataAttributeRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -611,7 +704,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_data_attribute" not in self._stubs:
-            self._stubs["update_data_attribute"] = self.grpc_channel.unary_unary(
+            self._stubs["update_data_attribute"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/UpdateDataAttribute",
                 request_serializer=data_taxonomy.UpdateDataAttributeRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -639,7 +732,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_data_attribute" not in self._stubs:
-            self._stubs["delete_data_attribute"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_data_attribute"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/DeleteDataAttribute",
                 request_serializer=data_taxonomy.DeleteDataAttributeRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -668,7 +761,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_data_attributes" not in self._stubs:
-            self._stubs["list_data_attributes"] = self.grpc_channel.unary_unary(
+            self._stubs["list_data_attributes"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/ListDataAttributes",
                 request_serializer=data_taxonomy.ListDataAttributesRequest.serialize,
                 response_deserializer=data_taxonomy.ListDataAttributesResponse.deserialize,
@@ -696,7 +789,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_data_attribute" not in self._stubs:
-            self._stubs["get_data_attribute"] = self.grpc_channel.unary_unary(
+            self._stubs["get_data_attribute"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.DataTaxonomyService/GetDataAttribute",
                 request_serializer=data_taxonomy.GetDataAttributeRequest.serialize,
                 response_deserializer=data_taxonomy.DataAttribute.deserialize,
@@ -706,85 +799,124 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_data_taxonomy: gapic_v1.method_async.wrap_method(
+            self.create_data_taxonomy: self._wrap_method(
                 self.create_data_taxonomy,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_data_taxonomy: gapic_v1.method_async.wrap_method(
+            self.update_data_taxonomy: self._wrap_method(
                 self.update_data_taxonomy,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_data_taxonomy: gapic_v1.method_async.wrap_method(
+            self.delete_data_taxonomy: self._wrap_method(
                 self.delete_data_taxonomy,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_data_taxonomies: gapic_v1.method_async.wrap_method(
+            self.list_data_taxonomies: self._wrap_method(
                 self.list_data_taxonomies,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_data_taxonomy: gapic_v1.method_async.wrap_method(
+            self.get_data_taxonomy: self._wrap_method(
                 self.get_data_taxonomy,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_data_attribute_binding: gapic_v1.method_async.wrap_method(
+            self.create_data_attribute_binding: self._wrap_method(
                 self.create_data_attribute_binding,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_data_attribute_binding: gapic_v1.method_async.wrap_method(
+            self.update_data_attribute_binding: self._wrap_method(
                 self.update_data_attribute_binding,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_data_attribute_binding: gapic_v1.method_async.wrap_method(
+            self.delete_data_attribute_binding: self._wrap_method(
                 self.delete_data_attribute_binding,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_data_attribute_bindings: gapic_v1.method_async.wrap_method(
+            self.list_data_attribute_bindings: self._wrap_method(
                 self.list_data_attribute_bindings,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_data_attribute_binding: gapic_v1.method_async.wrap_method(
+            self.get_data_attribute_binding: self._wrap_method(
                 self.get_data_attribute_binding,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_data_attribute: gapic_v1.method_async.wrap_method(
+            self.create_data_attribute: self._wrap_method(
                 self.create_data_attribute,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_data_attribute: gapic_v1.method_async.wrap_method(
+            self.update_data_attribute: self._wrap_method(
                 self.update_data_attribute,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_data_attribute: gapic_v1.method_async.wrap_method(
+            self.delete_data_attribute: self._wrap_method(
                 self.delete_data_attribute,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_data_attributes: gapic_v1.method_async.wrap_method(
+            self.list_data_attributes: self._wrap_method(
                 self.list_data_attributes,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_data_attribute: gapic_v1.method_async.wrap_method(
+            self.get_data_attribute: self._wrap_method(
                 self.get_data_attribute,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -796,7 +928,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -813,7 +945,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -830,7 +962,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -849,7 +981,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,
@@ -868,7 +1000,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -885,7 +1017,7 @@ class DataTaxonomyServiceGrpcAsyncIOTransport(DataTaxonomyServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,

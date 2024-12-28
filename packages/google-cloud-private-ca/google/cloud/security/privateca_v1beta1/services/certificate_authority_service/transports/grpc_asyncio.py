@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -22,13 +26,92 @@ from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.security.privateca_v1beta1.types import resources, service
 
 from .base import DEFAULT_CLIENT_INFO, CertificateAuthorityServiceTransport
 from .grpc import CertificateAuthorityServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.security.privateca.v1beta1.CertificateAuthorityService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.security.privateca.v1beta1.CertificateAuthorityService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class CertificateAuthorityServiceGrpcAsyncIOTransport(
@@ -231,7 +314,13 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -254,7 +343,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -282,7 +371,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_certificate" not in self._stubs:
-            self._stubs["create_certificate"] = self.grpc_channel.unary_unary(
+            self._stubs["create_certificate"] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/CreateCertificate",
                 request_serializer=service.CreateCertificateRequest.serialize,
                 response_deserializer=resources.Certificate.deserialize,
@@ -309,7 +398,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_certificate" not in self._stubs:
-            self._stubs["get_certificate"] = self.grpc_channel.unary_unary(
+            self._stubs["get_certificate"] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/GetCertificate",
                 request_serializer=service.GetCertificateRequest.serialize,
                 response_deserializer=resources.Certificate.deserialize,
@@ -338,7 +427,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_certificates" not in self._stubs:
-            self._stubs["list_certificates"] = self.grpc_channel.unary_unary(
+            self._stubs["list_certificates"] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/ListCertificates",
                 request_serializer=service.ListCertificatesRequest.serialize,
                 response_deserializer=service.ListCertificatesResponse.deserialize,
@@ -365,7 +454,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "revoke_certificate" not in self._stubs:
-            self._stubs["revoke_certificate"] = self.grpc_channel.unary_unary(
+            self._stubs["revoke_certificate"] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/RevokeCertificate",
                 request_serializer=service.RevokeCertificateRequest.serialize,
                 response_deserializer=resources.Certificate.deserialize,
@@ -395,7 +484,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_certificate" not in self._stubs:
-            self._stubs["update_certificate"] = self.grpc_channel.unary_unary(
+            self._stubs["update_certificate"] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/UpdateCertificate",
                 request_serializer=service.UpdateCertificateRequest.serialize,
                 response_deserializer=resources.Certificate.deserialize,
@@ -435,7 +524,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         if "activate_certificate_authority" not in self._stubs:
             self._stubs[
                 "activate_certificate_authority"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/ActivateCertificateAuthority",
                 request_serializer=service.ActivateCertificateAuthorityRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -465,7 +554,9 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_certificate_authority" not in self._stubs:
-            self._stubs["create_certificate_authority"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "create_certificate_authority"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/CreateCertificateAuthority",
                 request_serializer=service.CreateCertificateAuthorityRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -497,7 +588,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         if "disable_certificate_authority" not in self._stubs:
             self._stubs[
                 "disable_certificate_authority"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/DisableCertificateAuthority",
                 request_serializer=service.DisableCertificateAuthorityRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -526,7 +617,9 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "enable_certificate_authority" not in self._stubs:
-            self._stubs["enable_certificate_authority"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "enable_certificate_authority"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/EnableCertificateAuthority",
                 request_serializer=service.EnableCertificateAuthorityRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -568,7 +661,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         if "fetch_certificate_authority_csr" not in self._stubs:
             self._stubs[
                 "fetch_certificate_authority_csr"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/FetchCertificateAuthorityCsr",
                 request_serializer=service.FetchCertificateAuthorityCsrRequest.serialize,
                 response_deserializer=service.FetchCertificateAuthorityCsrResponse.deserialize,
@@ -598,7 +691,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_certificate_authority" not in self._stubs:
-            self._stubs["get_certificate_authority"] = self.grpc_channel.unary_unary(
+            self._stubs["get_certificate_authority"] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/GetCertificateAuthority",
                 request_serializer=service.GetCertificateAuthorityRequest.serialize,
                 response_deserializer=resources.CertificateAuthority.deserialize,
@@ -628,7 +721,9 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_certificate_authorities" not in self._stubs:
-            self._stubs["list_certificate_authorities"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "list_certificate_authorities"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/ListCertificateAuthorities",
                 request_serializer=service.ListCertificateAuthoritiesRequest.serialize,
                 response_deserializer=service.ListCertificateAuthoritiesResponse.deserialize,
@@ -661,7 +756,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         if "restore_certificate_authority" not in self._stubs:
             self._stubs[
                 "restore_certificate_authority"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/RestoreCertificateAuthority",
                 request_serializer=service.RestoreCertificateAuthorityRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -695,7 +790,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         if "schedule_delete_certificate_authority" not in self._stubs:
             self._stubs[
                 "schedule_delete_certificate_authority"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/ScheduleDeleteCertificateAuthority",
                 request_serializer=service.ScheduleDeleteCertificateAuthorityRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -724,7 +819,9 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_certificate_authority" not in self._stubs:
-            self._stubs["update_certificate_authority"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "update_certificate_authority"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/UpdateCertificateAuthority",
                 request_serializer=service.UpdateCertificateAuthorityRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -757,7 +854,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         if "get_certificate_revocation_list" not in self._stubs:
             self._stubs[
                 "get_certificate_revocation_list"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/GetCertificateRevocationList",
                 request_serializer=service.GetCertificateRevocationListRequest.serialize,
                 response_deserializer=resources.CertificateRevocationList.deserialize,
@@ -790,7 +887,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         if "list_certificate_revocation_lists" not in self._stubs:
             self._stubs[
                 "list_certificate_revocation_lists"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/ListCertificateRevocationLists",
                 request_serializer=service.ListCertificateRevocationListsRequest.serialize,
                 response_deserializer=service.ListCertificateRevocationListsResponse.deserialize,
@@ -823,7 +920,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         if "update_certificate_revocation_list" not in self._stubs:
             self._stubs[
                 "update_certificate_revocation_list"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/UpdateCertificateRevocationList",
                 request_serializer=service.UpdateCertificateRevocationListRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -852,7 +949,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_reusable_config" not in self._stubs:
-            self._stubs["get_reusable_config"] = self.grpc_channel.unary_unary(
+            self._stubs["get_reusable_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/GetReusableConfig",
                 request_serializer=service.GetReusableConfigRequest.serialize,
                 response_deserializer=resources.ReusableConfig.deserialize,
@@ -882,7 +979,7 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_reusable_configs" not in self._stubs:
-            self._stubs["list_reusable_configs"] = self.grpc_channel.unary_unary(
+            self._stubs["list_reusable_configs"] = self._logged_channel.unary_unary(
                 "/google.cloud.security.privateca.v1beta1.CertificateAuthorityService/ListReusableConfigs",
                 request_serializer=service.ListReusableConfigsRequest.serialize,
                 response_deserializer=service.ListReusableConfigsResponse.deserialize,
@@ -892,110 +989,119 @@ class CertificateAuthorityServiceGrpcAsyncIOTransport(
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_certificate: gapic_v1.method_async.wrap_method(
+            self.create_certificate: self._wrap_method(
                 self.create_certificate,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_certificate: gapic_v1.method_async.wrap_method(
+            self.get_certificate: self._wrap_method(
                 self.get_certificate,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_certificates: gapic_v1.method_async.wrap_method(
+            self.list_certificates: self._wrap_method(
                 self.list_certificates,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.revoke_certificate: gapic_v1.method_async.wrap_method(
+            self.revoke_certificate: self._wrap_method(
                 self.revoke_certificate,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_certificate: gapic_v1.method_async.wrap_method(
+            self.update_certificate: self._wrap_method(
                 self.update_certificate,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.activate_certificate_authority: gapic_v1.method_async.wrap_method(
+            self.activate_certificate_authority: self._wrap_method(
                 self.activate_certificate_authority,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_certificate_authority: gapic_v1.method_async.wrap_method(
+            self.create_certificate_authority: self._wrap_method(
                 self.create_certificate_authority,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.disable_certificate_authority: gapic_v1.method_async.wrap_method(
+            self.disable_certificate_authority: self._wrap_method(
                 self.disable_certificate_authority,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.enable_certificate_authority: gapic_v1.method_async.wrap_method(
+            self.enable_certificate_authority: self._wrap_method(
                 self.enable_certificate_authority,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.fetch_certificate_authority_csr: gapic_v1.method_async.wrap_method(
+            self.fetch_certificate_authority_csr: self._wrap_method(
                 self.fetch_certificate_authority_csr,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_certificate_authority: gapic_v1.method_async.wrap_method(
+            self.get_certificate_authority: self._wrap_method(
                 self.get_certificate_authority,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_certificate_authorities: gapic_v1.method_async.wrap_method(
+            self.list_certificate_authorities: self._wrap_method(
                 self.list_certificate_authorities,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.restore_certificate_authority: gapic_v1.method_async.wrap_method(
+            self.restore_certificate_authority: self._wrap_method(
                 self.restore_certificate_authority,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.schedule_delete_certificate_authority: gapic_v1.method_async.wrap_method(
+            self.schedule_delete_certificate_authority: self._wrap_method(
                 self.schedule_delete_certificate_authority,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_certificate_authority: gapic_v1.method_async.wrap_method(
+            self.update_certificate_authority: self._wrap_method(
                 self.update_certificate_authority,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_certificate_revocation_list: gapic_v1.method_async.wrap_method(
+            self.get_certificate_revocation_list: self._wrap_method(
                 self.get_certificate_revocation_list,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_certificate_revocation_lists: gapic_v1.method_async.wrap_method(
+            self.list_certificate_revocation_lists: self._wrap_method(
                 self.list_certificate_revocation_lists,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_certificate_revocation_list: gapic_v1.method_async.wrap_method(
+            self.update_certificate_revocation_list: self._wrap_method(
                 self.update_certificate_revocation_list,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_reusable_config: gapic_v1.method_async.wrap_method(
+            self.get_reusable_config: self._wrap_method(
                 self.get_reusable_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_reusable_configs: gapic_v1.method_async.wrap_method(
+            self.list_reusable_configs: self._wrap_method(
                 self.list_reusable_configs,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("CertificateAuthorityServiceGrpcAsyncIOTransport",)

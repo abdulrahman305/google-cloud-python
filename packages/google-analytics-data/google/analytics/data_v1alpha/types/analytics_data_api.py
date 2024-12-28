@@ -31,6 +31,8 @@ __protobuf__ = proto.module(
         "GetRecurringAudienceListRequest",
         "ListRecurringAudienceListsRequest",
         "ListRecurringAudienceListsResponse",
+        "GetPropertyQuotasSnapshotRequest",
+        "PropertyQuotasSnapshot",
         "GetAudienceListRequest",
         "ListAudienceListsRequest",
         "ListAudienceListsResponse",
@@ -365,6 +367,60 @@ class ListRecurringAudienceListsResponse(proto.Message):
         proto.STRING,
         number=2,
         optional=True,
+    )
+
+
+class GetPropertyQuotasSnapshotRequest(proto.Message):
+    r"""A request to return the PropertyQuotasSnapshot for a given
+    category.
+
+    Attributes:
+        name (str):
+            Required. Quotas from this property will be listed in the
+            response. Format:
+            ``properties/{property}/propertyQuotasSnapshot``
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
+class PropertyQuotasSnapshot(proto.Message):
+    r"""Current state of all Property Quotas organized by quota
+    category.
+
+    Attributes:
+        name (str):
+            Identifier. The property quota snapshot
+            resource name.
+        core_property_quota (google.analytics.data_v1alpha.types.PropertyQuota):
+            Property Quota for core property tokens
+        realtime_property_quota (google.analytics.data_v1alpha.types.PropertyQuota):
+            Property Quota for realtime property tokens
+        funnel_property_quota (google.analytics.data_v1alpha.types.PropertyQuota):
+            Property Quota for funnel property tokens
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
+    core_property_quota: data.PropertyQuota = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=data.PropertyQuota,
+    )
+    realtime_property_quota: data.PropertyQuota = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=data.PropertyQuota,
+    )
+    funnel_property_quota: data.PropertyQuota = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=data.PropertyQuota,
     )
 
 
@@ -942,7 +998,7 @@ class RunFunnelReportRequest(proto.Message):
 
     Attributes:
         property (str):
-            Optional. A Google Analytics GA4 property identifier whose
+            Optional. A Google Analytics property identifier whose
             events are tracked. Specified in the URL path and not the
             body. To learn more, see `where to find your Property
             ID <https://developers.google.com/analytics/devguides/reporting/data/v1/property-id>`__.
@@ -1146,7 +1202,7 @@ class ReportTask(proto.Message):
         name (str):
             Output only. Identifier. The report task resource name
             assigned during creation. Format:
-            ``properties/{property}/reportTasks/{report_task}``
+            "properties/{property}/reportTasks/{report_task}".
         report_definition (google.analytics.data_v1alpha.types.ReportTask.ReportDefinition):
             Optional. A report definition to fetch report
             data, which describes the structure of a report.
@@ -1164,6 +1220,8 @@ class ReportTask(proto.Message):
 
     class ReportDefinition(proto.Message):
         r"""The definition of how a report should be run.
+
+        .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
 
         Attributes:
             dimensions (MutableSequence[google.analytics.data_v1alpha.types.Dimension]):
@@ -1236,13 +1294,17 @@ class ReportTask(proto.Message):
                 returned if they are not separately removed by a filter.
 
                 Regardless of this ``keep_empty_rows`` setting, only data
-                recorded by the Google Analytics (GA4) property can be
-                displayed in a report.
+                recorded by the Google Analytics property can be displayed
+                in a report.
 
                 For example if a property never logs a ``purchase`` event,
                 then a query for the ``eventName`` dimension and
                 ``eventCount`` metric will not have a row containing
                 eventName: "purchase" and eventCount: 0.
+            sampling_level (google.analytics.data_v1alpha.types.SamplingLevel):
+                Optional. The report's sampling level.
+
+                This field is a member of `oneof`_ ``_sampling_level``.
         """
 
         dimensions: MutableSequence[data.Dimension] = proto.RepeatedField(
@@ -1302,6 +1364,12 @@ class ReportTask(proto.Message):
         keep_empty_rows: bool = proto.Field(
             proto.BOOL,
             number=13,
+        )
+        sampling_level: data.SamplingLevel = proto.Field(
+            proto.ENUM,
+            number=14,
+            optional=True,
+            enum=data.SamplingLevel,
         )
 
     class ReportMetadata(proto.Message):

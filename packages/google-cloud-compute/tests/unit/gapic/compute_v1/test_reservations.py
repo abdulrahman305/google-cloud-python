@@ -22,25 +22,11 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import (
-    future,
-    gapic_v1,
-    grpc_helpers,
-    grpc_helpers_async,
-    path_template,
-)
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import extended_operation  # type: ignore
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
+from google.api_core import api_core_version
 from google.protobuf import json_format
 import grpc
 from grpc.experimental import aio
@@ -50,6 +36,29 @@ import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
 
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import (
+    future,
+    gapic_v1,
+    grpc_helpers,
+    grpc_helpers_async,
+    path_template,
+)
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import extended_operation  # type: ignore
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
+
 from google.cloud.compute_v1.services.reservations import (
     ReservationsClient,
     pagers,
@@ -58,8 +67,22 @@ from google.cloud.compute_v1.services.reservations import (
 from google.cloud.compute_v1.types import compute
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -279,85 +302,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         ReservationsClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (ReservationsClient, transports.ReservationsRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -941,54 +885,6 @@ def test_reservations_client_client_options_credentials_file(
         )
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.AggregatedListReservationsRequest,
-        dict,
-    ],
-)
-def test_aggregated_list_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.ReservationAggregatedList(
-            id="id_value",
-            kind="kind_value",
-            next_page_token="next_page_token_value",
-            self_link="self_link_value",
-            unreachables=["unreachables_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.ReservationAggregatedList.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.aggregated_list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.AggregatedListPager)
-    assert response.id == "id_value"
-    assert response.kind == "kind_value"
-    assert response.next_page_token == "next_page_token_value"
-    assert response.self_link == "self_link_value"
-    assert response.unreachables == ["unreachables_value"]
-
-
 def test_aggregated_list_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -1103,6 +999,7 @@ def test_aggregated_list_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.aggregated_list(request)
 
@@ -1133,87 +1030,6 @@ def test_aggregated_list_rest_unset_required_fields():
     )
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_aggregated_list_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_aggregated_list"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_aggregated_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.AggregatedListReservationsRequest.pb(
-            compute.AggregatedListReservationsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.ReservationAggregatedList.to_json(
-            compute.ReservationAggregatedList()
-        )
-
-        request = compute.AggregatedListReservationsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.ReservationAggregatedList()
-
-        client.aggregated_list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_aggregated_list_rest_bad_request(
-    transport: str = "rest", request_type=compute.AggregatedListReservationsRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.aggregated_list(request)
-
-
 def test_aggregated_list_rest_flattened():
     client = ReservationsClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -1242,6 +1058,7 @@ def test_aggregated_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.aggregated_list(**mock_args)
 
@@ -1342,88 +1159,6 @@ def test_aggregated_list_rest_pager(transport: str = "rest"):
         pages = list(client.aggregated_list(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteReservationRequest,
-        dict,
-    ],
-)
-def test_delete_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_delete_rest_use_cached_wrapped_rpc():
@@ -1540,6 +1275,7 @@ def test_delete_rest_required_fields(request_type=compute.DeleteReservationReque
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete(request)
 
@@ -1564,85 +1300,6 @@ def test_delete_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_delete"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_delete"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteReservationRequest.pb(
-            compute.DeleteReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_rest_bad_request(
-    transport: str = "rest", request_type=compute.DeleteReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete(request)
 
 
 def test_delete_rest_flattened():
@@ -1679,6 +1336,7 @@ def test_delete_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete(**mock_args)
 
@@ -1708,72 +1366,6 @@ def test_delete_rest_flattened_error(transport: str = "rest"):
             zone="zone_value",
             reservation="reservation_value",
         )
-
-
-def test_delete_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteReservationRequest,
-        dict,
-    ],
-)
-def test_delete_unary_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_delete_unary_rest_use_cached_wrapped_rpc():
@@ -1892,6 +1484,7 @@ def test_delete_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_unary(request)
 
@@ -1916,85 +1509,6 @@ def test_delete_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_unary_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_delete"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_delete"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteReservationRequest.pb(
-            compute.DeleteReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.DeleteReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_unary(request)
 
 
 def test_delete_unary_rest_flattened():
@@ -2031,6 +1545,7 @@ def test_delete_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_unary(**mock_args)
 
@@ -2060,72 +1575,6 @@ def test_delete_unary_rest_flattened_error(transport: str = "rest"):
             zone="zone_value",
             reservation="reservation_value",
         )
-
-
-def test_delete_unary_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.GetReservationRequest,
-        dict,
-    ],
-)
-def test_get_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Reservation(
-            commitment="commitment_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            id=205,
-            kind="kind_value",
-            name="name_value",
-            satisfies_pzs=True,
-            self_link="self_link_value",
-            specific_reservation_required=True,
-            status="status_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Reservation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Reservation)
-    assert response.commitment == "commitment_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.id == 205
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.satisfies_pzs is True
-    assert response.self_link == "self_link_value"
-    assert response.specific_reservation_required is True
-    assert response.status == "status_value"
-    assert response.zone == "zone_value"
 
 
 def test_get_rest_use_cached_wrapped_rpc():
@@ -2236,6 +1685,7 @@ def test_get_rest_required_fields(request_type=compute.GetReservationRequest):
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get(request)
 
@@ -2260,83 +1710,6 @@ def test_get_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_get"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_get"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.GetReservationRequest.pb(compute.GetReservationRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Reservation.to_json(compute.Reservation())
-
-        request = compute.GetReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Reservation()
-
-        client.get(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_rest_bad_request(
-    transport: str = "rest", request_type=compute.GetReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get(request)
 
 
 def test_get_rest_flattened():
@@ -2373,6 +1746,7 @@ def test_get_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get(**mock_args)
 
@@ -2402,56 +1776,6 @@ def test_get_rest_flattened_error(transport: str = "rest"):
             zone="zone_value",
             reservation="reservation_value",
         )
-
-
-def test_get_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.GetIamPolicyReservationRequest,
-        dict,
-    ],
-)
-def test_get_iam_policy_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Policy(
-            etag="etag_value",
-            iam_owned=True,
-            version=774,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Policy.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_iam_policy(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Policy)
-    assert response.etag == "etag_value"
-    assert response.iam_owned is True
-    assert response.version == 774
 
 
 def test_get_iam_policy_rest_use_cached_wrapped_rpc():
@@ -2566,6 +1890,7 @@ def test_get_iam_policy_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_iam_policy(request)
 
@@ -2590,85 +1915,6 @@ def test_get_iam_policy_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_iam_policy_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_get_iam_policy"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_get_iam_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.GetIamPolicyReservationRequest.pb(
-            compute.GetIamPolicyReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Policy.to_json(compute.Policy())
-
-        request = compute.GetIamPolicyReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Policy()
-
-        client.get_iam_policy(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_iam_policy_rest_bad_request(
-    transport: str = "rest", request_type=compute.GetIamPolicyReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_iam_policy(request)
 
 
 def test_get_iam_policy_rest_flattened():
@@ -2705,6 +1951,7 @@ def test_get_iam_policy_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_iam_policy(**mock_args)
 
@@ -2734,214 +1981,6 @@ def test_get_iam_policy_rest_flattened_error(transport: str = "rest"):
             zone="zone_value",
             resource="resource_value",
         )
-
-
-def test_get_iam_policy_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.InsertReservationRequest,
-        dict,
-    ],
-)
-def test_insert_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2"}
-    request_init["reservation_resource"] = {
-        "aggregate_reservation": {
-            "in_use_resources": [
-                {
-                    "accelerator": {
-                        "accelerator_count": 1805,
-                        "accelerator_type": "accelerator_type_value",
-                    }
-                }
-            ],
-            "reserved_resources": {},
-            "vm_family": "vm_family_value",
-            "workload_type": "workload_type_value",
-        },
-        "commitment": "commitment_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "description": "description_value",
-        "id": 205,
-        "kind": "kind_value",
-        "name": "name_value",
-        "resource_policies": {},
-        "resource_status": {
-            "specific_sku_allocation": {
-                "source_instance_template_id": "source_instance_template_id_value"
-            }
-        },
-        "satisfies_pzs": True,
-        "self_link": "self_link_value",
-        "share_settings": {"project_map": {}, "share_type": "share_type_value"},
-        "specific_reservation": {
-            "assured_count": 1407,
-            "count": 553,
-            "in_use_count": 1291,
-            "instance_properties": {
-                "guest_accelerators": [
-                    {
-                        "accelerator_count": 1805,
-                        "accelerator_type": "accelerator_type_value",
-                    }
-                ],
-                "local_ssds": [{"disk_size_gb": 1261, "interface": "interface_value"}],
-                "location_hint": "location_hint_value",
-                "machine_type": "machine_type_value",
-                "min_cpu_platform": "min_cpu_platform_value",
-            },
-            "source_instance_template": "source_instance_template_value",
-        },
-        "specific_reservation_required": True,
-        "status": "status_value",
-        "zone": "zone_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.InsertReservationRequest.meta.fields["reservation_resource"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "reservation_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["reservation_resource"][field])):
-                    del request_init["reservation_resource"][field][i][subfield]
-            else:
-                del request_init["reservation_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.insert(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_insert_rest_use_cached_wrapped_rpc():
@@ -3055,6 +2094,7 @@ def test_insert_rest_required_fields(request_type=compute.InsertReservationReque
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.insert(request)
 
@@ -3079,85 +2119,6 @@ def test_insert_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_insert_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_insert"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_insert"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.InsertReservationRequest.pb(
-            compute.InsertReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.InsertReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.insert(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_insert_rest_bad_request(
-    transport: str = "rest", request_type=compute.InsertReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.insert(request)
 
 
 def test_insert_rest_flattened():
@@ -3200,6 +2161,7 @@ def test_insert_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.insert(**mock_args)
 
@@ -3239,192 +2201,6 @@ def test_insert_rest_flattened_error(transport: str = "rest"):
                 )
             ),
         )
-
-
-def test_insert_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.InsertReservationRequest,
-        dict,
-    ],
-)
-def test_insert_unary_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2"}
-    request_init["reservation_resource"] = {
-        "aggregate_reservation": {
-            "in_use_resources": [
-                {
-                    "accelerator": {
-                        "accelerator_count": 1805,
-                        "accelerator_type": "accelerator_type_value",
-                    }
-                }
-            ],
-            "reserved_resources": {},
-            "vm_family": "vm_family_value",
-            "workload_type": "workload_type_value",
-        },
-        "commitment": "commitment_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "description": "description_value",
-        "id": 205,
-        "kind": "kind_value",
-        "name": "name_value",
-        "resource_policies": {},
-        "resource_status": {
-            "specific_sku_allocation": {
-                "source_instance_template_id": "source_instance_template_id_value"
-            }
-        },
-        "satisfies_pzs": True,
-        "self_link": "self_link_value",
-        "share_settings": {"project_map": {}, "share_type": "share_type_value"},
-        "specific_reservation": {
-            "assured_count": 1407,
-            "count": 553,
-            "in_use_count": 1291,
-            "instance_properties": {
-                "guest_accelerators": [
-                    {
-                        "accelerator_count": 1805,
-                        "accelerator_type": "accelerator_type_value",
-                    }
-                ],
-                "local_ssds": [{"disk_size_gb": 1261, "interface": "interface_value"}],
-                "location_hint": "location_hint_value",
-                "machine_type": "machine_type_value",
-                "min_cpu_platform": "min_cpu_platform_value",
-            },
-            "source_instance_template": "source_instance_template_value",
-        },
-        "specific_reservation_required": True,
-        "status": "status_value",
-        "zone": "zone_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.InsertReservationRequest.meta.fields["reservation_resource"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "reservation_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["reservation_resource"][field])):
-                    del request_init["reservation_resource"][field][i][subfield]
-            else:
-                del request_init["reservation_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.insert_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_insert_unary_rest_use_cached_wrapped_rpc():
@@ -3540,6 +2316,7 @@ def test_insert_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.insert_unary(request)
 
@@ -3564,85 +2341,6 @@ def test_insert_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_insert_unary_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_insert"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_insert"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.InsertReservationRequest.pb(
-            compute.InsertReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.InsertReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.insert_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_insert_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.InsertReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.insert_unary(request)
 
 
 def test_insert_unary_rest_flattened():
@@ -3685,6 +2383,7 @@ def test_insert_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.insert_unary(**mock_args)
 
@@ -3724,58 +2423,6 @@ def test_insert_unary_rest_flattened_error(transport: str = "rest"):
                 )
             ),
         )
-
-
-def test_insert_unary_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ListReservationsRequest,
-        dict,
-    ],
-)
-def test_list_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.ReservationList(
-            id="id_value",
-            kind="kind_value",
-            next_page_token="next_page_token_value",
-            self_link="self_link_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.ReservationList.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListPager)
-    assert response.id == "id_value"
-    assert response.kind == "kind_value"
-    assert response.next_page_token == "next_page_token_value"
-    assert response.self_link == "self_link_value"
 
 
 def test_list_rest_use_cached_wrapped_rpc():
@@ -3892,6 +2539,7 @@ def test_list_rest_required_fields(request_type=compute.ListReservationsRequest)
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list(request)
 
@@ -3925,87 +2573,6 @@ def test_list_rest_unset_required_fields():
     )
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_list"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ListReservationsRequest.pb(
-            compute.ListReservationsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.ReservationList.to_json(
-            compute.ReservationList()
-        )
-
-        request = compute.ListReservationsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.ReservationList()
-
-        client.list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_rest_bad_request(
-    transport: str = "rest", request_type=compute.ListReservationsRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list(request)
-
-
 def test_list_rest_flattened():
     client = ReservationsClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -4035,6 +2602,7 @@ def test_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list(**mock_args)
 
@@ -4124,166 +2692,6 @@ def test_list_rest_pager(transport: str = "rest"):
         pages = list(client.list(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ResizeReservationRequest,
-        dict,
-    ],
-)
-def test_resize_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request_init["reservations_resize_request_resource"] = {"specific_sku_count": 1920}
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.ResizeReservationRequest.meta.fields[
-        "reservations_resize_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "reservations_resize_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["reservations_resize_request_resource"][field])
-                ):
-                    del request_init["reservations_resize_request_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["reservations_resize_request_resource"][field][
-                    subfield
-                ]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.resize(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_resize_rest_use_cached_wrapped_rpc():
@@ -4401,6 +2809,7 @@ def test_resize_rest_required_fields(request_type=compute.ResizeReservationReque
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.resize(request)
 
@@ -4426,85 +2835,6 @@ def test_resize_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_resize_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_resize"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_resize"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ResizeReservationRequest.pb(
-            compute.ResizeReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.ResizeReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.resize(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_resize_rest_bad_request(
-    transport: str = "rest", request_type=compute.ResizeReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.resize(request)
 
 
 def test_resize_rest_flattened():
@@ -4544,6 +2874,7 @@ def test_resize_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.resize(**mock_args)
 
@@ -4576,150 +2907,6 @@ def test_resize_rest_flattened_error(transport: str = "rest"):
                 specific_sku_count=1920
             ),
         )
-
-
-def test_resize_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ResizeReservationRequest,
-        dict,
-    ],
-)
-def test_resize_unary_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request_init["reservations_resize_request_resource"] = {"specific_sku_count": 1920}
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.ResizeReservationRequest.meta.fields[
-        "reservations_resize_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "reservations_resize_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["reservations_resize_request_resource"][field])
-                ):
-                    del request_init["reservations_resize_request_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["reservations_resize_request_resource"][field][
-                    subfield
-                ]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.resize_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_resize_unary_rest_use_cached_wrapped_rpc():
@@ -4839,6 +3026,7 @@ def test_resize_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.resize_unary(request)
 
@@ -4864,85 +3052,6 @@ def test_resize_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_resize_unary_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_resize"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_resize"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ResizeReservationRequest.pb(
-            compute.ResizeReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.ResizeReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.resize_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_resize_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.ResizeReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.resize_unary(request)
 
 
 def test_resize_unary_rest_flattened():
@@ -4982,6 +3091,7 @@ def test_resize_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.resize_unary(**mock_args)
 
@@ -5014,208 +3124,6 @@ def test_resize_unary_rest_flattened_error(transport: str = "rest"):
                 specific_sku_count=1920
             ),
         )
-
-
-def test_resize_unary_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetIamPolicyReservationRequest,
-        dict,
-    ],
-)
-def test_set_iam_policy_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
-    request_init["zone_set_policy_request_resource"] = {
-        "bindings": [
-            {
-                "binding_id": "binding_id_value",
-                "condition": {
-                    "description": "description_value",
-                    "expression": "expression_value",
-                    "location": "location_value",
-                    "title": "title_value",
-                },
-                "members": ["members_value1", "members_value2"],
-                "role": "role_value",
-            }
-        ],
-        "etag": "etag_value",
-        "policy": {
-            "audit_configs": [
-                {
-                    "audit_log_configs": [
-                        {
-                            "exempted_members": [
-                                "exempted_members_value1",
-                                "exempted_members_value2",
-                            ],
-                            "ignore_child_exemptions": True,
-                            "log_type": "log_type_value",
-                        }
-                    ],
-                    "exempted_members": [
-                        "exempted_members_value1",
-                        "exempted_members_value2",
-                    ],
-                    "service": "service_value",
-                }
-            ],
-            "bindings": {},
-            "etag": "etag_value",
-            "iam_owned": True,
-            "rules": [
-                {
-                    "action": "action_value",
-                    "conditions": [
-                        {
-                            "iam": "iam_value",
-                            "op": "op_value",
-                            "svc": "svc_value",
-                            "sys": "sys_value",
-                            "values": ["values_value1", "values_value2"],
-                        }
-                    ],
-                    "description": "description_value",
-                    "ins": ["ins_value1", "ins_value2"],
-                    "log_configs": [
-                        {
-                            "cloud_audit": {
-                                "authorization_logging_options": {
-                                    "permission_type": "permission_type_value"
-                                },
-                                "log_name": "log_name_value",
-                            },
-                            "counter": {
-                                "custom_fields": [
-                                    {"name": "name_value", "value": "value_value"}
-                                ],
-                                "field": "field_value",
-                                "metric": "metric_value",
-                            },
-                            "data_access": {"log_mode": "log_mode_value"},
-                        }
-                    ],
-                    "not_ins": ["not_ins_value1", "not_ins_value2"],
-                    "permissions": ["permissions_value1", "permissions_value2"],
-                }
-            ],
-            "version": 774,
-        },
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetIamPolicyReservationRequest.meta.fields[
-        "zone_set_policy_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "zone_set_policy_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["zone_set_policy_request_resource"][field])
-                ):
-                    del request_init["zone_set_policy_request_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["zone_set_policy_request_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Policy(
-            etag="etag_value",
-            iam_owned=True,
-            version=774,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Policy.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_iam_policy(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Policy)
-    assert response.etag == "etag_value"
-    assert response.iam_owned is True
-    assert response.version == 774
 
 
 def test_set_iam_policy_rest_use_cached_wrapped_rpc():
@@ -5329,6 +3237,7 @@ def test_set_iam_policy_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_iam_policy(request)
 
@@ -5354,85 +3263,6 @@ def test_set_iam_policy_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_iam_policy_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_set_iam_policy"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_set_iam_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetIamPolicyReservationRequest.pb(
-            compute.SetIamPolicyReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Policy.to_json(compute.Policy())
-
-        request = compute.SetIamPolicyReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Policy()
-
-        client.set_iam_policy(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_iam_policy_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetIamPolicyReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_iam_policy(request)
 
 
 def test_set_iam_policy_rest_flattened():
@@ -5472,6 +3302,7 @@ def test_set_iam_policy_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_iam_policy(**mock_args)
 
@@ -5504,130 +3335,6 @@ def test_set_iam_policy_rest_flattened_error(transport: str = "rest"):
                 bindings=[compute.Binding(binding_id="binding_id_value")]
             ),
         )
-
-
-def test_set_iam_policy_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.TestIamPermissionsReservationRequest,
-        dict,
-    ],
-)
-def test_test_iam_permissions_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
-    request_init["test_permissions_request_resource"] = {
-        "permissions": ["permissions_value1", "permissions_value2"]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.TestIamPermissionsReservationRequest.meta.fields[
-        "test_permissions_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "test_permissions_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["test_permissions_request_resource"][field])
-                ):
-                    del request_init["test_permissions_request_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["test_permissions_request_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.TestPermissionsResponse(
-            permissions=["permissions_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.TestPermissionsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.test_iam_permissions(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.TestPermissionsResponse)
-    assert response.permissions == ["permissions_value"]
 
 
 def test_test_iam_permissions_rest_use_cached_wrapped_rpc():
@@ -5745,6 +3452,7 @@ def test_test_iam_permissions_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.test_iam_permissions(request)
 
@@ -5770,87 +3478,6 @@ def test_test_iam_permissions_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_test_iam_permissions_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_test_iam_permissions"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_test_iam_permissions"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.TestIamPermissionsReservationRequest.pb(
-            compute.TestIamPermissionsReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.TestPermissionsResponse.to_json(
-            compute.TestPermissionsResponse()
-        )
-
-        request = compute.TestIamPermissionsReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.TestPermissionsResponse()
-
-        client.test_iam_permissions(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_test_iam_permissions_rest_bad_request(
-    transport: str = "rest", request_type=compute.TestIamPermissionsReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.test_iam_permissions(request)
 
 
 def test_test_iam_permissions_rest_flattened():
@@ -5890,6 +3517,7 @@ def test_test_iam_permissions_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.test_iam_permissions(**mock_args)
 
@@ -5922,214 +3550,6 @@ def test_test_iam_permissions_rest_flattened_error(transport: str = "rest"):
                 permissions=["permissions_value"]
             ),
         )
-
-
-def test_test_iam_permissions_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.UpdateReservationRequest,
-        dict,
-    ],
-)
-def test_update_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request_init["reservation_resource"] = {
-        "aggregate_reservation": {
-            "in_use_resources": [
-                {
-                    "accelerator": {
-                        "accelerator_count": 1805,
-                        "accelerator_type": "accelerator_type_value",
-                    }
-                }
-            ],
-            "reserved_resources": {},
-            "vm_family": "vm_family_value",
-            "workload_type": "workload_type_value",
-        },
-        "commitment": "commitment_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "description": "description_value",
-        "id": 205,
-        "kind": "kind_value",
-        "name": "name_value",
-        "resource_policies": {},
-        "resource_status": {
-            "specific_sku_allocation": {
-                "source_instance_template_id": "source_instance_template_id_value"
-            }
-        },
-        "satisfies_pzs": True,
-        "self_link": "self_link_value",
-        "share_settings": {"project_map": {}, "share_type": "share_type_value"},
-        "specific_reservation": {
-            "assured_count": 1407,
-            "count": 553,
-            "in_use_count": 1291,
-            "instance_properties": {
-                "guest_accelerators": [
-                    {
-                        "accelerator_count": 1805,
-                        "accelerator_type": "accelerator_type_value",
-                    }
-                ],
-                "local_ssds": [{"disk_size_gb": 1261, "interface": "interface_value"}],
-                "location_hint": "location_hint_value",
-                "machine_type": "machine_type_value",
-                "min_cpu_platform": "min_cpu_platform_value",
-            },
-            "source_instance_template": "source_instance_template_value",
-        },
-        "specific_reservation_required": True,
-        "status": "status_value",
-        "zone": "zone_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.UpdateReservationRequest.meta.fields["reservation_resource"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "reservation_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["reservation_resource"][field])):
-                    del request_init["reservation_resource"][field][i][subfield]
-            else:
-                del request_init["reservation_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_update_rest_use_cached_wrapped_rpc():
@@ -6253,6 +3673,7 @@ def test_update_rest_required_fields(request_type=compute.UpdateReservationReque
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update(request)
 
@@ -6284,85 +3705,6 @@ def test_update_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_update"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_update"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.UpdateReservationRequest.pb(
-            compute.UpdateReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.UpdateReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.update(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_rest_bad_request(
-    transport: str = "rest", request_type=compute.UpdateReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update(request)
 
 
 def test_update_rest_flattened():
@@ -6410,6 +3752,7 @@ def test_update_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update(**mock_args)
 
@@ -6450,192 +3793,6 @@ def test_update_rest_flattened_error(transport: str = "rest"):
                 )
             ),
         )
-
-
-def test_update_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.UpdateReservationRequest,
-        dict,
-    ],
-)
-def test_update_unary_rest(request_type):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request_init["reservation_resource"] = {
-        "aggregate_reservation": {
-            "in_use_resources": [
-                {
-                    "accelerator": {
-                        "accelerator_count": 1805,
-                        "accelerator_type": "accelerator_type_value",
-                    }
-                }
-            ],
-            "reserved_resources": {},
-            "vm_family": "vm_family_value",
-            "workload_type": "workload_type_value",
-        },
-        "commitment": "commitment_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "description": "description_value",
-        "id": 205,
-        "kind": "kind_value",
-        "name": "name_value",
-        "resource_policies": {},
-        "resource_status": {
-            "specific_sku_allocation": {
-                "source_instance_template_id": "source_instance_template_id_value"
-            }
-        },
-        "satisfies_pzs": True,
-        "self_link": "self_link_value",
-        "share_settings": {"project_map": {}, "share_type": "share_type_value"},
-        "specific_reservation": {
-            "assured_count": 1407,
-            "count": 553,
-            "in_use_count": 1291,
-            "instance_properties": {
-                "guest_accelerators": [
-                    {
-                        "accelerator_count": 1805,
-                        "accelerator_type": "accelerator_type_value",
-                    }
-                ],
-                "local_ssds": [{"disk_size_gb": 1261, "interface": "interface_value"}],
-                "location_hint": "location_hint_value",
-                "machine_type": "machine_type_value",
-                "min_cpu_platform": "min_cpu_platform_value",
-            },
-            "source_instance_template": "source_instance_template_value",
-        },
-        "specific_reservation_required": True,
-        "status": "status_value",
-        "zone": "zone_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.UpdateReservationRequest.meta.fields["reservation_resource"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "reservation_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["reservation_resource"][field])):
-                    del request_init["reservation_resource"][field][i][subfield]
-            else:
-                del request_init["reservation_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_update_unary_rest_use_cached_wrapped_rpc():
@@ -6761,6 +3918,7 @@ def test_update_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_unary(request)
 
@@ -6792,85 +3950,6 @@ def test_update_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_unary_rest_interceptors(null_interceptor):
-    transport = transports.ReservationsRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ReservationsRestInterceptor(),
-    )
-    client = ReservationsClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ReservationsRestInterceptor, "post_update"
-    ) as post, mock.patch.object(
-        transports.ReservationsRestInterceptor, "pre_update"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.UpdateReservationRequest.pb(
-            compute.UpdateReservationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.UpdateReservationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.update_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.UpdateReservationRequest
-):
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_unary(request)
 
 
 def test_update_unary_rest_flattened():
@@ -6918,6 +3997,7 @@ def test_update_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_unary(**mock_args)
 
@@ -6958,12 +4038,6 @@ def test_update_unary_rest_flattened_error(transport: str = "rest"):
                 )
             ),
         )
-
-
-def test_update_unary_rest_error():
-    client = ReservationsClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
 
 
 def test_credentials_transport_error():
@@ -7041,17 +4115,2152 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_rest():
+    transport = ReservationsClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_aggregated_list_rest_bad_request(
+    request_type=compute.AggregatedListReservationsRequest,
+):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.aggregated_list(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "rest",
+        compute.AggregatedListReservationsRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = ReservationsClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_aggregated_list_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.ReservationAggregatedList(
+            id="id_value",
+            kind="kind_value",
+            next_page_token="next_page_token_value",
+            self_link="self_link_value",
+            unreachables=["unreachables_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.ReservationAggregatedList.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.aggregated_list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.AggregatedListPager)
+    assert response.id == "id_value"
+    assert response.kind == "kind_value"
+    assert response.next_page_token == "next_page_token_value"
+    assert response.self_link == "self_link_value"
+    assert response.unreachables == ["unreachables_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_aggregated_list_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_aggregated_list"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_aggregated_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.AggregatedListReservationsRequest.pb(
+            compute.AggregatedListReservationsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.ReservationAggregatedList.to_json(
+            compute.ReservationAggregatedList()
+        )
+        req.return_value.content = return_value
+
+        request = compute.AggregatedListReservationsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.ReservationAggregatedList()
+
+        client.aggregated_list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_rest_bad_request(request_type=compute.DeleteReservationRequest):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.DeleteReservationRequest,
+        dict,
+    ],
+)
+def test_delete_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_delete"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_delete"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.DeleteReservationRequest.pb(
+            compute.DeleteReservationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.DeleteReservationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.delete(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_rest_bad_request(request_type=compute.GetReservationRequest):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.GetReservationRequest,
+        dict,
+    ],
+)
+def test_get_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Reservation(
+            commitment="commitment_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            id=205,
+            kind="kind_value",
+            name="name_value",
+            satisfies_pzs=True,
+            self_link="self_link_value",
+            specific_reservation_required=True,
+            status="status_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Reservation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.Reservation)
+    assert response.commitment == "commitment_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.id == 205
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.satisfies_pzs is True
+    assert response.self_link == "self_link_value"
+    assert response.specific_reservation_required is True
+    assert response.status == "status_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_get"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_get"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.GetReservationRequest.pb(compute.GetReservationRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Reservation.to_json(compute.Reservation())
+        req.return_value.content = return_value
+
+        request = compute.GetReservationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Reservation()
+
+        client.get(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_iam_policy_rest_bad_request(
+    request_type=compute.GetIamPolicyReservationRequest,
+):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_iam_policy(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.GetIamPolicyReservationRequest,
+        dict,
+    ],
+)
+def test_get_iam_policy_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Policy(
+            etag="etag_value",
+            iam_owned=True,
+            version=774,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Policy.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_iam_policy(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.Policy)
+    assert response.etag == "etag_value"
+    assert response.iam_owned is True
+    assert response.version == 774
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_iam_policy_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_get_iam_policy"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_get_iam_policy"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.GetIamPolicyReservationRequest.pb(
+            compute.GetIamPolicyReservationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Policy.to_json(compute.Policy())
+        req.return_value.content = return_value
+
+        request = compute.GetIamPolicyReservationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Policy()
+
+        client.get_iam_policy(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_insert_rest_bad_request(request_type=compute.InsertReservationRequest):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.insert(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.InsertReservationRequest,
+        dict,
+    ],
+)
+def test_insert_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2"}
+    request_init["reservation_resource"] = {
+        "aggregate_reservation": {
+            "in_use_resources": [
+                {
+                    "accelerator": {
+                        "accelerator_count": 1805,
+                        "accelerator_type": "accelerator_type_value",
+                    }
+                }
+            ],
+            "reserved_resources": {},
+            "vm_family": "vm_family_value",
+            "workload_type": "workload_type_value",
+        },
+        "commitment": "commitment_value",
+        "creation_timestamp": "creation_timestamp_value",
+        "description": "description_value",
+        "id": 205,
+        "kind": "kind_value",
+        "name": "name_value",
+        "resource_policies": {},
+        "resource_status": {
+            "specific_sku_allocation": {
+                "source_instance_template_id": "source_instance_template_id_value"
+            }
+        },
+        "satisfies_pzs": True,
+        "self_link": "self_link_value",
+        "share_settings": {"project_map": {}, "share_type": "share_type_value"},
+        "specific_reservation": {
+            "assured_count": 1407,
+            "count": 553,
+            "in_use_count": 1291,
+            "instance_properties": {
+                "guest_accelerators": [
+                    {
+                        "accelerator_count": 1805,
+                        "accelerator_type": "accelerator_type_value",
+                    }
+                ],
+                "local_ssds": [{"disk_size_gb": 1261, "interface": "interface_value"}],
+                "location_hint": "location_hint_value",
+                "machine_type": "machine_type_value",
+                "min_cpu_platform": "min_cpu_platform_value",
+            },
+            "source_instance_template": "source_instance_template_value",
+        },
+        "specific_reservation_required": True,
+        "status": "status_value",
+        "zone": "zone_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.InsertReservationRequest.meta.fields["reservation_resource"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "reservation_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["reservation_resource"][field])):
+                    del request_init["reservation_resource"][field][i][subfield]
+            else:
+                del request_init["reservation_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.insert(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_insert_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_insert"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_insert"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.InsertReservationRequest.pb(
+            compute.InsertReservationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.InsertReservationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.insert(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_rest_bad_request(request_type=compute.ListReservationsRequest):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ListReservationsRequest,
+        dict,
+    ],
+)
+def test_list_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.ReservationList(
+            id="id_value",
+            kind="kind_value",
+            next_page_token="next_page_token_value",
+            self_link="self_link_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.ReservationList.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListPager)
+    assert response.id == "id_value"
+    assert response.kind == "kind_value"
+    assert response.next_page_token == "next_page_token_value"
+    assert response.self_link == "self_link_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_list"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ListReservationsRequest.pb(
+            compute.ListReservationsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.ReservationList.to_json(compute.ReservationList())
+        req.return_value.content = return_value
+
+        request = compute.ListReservationsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.ReservationList()
+
+        client.list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_resize_rest_bad_request(request_type=compute.ResizeReservationRequest):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.resize(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ResizeReservationRequest,
+        dict,
+    ],
+)
+def test_resize_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request_init["reservations_resize_request_resource"] = {"specific_sku_count": 1920}
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.ResizeReservationRequest.meta.fields[
+        "reservations_resize_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "reservations_resize_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["reservations_resize_request_resource"][field])
+                ):
+                    del request_init["reservations_resize_request_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["reservations_resize_request_resource"][field][
+                    subfield
+                ]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.resize(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_resize_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_resize"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_resize"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ResizeReservationRequest.pb(
+            compute.ResizeReservationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.ResizeReservationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.resize(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_iam_policy_rest_bad_request(
+    request_type=compute.SetIamPolicyReservationRequest,
+):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_iam_policy(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.SetIamPolicyReservationRequest,
+        dict,
+    ],
+)
+def test_set_iam_policy_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
+    request_init["zone_set_policy_request_resource"] = {
+        "bindings": [
+            {
+                "binding_id": "binding_id_value",
+                "condition": {
+                    "description": "description_value",
+                    "expression": "expression_value",
+                    "location": "location_value",
+                    "title": "title_value",
+                },
+                "members": ["members_value1", "members_value2"],
+                "role": "role_value",
+            }
+        ],
+        "etag": "etag_value",
+        "policy": {
+            "audit_configs": [
+                {
+                    "audit_log_configs": [
+                        {
+                            "exempted_members": [
+                                "exempted_members_value1",
+                                "exempted_members_value2",
+                            ],
+                            "ignore_child_exemptions": True,
+                            "log_type": "log_type_value",
+                        }
+                    ],
+                    "exempted_members": [
+                        "exempted_members_value1",
+                        "exempted_members_value2",
+                    ],
+                    "service": "service_value",
+                }
+            ],
+            "bindings": {},
+            "etag": "etag_value",
+            "iam_owned": True,
+            "version": 774,
+        },
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.SetIamPolicyReservationRequest.meta.fields[
+        "zone_set_policy_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "zone_set_policy_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["zone_set_policy_request_resource"][field])
+                ):
+                    del request_init["zone_set_policy_request_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["zone_set_policy_request_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Policy(
+            etag="etag_value",
+            iam_owned=True,
+            version=774,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Policy.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_iam_policy(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.Policy)
+    assert response.etag == "etag_value"
+    assert response.iam_owned is True
+    assert response.version == 774
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_iam_policy_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_set_iam_policy"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_set_iam_policy"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.SetIamPolicyReservationRequest.pb(
+            compute.SetIamPolicyReservationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Policy.to_json(compute.Policy())
+        req.return_value.content = return_value
+
+        request = compute.SetIamPolicyReservationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Policy()
+
+        client.set_iam_policy(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_test_iam_permissions_rest_bad_request(
+    request_type=compute.TestIamPermissionsReservationRequest,
+):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.test_iam_permissions(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.TestIamPermissionsReservationRequest,
+        dict,
+    ],
+)
+def test_test_iam_permissions_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "resource": "sample3"}
+    request_init["test_permissions_request_resource"] = {
+        "permissions": ["permissions_value1", "permissions_value2"]
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.TestIamPermissionsReservationRequest.meta.fields[
+        "test_permissions_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "test_permissions_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["test_permissions_request_resource"][field])
+                ):
+                    del request_init["test_permissions_request_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["test_permissions_request_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.TestPermissionsResponse(
+            permissions=["permissions_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.TestPermissionsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.test_iam_permissions(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.TestPermissionsResponse)
+    assert response.permissions == ["permissions_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_test_iam_permissions_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_test_iam_permissions"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_test_iam_permissions"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.TestIamPermissionsReservationRequest.pb(
+            compute.TestIamPermissionsReservationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.TestPermissionsResponse.to_json(
+            compute.TestPermissionsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = compute.TestIamPermissionsReservationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.TestPermissionsResponse()
+
+        client.test_iam_permissions(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_rest_bad_request(request_type=compute.UpdateReservationRequest):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.UpdateReservationRequest,
+        dict,
+    ],
+)
+def test_update_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request_init["reservation_resource"] = {
+        "aggregate_reservation": {
+            "in_use_resources": [
+                {
+                    "accelerator": {
+                        "accelerator_count": 1805,
+                        "accelerator_type": "accelerator_type_value",
+                    }
+                }
+            ],
+            "reserved_resources": {},
+            "vm_family": "vm_family_value",
+            "workload_type": "workload_type_value",
+        },
+        "commitment": "commitment_value",
+        "creation_timestamp": "creation_timestamp_value",
+        "description": "description_value",
+        "id": 205,
+        "kind": "kind_value",
+        "name": "name_value",
+        "resource_policies": {},
+        "resource_status": {
+            "specific_sku_allocation": {
+                "source_instance_template_id": "source_instance_template_id_value"
+            }
+        },
+        "satisfies_pzs": True,
+        "self_link": "self_link_value",
+        "share_settings": {"project_map": {}, "share_type": "share_type_value"},
+        "specific_reservation": {
+            "assured_count": 1407,
+            "count": 553,
+            "in_use_count": 1291,
+            "instance_properties": {
+                "guest_accelerators": [
+                    {
+                        "accelerator_count": 1805,
+                        "accelerator_type": "accelerator_type_value",
+                    }
+                ],
+                "local_ssds": [{"disk_size_gb": 1261, "interface": "interface_value"}],
+                "location_hint": "location_hint_value",
+                "machine_type": "machine_type_value",
+                "min_cpu_platform": "min_cpu_platform_value",
+            },
+            "source_instance_template": "source_instance_template_value",
+        },
+        "specific_reservation_required": True,
+        "status": "status_value",
+        "zone": "zone_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.UpdateReservationRequest.meta.fields["reservation_resource"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "reservation_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["reservation_resource"][field])):
+                    del request_init["reservation_resource"][field][i][subfield]
+            else:
+                del request_init["reservation_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_update"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_update"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.UpdateReservationRequest.pb(
+            compute.UpdateReservationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.UpdateReservationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.update(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_initialize_client_w_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_aggregated_list_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.aggregated_list), "__call__") as call:
+        client.aggregated_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.AggregatedListReservationsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_unary_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete), "__call__") as call:
+        client.delete_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.DeleteReservationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get), "__call__") as call:
+        client.get(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.GetReservationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_iam_policy_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_iam_policy), "__call__") as call:
+        client.get_iam_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.GetIamPolicyReservationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_insert_unary_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.insert), "__call__") as call:
+        client.insert_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.InsertReservationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list), "__call__") as call:
+        client.list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ListReservationsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_resize_unary_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.resize), "__call__") as call:
+        client.resize_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ResizeReservationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_iam_policy_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_iam_policy), "__call__") as call:
+        client.set_iam_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetIamPolicyReservationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_test_iam_permissions_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.test_iam_permissions), "__call__"
+    ) as call:
+        client.test_iam_permissions(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.TestIamPermissionsReservationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_unary_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update), "__call__") as call:
+        client.update_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.UpdateReservationRequest()
+
+        assert args[0] == request_msg
 
 
 def test_reservations_base_transport_error():
@@ -7381,21 +6590,16 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-    }
-
-    for transport, close_name in transports.items():
-        client = ReservationsClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

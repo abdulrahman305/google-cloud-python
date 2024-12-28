@@ -4,6 +4,32 @@
 
 [1]: https://pypi.org/project/google-cloud-resource-manager/#history
 
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-resource-manager-v1.13.1...google-cloud-resource-manager-v1.14.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([8e6b0cc](https://github.com/googleapis/google-cloud-python/commit/8e6b0cca8709ae8c7f0c722c5ebf0707358d3359))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([8e6b0cc](https://github.com/googleapis/google-cloud-python/commit/8e6b0cca8709ae8c7f0c722c5ebf0707358d3359))
+
+## [1.13.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-resource-manager-v1.13.0...google-cloud-resource-manager-v1.13.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13245](https://github.com/googleapis/google-cloud-python/issues/13245)) ([875f712](https://github.com/googleapis/google-cloud-python/commit/875f712265a36919409964f5ade218330f1d0147))
+
+## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-resource-manager-v1.12.5...google-cloud-resource-manager-v1.13.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13209](https://github.com/googleapis/google-cloud-python/issues/13209)) ([5f2e30d](https://github.com/googleapis/google-cloud-python/commit/5f2e30d62eea6080f5707ee18755f2bb812ad00b))
+
 ## [1.12.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-resource-manager-v1.12.4...google-cloud-resource-manager-v1.12.5) (2024-07-30)
 
 

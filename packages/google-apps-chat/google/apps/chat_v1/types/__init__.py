@@ -17,6 +17,7 @@ from .action_status import ActionStatus
 from .annotation import (
     Annotation,
     AnnotationType,
+    ChatSpaceLinkData,
     DriveLinkData,
     RichLinkMetadata,
     SlashCommandMetadata,
@@ -101,6 +102,8 @@ from .space import (
     GetSpaceRequest,
     ListSpacesRequest,
     ListSpacesResponse,
+    SearchSpacesRequest,
+    SearchSpacesResponse,
     Space,
     UpdateSpaceRequest,
 )
@@ -123,6 +126,7 @@ from .widgets import WidgetMarkup
 __all__ = (
     "ActionStatus",
     "Annotation",
+    "ChatSpaceLinkData",
     "DriveLinkData",
     "RichLinkMetadata",
     "SlashCommandMetadata",
@@ -196,6 +200,8 @@ __all__ = (
     "GetSpaceRequest",
     "ListSpacesRequest",
     "ListSpacesResponse",
+    "SearchSpacesRequest",
+    "SearchSpacesResponse",
     "Space",
     "UpdateSpaceRequest",
     "GetSpaceEventRequest",

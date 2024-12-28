@@ -1,5 +1,51 @@
 # Changelog
 
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-management-v1.11.0...google-cloud-service-management-v1.12.0) (2024-12-12)
+
+
+### Features
+
+* add service renaming to GoSettings ([9dc3d4a](https://github.com/googleapis/google-cloud-python/commit/9dc3d4ac473823860bb27172c0d05a37643c794a))
+* Add support for opt-in debug logging ([9dc3d4a](https://github.com/googleapis/google-cloud-python/commit/9dc3d4ac473823860bb27172c0d05a37643c794a))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([9dc3d4a](https://github.com/googleapis/google-cloud-python/commit/9dc3d4ac473823860bb27172c0d05a37643c794a))
+
+## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-management-v1.10.1...google-cloud-service-management-v1.11.0) (2024-11-11)
+
+
+### Features
+
+* Add field protobuf_pythonic_types_enabled to message ExperimentalFeatures ([a6897e3](https://github.com/googleapis/google-cloud-python/commit/a6897e3f763e831a22602d1860f1810e9600e014))
+
+
+### Documentation
+
+* A comment for field `unit` in message `.google.api.QuotaLimit` is changed ([a6897e3](https://github.com/googleapis/google-cloud-python/commit/a6897e3f763e831a22602d1860f1810e9600e014))
+
+## [1.10.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-management-v1.10.0...google-cloud-service-management-v1.10.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([59c4287](https://github.com/googleapis/google-cloud-python/commit/59c42878386ee08d1717b73e47d33d76cfb38ba0))
+
+## [1.10.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-management-v1.9.0...google-cloud-service-management-v1.10.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13202](https://github.com/googleapis/google-cloud-python/issues/13202)) ([5b1f2f3](https://github.com/googleapis/google-cloud-python/commit/5b1f2f3a81ed171b643812e67a7ed179b9b703ea))
+
+## [1.9.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-management-v1.8.5...google-cloud-service-management-v1.9.0) (2024-09-03)
+
+
+### Features
+
+* Support local binding for variables with keyword name collision ([c54700d](https://github.com/googleapis/google-cloud-python/commit/c54700d3e11e59eb5fae01fda25dbf3a9acbe382))
+
 ## [1.8.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-management-v1.8.4...google-cloud-service-management-v1.8.5) (2024-07-30)
 
 

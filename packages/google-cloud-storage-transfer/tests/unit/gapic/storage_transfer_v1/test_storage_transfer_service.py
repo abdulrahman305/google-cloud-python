@@ -22,9 +22,26 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
+
+from google.api_core import api_core_version
+from google.protobuf import json_format
+import grpc
+from grpc.experimental import aio
+from proto.marshal.rules import wrappers
+from proto.marshal.rules.dates import DurationRule, TimestampRule
+import pytest
+from requests import PreparedRequest, Request, Response
+from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
 
 from google.api_core import (
     future,
@@ -35,7 +52,7 @@ from google.api_core import (
     operations_v1,
     path_template,
 )
-from google.api_core import api_core_version, client_options
+from google.api_core import client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
 from google.api_core import retry as retries
@@ -47,17 +64,9 @@ from google.oauth2 import service_account
 from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
-from google.protobuf import json_format
 from google.protobuf import timestamp_pb2  # type: ignore
 from google.type import date_pb2  # type: ignore
 from google.type import timeofday_pb2  # type: ignore
-import grpc
-from grpc.experimental import aio
-from proto.marshal.rules import wrappers
-from proto.marshal.rules.dates import DurationRule, TimestampRule
-import pytest
-from requests import PreparedRequest, Request, Response
-from requests.sessions import Session
 
 from google.cloud.storage_transfer_v1.services.storage_transfer_service import (
     StorageTransferServiceAsyncClient,
@@ -68,8 +77,22 @@ from google.cloud.storage_transfer_v1.services.storage_transfer_service import (
 from google.cloud.storage_transfer_v1.types import transfer, transfer_types
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -326,94 +349,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         StorageTransferServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            StorageTransferServiceClient,
-            transports.StorageTransferServiceGrpcTransport,
-            "grpc",
-        ),
-        (
-            StorageTransferServiceClient,
-            transports.StorageTransferServiceRestTransport,
-            "rest",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1245,27 +1180,6 @@ def test_get_google_service_account(request_type, transport: str = "grpc"):
     assert response.subject_id == "subject_id_value"
 
 
-def test_get_google_service_account_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_google_service_account), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_google_service_account()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.GetGoogleServiceAccountRequest()
-
-
 def test_get_google_service_account_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1337,32 +1251,6 @@ def test_get_google_service_account_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_google_service_account_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_google_service_account), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            transfer_types.GoogleServiceAccount(
-                account_email="account_email_value",
-                subject_id="subject_id_value",
-            )
-        )
-        response = await client.get_google_service_account()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.GetGoogleServiceAccountRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_google_service_account_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1370,7 +1258,7 @@ async def test_get_google_service_account_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1385,22 +1273,23 @@ async def test_get_google_service_account_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_google_service_account
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_google_service_account(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_google_service_account(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1409,7 +1298,7 @@ async def test_get_google_service_account_async(
     request_type=transfer.GetGoogleServiceAccountRequest,
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1481,7 +1370,7 @@ def test_get_google_service_account_field_headers():
 @pytest.mark.asyncio
 async def test_get_google_service_account_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1558,27 +1447,6 @@ def test_create_transfer_job(request_type, transport: str = "grpc"):
     assert response.latest_operation_name == "latest_operation_name_value"
 
 
-def test_create_transfer_job_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_transfer_job), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.CreateTransferJobRequest()
-
-
 def test_create_transfer_job_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1645,35 +1513,6 @@ def test_create_transfer_job_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_transfer_job_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_transfer_job), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            transfer_types.TransferJob(
-                name="name_value",
-                description="description_value",
-                project_id="project_id_value",
-                status=transfer_types.TransferJob.Status.ENABLED,
-                latest_operation_name="latest_operation_name_value",
-            )
-        )
-        response = await client.create_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.CreateTransferJobRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_transfer_job_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1681,7 +1520,7 @@ async def test_create_transfer_job_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1696,22 +1535,23 @@ async def test_create_transfer_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_transfer_job
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_transfer_job(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_transfer_job(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1719,7 +1559,7 @@ async def test_create_transfer_job_async(
     transport: str = "grpc_asyncio", request_type=transfer.CreateTransferJobRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1809,27 +1649,6 @@ def test_update_transfer_job(request_type, transport: str = "grpc"):
     assert response.latest_operation_name == "latest_operation_name_value"
 
 
-def test_update_transfer_job_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_transfer_job), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.UpdateTransferJobRequest()
-
-
 def test_update_transfer_job_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1902,35 +1721,6 @@ def test_update_transfer_job_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_transfer_job_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_transfer_job), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            transfer_types.TransferJob(
-                name="name_value",
-                description="description_value",
-                project_id="project_id_value",
-                status=transfer_types.TransferJob.Status.ENABLED,
-                latest_operation_name="latest_operation_name_value",
-            )
-        )
-        response = await client.update_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.UpdateTransferJobRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_transfer_job_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1938,7 +1728,7 @@ async def test_update_transfer_job_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1953,22 +1743,23 @@ async def test_update_transfer_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_transfer_job
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_transfer_job(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_transfer_job(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1976,7 +1767,7 @@ async def test_update_transfer_job_async(
     transport: str = "grpc_asyncio", request_type=transfer.UpdateTransferJobRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2054,7 +1845,7 @@ def test_update_transfer_job_field_headers():
 @pytest.mark.asyncio
 async def test_update_transfer_job_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2129,25 +1920,6 @@ def test_get_transfer_job(request_type, transport: str = "grpc"):
     assert response.latest_operation_name == "latest_operation_name_value"
 
 
-def test_get_transfer_job_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_transfer_job), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.GetTransferJobRequest()
-
-
 def test_get_transfer_job_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2216,33 +1988,6 @@ def test_get_transfer_job_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_transfer_job_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_transfer_job), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            transfer_types.TransferJob(
-                name="name_value",
-                description="description_value",
-                project_id="project_id_value",
-                status=transfer_types.TransferJob.Status.ENABLED,
-                latest_operation_name="latest_operation_name_value",
-            )
-        )
-        response = await client.get_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.GetTransferJobRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_transfer_job_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2250,7 +1995,7 @@ async def test_get_transfer_job_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2265,22 +2010,23 @@ async def test_get_transfer_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_transfer_job
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_transfer_job(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_transfer_job(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2288,7 +2034,7 @@ async def test_get_transfer_job_async(
     transport: str = "grpc_asyncio", request_type=transfer.GetTransferJobRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2362,7 +2108,7 @@ def test_get_transfer_job_field_headers():
 @pytest.mark.asyncio
 async def test_get_transfer_job_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2427,27 +2173,6 @@ def test_list_transfer_jobs(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListTransferJobsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_transfer_jobs_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_transfer_jobs), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_transfer_jobs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.ListTransferJobsRequest()
 
 
 def test_list_transfer_jobs_non_empty_request_with_auto_populated_field():
@@ -2522,31 +2247,6 @@ def test_list_transfer_jobs_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_transfer_jobs_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_transfer_jobs), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            transfer.ListTransferJobsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_transfer_jobs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.ListTransferJobsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_transfer_jobs_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2554,7 +2254,7 @@ async def test_list_transfer_jobs_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2569,22 +2269,23 @@ async def test_list_transfer_jobs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_transfer_jobs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_transfer_jobs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_transfer_jobs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2592,7 +2293,7 @@ async def test_list_transfer_jobs_async(
     transport: str = "grpc_asyncio", request_type=transfer.ListTransferJobsRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2727,7 +2428,7 @@ def test_list_transfer_jobs_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_transfer_jobs_async_pager():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2779,7 +2480,7 @@ async def test_list_transfer_jobs_async_pager():
 @pytest.mark.asyncio
 async def test_list_transfer_jobs_async_pages():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2862,27 +2563,6 @@ def test_pause_transfer_operation(request_type, transport: str = "grpc"):
     assert response is None
 
 
-def test_pause_transfer_operation_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.pause_transfer_operation), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.pause_transfer_operation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.PauseTransferOperationRequest()
-
-
 def test_pause_transfer_operation_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2954,27 +2634,6 @@ def test_pause_transfer_operation_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_pause_transfer_operation_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.pause_transfer_operation), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.pause_transfer_operation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.PauseTransferOperationRequest()
-
-
-@pytest.mark.asyncio
 async def test_pause_transfer_operation_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2982,7 +2641,7 @@ async def test_pause_transfer_operation_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2997,22 +2656,23 @@ async def test_pause_transfer_operation_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.pause_transfer_operation
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.pause_transfer_operation(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.pause_transfer_operation(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3020,7 +2680,7 @@ async def test_pause_transfer_operation_async(
     transport: str = "grpc_asyncio", request_type=transfer.PauseTransferOperationRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3085,7 +2745,7 @@ def test_pause_transfer_operation_field_headers():
 @pytest.mark.asyncio
 async def test_pause_transfer_operation_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3147,27 +2807,6 @@ def test_resume_transfer_operation(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_resume_transfer_operation_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.resume_transfer_operation), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.resume_transfer_operation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.ResumeTransferOperationRequest()
 
 
 def test_resume_transfer_operation_non_empty_request_with_auto_populated_field():
@@ -3241,27 +2880,6 @@ def test_resume_transfer_operation_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_resume_transfer_operation_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.resume_transfer_operation), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.resume_transfer_operation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.ResumeTransferOperationRequest()
-
-
-@pytest.mark.asyncio
 async def test_resume_transfer_operation_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3269,7 +2887,7 @@ async def test_resume_transfer_operation_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3284,22 +2902,23 @@ async def test_resume_transfer_operation_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.resume_transfer_operation
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.resume_transfer_operation(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.resume_transfer_operation(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3308,7 +2927,7 @@ async def test_resume_transfer_operation_async(
     request_type=transfer.ResumeTransferOperationRequest,
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3373,7 +2992,7 @@ def test_resume_transfer_operation_field_headers():
 @pytest.mark.asyncio
 async def test_resume_transfer_operation_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3433,25 +3052,6 @@ def test_run_transfer_job(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_run_transfer_job_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.run_transfer_job), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.run_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.RunTransferJobRequest()
 
 
 def test_run_transfer_job_non_empty_request_with_auto_populated_field():
@@ -3514,8 +3114,9 @@ def test_run_transfer_job_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.run_transfer_job(request)
@@ -3526,27 +3127,6 @@ def test_run_transfer_job_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_run_transfer_job_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.run_transfer_job), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.run_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.RunTransferJobRequest()
-
-
-@pytest.mark.asyncio
 async def test_run_transfer_job_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3554,7 +3134,7 @@ async def test_run_transfer_job_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3569,26 +3149,28 @@ async def test_run_transfer_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.run_transfer_job
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.run_transfer_job(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.run_transfer_job(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3596,7 +3178,7 @@ async def test_run_transfer_job_async(
     transport: str = "grpc_asyncio", request_type=transfer.RunTransferJobRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3659,7 +3241,7 @@ def test_run_transfer_job_field_headers():
 @pytest.mark.asyncio
 async def test_run_transfer_job_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3721,27 +3303,6 @@ def test_delete_transfer_job(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_transfer_job_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_transfer_job), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.DeleteTransferJobRequest()
 
 
 def test_delete_transfer_job_non_empty_request_with_auto_populated_field():
@@ -3816,27 +3377,6 @@ def test_delete_transfer_job_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_transfer_job_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_transfer_job), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_transfer_job()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.DeleteTransferJobRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_transfer_job_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3844,7 +3384,7 @@ async def test_delete_transfer_job_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3859,22 +3399,23 @@ async def test_delete_transfer_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_transfer_job
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_transfer_job(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_transfer_job(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3882,7 +3423,7 @@ async def test_delete_transfer_job_async(
     transport: str = "grpc_asyncio", request_type=transfer.DeleteTransferJobRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3947,7 +3488,7 @@ def test_delete_transfer_job_field_headers():
 @pytest.mark.asyncio
 async def test_delete_transfer_job_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4016,27 +3557,6 @@ def test_create_agent_pool(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
     assert response.state == transfer_types.AgentPool.State.CREATING
-
-
-def test_create_agent_pool_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_agent_pool), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_agent_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.CreateAgentPoolRequest()
 
 
 def test_create_agent_pool_non_empty_request_with_auto_populated_field():
@@ -4109,33 +3629,6 @@ def test_create_agent_pool_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_agent_pool_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_agent_pool), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            transfer_types.AgentPool(
-                name="name_value",
-                display_name="display_name_value",
-                state=transfer_types.AgentPool.State.CREATING,
-            )
-        )
-        response = await client.create_agent_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.CreateAgentPoolRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_agent_pool_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4143,7 +3636,7 @@ async def test_create_agent_pool_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4158,22 +3651,23 @@ async def test_create_agent_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_agent_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_agent_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_agent_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4181,7 +3675,7 @@ async def test_create_agent_pool_async(
     transport: str = "grpc_asyncio", request_type=transfer.CreateAgentPoolRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4255,7 +3749,7 @@ def test_create_agent_pool_field_headers():
 @pytest.mark.asyncio
 async def test_create_agent_pool_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4339,7 +3833,7 @@ def test_create_agent_pool_flattened_error():
 @pytest.mark.asyncio
 async def test_create_agent_pool_flattened_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4378,7 +3872,7 @@ async def test_create_agent_pool_flattened_async():
 @pytest.mark.asyncio
 async def test_create_agent_pool_flattened_error_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4432,27 +3926,6 @@ def test_update_agent_pool(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
     assert response.state == transfer_types.AgentPool.State.CREATING
-
-
-def test_update_agent_pool_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_agent_pool), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_agent_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.UpdateAgentPoolRequest()
 
 
 def test_update_agent_pool_non_empty_request_with_auto_populated_field():
@@ -4519,33 +3992,6 @@ def test_update_agent_pool_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_agent_pool_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_agent_pool), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            transfer_types.AgentPool(
-                name="name_value",
-                display_name="display_name_value",
-                state=transfer_types.AgentPool.State.CREATING,
-            )
-        )
-        response = await client.update_agent_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.UpdateAgentPoolRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_agent_pool_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4553,7 +3999,7 @@ async def test_update_agent_pool_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4568,22 +4014,23 @@ async def test_update_agent_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_agent_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_agent_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_agent_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4591,7 +4038,7 @@ async def test_update_agent_pool_async(
     transport: str = "grpc_asyncio", request_type=transfer.UpdateAgentPoolRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4665,7 +4112,7 @@ def test_update_agent_pool_field_headers():
 @pytest.mark.asyncio
 async def test_update_agent_pool_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4744,7 +4191,7 @@ def test_update_agent_pool_flattened_error():
 @pytest.mark.asyncio
 async def test_update_agent_pool_flattened_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4779,7 +4226,7 @@ async def test_update_agent_pool_flattened_async():
 @pytest.mark.asyncio
 async def test_update_agent_pool_flattened_error_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4830,25 +4277,6 @@ def test_get_agent_pool(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
     assert response.state == transfer_types.AgentPool.State.CREATING
-
-
-def test_get_agent_pool_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_agent_pool), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_agent_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.GetAgentPoolRequest()
 
 
 def test_get_agent_pool_non_empty_request_with_auto_populated_field():
@@ -4915,31 +4343,6 @@ def test_get_agent_pool_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_agent_pool_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_agent_pool), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            transfer_types.AgentPool(
-                name="name_value",
-                display_name="display_name_value",
-                state=transfer_types.AgentPool.State.CREATING,
-            )
-        )
-        response = await client.get_agent_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.GetAgentPoolRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_agent_pool_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4947,7 +4350,7 @@ async def test_get_agent_pool_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4962,22 +4365,23 @@ async def test_get_agent_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_agent_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_agent_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_agent_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4985,7 +4389,7 @@ async def test_get_agent_pool_async(
     transport: str = "grpc_asyncio", request_type=transfer.GetAgentPoolRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5055,7 +4459,7 @@ def test_get_agent_pool_field_headers():
 @pytest.mark.asyncio
 async def test_get_agent_pool_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5125,7 +4529,7 @@ def test_get_agent_pool_flattened_error():
 @pytest.mark.asyncio
 async def test_get_agent_pool_flattened_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5154,7 +4558,7 @@ async def test_get_agent_pool_flattened_async():
 @pytest.mark.asyncio
 async def test_get_agent_pool_flattened_error_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5200,25 +4604,6 @@ def test_list_agent_pools(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListAgentPoolsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_agent_pools_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_agent_pools), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_agent_pools()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.ListAgentPoolsRequest()
 
 
 def test_list_agent_pools_non_empty_request_with_auto_populated_field():
@@ -5291,29 +4676,6 @@ def test_list_agent_pools_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_agent_pools_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_agent_pools), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            transfer.ListAgentPoolsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_agent_pools()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.ListAgentPoolsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_agent_pools_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5321,7 +4683,7 @@ async def test_list_agent_pools_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5336,22 +4698,23 @@ async def test_list_agent_pools_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_agent_pools
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_agent_pools(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_agent_pools(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5359,7 +4722,7 @@ async def test_list_agent_pools_async(
     transport: str = "grpc_asyncio", request_type=transfer.ListAgentPoolsRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5425,7 +4788,7 @@ def test_list_agent_pools_field_headers():
 @pytest.mark.asyncio
 async def test_list_agent_pools_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5495,7 +4858,7 @@ def test_list_agent_pools_flattened_error():
 @pytest.mark.asyncio
 async def test_list_agent_pools_flattened_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5524,7 +4887,7 @@ async def test_list_agent_pools_flattened_async():
 @pytest.mark.asyncio
 async def test_list_agent_pools_flattened_error_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5634,7 +4997,7 @@ def test_list_agent_pools_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_agent_pools_async_pager():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5684,7 +5047,7 @@ async def test_list_agent_pools_async_pager():
 @pytest.mark.asyncio
 async def test_list_agent_pools_async_pages():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5765,27 +5128,6 @@ def test_delete_agent_pool(request_type, transport: str = "grpc"):
     assert response is None
 
 
-def test_delete_agent_pool_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_agent_pool), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_agent_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.DeleteAgentPoolRequest()
-
-
 def test_delete_agent_pool_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5854,27 +5196,6 @@ def test_delete_agent_pool_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_agent_pool_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_agent_pool), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_agent_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == transfer.DeleteAgentPoolRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_agent_pool_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5882,7 +5203,7 @@ async def test_delete_agent_pool_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = StorageTransferServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5897,22 +5218,23 @@ async def test_delete_agent_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_agent_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_agent_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_agent_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5920,7 +5242,7 @@ async def test_delete_agent_pool_async(
     transport: str = "grpc_asyncio", request_type=transfer.DeleteAgentPoolRequest
 ):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5985,7 +5307,7 @@ def test_delete_agent_pool_field_headers():
 @pytest.mark.asyncio
 async def test_delete_agent_pool_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6057,7 +5379,7 @@ def test_delete_agent_pool_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_agent_pool_flattened_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6086,7 +5408,7 @@ async def test_delete_agent_pool_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_agent_pool_flattened_error_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6096,48 +5418,6 @@ async def test_delete_agent_pool_flattened_error_async():
             transfer.DeleteAgentPoolRequest(),
             name="name_value",
         )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.GetGoogleServiceAccountRequest,
-        dict,
-    ],
-)
-def test_get_google_service_account_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project_id": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = transfer_types.GoogleServiceAccount(
-            account_email="account_email_value",
-            subject_id="subject_id_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = transfer_types.GoogleServiceAccount.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_google_service_account(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, transfer_types.GoogleServiceAccount)
-    assert response.account_email == "account_email_value"
-    assert response.subject_id == "subject_id_value"
 
 
 def test_get_google_service_account_rest_use_cached_wrapped_rpc():
@@ -6247,6 +5527,7 @@ def test_get_google_service_account_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_google_service_account(request)
 
@@ -6262,321 +5543,6 @@ def test_get_google_service_account_rest_unset_required_fields():
 
     unset_fields = transport.get_google_service_account._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("projectId",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_google_service_account_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor,
-        "post_get_google_service_account",
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor,
-        "pre_get_google_service_account",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.GetGoogleServiceAccountRequest.pb(
-            transfer.GetGoogleServiceAccountRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = transfer_types.GoogleServiceAccount.to_json(
-            transfer_types.GoogleServiceAccount()
-        )
-
-        request = transfer.GetGoogleServiceAccountRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = transfer_types.GoogleServiceAccount()
-
-        client.get_google_service_account(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_google_service_account_rest_bad_request(
-    transport: str = "rest", request_type=transfer.GetGoogleServiceAccountRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project_id": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_google_service_account(request)
-
-
-def test_get_google_service_account_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.CreateTransferJobRequest,
-        dict,
-    ],
-)
-def test_create_transfer_job_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request_init["transfer_job"] = {
-        "name": "name_value",
-        "description": "description_value",
-        "project_id": "project_id_value",
-        "transfer_spec": {
-            "gcs_data_sink": {"bucket_name": "bucket_name_value", "path": "path_value"},
-            "posix_data_sink": {"root_directory": "root_directory_value"},
-            "gcs_data_source": {},
-            "aws_s3_data_source": {
-                "bucket_name": "bucket_name_value",
-                "aws_access_key": {
-                    "access_key_id": "access_key_id_value",
-                    "secret_access_key": "secret_access_key_value",
-                },
-                "path": "path_value",
-                "role_arn": "role_arn_value",
-                "credentials_secret": "credentials_secret_value",
-            },
-            "http_data_source": {"list_url": "list_url_value"},
-            "posix_data_source": {},
-            "azure_blob_storage_data_source": {
-                "storage_account": "storage_account_value",
-                "azure_credentials": {"sas_token": "sas_token_value"},
-                "container": "container_value",
-                "path": "path_value",
-                "credentials_secret": "credentials_secret_value",
-            },
-            "aws_s3_compatible_data_source": {
-                "bucket_name": "bucket_name_value",
-                "path": "path_value",
-                "endpoint": "endpoint_value",
-                "region": "region_value",
-                "s3_metadata": {
-                    "auth_method": 1,
-                    "request_model": 1,
-                    "protocol": 1,
-                    "list_api": 1,
-                },
-            },
-            "gcs_intermediate_data_location": {},
-            "object_conditions": {
-                "min_time_elapsed_since_last_modification": {
-                    "seconds": 751,
-                    "nanos": 543,
-                },
-                "max_time_elapsed_since_last_modification": {},
-                "include_prefixes": [
-                    "include_prefixes_value1",
-                    "include_prefixes_value2",
-                ],
-                "exclude_prefixes": [
-                    "exclude_prefixes_value1",
-                    "exclude_prefixes_value2",
-                ],
-                "last_modified_since": {"seconds": 751, "nanos": 543},
-                "last_modified_before": {},
-            },
-            "transfer_options": {
-                "overwrite_objects_already_existing_in_sink": True,
-                "delete_objects_unique_in_sink": True,
-                "delete_objects_from_source_after_transfer": True,
-                "overwrite_when": 1,
-                "metadata_options": {
-                    "symlink": 1,
-                    "mode": 1,
-                    "gid": 1,
-                    "uid": 1,
-                    "acl": 1,
-                    "storage_class": 1,
-                    "temporary_hold": 1,
-                    "kms_key": 1,
-                    "time_created": 1,
-                },
-            },
-            "transfer_manifest": {"location": "location_value"},
-            "source_agent_pool_name": "source_agent_pool_name_value",
-            "sink_agent_pool_name": "sink_agent_pool_name_value",
-        },
-        "notification_config": {
-            "pubsub_topic": "pubsub_topic_value",
-            "event_types": [1],
-            "payload_format": 1,
-        },
-        "logging_config": {
-            "log_actions": [1],
-            "log_action_states": [1],
-            "enable_onprem_gcs_transfer_logs": True,
-        },
-        "schedule": {
-            "schedule_start_date": {"year": 433, "month": 550, "day": 318},
-            "schedule_end_date": {},
-            "start_time_of_day": {
-                "hours": 561,
-                "minutes": 773,
-                "seconds": 751,
-                "nanos": 543,
-            },
-            "end_time_of_day": {},
-            "repeat_interval": {},
-        },
-        "event_stream": {
-            "name": "name_value",
-            "event_stream_start_time": {},
-            "event_stream_expiration_time": {},
-        },
-        "status": 1,
-        "creation_time": {},
-        "last_modification_time": {},
-        "deletion_time": {},
-        "latest_operation_name": "latest_operation_name_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = transfer.CreateTransferJobRequest.meta.fields["transfer_job"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["transfer_job"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["transfer_job"][field])):
-                    del request_init["transfer_job"][field][i][subfield]
-            else:
-                del request_init["transfer_job"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = transfer_types.TransferJob(
-            name="name_value",
-            description="description_value",
-            project_id="project_id_value",
-            status=transfer_types.TransferJob.Status.ENABLED,
-            latest_operation_name="latest_operation_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = transfer_types.TransferJob.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_transfer_job(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, transfer_types.TransferJob)
-    assert response.name == "name_value"
-    assert response.description == "description_value"
-    assert response.project_id == "project_id_value"
-    assert response.status == transfer_types.TransferJob.Status.ENABLED
-    assert response.latest_operation_name == "latest_operation_name_value"
 
 
 def test_create_transfer_job_rest_use_cached_wrapped_rpc():
@@ -6681,6 +5647,7 @@ def test_create_transfer_job_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_transfer_job(request)
 
@@ -6696,141 +5663,6 @@ def test_create_transfer_job_rest_unset_required_fields():
 
     unset_fields = transport.create_transfer_job._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("transferJob",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_transfer_job_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "post_create_transfer_job"
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_create_transfer_job"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.CreateTransferJobRequest.pb(
-            transfer.CreateTransferJobRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = transfer_types.TransferJob.to_json(
-            transfer_types.TransferJob()
-        )
-
-        request = transfer.CreateTransferJobRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = transfer_types.TransferJob()
-
-        client.create_transfer_job(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_transfer_job_rest_bad_request(
-    transport: str = "rest", request_type=transfer.CreateTransferJobRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_transfer_job(request)
-
-
-def test_create_transfer_job_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.UpdateTransferJobRequest,
-        dict,
-    ],
-)
-def test_update_transfer_job_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"job_name": "transferJobs/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = transfer_types.TransferJob(
-            name="name_value",
-            description="description_value",
-            project_id="project_id_value",
-            status=transfer_types.TransferJob.Status.ENABLED,
-            latest_operation_name="latest_operation_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = transfer_types.TransferJob.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_transfer_job(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, transfer_types.TransferJob)
-    assert response.name == "name_value"
-    assert response.description == "description_value"
-    assert response.project_id == "project_id_value"
-    assert response.status == transfer_types.TransferJob.Status.ENABLED
-    assert response.latest_operation_name == "latest_operation_name_value"
 
 
 def test_update_transfer_job_rest_use_cached_wrapped_rpc():
@@ -6944,6 +5776,7 @@ def test_update_transfer_job_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_transfer_job(request)
 
@@ -6968,141 +5801,6 @@ def test_update_transfer_job_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_transfer_job_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "post_update_transfer_job"
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_update_transfer_job"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.UpdateTransferJobRequest.pb(
-            transfer.UpdateTransferJobRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = transfer_types.TransferJob.to_json(
-            transfer_types.TransferJob()
-        )
-
-        request = transfer.UpdateTransferJobRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = transfer_types.TransferJob()
-
-        client.update_transfer_job(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_transfer_job_rest_bad_request(
-    transport: str = "rest", request_type=transfer.UpdateTransferJobRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"job_name": "transferJobs/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_transfer_job(request)
-
-
-def test_update_transfer_job_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.GetTransferJobRequest,
-        dict,
-    ],
-)
-def test_get_transfer_job_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"job_name": "transferJobs/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = transfer_types.TransferJob(
-            name="name_value",
-            description="description_value",
-            project_id="project_id_value",
-            status=transfer_types.TransferJob.Status.ENABLED,
-            latest_operation_name="latest_operation_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = transfer_types.TransferJob.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_transfer_job(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, transfer_types.TransferJob)
-    assert response.name == "name_value"
-    assert response.description == "description_value"
-    assert response.project_id == "project_id_value"
-    assert response.status == transfer_types.TransferJob.Status.ENABLED
-    assert response.latest_operation_name == "latest_operation_name_value"
 
 
 def test_get_transfer_job_rest_use_cached_wrapped_rpc():
@@ -7218,6 +5916,7 @@ def test_get_transfer_job_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_transfer_job(request)
 
@@ -7247,131 +5946,6 @@ def test_get_transfer_job_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_transfer_job_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "post_get_transfer_job"
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_get_transfer_job"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.GetTransferJobRequest.pb(transfer.GetTransferJobRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = transfer_types.TransferJob.to_json(
-            transfer_types.TransferJob()
-        )
-
-        request = transfer.GetTransferJobRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = transfer_types.TransferJob()
-
-        client.get_transfer_job(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_transfer_job_rest_bad_request(
-    transport: str = "rest", request_type=transfer.GetTransferJobRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"job_name": "transferJobs/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_transfer_job(request)
-
-
-def test_get_transfer_job_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.ListTransferJobsRequest,
-        dict,
-    ],
-)
-def test_list_transfer_jobs_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = transfer.ListTransferJobsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = transfer.ListTransferJobsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_transfer_jobs(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListTransferJobsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_transfer_jobs_rest_use_cached_wrapped_rpc():
@@ -7491,6 +6065,7 @@ def test_list_transfer_jobs_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_transfer_jobs(request)
 
@@ -7521,87 +6096,6 @@ def test_list_transfer_jobs_rest_unset_required_fields():
         )
         & set(("filter",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_transfer_jobs_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "post_list_transfer_jobs"
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_list_transfer_jobs"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.ListTransferJobsRequest.pb(
-            transfer.ListTransferJobsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = transfer.ListTransferJobsResponse.to_json(
-            transfer.ListTransferJobsResponse()
-        )
-
-        request = transfer.ListTransferJobsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = transfer.ListTransferJobsResponse()
-
-        client.list_transfer_jobs(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_transfer_jobs_rest_bad_request(
-    transport: str = "rest", request_type=transfer.ListTransferJobsRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_transfer_jobs(request)
 
 
 def test_list_transfer_jobs_rest_pager(transport: str = "rest"):
@@ -7663,41 +6157,6 @@ def test_list_transfer_jobs_rest_pager(transport: str = "rest"):
         pages = list(client.list_transfer_jobs(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.PauseTransferOperationRequest,
-        dict,
-    ],
-)
-def test_pause_transfer_operation_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "transferOperations/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.pause_transfer_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_pause_transfer_operation_rest_use_cached_wrapped_rpc():
@@ -7805,6 +6264,7 @@ def test_pause_transfer_operation_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.pause_transfer_operation(request)
 
@@ -7820,120 +6280,6 @@ def test_pause_transfer_operation_rest_unset_required_fields():
 
     unset_fields = transport.pause_transfer_operation._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_pause_transfer_operation_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_pause_transfer_operation"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = transfer.PauseTransferOperationRequest.pb(
-            transfer.PauseTransferOperationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = transfer.PauseTransferOperationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.pause_transfer_operation(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_pause_transfer_operation_rest_bad_request(
-    transport: str = "rest", request_type=transfer.PauseTransferOperationRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "transferOperations/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.pause_transfer_operation(request)
-
-
-def test_pause_transfer_operation_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.ResumeTransferOperationRequest,
-        dict,
-    ],
-)
-def test_resume_transfer_operation_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "transferOperations/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.resume_transfer_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_resume_transfer_operation_rest_use_cached_wrapped_rpc():
@@ -8041,6 +6387,7 @@ def test_resume_transfer_operation_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.resume_transfer_operation(request)
 
@@ -8056,121 +6403,6 @@ def test_resume_transfer_operation_rest_unset_required_fields():
 
     unset_fields = transport.resume_transfer_operation._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_resume_transfer_operation_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor,
-        "pre_resume_transfer_operation",
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = transfer.ResumeTransferOperationRequest.pb(
-            transfer.ResumeTransferOperationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = transfer.ResumeTransferOperationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.resume_transfer_operation(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_resume_transfer_operation_rest_bad_request(
-    transport: str = "rest", request_type=transfer.ResumeTransferOperationRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "transferOperations/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.resume_transfer_operation(request)
-
-
-def test_resume_transfer_operation_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.RunTransferJobRequest,
-        dict,
-    ],
-)
-def test_run_transfer_job_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"job_name": "transferJobs/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.run_transfer_job(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_run_transfer_job_rest_use_cached_wrapped_rpc():
@@ -8283,6 +6515,7 @@ def test_run_transfer_job_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.run_transfer_job(request)
 
@@ -8306,128 +6539,6 @@ def test_run_transfer_job_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_run_transfer_job_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "post_run_transfer_job"
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_run_transfer_job"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.RunTransferJobRequest.pb(transfer.RunTransferJobRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = transfer.RunTransferJobRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.run_transfer_job(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_run_transfer_job_rest_bad_request(
-    transport: str = "rest", request_type=transfer.RunTransferJobRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"job_name": "transferJobs/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.run_transfer_job(request)
-
-
-def test_run_transfer_job_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.DeleteTransferJobRequest,
-        dict,
-    ],
-)
-def test_delete_transfer_job_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"job_name": "transferJobs/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_transfer_job(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_delete_transfer_job_rest_use_cached_wrapped_rpc():
@@ -8542,6 +6653,7 @@ def test_delete_transfer_job_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_transfer_job(request)
 
@@ -8571,202 +6683,6 @@ def test_delete_transfer_job_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_transfer_job_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_delete_transfer_job"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = transfer.DeleteTransferJobRequest.pb(
-            transfer.DeleteTransferJobRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = transfer.DeleteTransferJobRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.delete_transfer_job(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_delete_transfer_job_rest_bad_request(
-    transport: str = "rest", request_type=transfer.DeleteTransferJobRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"job_name": "transferJobs/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_transfer_job(request)
-
-
-def test_delete_transfer_job_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.CreateAgentPoolRequest,
-        dict,
-    ],
-)
-def test_create_agent_pool_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project_id": "sample1"}
-    request_init["agent_pool"] = {
-        "name": "name_value",
-        "display_name": "display_name_value",
-        "state": 1,
-        "bandwidth_limit": {"limit_mbps": 1072},
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = transfer.CreateAgentPoolRequest.meta.fields["agent_pool"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["agent_pool"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["agent_pool"][field])):
-                    del request_init["agent_pool"][field][i][subfield]
-            else:
-                del request_init["agent_pool"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = transfer_types.AgentPool(
-            name="name_value",
-            display_name="display_name_value",
-            state=transfer_types.AgentPool.State.CREATING,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = transfer_types.AgentPool.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_agent_pool(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, transfer_types.AgentPool)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
-    assert response.state == transfer_types.AgentPool.State.CREATING
 
 
 def test_create_agent_pool_rest_use_cached_wrapped_rpc():
@@ -8883,6 +6799,7 @@ def test_create_agent_pool_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_agent_pool(request)
 
@@ -8915,87 +6832,6 @@ def test_create_agent_pool_rest_unset_required_fields():
     )
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_agent_pool_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "post_create_agent_pool"
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_create_agent_pool"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.CreateAgentPoolRequest.pb(
-            transfer.CreateAgentPoolRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = transfer_types.AgentPool.to_json(
-            transfer_types.AgentPool()
-        )
-
-        request = transfer.CreateAgentPoolRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = transfer_types.AgentPool()
-
-        client.create_agent_pool(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_agent_pool_rest_bad_request(
-    transport: str = "rest", request_type=transfer.CreateAgentPoolRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project_id": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_agent_pool(request)
-
-
 def test_create_agent_pool_rest_flattened():
     client = StorageTransferServiceClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -9026,6 +6862,7 @@ def test_create_agent_pool_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_agent_pool(**mock_args)
 
@@ -9053,129 +6890,6 @@ def test_create_agent_pool_rest_flattened_error(transport: str = "rest"):
             agent_pool=transfer_types.AgentPool(name="name_value"),
             agent_pool_id="agent_pool_id_value",
         )
-
-
-def test_create_agent_pool_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.UpdateAgentPoolRequest,
-        dict,
-    ],
-)
-def test_update_agent_pool_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"agent_pool": {"name": "projects/sample1/agentPools/sample2"}}
-    request_init["agent_pool"] = {
-        "name": "projects/sample1/agentPools/sample2",
-        "display_name": "display_name_value",
-        "state": 1,
-        "bandwidth_limit": {"limit_mbps": 1072},
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = transfer.UpdateAgentPoolRequest.meta.fields["agent_pool"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["agent_pool"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["agent_pool"][field])):
-                    del request_init["agent_pool"][field][i][subfield]
-            else:
-                del request_init["agent_pool"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = transfer_types.AgentPool(
-            name="name_value",
-            display_name="display_name_value",
-            state=transfer_types.AgentPool.State.CREATING,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = transfer_types.AgentPool.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_agent_pool(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, transfer_types.AgentPool)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
-    assert response.state == transfer_types.AgentPool.State.CREATING
 
 
 def test_update_agent_pool_rest_use_cached_wrapped_rpc():
@@ -9280,6 +6994,7 @@ def test_update_agent_pool_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_agent_pool(request)
 
@@ -9295,87 +7010,6 @@ def test_update_agent_pool_rest_unset_required_fields():
 
     unset_fields = transport.update_agent_pool._get_unset_required_fields({})
     assert set(unset_fields) == (set(("updateMask",)) & set(("agentPool",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_agent_pool_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "post_update_agent_pool"
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_update_agent_pool"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.UpdateAgentPoolRequest.pb(
-            transfer.UpdateAgentPoolRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = transfer_types.AgentPool.to_json(
-            transfer_types.AgentPool()
-        )
-
-        request = transfer.UpdateAgentPoolRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = transfer_types.AgentPool()
-
-        client.update_agent_pool(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_agent_pool_rest_bad_request(
-    transport: str = "rest", request_type=transfer.UpdateAgentPoolRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"agent_pool": {"name": "projects/sample1/agentPools/sample2"}}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_agent_pool(request)
 
 
 def test_update_agent_pool_rest_flattened():
@@ -9407,6 +7041,7 @@ def test_update_agent_pool_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_agent_pool(**mock_args)
 
@@ -9434,56 +7069,6 @@ def test_update_agent_pool_rest_flattened_error(transport: str = "rest"):
             agent_pool=transfer_types.AgentPool(name="name_value"),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
-
-
-def test_update_agent_pool_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.GetAgentPoolRequest,
-        dict,
-    ],
-)
-def test_get_agent_pool_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/agentPools/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = transfer_types.AgentPool(
-            name="name_value",
-            display_name="display_name_value",
-            state=transfer_types.AgentPool.State.CREATING,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = transfer_types.AgentPool.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_agent_pool(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, transfer_types.AgentPool)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
-    assert response.state == transfer_types.AgentPool.State.CREATING
 
 
 def test_get_agent_pool_rest_use_cached_wrapped_rpc():
@@ -9586,6 +7171,7 @@ def test_get_agent_pool_rest_required_fields(request_type=transfer.GetAgentPoolR
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_agent_pool(request)
 
@@ -9601,85 +7187,6 @@ def test_get_agent_pool_rest_unset_required_fields():
 
     unset_fields = transport.get_agent_pool._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_agent_pool_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "post_get_agent_pool"
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_get_agent_pool"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.GetAgentPoolRequest.pb(transfer.GetAgentPoolRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = transfer_types.AgentPool.to_json(
-            transfer_types.AgentPool()
-        )
-
-        request = transfer.GetAgentPoolRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = transfer_types.AgentPool()
-
-        client.get_agent_pool(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_agent_pool_rest_bad_request(
-    transport: str = "rest", request_type=transfer.GetAgentPoolRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/agentPools/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_agent_pool(request)
 
 
 def test_get_agent_pool_rest_flattened():
@@ -9710,6 +7217,7 @@ def test_get_agent_pool_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_agent_pool(**mock_args)
 
@@ -9735,52 +7243,6 @@ def test_get_agent_pool_rest_flattened_error(transport: str = "rest"):
             transfer.GetAgentPoolRequest(),
             name="name_value",
         )
-
-
-def test_get_agent_pool_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.ListAgentPoolsRequest,
-        dict,
-    ],
-)
-def test_list_agent_pools_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project_id": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = transfer.ListAgentPoolsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = transfer.ListAgentPoolsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_agent_pools(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListAgentPoolsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_agent_pools_rest_use_cached_wrapped_rpc():
@@ -9895,6 +7357,7 @@ def test_list_agent_pools_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_agent_pools(request)
 
@@ -9919,85 +7382,6 @@ def test_list_agent_pools_rest_unset_required_fields():
         )
         & set(("projectId",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_agent_pools_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "post_list_agent_pools"
-    ) as post, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_list_agent_pools"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = transfer.ListAgentPoolsRequest.pb(transfer.ListAgentPoolsRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = transfer.ListAgentPoolsResponse.to_json(
-            transfer.ListAgentPoolsResponse()
-        )
-
-        request = transfer.ListAgentPoolsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = transfer.ListAgentPoolsResponse()
-
-        client.list_agent_pools(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_agent_pools_rest_bad_request(
-    transport: str = "rest", request_type=transfer.ListAgentPoolsRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project_id": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_agent_pools(request)
 
 
 def test_list_agent_pools_rest_flattened():
@@ -10028,6 +7412,7 @@ def test_list_agent_pools_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_agent_pools(**mock_args)
 
@@ -10114,41 +7499,6 @@ def test_list_agent_pools_rest_pager(transport: str = "rest"):
         pages = list(client.list_agent_pools(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        transfer.DeleteAgentPoolRequest,
-        dict,
-    ],
-)
-def test_delete_agent_pool_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/agentPools/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_agent_pool(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_delete_agent_pool_rest_use_cached_wrapped_rpc():
@@ -10252,6 +7602,7 @@ def test_delete_agent_pool_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_agent_pool(request)
 
@@ -10267,79 +7618,6 @@ def test_delete_agent_pool_rest_unset_required_fields():
 
     unset_fields = transport.delete_agent_pool._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_agent_pool_rest_interceptors(null_interceptor):
-    transport = transports.StorageTransferServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.StorageTransferServiceRestInterceptor(),
-    )
-    client = StorageTransferServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.StorageTransferServiceRestInterceptor, "pre_delete_agent_pool"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = transfer.DeleteAgentPoolRequest.pb(
-            transfer.DeleteAgentPoolRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = transfer.DeleteAgentPoolRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.delete_agent_pool(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_delete_agent_pool_rest_bad_request(
-    transport: str = "rest", request_type=transfer.DeleteAgentPoolRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/agentPools/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_agent_pool(request)
 
 
 def test_delete_agent_pool_rest_flattened():
@@ -10368,6 +7646,7 @@ def test_delete_agent_pool_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_agent_pool(**mock_args)
 
@@ -10393,12 +7672,6 @@ def test_delete_agent_pool_rest_flattened_error(transport: str = "rest"):
             transfer.DeleteAgentPoolRequest(),
             name="name_value",
         )
-
-
-def test_delete_agent_pool_rest_error():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
 
 
 def test_credentials_transport_error():
@@ -10493,18 +7766,3276 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_grpc():
+    transport = StorageTransferServiceClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_google_service_account_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_google_service_account), "__call__"
+    ) as call:
+        call.return_value = transfer_types.GoogleServiceAccount()
+        client.get_google_service_account(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.GetGoogleServiceAccountRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_transfer_job_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_transfer_job), "__call__"
+    ) as call:
+        call.return_value = transfer_types.TransferJob()
+        client.create_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.CreateTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_transfer_job_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_transfer_job), "__call__"
+    ) as call:
+        call.return_value = transfer_types.TransferJob()
+        client.update_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.UpdateTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_transfer_job_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_transfer_job), "__call__") as call:
+        call.return_value = transfer_types.TransferJob()
+        client.get_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.GetTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_transfer_jobs_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transfer_jobs), "__call__"
+    ) as call:
+        call.return_value = transfer.ListTransferJobsResponse()
+        client.list_transfer_jobs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.ListTransferJobsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_pause_transfer_operation_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.pause_transfer_operation), "__call__"
+    ) as call:
+        call.return_value = None
+        client.pause_transfer_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.PauseTransferOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_resume_transfer_operation_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.resume_transfer_operation), "__call__"
+    ) as call:
+        call.return_value = None
+        client.resume_transfer_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.ResumeTransferOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_run_transfer_job_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.run_transfer_job), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.run_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.RunTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_transfer_job_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_transfer_job), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.DeleteTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_agent_pool_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_agent_pool), "__call__"
+    ) as call:
+        call.return_value = transfer_types.AgentPool()
+        client.create_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.CreateAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_agent_pool_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_agent_pool), "__call__"
+    ) as call:
+        call.return_value = transfer_types.AgentPool()
+        client.update_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.UpdateAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_agent_pool_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_agent_pool), "__call__") as call:
+        call.return_value = transfer_types.AgentPool()
+        client.get_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.GetAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_agent_pools_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_agent_pools), "__call__") as call:
+        call.return_value = transfer.ListAgentPoolsResponse()
+        client.list_agent_pools(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.ListAgentPoolsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_agent_pool_empty_call_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_agent_pool), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.DeleteAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = StorageTransferServiceAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_google_service_account_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_google_service_account), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            transfer_types.GoogleServiceAccount(
+                account_email="account_email_value",
+                subject_id="subject_id_value",
+            )
+        )
+        await client.get_google_service_account(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.GetGoogleServiceAccountRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_transfer_job_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_transfer_job), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            transfer_types.TransferJob(
+                name="name_value",
+                description="description_value",
+                project_id="project_id_value",
+                status=transfer_types.TransferJob.Status.ENABLED,
+                latest_operation_name="latest_operation_name_value",
+            )
+        )
+        await client.create_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.CreateTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_transfer_job_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_transfer_job), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            transfer_types.TransferJob(
+                name="name_value",
+                description="description_value",
+                project_id="project_id_value",
+                status=transfer_types.TransferJob.Status.ENABLED,
+                latest_operation_name="latest_operation_name_value",
+            )
+        )
+        await client.update_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.UpdateTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_transfer_job_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_transfer_job), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            transfer_types.TransferJob(
+                name="name_value",
+                description="description_value",
+                project_id="project_id_value",
+                status=transfer_types.TransferJob.Status.ENABLED,
+                latest_operation_name="latest_operation_name_value",
+            )
+        )
+        await client.get_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.GetTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_transfer_jobs_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transfer_jobs), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            transfer.ListTransferJobsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_transfer_jobs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.ListTransferJobsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_pause_transfer_operation_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.pause_transfer_operation), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.pause_transfer_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.PauseTransferOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_resume_transfer_operation_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.resume_transfer_operation), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.resume_transfer_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.ResumeTransferOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_run_transfer_job_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.run_transfer_job), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.run_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.RunTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_transfer_job_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_transfer_job), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.DeleteTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_agent_pool_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_agent_pool), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            transfer_types.AgentPool(
+                name="name_value",
+                display_name="display_name_value",
+                state=transfer_types.AgentPool.State.CREATING,
+            )
+        )
+        await client.create_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.CreateAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_agent_pool_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_agent_pool), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            transfer_types.AgentPool(
+                name="name_value",
+                display_name="display_name_value",
+                state=transfer_types.AgentPool.State.CREATING,
+            )
+        )
+        await client.update_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.UpdateAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_agent_pool_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_agent_pool), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            transfer_types.AgentPool(
+                name="name_value",
+                display_name="display_name_value",
+                state=transfer_types.AgentPool.State.CREATING,
+            )
+        )
+        await client.get_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.GetAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_agent_pools_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_agent_pools), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            transfer.ListAgentPoolsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_agent_pools(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.ListAgentPoolsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_agent_pool_empty_call_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_agent_pool), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.DeleteAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = StorageTransferServiceClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_get_google_service_account_rest_bad_request(
+    request_type=transfer.GetGoogleServiceAccountRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project_id": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_google_service_account(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "grpc",
-        "rest",
+        transfer.GetGoogleServiceAccountRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = StorageTransferServiceClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_get_google_service_account_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"project_id": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = transfer_types.GoogleServiceAccount(
+            account_email="account_email_value",
+            subject_id="subject_id_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = transfer_types.GoogleServiceAccount.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_google_service_account(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, transfer_types.GoogleServiceAccount)
+    assert response.account_email == "account_email_value"
+    assert response.subject_id == "subject_id_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_google_service_account_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor,
+        "post_get_google_service_account",
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor,
+        "pre_get_google_service_account",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.GetGoogleServiceAccountRequest.pb(
+            transfer.GetGoogleServiceAccountRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = transfer_types.GoogleServiceAccount.to_json(
+            transfer_types.GoogleServiceAccount()
+        )
+        req.return_value.content = return_value
+
+        request = transfer.GetGoogleServiceAccountRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = transfer_types.GoogleServiceAccount()
+
+        client.get_google_service_account(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_transfer_job_rest_bad_request(
+    request_type=transfer.CreateTransferJobRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_transfer_job(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.CreateTransferJobRequest,
+        dict,
+    ],
+)
+def test_create_transfer_job_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request_init["transfer_job"] = {
+        "name": "name_value",
+        "description": "description_value",
+        "project_id": "project_id_value",
+        "transfer_spec": {
+            "gcs_data_sink": {
+                "bucket_name": "bucket_name_value",
+                "path": "path_value",
+                "managed_folder_transfer_enabled": True,
+            },
+            "posix_data_sink": {"root_directory": "root_directory_value"},
+            "gcs_data_source": {},
+            "aws_s3_data_source": {
+                "bucket_name": "bucket_name_value",
+                "aws_access_key": {
+                    "access_key_id": "access_key_id_value",
+                    "secret_access_key": "secret_access_key_value",
+                },
+                "path": "path_value",
+                "role_arn": "role_arn_value",
+                "cloudfront_domain": "cloudfront_domain_value",
+                "credentials_secret": "credentials_secret_value",
+                "managed_private_network": True,
+            },
+            "http_data_source": {"list_url": "list_url_value"},
+            "posix_data_source": {},
+            "azure_blob_storage_data_source": {
+                "storage_account": "storage_account_value",
+                "azure_credentials": {"sas_token": "sas_token_value"},
+                "container": "container_value",
+                "path": "path_value",
+                "credentials_secret": "credentials_secret_value",
+            },
+            "aws_s3_compatible_data_source": {
+                "bucket_name": "bucket_name_value",
+                "path": "path_value",
+                "endpoint": "endpoint_value",
+                "region": "region_value",
+                "s3_metadata": {
+                    "auth_method": 1,
+                    "request_model": 1,
+                    "protocol": 1,
+                    "list_api": 1,
+                },
+            },
+            "hdfs_data_source": {"path": "path_value"},
+            "gcs_intermediate_data_location": {},
+            "object_conditions": {
+                "min_time_elapsed_since_last_modification": {
+                    "seconds": 751,
+                    "nanos": 543,
+                },
+                "max_time_elapsed_since_last_modification": {},
+                "include_prefixes": [
+                    "include_prefixes_value1",
+                    "include_prefixes_value2",
+                ],
+                "exclude_prefixes": [
+                    "exclude_prefixes_value1",
+                    "exclude_prefixes_value2",
+                ],
+                "last_modified_since": {"seconds": 751, "nanos": 543},
+                "last_modified_before": {},
+            },
+            "transfer_options": {
+                "overwrite_objects_already_existing_in_sink": True,
+                "delete_objects_unique_in_sink": True,
+                "delete_objects_from_source_after_transfer": True,
+                "overwrite_when": 1,
+                "metadata_options": {
+                    "symlink": 1,
+                    "mode": 1,
+                    "gid": 1,
+                    "uid": 1,
+                    "acl": 1,
+                    "storage_class": 1,
+                    "temporary_hold": 1,
+                    "kms_key": 1,
+                    "time_created": 1,
+                },
+            },
+            "transfer_manifest": {"location": "location_value"},
+            "source_agent_pool_name": "source_agent_pool_name_value",
+            "sink_agent_pool_name": "sink_agent_pool_name_value",
+        },
+        "replication_spec": {
+            "gcs_data_source": {},
+            "gcs_data_sink": {},
+            "object_conditions": {},
+            "transfer_options": {},
+        },
+        "notification_config": {
+            "pubsub_topic": "pubsub_topic_value",
+            "event_types": [1],
+            "payload_format": 1,
+        },
+        "logging_config": {
+            "log_actions": [1],
+            "log_action_states": [1],
+            "enable_onprem_gcs_transfer_logs": True,
+        },
+        "schedule": {
+            "schedule_start_date": {"year": 433, "month": 550, "day": 318},
+            "schedule_end_date": {},
+            "start_time_of_day": {
+                "hours": 561,
+                "minutes": 773,
+                "seconds": 751,
+                "nanos": 543,
+            },
+            "end_time_of_day": {},
+            "repeat_interval": {},
+        },
+        "event_stream": {
+            "name": "name_value",
+            "event_stream_start_time": {},
+            "event_stream_expiration_time": {},
+        },
+        "status": 1,
+        "creation_time": {},
+        "last_modification_time": {},
+        "deletion_time": {},
+        "latest_operation_name": "latest_operation_name_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = transfer.CreateTransferJobRequest.meta.fields["transfer_job"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["transfer_job"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["transfer_job"][field])):
+                    del request_init["transfer_job"][field][i][subfield]
+            else:
+                del request_init["transfer_job"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = transfer_types.TransferJob(
+            name="name_value",
+            description="description_value",
+            project_id="project_id_value",
+            status=transfer_types.TransferJob.Status.ENABLED,
+            latest_operation_name="latest_operation_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = transfer_types.TransferJob.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_transfer_job(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, transfer_types.TransferJob)
+    assert response.name == "name_value"
+    assert response.description == "description_value"
+    assert response.project_id == "project_id_value"
+    assert response.status == transfer_types.TransferJob.Status.ENABLED
+    assert response.latest_operation_name == "latest_operation_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_transfer_job_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "post_create_transfer_job"
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_create_transfer_job"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.CreateTransferJobRequest.pb(
+            transfer.CreateTransferJobRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = transfer_types.TransferJob.to_json(transfer_types.TransferJob())
+        req.return_value.content = return_value
+
+        request = transfer.CreateTransferJobRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = transfer_types.TransferJob()
+
+        client.create_transfer_job(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_transfer_job_rest_bad_request(
+    request_type=transfer.UpdateTransferJobRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"job_name": "transferJobs/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_transfer_job(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.UpdateTransferJobRequest,
+        dict,
+    ],
+)
+def test_update_transfer_job_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"job_name": "transferJobs/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = transfer_types.TransferJob(
+            name="name_value",
+            description="description_value",
+            project_id="project_id_value",
+            status=transfer_types.TransferJob.Status.ENABLED,
+            latest_operation_name="latest_operation_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = transfer_types.TransferJob.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_transfer_job(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, transfer_types.TransferJob)
+    assert response.name == "name_value"
+    assert response.description == "description_value"
+    assert response.project_id == "project_id_value"
+    assert response.status == transfer_types.TransferJob.Status.ENABLED
+    assert response.latest_operation_name == "latest_operation_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_transfer_job_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "post_update_transfer_job"
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_update_transfer_job"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.UpdateTransferJobRequest.pb(
+            transfer.UpdateTransferJobRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = transfer_types.TransferJob.to_json(transfer_types.TransferJob())
+        req.return_value.content = return_value
+
+        request = transfer.UpdateTransferJobRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = transfer_types.TransferJob()
+
+        client.update_transfer_job(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_transfer_job_rest_bad_request(request_type=transfer.GetTransferJobRequest):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"job_name": "transferJobs/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_transfer_job(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.GetTransferJobRequest,
+        dict,
+    ],
+)
+def test_get_transfer_job_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"job_name": "transferJobs/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = transfer_types.TransferJob(
+            name="name_value",
+            description="description_value",
+            project_id="project_id_value",
+            status=transfer_types.TransferJob.Status.ENABLED,
+            latest_operation_name="latest_operation_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = transfer_types.TransferJob.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_transfer_job(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, transfer_types.TransferJob)
+    assert response.name == "name_value"
+    assert response.description == "description_value"
+    assert response.project_id == "project_id_value"
+    assert response.status == transfer_types.TransferJob.Status.ENABLED
+    assert response.latest_operation_name == "latest_operation_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_transfer_job_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "post_get_transfer_job"
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_get_transfer_job"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.GetTransferJobRequest.pb(transfer.GetTransferJobRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = transfer_types.TransferJob.to_json(transfer_types.TransferJob())
+        req.return_value.content = return_value
+
+        request = transfer.GetTransferJobRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = transfer_types.TransferJob()
+
+        client.get_transfer_job(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_transfer_jobs_rest_bad_request(
+    request_type=transfer.ListTransferJobsRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_transfer_jobs(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.ListTransferJobsRequest,
+        dict,
+    ],
+)
+def test_list_transfer_jobs_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = transfer.ListTransferJobsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = transfer.ListTransferJobsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_transfer_jobs(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListTransferJobsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_transfer_jobs_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "post_list_transfer_jobs"
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_list_transfer_jobs"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.ListTransferJobsRequest.pb(
+            transfer.ListTransferJobsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = transfer.ListTransferJobsResponse.to_json(
+            transfer.ListTransferJobsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = transfer.ListTransferJobsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = transfer.ListTransferJobsResponse()
+
+        client.list_transfer_jobs(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_pause_transfer_operation_rest_bad_request(
+    request_type=transfer.PauseTransferOperationRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "transferOperations/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.pause_transfer_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.PauseTransferOperationRequest,
+        dict,
+    ],
+)
+def test_pause_transfer_operation_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "transferOperations/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.pause_transfer_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_pause_transfer_operation_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_pause_transfer_operation"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = transfer.PauseTransferOperationRequest.pb(
+            transfer.PauseTransferOperationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = transfer.PauseTransferOperationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.pause_transfer_operation(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_resume_transfer_operation_rest_bad_request(
+    request_type=transfer.ResumeTransferOperationRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "transferOperations/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.resume_transfer_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.ResumeTransferOperationRequest,
+        dict,
+    ],
+)
+def test_resume_transfer_operation_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "transferOperations/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.resume_transfer_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_resume_transfer_operation_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor,
+        "pre_resume_transfer_operation",
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = transfer.ResumeTransferOperationRequest.pb(
+            transfer.ResumeTransferOperationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = transfer.ResumeTransferOperationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.resume_transfer_operation(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_run_transfer_job_rest_bad_request(request_type=transfer.RunTransferJobRequest):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"job_name": "transferJobs/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.run_transfer_job(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.RunTransferJobRequest,
+        dict,
+    ],
+)
+def test_run_transfer_job_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"job_name": "transferJobs/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.run_transfer_job(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_run_transfer_job_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "post_run_transfer_job"
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_run_transfer_job"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.RunTransferJobRequest.pb(transfer.RunTransferJobRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = transfer.RunTransferJobRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.run_transfer_job(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_transfer_job_rest_bad_request(
+    request_type=transfer.DeleteTransferJobRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"job_name": "transferJobs/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_transfer_job(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.DeleteTransferJobRequest,
+        dict,
+    ],
+)
+def test_delete_transfer_job_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"job_name": "transferJobs/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_transfer_job(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_transfer_job_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_delete_transfer_job"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = transfer.DeleteTransferJobRequest.pb(
+            transfer.DeleteTransferJobRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = transfer.DeleteTransferJobRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_transfer_job(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_create_agent_pool_rest_bad_request(
+    request_type=transfer.CreateAgentPoolRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project_id": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_agent_pool(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.CreateAgentPoolRequest,
+        dict,
+    ],
+)
+def test_create_agent_pool_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project_id": "sample1"}
+    request_init["agent_pool"] = {
+        "name": "name_value",
+        "display_name": "display_name_value",
+        "state": 1,
+        "bandwidth_limit": {"limit_mbps": 1072},
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = transfer.CreateAgentPoolRequest.meta.fields["agent_pool"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["agent_pool"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["agent_pool"][field])):
+                    del request_init["agent_pool"][field][i][subfield]
+            else:
+                del request_init["agent_pool"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = transfer_types.AgentPool(
+            name="name_value",
+            display_name="display_name_value",
+            state=transfer_types.AgentPool.State.CREATING,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = transfer_types.AgentPool.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_agent_pool(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, transfer_types.AgentPool)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == transfer_types.AgentPool.State.CREATING
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_agent_pool_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "post_create_agent_pool"
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_create_agent_pool"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.CreateAgentPoolRequest.pb(
+            transfer.CreateAgentPoolRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = transfer_types.AgentPool.to_json(transfer_types.AgentPool())
+        req.return_value.content = return_value
+
+        request = transfer.CreateAgentPoolRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = transfer_types.AgentPool()
+
+        client.create_agent_pool(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_agent_pool_rest_bad_request(
+    request_type=transfer.UpdateAgentPoolRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"agent_pool": {"name": "projects/sample1/agentPools/sample2"}}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_agent_pool(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.UpdateAgentPoolRequest,
+        dict,
+    ],
+)
+def test_update_agent_pool_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"agent_pool": {"name": "projects/sample1/agentPools/sample2"}}
+    request_init["agent_pool"] = {
+        "name": "projects/sample1/agentPools/sample2",
+        "display_name": "display_name_value",
+        "state": 1,
+        "bandwidth_limit": {"limit_mbps": 1072},
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = transfer.UpdateAgentPoolRequest.meta.fields["agent_pool"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["agent_pool"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["agent_pool"][field])):
+                    del request_init["agent_pool"][field][i][subfield]
+            else:
+                del request_init["agent_pool"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = transfer_types.AgentPool(
+            name="name_value",
+            display_name="display_name_value",
+            state=transfer_types.AgentPool.State.CREATING,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = transfer_types.AgentPool.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_agent_pool(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, transfer_types.AgentPool)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == transfer_types.AgentPool.State.CREATING
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_agent_pool_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "post_update_agent_pool"
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_update_agent_pool"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.UpdateAgentPoolRequest.pb(
+            transfer.UpdateAgentPoolRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = transfer_types.AgentPool.to_json(transfer_types.AgentPool())
+        req.return_value.content = return_value
+
+        request = transfer.UpdateAgentPoolRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = transfer_types.AgentPool()
+
+        client.update_agent_pool(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_agent_pool_rest_bad_request(request_type=transfer.GetAgentPoolRequest):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/agentPools/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_agent_pool(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.GetAgentPoolRequest,
+        dict,
+    ],
+)
+def test_get_agent_pool_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/agentPools/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = transfer_types.AgentPool(
+            name="name_value",
+            display_name="display_name_value",
+            state=transfer_types.AgentPool.State.CREATING,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = transfer_types.AgentPool.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_agent_pool(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, transfer_types.AgentPool)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == transfer_types.AgentPool.State.CREATING
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_agent_pool_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "post_get_agent_pool"
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_get_agent_pool"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.GetAgentPoolRequest.pb(transfer.GetAgentPoolRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = transfer_types.AgentPool.to_json(transfer_types.AgentPool())
+        req.return_value.content = return_value
+
+        request = transfer.GetAgentPoolRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = transfer_types.AgentPool()
+
+        client.get_agent_pool(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_agent_pools_rest_bad_request(request_type=transfer.ListAgentPoolsRequest):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project_id": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_agent_pools(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.ListAgentPoolsRequest,
+        dict,
+    ],
+)
+def test_list_agent_pools_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project_id": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = transfer.ListAgentPoolsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = transfer.ListAgentPoolsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_agent_pools(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListAgentPoolsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_agent_pools_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "post_list_agent_pools"
+    ) as post, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_list_agent_pools"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = transfer.ListAgentPoolsRequest.pb(transfer.ListAgentPoolsRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = transfer.ListAgentPoolsResponse.to_json(
+            transfer.ListAgentPoolsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = transfer.ListAgentPoolsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = transfer.ListAgentPoolsResponse()
+
+        client.list_agent_pools(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_agent_pool_rest_bad_request(
+    request_type=transfer.DeleteAgentPoolRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/agentPools/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_agent_pool(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        transfer.DeleteAgentPoolRequest,
+        dict,
+    ],
+)
+def test_delete_agent_pool_rest_call_success(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/agentPools/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_agent_pool(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_agent_pool_rest_interceptors(null_interceptor):
+    transport = transports.StorageTransferServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.StorageTransferServiceRestInterceptor(),
+    )
+    client = StorageTransferServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.StorageTransferServiceRestInterceptor, "pre_delete_agent_pool"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = transfer.DeleteAgentPoolRequest.pb(
+            transfer.DeleteAgentPoolRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = transfer.DeleteAgentPoolRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_agent_pool(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_cancel_operation_rest_bad_request(
+    request_type=operations_pb2.CancelOperationRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict({"name": "transferOperations/sample1"}, request)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.cancel_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.CancelOperationRequest,
+        dict,
+    ],
+)
+def test_cancel_operation_rest(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "transferOperations/sample1"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = "{}"
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.cancel_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+def test_get_operation_rest_bad_request(
+    request_type=operations_pb2.GetOperationRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict({"name": "transferOperations/sample1"}, request)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.GetOperationRequest,
+        dict,
+    ],
+)
+def test_get_operation_rest(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "transferOperations/sample1"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.get_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.Operation)
+
+
+def test_list_operations_rest_bad_request(
+    request_type=operations_pb2.ListOperationsRequest,
+):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict({"name": "transferOperations"}, request)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_operations(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.ListOperationsRequest,
+        dict,
+    ],
+)
+def test_list_operations_rest(request_type):
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "transferOperations"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.ListOperationsResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.list_operations(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.ListOperationsResponse)
+
+
+def test_initialize_client_w_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_google_service_account_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_google_service_account), "__call__"
+    ) as call:
+        client.get_google_service_account(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.GetGoogleServiceAccountRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_transfer_job_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_transfer_job), "__call__"
+    ) as call:
+        client.create_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.CreateTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_transfer_job_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_transfer_job), "__call__"
+    ) as call:
+        client.update_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.UpdateTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_transfer_job_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_transfer_job), "__call__") as call:
+        client.get_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.GetTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_transfer_jobs_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transfer_jobs), "__call__"
+    ) as call:
+        client.list_transfer_jobs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.ListTransferJobsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_pause_transfer_operation_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.pause_transfer_operation), "__call__"
+    ) as call:
+        client.pause_transfer_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.PauseTransferOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_resume_transfer_operation_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.resume_transfer_operation), "__call__"
+    ) as call:
+        client.resume_transfer_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.ResumeTransferOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_run_transfer_job_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.run_transfer_job), "__call__") as call:
+        client.run_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.RunTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_transfer_job_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_transfer_job), "__call__"
+    ) as call:
+        client.delete_transfer_job(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.DeleteTransferJobRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_agent_pool_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_agent_pool), "__call__"
+    ) as call:
+        client.create_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.CreateAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_agent_pool_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_agent_pool), "__call__"
+    ) as call:
+        client.update_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.UpdateAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_agent_pool_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_agent_pool), "__call__") as call:
+        client.get_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.GetAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_agent_pools_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_agent_pools), "__call__") as call:
+        client.list_agent_pools(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.ListAgentPoolsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_agent_pool_empty_call_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_agent_pool), "__call__"
+    ) as call:
+        client.delete_agent_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = transfer.DeleteAgentPoolRequest()
+
+        assert args[0] == request_msg
+
+
+def test_storage_transfer_service_rest_lro_client():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    transport = client.transport
+
+    # Ensure that we have an api-core operations client.
+    assert isinstance(
+        transport.operations_client,
+        operations_v1.AbstractOperationsClient,
+    )
+
+    # Ensure that subsequent calls to the property send the exact same object.
+    assert transport.operations_client is transport.operations_client
 
 
 def test_transport_grpc_default():
@@ -10759,23 +11290,6 @@ def test_storage_transfer_service_http_transport_client_cert_source_for_mtls():
             credentials=cred, client_cert_source_for_mtls=client_cert_source_callback
         )
         mock_configure_mtls_channel.assert_called_once_with(client_cert_source_callback)
-
-
-def test_storage_transfer_service_rest_lro_client():
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    transport = client.transport
-
-    # Ensure that we have a api-core operations client.
-    assert isinstance(
-        transport.operations_client,
-        operations_v1.AbstractOperationsClient,
-    )
-
-    # Ensure that subsequent calls to the property send the exact same object.
-    assert transport.operations_client is transport.operations_client
 
 
 @pytest.mark.parametrize(
@@ -11194,188 +11708,6 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-    with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
-    ) as close:
-        async with client:
-            close.assert_not_called()
-        close.assert_called_once()
-
-
-def test_cancel_operation_rest_bad_request(
-    transport: str = "rest", request_type=operations_pb2.CancelOperationRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    request = request_type()
-    request = json_format.ParseDict({"name": "transferOperations/sample1"}, request)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.cancel_operation(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        operations_pb2.CancelOperationRequest,
-        dict,
-    ],
-)
-def test_cancel_operation_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "transferOperations/sample1"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = "{}"
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.cancel_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
-
-
-def test_get_operation_rest_bad_request(
-    transport: str = "rest", request_type=operations_pb2.GetOperationRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    request = request_type()
-    request = json_format.ParseDict({"name": "transferOperations/sample1"}, request)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_operation(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        operations_pb2.GetOperationRequest,
-        dict,
-    ],
-)
-def test_get_operation_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "transferOperations/sample1"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.get_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, operations_pb2.Operation)
-
-
-def test_list_operations_rest_bad_request(
-    transport: str = "rest", request_type=operations_pb2.ListOperationsRequest
-):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    request = request_type()
-    request = json_format.ParseDict({"name": "transferOperations"}, request)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_operations(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        operations_pb2.ListOperationsRequest,
-        dict,
-    ],
-)
-def test_list_operations_rest(request_type):
-    client = StorageTransferServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "transferOperations"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.ListOperationsResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.list_operations(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, operations_pb2.ListOperationsResponse)
-
-
 def test_cancel_operation(transport: str = "grpc"):
     client = StorageTransferServiceClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -11403,7 +11735,7 @@ def test_cancel_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_cancel_operation_async(transport: str = "grpc_asyncio"):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11456,7 +11788,7 @@ def test_cancel_operation_field_headers():
 @pytest.mark.asyncio
 async def test_cancel_operation_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11501,7 +11833,7 @@ def test_cancel_operation_from_dict():
 @pytest.mark.asyncio
 async def test_cancel_operation_from_dict_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.cancel_operation), "__call__") as call:
@@ -11542,7 +11874,7 @@ def test_get_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_get_operation_async(transport: str = "grpc_asyncio"):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11597,7 +11929,7 @@ def test_get_operation_field_headers():
 @pytest.mark.asyncio
 async def test_get_operation_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11644,7 +11976,7 @@ def test_get_operation_from_dict():
 @pytest.mark.asyncio
 async def test_get_operation_from_dict_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
@@ -11687,7 +12019,7 @@ def test_list_operations(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_operations_async(transport: str = "grpc_asyncio"):
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11742,7 +12074,7 @@ def test_list_operations_field_headers():
 @pytest.mark.asyncio
 async def test_list_operations_field_headers_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11789,7 +12121,7 @@ def test_list_operations_from_dict():
 @pytest.mark.asyncio
 async def test_list_operations_from_dict_async():
     client = StorageTransferServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
@@ -11805,22 +12137,41 @@ async def test_list_operations_from_dict_async():
         call.assert_called()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
+def test_transport_close_grpc():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
-    for transport, close_name in transports.items():
-        client = StorageTransferServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = StorageTransferServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        async with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+def test_transport_close_rest():
+    client = StorageTransferServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

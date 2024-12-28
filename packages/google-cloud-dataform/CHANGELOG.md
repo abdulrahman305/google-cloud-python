@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.5.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataform-v0.5.13...google-cloud-dataform-v0.5.14) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [0.5.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataform-v0.5.12...google-cloud-dataform-v0.5.13) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [0.5.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataform-v0.5.11...google-cloud-dataform-v0.5.12) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
 ## [0.5.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataform-v0.5.10...google-cloud-dataform-v0.5.11) (2024-07-30)
 
 

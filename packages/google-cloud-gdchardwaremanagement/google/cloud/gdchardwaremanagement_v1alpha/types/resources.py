@@ -29,6 +29,7 @@ __protobuf__ = proto.module(
     package="google.cloud.gdchardwaremanagement.v1alpha",
     manifest={
         "PowerSupply",
+        "Entity",
         "Order",
         "Site",
         "HardwareGroup",
@@ -50,6 +51,7 @@ __protobuf__ = proto.module(
         "Dimensions",
         "RackSpace",
         "HardwareLocation",
+        "SubscriptionConfig",
     },
 )
 
@@ -68,6 +70,25 @@ class PowerSupply(proto.Enum):
     POWER_SUPPLY_UNSPECIFIED = 0
     POWER_SUPPLY_AC = 1
     POWER_SUPPLY_DC = 2
+
+
+class Entity(proto.Enum):
+    r"""Entity is used to denote an organization or party.
+
+    Values:
+        ENTITY_UNSPECIFIED (0):
+            Entity is unspecified.
+        GOOGLE (1):
+            Google.
+        CUSTOMER (2):
+            Customer.
+        VENDOR (3):
+            Vendor.
+    """
+    ENTITY_UNSPECIFIED = 0
+    GOOGLE = 1
+    CUSTOMER = 2
+    VENDOR = 3
 
 
 class Order(proto.Message):
@@ -140,6 +161,9 @@ class Order(proto.Message):
                 has not been submitted yet.
             SUBMITTED (2):
                 Order has been submitted to Google.
+            INFO_COMPLETE (12):
+                All information required from the customer
+                for fulfillment of the order is complete.
             ACCEPTED (3):
                 Order has been accepted by Google.
             ADDITIONAL_INFO_NEEDED (4):
@@ -167,6 +191,7 @@ class Order(proto.Message):
         STATE_UNSPECIFIED = 0
         DRAFT = 1
         SUBMITTED = 2
+        INFO_COMPLETE = 12
         ACCEPTED = 3
         ADDITIONAL_INFO_NEEDED = 4
         BUILDING = 5
@@ -291,12 +316,21 @@ class Site(proto.Message):
         organization_contact (google.cloud.gdchardwaremanagement_v1alpha.types.OrganizationContact):
             Required. Contact information for this site.
         google_maps_pin_uri (str):
-            Required. A URL to the Google Maps address location of the
+            Optional. A URL to the Google Maps address location of the
             site. An example value is ``https://goo.gl/maps/xxxxxxxxx``.
         access_times (MutableSequence[google.cloud.gdchardwaremanagement_v1alpha.types.TimePeriod]):
             Optional. The time periods when the site is
             accessible. If this field is empty, the site is
             accessible at all times.
+
+            This field is used by Google to schedule the
+            initial installation as well as any later
+            hardware maintenance. You may update this at any
+            time. For example, if the initial installation
+            is requested during off-hours but maintenance
+            should be performed during regular business
+            hours, you should update the access times after
+            initial installation is complete.
         notes (str):
             Optional. Any additional notes for this Site.
             Please include information about:
@@ -308,6 +342,11 @@ class Site(proto.Message):
               move the equipment
             - whether a representative will be available
               during site visits
+
+        customer_site_id (str):
+            Optional. Customer defined identifier for
+            this Site. This can be used to identify the site
+            in the customer's own systems.
     """
 
     name: str = proto.Field(
@@ -354,6 +393,10 @@ class Site(proto.Message):
     notes: str = proto.Field(
         proto.STRING,
         number=27,
+    )
+    customer_site_id: str = proto.Field(
+        proto.STRING,
+        number=28,
     )
 
 
@@ -536,14 +579,16 @@ class Hardware(proto.Message):
             Format:
             ``projects/{project}/locations/{location}/zones/{zone}``
         requested_installation_date (google.type.date_pb2.Date):
-            Optional. Requested installation date for
-            this hardware. This is auto-populated when the
-            order is accepted, if the hardware's
-            HardwareGroup specifies this. It can also be
-            filled in by the customer.
+            Optional. Requested installation date for this hardware. If
+            not specified, this is auto-populated from the order's
+            fulfillment_time upon submission or from the HardwareGroup's
+            requested_installation_date upon order acceptance.
         actual_installation_date (google.type.date_pb2.Date):
             Output only. Actual installation date for
             this hardware. Filled in by Google.
+        machine_infos (MutableSequence[google.cloud.gdchardwaremanagement_v1alpha.types.Hardware.MachineInfo]):
+            Output only. Per machine asset information
+            needed for turnup.
     """
 
     class State(proto.Enum):
@@ -576,6 +621,131 @@ class Hardware(proto.Message):
         INSTALLING = 4
         INSTALLED = 5
         FAILED = 6
+
+    class MacAddress(proto.Message):
+        r"""Message to describe the MAC address of a machine.
+
+        Attributes:
+            address (str):
+                Output only. Address string.
+            type_ (google.cloud.gdchardwaremanagement_v1alpha.types.Hardware.MacAddress.AddressType):
+                Output only. Address type for this MAC
+                address.
+            ipv4_address (str):
+                Output only. Static IP address (if used) that
+                is associated with the MAC address. Only
+                applicable for VIRTUAL MAC address type.
+        """
+
+        class AddressType(proto.Enum):
+            r"""Enum for the different types of MAC address.
+
+            Values:
+                ADDRESS_TYPE_UNSPECIFIED (0):
+                    Unspecified address type.
+                NIC (1):
+                    Address of a network interface card.
+                BMC (2):
+                    Address of a baseboard management controller.
+                VIRTUAL (3):
+                    Address of a virtual interface.
+            """
+            ADDRESS_TYPE_UNSPECIFIED = 0
+            NIC = 1
+            BMC = 2
+            VIRTUAL = 3
+
+        address: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        type_: "Hardware.MacAddress.AddressType" = proto.Field(
+            proto.ENUM,
+            number=2,
+            enum="Hardware.MacAddress.AddressType",
+        )
+        ipv4_address: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+
+    class DiskInfo(proto.Message):
+        r"""Information about individual disks on a machine.
+
+        Attributes:
+            manufacturer (str):
+                Output only. Disk manufacturer.
+            slot (int):
+                Output only. Disk slot number.
+            serial_number (str):
+                Output only. Disk serial number.
+            psid (str):
+                Output only. Disk PSID.
+            part_number (str):
+                Output only. Disk part number.
+            model_number (str):
+                Output only. Disk model number.
+        """
+
+        manufacturer: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        slot: int = proto.Field(
+            proto.INT32,
+            number=2,
+        )
+        serial_number: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+        psid: str = proto.Field(
+            proto.STRING,
+            number=4,
+        )
+        part_number: str = proto.Field(
+            proto.STRING,
+            number=5,
+        )
+        model_number: str = proto.Field(
+            proto.STRING,
+            number=6,
+        )
+
+    class MachineInfo(proto.Message):
+        r"""Information about individual machines vendors will provide
+        during turnup.
+
+        Attributes:
+            service_tag (str):
+                Output only. Machine service tag.
+            mac_addresses (MutableSequence[google.cloud.gdchardwaremanagement_v1alpha.types.Hardware.MacAddress]):
+                Output only. Each associated MAC address.
+            name (str):
+                Output only. Machine name.
+            disk_infos (MutableSequence[google.cloud.gdchardwaremanagement_v1alpha.types.Hardware.DiskInfo]):
+                Output only. Information for each disk
+                installed.
+        """
+
+        service_tag: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        mac_addresses: MutableSequence["Hardware.MacAddress"] = proto.RepeatedField(
+            proto.MESSAGE,
+            number=2,
+            message="Hardware.MacAddress",
+        )
+        name: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+        disk_infos: MutableSequence["Hardware.DiskInfo"] = proto.RepeatedField(
+            proto.MESSAGE,
+            number=4,
+            message="Hardware.DiskInfo",
+        )
 
     name: str = proto.Field(
         proto.STRING,
@@ -655,6 +825,11 @@ class Hardware(proto.Message):
         number=17,
         message=date_pb2.Date,
     )
+    machine_infos: MutableSequence[MachineInfo] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=20,
+        message=MachineInfo,
+    )
 
 
 class Comment(proto.Message):
@@ -679,6 +854,14 @@ class Comment(proto.Message):
         text (str):
             Required. Text of this comment. The length of
             text must be <= 1000 characters.
+        customer_viewed_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. Timestamp of the first time this
+            comment was viewed by the customer. If the
+            comment wasn't viewed then this timestamp will
+            be unset.
+        author_entity (google.cloud.gdchardwaremanagement_v1alpha.types.Entity):
+            Output only. The entity the author belongs
+            to.
     """
 
     name: str = proto.Field(
@@ -702,6 +885,16 @@ class Comment(proto.Message):
     text: str = proto.Field(
         proto.STRING,
         number=5,
+    )
+    customer_viewed_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=6,
+        message=timestamp_pb2.Timestamp,
+    )
+    author_entity: "Entity" = proto.Field(
+        proto.ENUM,
+        number=7,
+        enum="Entity",
     )
 
 
@@ -881,6 +1074,12 @@ class Zone(proto.Message):
         globally_unique_id (str):
             Output only. Globally unique identifier
             generated for this Edge Zone.
+        subscription_configs (MutableSequence[google.cloud.gdchardwaremanagement_v1alpha.types.SubscriptionConfig]):
+            Output only. Subscription configurations for
+            this zone.
+        provisioning_state (google.cloud.gdchardwaremanagement_v1alpha.types.Zone.ProvisioningState):
+            Output only. Provisioning state for
+            configurations like MAC addresses.
     """
 
     class State(proto.Enum):
@@ -913,6 +1112,25 @@ class Zone(proto.Message):
         CUSTOMER_FACTORY_TURNUP_CHECKS_FAILED = 7
         ACTIVE = 3
         CANCELLED = 4
+
+    class ProvisioningState(proto.Enum):
+        r"""Valid provisioning states for configurations like MAC
+        addresses.
+
+        Values:
+            PROVISIONING_STATE_UNSPECIFIED (0):
+                Provisioning state is unspecified.
+            PROVISIONING_REQUIRED (1):
+                Provisioning is required. Set by Google.
+            PROVISIONING_IN_PROGRESS (2):
+                Provisioning is in progress. Set by customer.
+            PROVISIONING_COMPLETE (3):
+                Provisioning is complete. Set by customer.
+        """
+        PROVISIONING_STATE_UNSPECIFIED = 0
+        PROVISIONING_REQUIRED = 1
+        PROVISIONING_IN_PROGRESS = 2
+        PROVISIONING_COMPLETE = 3
 
     name: str = proto.Field(
         proto.STRING,
@@ -959,6 +1177,16 @@ class Zone(proto.Message):
     globally_unique_id: str = proto.Field(
         proto.STRING,
         number=12,
+    )
+    subscription_configs: MutableSequence["SubscriptionConfig"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=13,
+        message="SubscriptionConfig",
+    )
+    provisioning_state: ProvisioningState = proto.Field(
+        proto.ENUM,
+        number=14,
+        enum=ProvisioningState,
     )
 
 
@@ -1255,7 +1483,7 @@ class HardwareInstallationInfo(proto.Message):
 
     Attributes:
         rack_location (str):
-            Optional. Location of the rack in the site
+            Required. Location of the rack in the site
             e.g. Floor 2, Room 201, Row 7, Rack 3.
         power_distance_meters (int):
             Required. Distance from the power outlet in
@@ -1345,6 +1573,18 @@ class ZoneNetworkConfig(proto.Message):
             Optional. An IPv4 subnet for the kubernetes
             network. If unspecified, the kubernetes subnet
             will be the same as the management subnet.
+        dns_ipv4_addresses (MutableSequence[str]):
+            Optional. DNS nameservers.
+            The GDC Infrastructure will resolve DNS queries
+            via these IPs. If unspecified, Google DNS is
+            used.
+        kubernetes_primary_vlan_id (int):
+            Optional. Kubernetes VLAN ID.
+            By default, the kubernetes node, including the
+            primary kubernetes network, are in the same VLAN
+            as the machine management network. For network
+            segmentation purposes, these can optionally be
+            separated.
     """
 
     machine_mgmt_ipv4_range: str = proto.Field(
@@ -1368,6 +1608,14 @@ class ZoneNetworkConfig(proto.Message):
         proto.MESSAGE,
         number=5,
         message="Subnet",
+    )
+    dns_ipv4_addresses: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=6,
+    )
+    kubernetes_primary_vlan_id: int = proto.Field(
+        proto.INT32,
+        number=7,
     )
 
 
@@ -1499,6 +1747,67 @@ class HardwareLocation(proto.Message):
         proto.MESSAGE,
         number=3,
         message="RackSpace",
+    )
+
+
+class SubscriptionConfig(proto.Message):
+    r"""A message to store a subscription configuration.
+
+    Attributes:
+        subscription_id (str):
+            Output only. The unique identifier of the
+            subscription.
+        billing_id (str):
+            Output only. The Google Cloud Billing ID that
+            the subscription is created under.
+        state (google.cloud.gdchardwaremanagement_v1alpha.types.SubscriptionConfig.SubscriptionState):
+            Output only. The current state of the
+            subscription.
+    """
+
+    class SubscriptionState(proto.Enum):
+        r"""Enum to represent the state of the subscription.
+
+        Values:
+            SUBSCRIPTION_STATE_UNSPECIFIED (0):
+                State is unspecified.
+            ACTIVE (1):
+                Active state means that the subscription has
+                been created successfully and billing is
+                happening.
+            INACTIVE (2):
+                Inactive means that the subscription has been
+                created successfully, but billing has not
+                started yet.
+            ERROR (3):
+                The subscription is in an erroneous state.
+            FAILED_TO_RETRIEVE (4):
+                The subscription state failed to be
+                retrieved. This may be a transient issue. The
+                user should retry the request.
+            COMPLETED (5):
+                The subscription has been completed, because
+                it has reached the end date.
+        """
+        SUBSCRIPTION_STATE_UNSPECIFIED = 0
+        ACTIVE = 1
+        INACTIVE = 2
+        ERROR = 3
+        FAILED_TO_RETRIEVE = 4
+        COMPLETED = 5
+
+    subscription_id: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    billing_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    state: SubscriptionState = proto.Field(
+        proto.ENUM,
+        number=3,
+        enum=SubscriptionState,
     )
 
 

@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-filestore-v1.10.1...google-cloud-filestore-v1.11.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [1.10.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-filestore-v1.10.0...google-cloud-filestore-v1.10.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13243](https://github.com/googleapis/google-cloud-python/issues/13243)) ([d794dec](https://github.com/googleapis/google-cloud-python/commit/d794dec5eff5f23a1ff926012bf9e6cad719e020))
+
+## [1.10.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-filestore-v1.9.5...google-cloud-filestore-v1.10.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
 ## [1.9.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-filestore-v1.9.4...google-cloud-filestore-v1.9.5) (2024-07-30)
 
 

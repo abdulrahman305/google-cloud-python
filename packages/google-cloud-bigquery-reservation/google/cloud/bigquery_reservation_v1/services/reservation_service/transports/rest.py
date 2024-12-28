@@ -13,41 +13,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.cloud.bigquery_reservation_v1.types import reservation as gcbr_reservation
+from google.cloud.bigquery_reservation_v1.types import reservation
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseReservationServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.protobuf import empty_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.cloud.bigquery_reservation_v1.types import reservation as gcbr_reservation
-from google.cloud.bigquery_reservation_v1.types import reservation
-
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import ReservationServiceTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -101,6 +105,14 @@ class ReservationServiceRestInterceptor:
             def pre_delete_reservation(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
+
+            def pre_failover_reservation(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_failover_reservation(self, response):
+                logging.log(f"Received response: {response}")
+                return response
 
             def pre_get_bi_reservation(self, request, metadata):
                 logging.log(f"Received request: {request}")
@@ -231,8 +243,10 @@ class ReservationServiceRestInterceptor:
     def pre_create_assignment(
         self,
         request: reservation.CreateAssignmentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.CreateAssignmentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.CreateAssignmentRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for create_assignment
 
         Override in a subclass to manipulate the request or metadata
@@ -254,8 +268,11 @@ class ReservationServiceRestInterceptor:
     def pre_create_capacity_commitment(
         self,
         request: reservation.CreateCapacityCommitmentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.CreateCapacityCommitmentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.CreateCapacityCommitmentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for create_capacity_commitment
 
         Override in a subclass to manipulate the request or metadata
@@ -277,8 +294,11 @@ class ReservationServiceRestInterceptor:
     def pre_create_reservation(
         self,
         request: gcbr_reservation.CreateReservationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[gcbr_reservation.CreateReservationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gcbr_reservation.CreateReservationRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for create_reservation
 
         Override in a subclass to manipulate the request or metadata
@@ -300,8 +320,10 @@ class ReservationServiceRestInterceptor:
     def pre_delete_assignment(
         self,
         request: reservation.DeleteAssignmentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.DeleteAssignmentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.DeleteAssignmentRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for delete_assignment
 
         Override in a subclass to manipulate the request or metadata
@@ -312,8 +334,11 @@ class ReservationServiceRestInterceptor:
     def pre_delete_capacity_commitment(
         self,
         request: reservation.DeleteCapacityCommitmentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.DeleteCapacityCommitmentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.DeleteCapacityCommitmentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for delete_capacity_commitment
 
         Override in a subclass to manipulate the request or metadata
@@ -324,8 +349,10 @@ class ReservationServiceRestInterceptor:
     def pre_delete_reservation(
         self,
         request: reservation.DeleteReservationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.DeleteReservationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.DeleteReservationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for delete_reservation
 
         Override in a subclass to manipulate the request or metadata
@@ -333,11 +360,38 @@ class ReservationServiceRestInterceptor:
         """
         return request, metadata
 
+    def pre_failover_reservation(
+        self,
+        request: reservation.FailoverReservationRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.FailoverReservationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for failover_reservation
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ReservationService server.
+        """
+        return request, metadata
+
+    def post_failover_reservation(
+        self, response: reservation.Reservation
+    ) -> reservation.Reservation:
+        """Post-rpc interceptor for failover_reservation
+
+        Override in a subclass to manipulate the response
+        after it is returned by the ReservationService server but before
+        it is returned to user code.
+        """
+        return response
+
     def pre_get_bi_reservation(
         self,
         request: reservation.GetBiReservationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.GetBiReservationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.GetBiReservationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_bi_reservation
 
         Override in a subclass to manipulate the request or metadata
@@ -359,8 +413,11 @@ class ReservationServiceRestInterceptor:
     def pre_get_capacity_commitment(
         self,
         request: reservation.GetCapacityCommitmentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.GetCapacityCommitmentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.GetCapacityCommitmentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for get_capacity_commitment
 
         Override in a subclass to manipulate the request or metadata
@@ -382,8 +439,10 @@ class ReservationServiceRestInterceptor:
     def pre_get_reservation(
         self,
         request: reservation.GetReservationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.GetReservationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.GetReservationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_reservation
 
         Override in a subclass to manipulate the request or metadata
@@ -405,8 +464,10 @@ class ReservationServiceRestInterceptor:
     def pre_list_assignments(
         self,
         request: reservation.ListAssignmentsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.ListAssignmentsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.ListAssignmentsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_assignments
 
         Override in a subclass to manipulate the request or metadata
@@ -428,8 +489,11 @@ class ReservationServiceRestInterceptor:
     def pre_list_capacity_commitments(
         self,
         request: reservation.ListCapacityCommitmentsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.ListCapacityCommitmentsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.ListCapacityCommitmentsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for list_capacity_commitments
 
         Override in a subclass to manipulate the request or metadata
@@ -451,8 +515,10 @@ class ReservationServiceRestInterceptor:
     def pre_list_reservations(
         self,
         request: reservation.ListReservationsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.ListReservationsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.ListReservationsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_reservations
 
         Override in a subclass to manipulate the request or metadata
@@ -474,8 +540,11 @@ class ReservationServiceRestInterceptor:
     def pre_merge_capacity_commitments(
         self,
         request: reservation.MergeCapacityCommitmentsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.MergeCapacityCommitmentsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.MergeCapacityCommitmentsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for merge_capacity_commitments
 
         Override in a subclass to manipulate the request or metadata
@@ -497,8 +566,10 @@ class ReservationServiceRestInterceptor:
     def pre_move_assignment(
         self,
         request: reservation.MoveAssignmentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.MoveAssignmentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.MoveAssignmentRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for move_assignment
 
         Override in a subclass to manipulate the request or metadata
@@ -520,8 +591,10 @@ class ReservationServiceRestInterceptor:
     def pre_search_all_assignments(
         self,
         request: reservation.SearchAllAssignmentsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.SearchAllAssignmentsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.SearchAllAssignmentsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for search_all_assignments
 
         Override in a subclass to manipulate the request or metadata
@@ -543,8 +616,10 @@ class ReservationServiceRestInterceptor:
     def pre_search_assignments(
         self,
         request: reservation.SearchAssignmentsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.SearchAssignmentsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.SearchAssignmentsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for search_assignments
 
         Override in a subclass to manipulate the request or metadata
@@ -566,8 +641,11 @@ class ReservationServiceRestInterceptor:
     def pre_split_capacity_commitment(
         self,
         request: reservation.SplitCapacityCommitmentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.SplitCapacityCommitmentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.SplitCapacityCommitmentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for split_capacity_commitment
 
         Override in a subclass to manipulate the request or metadata
@@ -589,8 +667,10 @@ class ReservationServiceRestInterceptor:
     def pre_update_assignment(
         self,
         request: reservation.UpdateAssignmentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.UpdateAssignmentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.UpdateAssignmentRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for update_assignment
 
         Override in a subclass to manipulate the request or metadata
@@ -612,8 +692,10 @@ class ReservationServiceRestInterceptor:
     def pre_update_bi_reservation(
         self,
         request: reservation.UpdateBiReservationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.UpdateBiReservationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.UpdateBiReservationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for update_bi_reservation
 
         Override in a subclass to manipulate the request or metadata
@@ -635,8 +717,11 @@ class ReservationServiceRestInterceptor:
     def pre_update_capacity_commitment(
         self,
         request: reservation.UpdateCapacityCommitmentRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[reservation.UpdateCapacityCommitmentRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reservation.UpdateCapacityCommitmentRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for update_capacity_commitment
 
         Override in a subclass to manipulate the request or metadata
@@ -658,8 +743,11 @@ class ReservationServiceRestInterceptor:
     def pre_update_reservation(
         self,
         request: gcbr_reservation.UpdateReservationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[gcbr_reservation.UpdateReservationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gcbr_reservation.UpdateReservationRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for update_reservation
 
         Override in a subclass to manipulate the request or metadata
@@ -686,8 +774,8 @@ class ReservationServiceRestStub:
     _interceptor: ReservationServiceRestInterceptor
 
 
-class ReservationServiceRestTransport(ReservationServiceTransport):
-    """REST backend transport for ReservationService.
+class ReservationServiceRestTransport(_BaseReservationServiceRestTransport):
+    """REST backend synchronous transport for ReservationService.
 
     This API allows users to manage their BigQuery reservations.
 
@@ -711,7 +799,6 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -765,21 +852,12 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -790,19 +868,35 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
         self._interceptor = interceptor or ReservationServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _CreateAssignment(ReservationServiceRestStub):
+    class _CreateAssignment(
+        _BaseReservationServiceRestTransport._BaseCreateAssignment,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateAssignment")
+            return hash("ReservationServiceRestTransport.CreateAssignment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -810,7 +904,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.Assignment:
             r"""Call the create assignment method over HTTP.
 
@@ -823,8 +917,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.Assignment:
@@ -834,47 +930,62 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*/reservations/*}/assignments",
-                    "body": "assignment",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseCreateAssignment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_assignment(
                 request, metadata
             )
-            pb_request = reservation.CreateAssignmentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseReservationServiceRestTransport._BaseCreateAssignment._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseReservationServiceRestTransport._BaseCreateAssignment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseCreateAssignment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.CreateAssignment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "CreateAssignment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = ReservationServiceRestTransport._CreateAssignment._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -887,22 +998,60 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.Assignment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_assignment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.Assignment.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.create_assignment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "CreateAssignment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CreateCapacityCommitment(ReservationServiceRestStub):
+    class _CreateCapacityCommitment(
+        _BaseReservationServiceRestTransport._BaseCreateCapacityCommitment,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateCapacityCommitment")
+            return hash("ReservationServiceRestTransport.CreateCapacityCommitment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -910,7 +1059,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.CapacityCommitment:
             r"""Call the create capacity
             commitment method over HTTP.
@@ -922,8 +1071,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.reservation.CapacityCommitment:
@@ -944,47 +1095,64 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*}/capacityCommitments",
-                    "body": "capacity_commitment",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseCreateCapacityCommitment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_capacity_commitment(
                 request, metadata
             )
-            pb_request = reservation.CreateCapacityCommitmentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseReservationServiceRestTransport._BaseCreateCapacityCommitment._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseReservationServiceRestTransport._BaseCreateCapacityCommitment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseCreateCapacityCommitment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.CreateCapacityCommitment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "CreateCapacityCommitment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                ReservationServiceRestTransport._CreateCapacityCommitment._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -997,22 +1165,60 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.CapacityCommitment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_capacity_commitment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.CapacityCommitment.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.create_capacity_commitment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "CreateCapacityCommitment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CreateReservation(ReservationServiceRestStub):
+    class _CreateReservation(
+        _BaseReservationServiceRestTransport._BaseCreateReservation,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateReservation")
+            return hash("ReservationServiceRestTransport.CreateReservation")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1020,7 +1226,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> gcbr_reservation.Reservation:
             r"""Call the create reservation method over HTTP.
 
@@ -1031,8 +1237,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.gcbr_reservation.Reservation:
@@ -1041,47 +1249,62 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*}/reservations",
-                    "body": "reservation",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseCreateReservation._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_reservation(
                 request, metadata
             )
-            pb_request = gcbr_reservation.CreateReservationRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseReservationServiceRestTransport._BaseCreateReservation._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseReservationServiceRestTransport._BaseCreateReservation._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseCreateReservation._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.CreateReservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "CreateReservation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = ReservationServiceRestTransport._CreateReservation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1094,22 +1317,59 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = gcbr_reservation.Reservation.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_reservation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = gcbr_reservation.Reservation.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.create_reservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "CreateReservation",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _DeleteAssignment(ReservationServiceRestStub):
+    class _DeleteAssignment(
+        _BaseReservationServiceRestTransport._BaseDeleteAssignment,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("DeleteAssignment")
+            return hash("ReservationServiceRestTransport.DeleteAssignment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1117,7 +1377,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete assignment method over HTTP.
 
@@ -1130,44 +1390,63 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=projects/*/locations/*/reservations/*/assignments/*}",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseDeleteAssignment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_assignment(
                 request, metadata
             )
-            pb_request = reservation.DeleteAssignmentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseDeleteAssignment._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseDeleteAssignment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.DeleteAssignment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "DeleteAssignment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ReservationServiceRestTransport._DeleteAssignment._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1175,19 +1454,34 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _DeleteCapacityCommitment(ReservationServiceRestStub):
+    class _DeleteCapacityCommitment(
+        _BaseReservationServiceRestTransport._BaseDeleteCapacityCommitment,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("DeleteCapacityCommitment")
+            return hash("ReservationServiceRestTransport.DeleteCapacityCommitment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1195,7 +1489,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete capacity
             commitment method over HTTP.
@@ -1207,44 +1501,65 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=projects/*/locations/*/capacityCommitments/*}",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseDeleteCapacityCommitment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_capacity_commitment(
                 request, metadata
             )
-            pb_request = reservation.DeleteCapacityCommitmentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseDeleteCapacityCommitment._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseDeleteCapacityCommitment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.DeleteCapacityCommitment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "DeleteCapacityCommitment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ReservationServiceRestTransport._DeleteCapacityCommitment._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1252,19 +1567,34 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _DeleteReservation(ReservationServiceRestStub):
+    class _DeleteReservation(
+        _BaseReservationServiceRestTransport._BaseDeleteReservation,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("DeleteReservation")
+            return hash("ReservationServiceRestTransport.DeleteReservation")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1272,7 +1602,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete reservation method over HTTP.
 
@@ -1283,44 +1613,63 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=projects/*/locations/*/reservations/*}",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseDeleteReservation._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_reservation(
                 request, metadata
             )
-            pb_request = reservation.DeleteReservationRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseDeleteReservation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseDeleteReservation._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.DeleteReservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "DeleteReservation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ReservationServiceRestTransport._DeleteReservation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1328,19 +1677,188 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _GetBiReservation(ReservationServiceRestStub):
+    class _FailoverReservation(
+        _BaseReservationServiceRestTransport._BaseFailoverReservation,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetBiReservation")
+            return hash("ReservationServiceRestTransport.FailoverReservation")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        def __call__(
+            self,
+            request: reservation.FailoverReservationRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> reservation.Reservation:
+            r"""Call the failover reservation method over HTTP.
+
+            Args:
+                request (~.reservation.FailoverReservationRequest):
+                    The request object. The request for
+                ReservationService.FailoverReservation.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.reservation.Reservation:
+                    A reservation is a mechanism used to
+                guarantee slots to users.
+
+            """
+
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseFailoverReservation._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_failover_reservation(
+                request, metadata
+            )
+            transcoded_request = _BaseReservationServiceRestTransport._BaseFailoverReservation._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseReservationServiceRestTransport._BaseFailoverReservation._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseReservationServiceRestTransport._BaseFailoverReservation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.FailoverReservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "FailoverReservation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = (
+                ReservationServiceRestTransport._FailoverReservation._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = reservation.Reservation()
+            pb_resp = reservation.Reservation.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_failover_reservation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.Reservation.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.failover_reservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "FailoverReservation",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetBiReservation(
+        _BaseReservationServiceRestTransport._BaseGetBiReservation,
+        ReservationServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("ReservationServiceRestTransport.GetBiReservation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1348,7 +1866,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.BiReservation:
             r"""Call the get bi reservation method over HTTP.
 
@@ -1359,48 +1877,67 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.BiReservation:
                     Represents a BI Reservation.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/biReservation}",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseGetBiReservation._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_bi_reservation(
                 request, metadata
             )
-            pb_request = reservation.GetBiReservationRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseGetBiReservation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseGetBiReservation._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.GetBiReservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "GetBiReservation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ReservationServiceRestTransport._GetBiReservation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1413,22 +1950,59 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.BiReservation.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_bi_reservation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.BiReservation.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.get_bi_reservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "GetBiReservation",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetCapacityCommitment(ReservationServiceRestStub):
+    class _GetCapacityCommitment(
+        _BaseReservationServiceRestTransport._BaseGetCapacityCommitment,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetCapacityCommitment")
+            return hash("ReservationServiceRestTransport.GetCapacityCommitment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1436,7 +2010,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.CapacityCommitment:
             r"""Call the get capacity commitment method over HTTP.
 
@@ -1447,8 +2021,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.CapacityCommitment:
@@ -1469,40 +2045,59 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/capacityCommitments/*}",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseGetCapacityCommitment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_capacity_commitment(
                 request, metadata
             )
-            pb_request = reservation.GetCapacityCommitmentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseGetCapacityCommitment._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseGetCapacityCommitment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.GetCapacityCommitment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "GetCapacityCommitment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ReservationServiceRestTransport._GetCapacityCommitment._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1515,22 +2110,59 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.CapacityCommitment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_capacity_commitment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.CapacityCommitment.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.get_capacity_commitment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "GetCapacityCommitment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetReservation(ReservationServiceRestStub):
+    class _GetReservation(
+        _BaseReservationServiceRestTransport._BaseGetReservation,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetReservation")
+            return hash("ReservationServiceRestTransport.GetReservation")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1538,7 +2170,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.Reservation:
             r"""Call the get reservation method over HTTP.
 
@@ -1549,8 +2181,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.Reservation:
@@ -1559,38 +2193,55 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/reservations/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_reservation(request, metadata)
-            pb_request = reservation.GetReservationRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseGetReservation._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_reservation(request, metadata)
+            transcoded_request = _BaseReservationServiceRestTransport._BaseGetReservation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseGetReservation._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.GetReservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "GetReservation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ReservationServiceRestTransport._GetReservation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1603,22 +2254,59 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.Reservation.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_reservation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.Reservation.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.get_reservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "GetReservation",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListAssignments(ReservationServiceRestStub):
+    class _ListAssignments(
+        _BaseReservationServiceRestTransport._BaseListAssignments,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListAssignments")
+            return hash("ReservationServiceRestTransport.ListAssignments")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1626,7 +2314,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.ListAssignmentsResponse:
             r"""Call the list assignments method over HTTP.
 
@@ -1637,8 +2325,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.ListAssignmentsResponse:
@@ -1647,40 +2337,57 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*/reservations/*}/assignments",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseListAssignments._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_assignments(
                 request, metadata
             )
-            pb_request = reservation.ListAssignmentsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseListAssignments._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseListAssignments._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.ListAssignments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "ListAssignments",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ReservationServiceRestTransport._ListAssignments._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1693,22 +2400,61 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.ListAssignmentsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_assignments(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.ListAssignmentsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.list_assignments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "ListAssignments",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListCapacityCommitments(ReservationServiceRestStub):
+    class _ListCapacityCommitments(
+        _BaseReservationServiceRestTransport._BaseListCapacityCommitments,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListCapacityCommitments")
+            return hash("ReservationServiceRestTransport.ListCapacityCommitments")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1716,7 +2462,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.ListCapacityCommitmentsResponse:
             r"""Call the list capacity commitments method over HTTP.
 
@@ -1727,8 +2473,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.ListCapacityCommitmentsResponse:
@@ -1737,40 +2485,59 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/capacityCommitments",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseListCapacityCommitments._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_capacity_commitments(
                 request, metadata
             )
-            pb_request = reservation.ListCapacityCommitmentsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseListCapacityCommitments._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseListCapacityCommitments._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.ListCapacityCommitments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "ListCapacityCommitments",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ReservationServiceRestTransport._ListCapacityCommitments._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1783,22 +2550,61 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.ListCapacityCommitmentsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_capacity_commitments(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        reservation.ListCapacityCommitmentsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.list_capacity_commitments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "ListCapacityCommitments",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListReservations(ReservationServiceRestStub):
+    class _ListReservations(
+        _BaseReservationServiceRestTransport._BaseListReservations,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListReservations")
+            return hash("ReservationServiceRestTransport.ListReservations")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1806,7 +2612,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.ListReservationsResponse:
             r"""Call the list reservations method over HTTP.
 
@@ -1817,8 +2623,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.ListReservationsResponse:
@@ -1827,40 +2635,57 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/reservations",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseListReservations._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_reservations(
                 request, metadata
             )
-            pb_request = reservation.ListReservationsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseListReservations._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseListReservations._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.ListReservations",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "ListReservations",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ReservationServiceRestTransport._ListReservations._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1873,12 +2698,62 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.ListReservationsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_reservations(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.ListReservationsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.list_reservations",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "ListReservations",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _MergeCapacityCommitments(ReservationServiceRestStub):
+    class _MergeCapacityCommitments(
+        _BaseReservationServiceRestTransport._BaseMergeCapacityCommitments,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("MergeCapacityCommitments")
+            return hash("ReservationServiceRestTransport.MergeCapacityCommitments")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1886,7 +2761,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.CapacityCommitment:
             r"""Call the merge capacity
             commitments method over HTTP.
@@ -1898,8 +2773,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.reservation.CapacityCommitment:
@@ -1920,46 +2797,64 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*}/capacityCommitments:merge",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseMergeCapacityCommitments._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_merge_capacity_commitments(
                 request, metadata
             )
-            pb_request = reservation.MergeCapacityCommitmentsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseReservationServiceRestTransport._BaseMergeCapacityCommitments._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseReservationServiceRestTransport._BaseMergeCapacityCommitments._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseMergeCapacityCommitments._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.MergeCapacityCommitments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "MergeCapacityCommitments",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                ReservationServiceRestTransport._MergeCapacityCommitments._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1972,22 +2867,60 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.CapacityCommitment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_merge_capacity_commitments(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.CapacityCommitment.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.merge_capacity_commitments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "MergeCapacityCommitments",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _MoveAssignment(ReservationServiceRestStub):
+    class _MoveAssignment(
+        _BaseReservationServiceRestTransport._BaseMoveAssignment,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("MoveAssignment")
+            return hash("ReservationServiceRestTransport.MoveAssignment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1995,7 +2928,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.Assignment:
             r"""Call the move assignment method over HTTP.
 
@@ -2013,8 +2946,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.Assignment:
@@ -2024,45 +2959,60 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=projects/*/locations/*/reservations/*/assignments/*}:move",
-                    "body": "*",
-                },
-            ]
-            request, metadata = self._interceptor.pre_move_assignment(request, metadata)
-            pb_request = reservation.MoveAssignmentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseMoveAssignment._get_http_options()
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            request, metadata = self._interceptor.pre_move_assignment(request, metadata)
+            transcoded_request = _BaseReservationServiceRestTransport._BaseMoveAssignment._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseReservationServiceRestTransport._BaseMoveAssignment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseMoveAssignment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.MoveAssignment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "MoveAssignment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = ReservationServiceRestTransport._MoveAssignment._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2075,22 +3025,59 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.Assignment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_move_assignment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.Assignment.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.move_assignment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "MoveAssignment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _SearchAllAssignments(ReservationServiceRestStub):
+    class _SearchAllAssignments(
+        _BaseReservationServiceRestTransport._BaseSearchAllAssignments,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("SearchAllAssignments")
+            return hash("ReservationServiceRestTransport.SearchAllAssignments")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -2098,7 +3085,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.SearchAllAssignmentsResponse:
             r"""Call the search all assignments method over HTTP.
 
@@ -2111,8 +3098,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.SearchAllAssignmentsResponse:
@@ -2121,40 +3110,59 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}:searchAllAssignments",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseSearchAllAssignments._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_search_all_assignments(
                 request, metadata
             )
-            pb_request = reservation.SearchAllAssignmentsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseSearchAllAssignments._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseSearchAllAssignments._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.SearchAllAssignments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "SearchAllAssignments",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ReservationServiceRestTransport._SearchAllAssignments._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2167,22 +3175,61 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.SearchAllAssignmentsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_search_all_assignments(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.SearchAllAssignmentsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.search_all_assignments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "SearchAllAssignments",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _SearchAssignments(ReservationServiceRestStub):
+    class _SearchAssignments(
+        _BaseReservationServiceRestTransport._BaseSearchAssignments,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("SearchAssignments")
+            return hash("ReservationServiceRestTransport.SearchAssignments")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -2190,7 +3237,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.SearchAssignmentsResponse:
             r"""Call the search assignments method over HTTP.
 
@@ -2203,8 +3250,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.SearchAssignmentsResponse:
@@ -2213,40 +3262,57 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}:searchAssignments",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseSearchAssignments._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_search_assignments(
                 request, metadata
             )
-            pb_request = reservation.SearchAssignmentsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReservationServiceRestTransport._BaseSearchAssignments._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseSearchAssignments._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.SearchAssignments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "SearchAssignments",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ReservationServiceRestTransport._SearchAssignments._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2259,22 +3325,62 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.SearchAssignmentsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_search_assignments(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.SearchAssignmentsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.search_assignments",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "SearchAssignments",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _SplitCapacityCommitment(ReservationServiceRestStub):
+    class _SplitCapacityCommitment(
+        _BaseReservationServiceRestTransport._BaseSplitCapacityCommitment,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("SplitCapacityCommitment")
+            return hash("ReservationServiceRestTransport.SplitCapacityCommitment")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -2282,7 +3388,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.SplitCapacityCommitmentResponse:
             r"""Call the split capacity commitment method over HTTP.
 
@@ -2293,8 +3399,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.SplitCapacityCommitmentResponse:
@@ -2303,47 +3411,64 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=projects/*/locations/*/capacityCommitments/*}:split",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseSplitCapacityCommitment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_split_capacity_commitment(
                 request, metadata
             )
-            pb_request = reservation.SplitCapacityCommitmentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseReservationServiceRestTransport._BaseSplitCapacityCommitment._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseReservationServiceRestTransport._BaseSplitCapacityCommitment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseSplitCapacityCommitment._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.SplitCapacityCommitment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "SplitCapacityCommitment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                ReservationServiceRestTransport._SplitCapacityCommitment._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2356,12 +3481,62 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.SplitCapacityCommitmentResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_split_capacity_commitment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        reservation.SplitCapacityCommitmentResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.split_capacity_commitment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "SplitCapacityCommitment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateAssignment(ReservationServiceRestStub):
+    class _UpdateAssignment(
+        _BaseReservationServiceRestTransport._BaseUpdateAssignment,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateAssignment")
+            return hash("ReservationServiceRestTransport.UpdateAssignment")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -2369,7 +3544,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.Assignment:
             r"""Call the update assignment method over HTTP.
 
@@ -2380,8 +3555,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.Assignment:
@@ -2391,46 +3568,62 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{assignment.name=projects/*/locations/*/reservations/*/assignments/*}",
-                    "body": "assignment",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseUpdateAssignment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_update_assignment(
                 request, metadata
             )
-            pb_request = reservation.UpdateAssignmentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseReservationServiceRestTransport._BaseUpdateAssignment._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseReservationServiceRestTransport._BaseUpdateAssignment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseUpdateAssignment._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.UpdateAssignment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "UpdateAssignment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = ReservationServiceRestTransport._UpdateAssignment._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2443,12 +3636,60 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.Assignment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_assignment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.Assignment.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.update_assignment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "UpdateAssignment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateBiReservation(ReservationServiceRestStub):
+    class _UpdateBiReservation(
+        _BaseReservationServiceRestTransport._BaseUpdateBiReservation,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateBiReservation")
+            return hash("ReservationServiceRestTransport.UpdateBiReservation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -2456,7 +3697,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.BiReservation:
             r"""Call the update bi reservation method over HTTP.
 
@@ -2466,54 +3707,74 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.reservation.BiReservation:
                     Represents a BI Reservation.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{bi_reservation.name=projects/*/locations/*/biReservation}",
-                    "body": "bi_reservation",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseUpdateBiReservation._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_update_bi_reservation(
                 request, metadata
             )
-            pb_request = reservation.UpdateBiReservationRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseReservationServiceRestTransport._BaseUpdateBiReservation._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseReservationServiceRestTransport._BaseUpdateBiReservation._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseUpdateBiReservation._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.UpdateBiReservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "UpdateBiReservation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                ReservationServiceRestTransport._UpdateBiReservation._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2526,12 +3787,60 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.BiReservation.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_bi_reservation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.BiReservation.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.update_bi_reservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "UpdateBiReservation",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateCapacityCommitment(ReservationServiceRestStub):
+    class _UpdateCapacityCommitment(
+        _BaseReservationServiceRestTransport._BaseUpdateCapacityCommitment,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateCapacityCommitment")
+            return hash("ReservationServiceRestTransport.UpdateCapacityCommitment")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -2539,7 +3848,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> reservation.CapacityCommitment:
             r"""Call the update capacity
             commitment method over HTTP.
@@ -2551,8 +3860,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.reservation.CapacityCommitment:
@@ -2573,46 +3884,64 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{capacity_commitment.name=projects/*/locations/*/capacityCommitments/*}",
-                    "body": "capacity_commitment",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseUpdateCapacityCommitment._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_update_capacity_commitment(
                 request, metadata
             )
-            pb_request = reservation.UpdateCapacityCommitmentRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseReservationServiceRestTransport._BaseUpdateCapacityCommitment._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseReservationServiceRestTransport._BaseUpdateCapacityCommitment._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseUpdateCapacityCommitment._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.UpdateCapacityCommitment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "UpdateCapacityCommitment",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                ReservationServiceRestTransport._UpdateCapacityCommitment._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2625,12 +3954,60 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = reservation.CapacityCommitment.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_capacity_commitment(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reservation.CapacityCommitment.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.update_capacity_commitment",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "UpdateCapacityCommitment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateReservation(ReservationServiceRestStub):
+    class _UpdateReservation(
+        _BaseReservationServiceRestTransport._BaseUpdateReservation,
+        ReservationServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateReservation")
+            return hash("ReservationServiceRestTransport.UpdateReservation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -2638,7 +4015,7 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> gcbr_reservation.Reservation:
             r"""Call the update reservation method over HTTP.
 
@@ -2649,8 +4026,10 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.gcbr_reservation.Reservation:
@@ -2659,46 +4038,62 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{reservation.name=projects/*/locations/*/reservations/*}",
-                    "body": "reservation",
-                },
-            ]
+            http_options = (
+                _BaseReservationServiceRestTransport._BaseUpdateReservation._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_update_reservation(
                 request, metadata
             )
-            pb_request = gcbr_reservation.UpdateReservationRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseReservationServiceRestTransport._BaseUpdateReservation._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseReservationServiceRestTransport._BaseUpdateReservation._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseReservationServiceRestTransport._BaseUpdateReservation._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.bigquery.reservation_v1.ReservationServiceClient.UpdateReservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "UpdateReservation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = ReservationServiceRestTransport._UpdateReservation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2711,7 +4106,29 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
             pb_resp = gcbr_reservation.Reservation.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_reservation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = gcbr_reservation.Reservation.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.bigquery.reservation_v1.ReservationServiceClient.update_reservation",
+                    extra={
+                        "serviceName": "google.cloud.bigquery.reservation.v1.ReservationService",
+                        "rpcName": "UpdateReservation",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property
@@ -2765,6 +4182,14 @@ class ReservationServiceRestTransport(ReservationServiceTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._DeleteReservation(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def failover_reservation(
+        self,
+    ) -> Callable[[reservation.FailoverReservationRequest], reservation.Reservation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._FailoverReservation(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def get_bi_reservation(

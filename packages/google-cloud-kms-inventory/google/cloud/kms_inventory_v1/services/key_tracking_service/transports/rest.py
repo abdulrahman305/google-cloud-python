@@ -13,38 +13,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.cloud.kms_inventory_v1.types import key_tracking_service
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseKeyTrackingServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.cloud.kms_inventory_v1.types import key_tracking_service
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import KeyTrackingServiceTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -88,10 +93,10 @@ class KeyTrackingServiceRestInterceptor:
     def pre_get_protected_resources_summary(
         self,
         request: key_tracking_service.GetProtectedResourcesSummaryRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         key_tracking_service.GetProtectedResourcesSummaryRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for get_protected_resources_summary
 
@@ -114,9 +119,10 @@ class KeyTrackingServiceRestInterceptor:
     def pre_search_protected_resources(
         self,
         request: key_tracking_service.SearchProtectedResourcesRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        key_tracking_service.SearchProtectedResourcesRequest, Sequence[Tuple[str, str]]
+        key_tracking_service.SearchProtectedResourcesRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for search_protected_resources
 
@@ -144,8 +150,8 @@ class KeyTrackingServiceRestStub:
     _interceptor: KeyTrackingServiceRestInterceptor
 
 
-class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
-    """REST backend transport for KeyTrackingService.
+class KeyTrackingServiceRestTransport(_BaseKeyTrackingServiceRestTransport):
+    """REST backend synchronous transport for KeyTrackingService.
 
     Returns information about the resources in an org that are
     protected by a given Cloud KMS key via CMEK.
@@ -155,7 +161,6 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -209,21 +214,12 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -234,19 +230,34 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
         self._interceptor = interceptor or KeyTrackingServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _GetProtectedResourcesSummary(KeyTrackingServiceRestStub):
+    class _GetProtectedResourcesSummary(
+        _BaseKeyTrackingServiceRestTransport._BaseGetProtectedResourcesSummary,
+        KeyTrackingServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetProtectedResourcesSummary")
+            return hash("KeyTrackingServiceRestTransport.GetProtectedResourcesSummary")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -254,7 +265,7 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> key_tracking_service.ProtectedResourcesSummary:
             r"""Call the get protected resources
             summary method over HTTP.
@@ -266,8 +277,10 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.key_tracking_service.ProtectedResourcesSummary:
@@ -278,42 +291,57 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/keyRings/*/cryptoKeys/**}/protectedResourcesSummary",
-                },
-            ]
+            http_options = (
+                _BaseKeyTrackingServiceRestTransport._BaseGetProtectedResourcesSummary._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_protected_resources_summary(
                 request, metadata
             )
-            pb_request = key_tracking_service.GetProtectedResourcesSummaryRequest.pb(
-                request
+            transcoded_request = _BaseKeyTrackingServiceRestTransport._BaseGetProtectedResourcesSummary._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseKeyTrackingServiceRestTransport._BaseGetProtectedResourcesSummary._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.kms.inventory_v1.KeyTrackingServiceClient.GetProtectedResourcesSummary",
+                    extra={
+                        "serviceName": "google.cloud.kms.inventory.v1.KeyTrackingService",
+                        "rpcName": "GetProtectedResourcesSummary",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = KeyTrackingServiceRestTransport._GetProtectedResourcesSummary._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -326,24 +354,61 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
             pb_resp = key_tracking_service.ProtectedResourcesSummary.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_protected_resources_summary(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        key_tracking_service.ProtectedResourcesSummary.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.kms.inventory_v1.KeyTrackingServiceClient.get_protected_resources_summary",
+                    extra={
+                        "serviceName": "google.cloud.kms.inventory.v1.KeyTrackingService",
+                        "rpcName": "GetProtectedResourcesSummary",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _SearchProtectedResources(KeyTrackingServiceRestStub):
+    class _SearchProtectedResources(
+        _BaseKeyTrackingServiceRestTransport._BaseSearchProtectedResources,
+        KeyTrackingServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("SearchProtectedResources")
+            return hash("KeyTrackingServiceRestTransport.SearchProtectedResources")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "cryptoKey": "",
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -351,7 +416,7 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> key_tracking_service.SearchProtectedResourcesResponse:
             r"""Call the search protected
             resources method over HTTP.
@@ -363,8 +428,10 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.key_tracking_service.SearchProtectedResourcesResponse:
@@ -373,42 +440,59 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{scope=organizations/*}/protectedResources:search",
-                },
-            ]
+            http_options = (
+                _BaseKeyTrackingServiceRestTransport._BaseSearchProtectedResources._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_search_protected_resources(
                 request, metadata
             )
-            pb_request = key_tracking_service.SearchProtectedResourcesRequest.pb(
-                request
+            transcoded_request = _BaseKeyTrackingServiceRestTransport._BaseSearchProtectedResources._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseKeyTrackingServiceRestTransport._BaseSearchProtectedResources._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.kms.inventory_v1.KeyTrackingServiceClient.SearchProtectedResources",
+                    extra={
+                        "serviceName": "google.cloud.kms.inventory.v1.KeyTrackingService",
+                        "rpcName": "SearchProtectedResources",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                KeyTrackingServiceRestTransport._SearchProtectedResources._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -421,7 +505,33 @@ class KeyTrackingServiceRestTransport(KeyTrackingServiceTransport):
             pb_resp = key_tracking_service.SearchProtectedResourcesResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_search_protected_resources(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        key_tracking_service.SearchProtectedResourcesResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.kms.inventory_v1.KeyTrackingServiceClient.search_protected_resources",
+                    extra={
+                        "serviceName": "google.cloud.kms.inventory.v1.KeyTrackingService",
+                        "rpcName": "SearchProtectedResources",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property

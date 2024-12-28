@@ -21,6 +21,8 @@ from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import timestamp_pb2  # type: ignore
 from google.type import date_pb2  # type: ignore
+from google.type import dayofweek_pb2  # type: ignore
+from google.type import timeofday_pb2  # type: ignore
 import proto  # type: ignore
 
 __protobuf__ = proto.module(
@@ -65,6 +67,7 @@ __protobuf__ = proto.module(
         "CloudRunLocation",
         "MultiTarget",
         "CustomTarget",
+        "AssociatedEntities",
         "ListTargetsRequest",
         "ListTargetsResponse",
         "GetTargetRequest",
@@ -80,8 +83,24 @@ __protobuf__ = proto.module(
         "CreateCustomTargetTypeRequest",
         "UpdateCustomTargetTypeRequest",
         "DeleteCustomTargetTypeRequest",
+        "DeployPolicy",
+        "DeployPolicyResourceSelector",
+        "DeliveryPipelineAttribute",
         "TargetAttribute",
+        "PolicyRule",
+        "RolloutRestriction",
+        "TimeWindows",
+        "OneTimeWindow",
+        "WeeklyWindow",
+        "PolicyViolation",
+        "PolicyViolationDetails",
         "Release",
+        "CreateDeployPolicyRequest",
+        "UpdateDeployPolicyRequest",
+        "DeleteDeployPolicyRequest",
+        "ListDeployPoliciesRequest",
+        "ListDeployPoliciesResponse",
+        "GetDeployPolicyRequest",
         "BuildArtifact",
         "TargetArtifact",
         "DeployArtifact",
@@ -143,10 +162,15 @@ __protobuf__ = proto.module(
         "Automation",
         "AutomationResourceSelector",
         "AutomationRule",
+        "TimedPromoteReleaseRule",
         "PromoteReleaseRule",
         "AdvanceRolloutRule",
         "RepairRolloutRule",
+        "RepairPhaseConfig",
+        "Retry",
+        "Rollback",
         "AutomationRuleCondition",
+        "TimedPromoteReleaseCondition",
         "CreateAutomationRequest",
         "UpdateAutomationRequest",
         "DeleteAutomationRequest",
@@ -157,6 +181,7 @@ __protobuf__ = proto.module(
         "PromoteReleaseOperation",
         "AdvanceRolloutOperation",
         "RepairRolloutOperation",
+        "TimedPromoteReleaseOperation",
         "RepairPhase",
         "RetryPhase",
         "RetryAttempt",
@@ -765,7 +790,47 @@ class KubernetesConfig(proto.Message):
                 Pods for the Deployment and Service resources.
                 This label must already be present in both
                 resources.
+            route_destinations (google.cloud.deploy_v1.types.KubernetesConfig.GatewayServiceMesh.RouteDestinations):
+                Optional. Route destinations allow
+                configuring the Gateway API HTTPRoute to be
+                deployed to additional clusters. This option is
+                available for multi-cluster service mesh set ups
+                that require the route to exist in the clusters
+                that call the service. If unspecified, the
+                HTTPRoute will only be deployed to the Target
+                cluster.
         """
+
+        class RouteDestinations(proto.Message):
+            r"""Information about route destinations for the Gateway API
+            service mesh.
+
+            Attributes:
+                destination_ids (MutableSequence[str]):
+                    Required. The clusters where the Gateway API
+                    HTTPRoute resource will be deployed to. Valid
+                    entries include the associated entities IDs
+                    configured in the Target resource and "@self" to
+                    include the Target cluster.
+                propagate_service (bool):
+                    Optional. Whether to propagate the Kubernetes
+                    Service to the route destination clusters. The
+                    Service will always be deployed to the Target
+                    cluster even if the HTTPRoute is not. This
+                    option may be used to facilitiate successful DNS
+                    lookup in the route destination clusters. Can
+                    only be set to true if destinations are
+                    specified.
+            """
+
+            destination_ids: MutableSequence[str] = proto.RepeatedField(
+                proto.STRING,
+                number=1,
+            )
+            propagate_service: bool = proto.Field(
+                proto.BOOL,
+                number=2,
+            )
 
         http_route: str = proto.Field(
             proto.STRING,
@@ -792,6 +857,13 @@ class KubernetesConfig(proto.Message):
         pod_selector_label: str = proto.Field(
             proto.STRING,
             number=6,
+        )
+        route_destinations: "KubernetesConfig.GatewayServiceMesh.RouteDestinations" = (
+            proto.Field(
+                proto.MESSAGE,
+                number=8,
+                message="KubernetesConfig.GatewayServiceMesh.RouteDestinations",
+            )
         )
 
     class ServiceNetworking(proto.Message):
@@ -1387,6 +1459,9 @@ class RollbackTargetRequest(proto.Message):
         validate_only (bool):
             Optional. If set to true, the request is validated and the
             user is provided with a ``RollbackTargetResponse``.
+        override_deploy_policy (MutableSequence[str]):
+            Optional. Deploy policies to override. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deploy_policy}``.
     """
 
     name: str = proto.Field(
@@ -1417,6 +1492,10 @@ class RollbackTargetRequest(proto.Message):
     validate_only: bool = proto.Field(
         proto.BOOL,
         number=7,
+    )
+    override_deploy_policy: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=9,
     )
 
 
@@ -1515,6 +1594,17 @@ class Target(proto.Message):
             Target.
 
             This field is a member of `oneof`_ ``deployment_target``.
+        associated_entities (MutableMapping[str, google.cloud.deploy_v1.types.AssociatedEntities]):
+            Optional. Map of entity IDs to their associated entities.
+            Associated entities allows specifying places other than the
+            deployment target for specific features. For example, the
+            Gateway API canary can be configured to deploy the HTTPRoute
+            to a different cluster(s) than the deployment cluster using
+            associated entities. An entity ID must consist of lower-case
+            letters, numbers, and hyphens, start with a letter and end
+            with a letter or a number, and have a max length of 63
+            characters. In other words, it must match the following
+            regex: ``^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$``.
         etag (str):
             Optional. This checksum is computed by the
             server based on the value of other fields, and
@@ -1604,6 +1694,12 @@ class Target(proto.Message):
         number=21,
         oneof="deployment_target",
         message="CustomTarget",
+    )
+    associated_entities: MutableMapping[str, "AssociatedEntities"] = proto.MapField(
+        proto.STRING,
+        proto.MESSAGE,
+        number=23,
+        message="AssociatedEntities",
     )
     etag: str = proto.Field(
         proto.STRING,
@@ -1818,10 +1914,16 @@ class GkeCluster(proto.Message):
 
             Only specify this option when ``cluster`` is a `private GKE
             cluster <https://cloud.google.com/kubernetes-engine/docs/concepts/private-cluster-concept>`__.
+            Note that ``internal_ip`` and ``dns_endpoint`` cannot both
+            be set to true.
         proxy_url (str):
             Optional. If set, used to configure a
             `proxy <https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#proxy>`__
             to the Kubernetes server.
+        dns_endpoint (bool):
+            Optional. If set, the cluster will be accessed using the DNS
+            endpoint. Note that ``dns_endpoint`` and ``internal_ip``
+            cannot both be set to true.
     """
 
     cluster: str = proto.Field(
@@ -1835,6 +1937,10 @@ class GkeCluster(proto.Message):
     proxy_url: str = proto.Field(
         proto.STRING,
         number=3,
+    )
+    dns_endpoint: bool = proto.Field(
+        proto.BOOL,
+        number=4,
     )
 
 
@@ -1895,6 +2001,30 @@ class CustomTarget(proto.Message):
     custom_target_type: str = proto.Field(
         proto.STRING,
         number=1,
+    )
+
+
+class AssociatedEntities(proto.Message):
+    r"""Information about entities associated with a ``Target``.
+
+    Attributes:
+        gke_clusters (MutableSequence[google.cloud.deploy_v1.types.GkeCluster]):
+            Optional. Information specifying GKE clusters
+            as associated entities.
+        anthos_clusters (MutableSequence[google.cloud.deploy_v1.types.AnthosCluster]):
+            Optional. Information specifying Anthos
+            clusters as associated entities.
+    """
+
+    gke_clusters: MutableSequence["GkeCluster"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=2,
+        message="GkeCluster",
+    )
+    anthos_clusters: MutableSequence["AnthosCluster"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=3,
+        message="AnthosCluster",
     )
 
 
@@ -2761,8 +2891,212 @@ class DeleteCustomTargetTypeRequest(proto.Message):
     )
 
 
+class DeployPolicy(proto.Message):
+    r"""A ``DeployPolicy`` resource in the Cloud Deploy API.
+
+    A ``DeployPolicy`` inhibits manual or automation-driven actions
+    within a Delivery Pipeline or Target.
+
+    Attributes:
+        name (str):
+            Output only. Name of the ``DeployPolicy``. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deployPolicy}``.
+            The ``deployPolicy`` component must match
+            ``[a-z]([a-z0-9-]{0,61}[a-z0-9])?``
+        uid (str):
+            Output only. Unique identifier of the ``DeployPolicy``.
+        description (str):
+            Description of the ``DeployPolicy``. Max length is 255
+            characters.
+        annotations (MutableMapping[str, str]):
+            User annotations. These attributes can only be set and used
+            by the user, and not by Cloud Deploy. Annotations must meet
+            the following constraints:
+
+            -  Annotations are key/value pairs.
+            -  Valid annotation keys have two segments: an optional
+               prefix and name, separated by a slash (``/``).
+            -  The name segment is required and must be 63 characters or
+               less, beginning and ending with an alphanumeric character
+               (``[a-z0-9A-Z]``) with dashes (``-``), underscores
+               (``_``), dots (``.``), and alphanumerics between.
+            -  The prefix is optional. If specified, the prefix must be
+               a DNS subdomain: a series of DNS labels separated by
+               dots(\ ``.``), not longer than 253 characters in total,
+               followed by a slash (``/``).
+
+            See
+            https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/#syntax-and-character-set
+            for more details.
+        labels (MutableMapping[str, str]):
+            Labels are attributes that can be set and used by both the
+            user and by Cloud Deploy. Labels must meet the following
+            constraints:
+
+            -  Keys and values can contain only lowercase letters,
+               numeric characters, underscores, and dashes.
+            -  All characters must use UTF-8 encoding, and international
+               characters are allowed.
+            -  Keys must start with a lowercase letter or international
+               character.
+            -  Each resource is limited to a maximum of 64 labels.
+
+            Both keys and values are additionally constrained to be <=
+            128 bytes.
+        create_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. Time at which the deploy policy
+            was created.
+        update_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. Most recent time at which the
+            deploy policy was updated.
+        suspended (bool):
+            When suspended, the policy will not prevent
+            actions from occurring, even if the action
+            violates the policy.
+        selectors (MutableSequence[google.cloud.deploy_v1.types.DeployPolicyResourceSelector]):
+            Required. Selected resources to which the
+            policy will be applied. At least one selector is
+            required. If one selector matches the resource
+            the policy applies. For example, if there are
+            two selectors and the action being attempted
+            matches one of them, the policy will apply to
+            that action.
+        rules (MutableSequence[google.cloud.deploy_v1.types.PolicyRule]):
+            Required. Rules to apply. At least one rule
+            must be present.
+        etag (str):
+            The weak etag of the ``Automation`` resource. This checksum
+            is computed by the server based on the value of other
+            fields, and may be sent on update and delete requests to
+            ensure the client has an up-to-date value before proceeding.
+    """
+
+    class Invoker(proto.Enum):
+        r"""What invoked the action. Filters enforcing the policy
+        depending on what invoked the action.
+
+        Values:
+            INVOKER_UNSPECIFIED (0):
+                Unspecified.
+            USER (1):
+                The action is user-driven. For example,
+                creating a rollout manually via a gcloud create
+                command.
+            DEPLOY_AUTOMATION (2):
+                Automated action by Cloud Deploy.
+        """
+        INVOKER_UNSPECIFIED = 0
+        USER = 1
+        DEPLOY_AUTOMATION = 2
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    uid: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    description: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+    annotations: MutableMapping[str, str] = proto.MapField(
+        proto.STRING,
+        proto.STRING,
+        number=4,
+    )
+    labels: MutableMapping[str, str] = proto.MapField(
+        proto.STRING,
+        proto.STRING,
+        number=5,
+    )
+    create_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=6,
+        message=timestamp_pb2.Timestamp,
+    )
+    update_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=7,
+        message=timestamp_pb2.Timestamp,
+    )
+    suspended: bool = proto.Field(
+        proto.BOOL,
+        number=8,
+    )
+    selectors: MutableSequence["DeployPolicyResourceSelector"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=12,
+        message="DeployPolicyResourceSelector",
+    )
+    rules: MutableSequence["PolicyRule"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=10,
+        message="PolicyRule",
+    )
+    etag: str = proto.Field(
+        proto.STRING,
+        number=11,
+    )
+
+
+class DeployPolicyResourceSelector(proto.Message):
+    r"""Contains information on the resources to select for a deploy
+    policy. Attributes provided must all match the resource in order
+    for policy restrictions to apply. For example, if delivery
+    pipelines attributes given are an id "prod" and labels "foo:
+    bar", a delivery pipeline resource must match both that id and
+    have that label in order to be subject to the policy.
+
+    Attributes:
+        delivery_pipeline (google.cloud.deploy_v1.types.DeliveryPipelineAttribute):
+            Optional. Contains attributes about a
+            delivery pipeline.
+        target (google.cloud.deploy_v1.types.TargetAttribute):
+            Optional. Contains attributes about a target.
+    """
+
+    delivery_pipeline: "DeliveryPipelineAttribute" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="DeliveryPipelineAttribute",
+    )
+    target: "TargetAttribute" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message="TargetAttribute",
+    )
+
+
+class DeliveryPipelineAttribute(proto.Message):
+    r"""Contains criteria for selecting DeliveryPipelines.
+
+    Attributes:
+        id (str):
+            ID of the ``DeliveryPipeline``. The value of this field
+            could be one of the following:
+
+            -  The last segment of a pipeline name
+            -  "*", all delivery pipelines in a location
+        labels (MutableMapping[str, str]):
+            DeliveryPipeline labels.
+    """
+
+    id: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    labels: MutableMapping[str, str] = proto.MapField(
+        proto.STRING,
+        proto.STRING,
+        number=2,
+    )
+
+
 class TargetAttribute(proto.Message):
-    r"""Contains criteria for selecting Targets.
+    r"""Contains criteria for selecting Targets. This could be used
+    to select targets for a Deploy Policy or for an Automation.
 
     Attributes:
         id (str):
@@ -2783,6 +3117,262 @@ class TargetAttribute(proto.Message):
         proto.STRING,
         proto.STRING,
         number=2,
+    )
+
+
+class PolicyRule(proto.Message):
+    r"""Deploy Policy rule.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        rollout_restriction (google.cloud.deploy_v1.types.RolloutRestriction):
+            Rollout restrictions.
+
+            This field is a member of `oneof`_ ``rule``.
+    """
+
+    rollout_restriction: "RolloutRestriction" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        oneof="rule",
+        message="RolloutRestriction",
+    )
+
+
+class RolloutRestriction(proto.Message):
+    r"""Rollout restrictions.
+
+    Attributes:
+        id (str):
+            Required. Restriction rule ID. Required and must be unique
+            within a DeployPolicy. The format is
+            ``[a-z]([a-z0-9-]{0,61}[a-z0-9])?``.
+        invokers (MutableSequence[google.cloud.deploy_v1.types.DeployPolicy.Invoker]):
+            Optional. What invoked the action. If left
+            empty, all invoker types will be restricted.
+        actions (MutableSequence[google.cloud.deploy_v1.types.RolloutRestriction.RolloutActions]):
+            Optional. Rollout actions to be restricted as
+            part of the policy. If left empty, all actions
+            will be restricted.
+        time_windows (google.cloud.deploy_v1.types.TimeWindows):
+            Required. Time window within which actions
+            are restricted.
+    """
+
+    class RolloutActions(proto.Enum):
+        r"""Rollout actions to be restricted as part of the policy.
+
+        Values:
+            ROLLOUT_ACTIONS_UNSPECIFIED (0):
+                Unspecified.
+            ADVANCE (1):
+                Advance the rollout to the next phase.
+            APPROVE (2):
+                Approve the rollout.
+            CANCEL (3):
+                Cancel the rollout.
+            CREATE (4):
+                Create a rollout.
+            IGNORE_JOB (5):
+                Ignore a job result on the rollout.
+            RETRY_JOB (6):
+                Retry a job for a rollout.
+            ROLLBACK (7):
+                Rollback a rollout.
+            TERMINATE_JOBRUN (8):
+                Terminate a jobrun.
+        """
+        ROLLOUT_ACTIONS_UNSPECIFIED = 0
+        ADVANCE = 1
+        APPROVE = 2
+        CANCEL = 3
+        CREATE = 4
+        IGNORE_JOB = 5
+        RETRY_JOB = 6
+        ROLLBACK = 7
+        TERMINATE_JOBRUN = 8
+
+    id: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    invokers: MutableSequence["DeployPolicy.Invoker"] = proto.RepeatedField(
+        proto.ENUM,
+        number=2,
+        enum="DeployPolicy.Invoker",
+    )
+    actions: MutableSequence[RolloutActions] = proto.RepeatedField(
+        proto.ENUM,
+        number=3,
+        enum=RolloutActions,
+    )
+    time_windows: "TimeWindows" = proto.Field(
+        proto.MESSAGE,
+        number=4,
+        message="TimeWindows",
+    )
+
+
+class TimeWindows(proto.Message):
+    r"""Time windows within which actions are restricted. See the
+    `documentation <https://cloud.google.com/deploy/docs/deploy-policy#dates_times>`__
+    for more information on how to configure dates/times.
+
+    Attributes:
+        time_zone (str):
+            Required. The time zone in IANA format `IANA Time Zone
+            Database <https://www.iana.org/time-zones>`__ (e.g.
+            America/New_York).
+        one_time_windows (MutableSequence[google.cloud.deploy_v1.types.OneTimeWindow]):
+            Optional. One-time windows within which
+            actions are restricted.
+        weekly_windows (MutableSequence[google.cloud.deploy_v1.types.WeeklyWindow]):
+            Optional. Recurring weekly windows within
+            which actions are restricted.
+    """
+
+    time_zone: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    one_time_windows: MutableSequence["OneTimeWindow"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=2,
+        message="OneTimeWindow",
+    )
+    weekly_windows: MutableSequence["WeeklyWindow"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=3,
+        message="WeeklyWindow",
+    )
+
+
+class OneTimeWindow(proto.Message):
+    r"""One-time window within which actions are restricted. For
+    example, blocking actions over New Year's Eve from December 31st
+    at 5pm to January 1st at 9am.
+
+    Attributes:
+        start_date (google.type.date_pb2.Date):
+            Required. Start date.
+        start_time (google.type.timeofday_pb2.TimeOfDay):
+            Required. Start time (inclusive). Use 00:00
+            for the beginning of the day.
+        end_date (google.type.date_pb2.Date):
+            Required. End date.
+        end_time (google.type.timeofday_pb2.TimeOfDay):
+            Required. End time (exclusive). You may use
+            24:00 for the end of the day.
+    """
+
+    start_date: date_pb2.Date = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=date_pb2.Date,
+    )
+    start_time: timeofday_pb2.TimeOfDay = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=timeofday_pb2.TimeOfDay,
+    )
+    end_date: date_pb2.Date = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=date_pb2.Date,
+    )
+    end_time: timeofday_pb2.TimeOfDay = proto.Field(
+        proto.MESSAGE,
+        number=4,
+        message=timeofday_pb2.TimeOfDay,
+    )
+
+
+class WeeklyWindow(proto.Message):
+    r"""Weekly windows. For example, blocking actions every Saturday
+    and Sunday. Another example would be blocking actions every
+    weekday from 5pm to midnight.
+
+    Attributes:
+        days_of_week (MutableSequence[google.type.dayofweek_pb2.DayOfWeek]):
+            Optional. Days of week. If left empty, all
+            days of the week will be included.
+        start_time (google.type.timeofday_pb2.TimeOfDay):
+            Optional. Start time (inclusive). Use 00:00 for the
+            beginning of the day. If you specify start_time you must
+            also specify end_time. If left empty, this will block for
+            the entire day for the days specified in days_of_week.
+        end_time (google.type.timeofday_pb2.TimeOfDay):
+            Optional. End time (exclusive). Use 24:00 to indicate
+            midnight. If you specify end_time you must also specify
+            start_time. If left empty, this will block for the entire
+            day for the days specified in days_of_week.
+    """
+
+    days_of_week: MutableSequence[dayofweek_pb2.DayOfWeek] = proto.RepeatedField(
+        proto.ENUM,
+        number=1,
+        enum=dayofweek_pb2.DayOfWeek,
+    )
+    start_time: timeofday_pb2.TimeOfDay = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=timeofday_pb2.TimeOfDay,
+    )
+    end_time: timeofday_pb2.TimeOfDay = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=timeofday_pb2.TimeOfDay,
+    )
+
+
+class PolicyViolation(proto.Message):
+    r"""Returned from an action if one or more policies were
+    violated, and therefore the action was prevented. Contains
+    information about what policies were violated and why.
+
+    Attributes:
+        policy_violation_details (MutableSequence[google.cloud.deploy_v1.types.PolicyViolationDetails]):
+            Policy violation details.
+    """
+
+    policy_violation_details: MutableSequence[
+        "PolicyViolationDetails"
+    ] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message="PolicyViolationDetails",
+    )
+
+
+class PolicyViolationDetails(proto.Message):
+    r"""Policy violation details.
+
+    Attributes:
+        policy (str):
+            Name of the policy that was violated. Policy resource will
+            be in the format of
+            ``projects/{project}/locations/{location}/policies/{policy}``.
+        rule_id (str):
+            Id of the rule that triggered the policy
+            violation.
+        failure_message (str):
+            User readable message about why the request
+            violated a policy. This is not intended for
+            machine parsing.
+    """
+
+    policy: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    rule_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    failure_message: str = proto.Field(
+        proto.STRING,
+        number=3,
     )
 
 
@@ -2862,10 +3452,10 @@ class Release(proto.Message):
             update and delete requests to ensure the client
             has an up-to-date value before proceeding.
         skaffold_version (str):
-            The Skaffold version to use when operating on
-            this release, such as "1.20.0". Not all versions
-            are valid; Cloud Deploy supports a specific set
-            of versions.
+            Optional. The Skaffold version to use when
+            operating on this release, such as "1.20.0". Not
+            all versions are valid; Cloud Deploy supports a
+            specific set of versions.
 
             If unset, the most recent supported Skaffold
             version will be used.
@@ -3205,6 +3795,299 @@ class Release(proto.Message):
     )
 
 
+class CreateDeployPolicyRequest(proto.Message):
+    r"""The request object for ``CreateDeployPolicy``.
+
+    Attributes:
+        parent (str):
+            Required. The parent collection in which the
+            ``DeployPolicy`` must be created. The format is
+            ``projects/{project_id}/locations/{location_name}``.
+        deploy_policy_id (str):
+            Required. ID of the ``DeployPolicy``.
+        deploy_policy (google.cloud.deploy_v1.types.DeployPolicy):
+            Required. The ``DeployPolicy`` to create.
+        request_id (str):
+            Optional. A request ID to identify requests.
+            Specify a unique request ID so that if you must
+            retry your request, the server knows to ignore
+            the request if it has already been completed.
+            The server guarantees that for at least 60
+            minutes after the first request.
+
+            For example, consider a situation where you make
+            an initial request and the request times out. If
+            you make the request again with the same request
+            ID, the server can check if original operation
+            with the same request ID was received, and if
+            so, will ignore the second request. This
+            prevents clients from accidentally creating
+            duplicate commitments.
+
+            The request ID must be a valid UUID with the
+            exception that zero UUID is not supported
+            (00000000-0000-0000-0000-000000000000).
+        validate_only (bool):
+            Optional. If set to true, the request is
+            validated and the user is provided with an
+            expected result, but no actual change is made.
+    """
+
+    parent: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    deploy_policy_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    deploy_policy: "DeployPolicy" = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message="DeployPolicy",
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
+    validate_only: bool = proto.Field(
+        proto.BOOL,
+        number=5,
+    )
+
+
+class UpdateDeployPolicyRequest(proto.Message):
+    r"""The request object for ``UpdateDeployPolicy``.
+
+    Attributes:
+        update_mask (google.protobuf.field_mask_pb2.FieldMask):
+            Required. Field mask is used to specify the fields to be
+            overwritten by the update in the ``DeployPolicy`` resource.
+            The fields specified in the update_mask are relative to the
+            resource, not the full request. A field will be overwritten
+            if it's in the mask. If the user doesn't provide a mask then
+            all fields are overwritten.
+        deploy_policy (google.cloud.deploy_v1.types.DeployPolicy):
+            Required. The ``DeployPolicy`` to update.
+        request_id (str):
+            Optional. A request ID to identify requests.
+            Specify a unique request ID so that if you must
+            retry your request, the server knows to ignore
+            the request if it has already been completed.
+            The server guarantees that for at least 60
+            minutes after the first request.
+
+            For example, consider a situation where you make
+            an initial request and the request times out. If
+            you make the request again with the same request
+            ID, the server can check if original operation
+            with the same request ID was received, and if
+            so, will ignore the second request. This
+            prevents clients from accidentally creating
+            duplicate commitments.
+
+            The request ID must be a valid UUID with the
+            exception that zero UUID is not supported
+            (00000000-0000-0000-0000-000000000000).
+        allow_missing (bool):
+            Optional. If set to true, updating a ``DeployPolicy`` that
+            does not exist will result in the creation of a new
+            ``DeployPolicy``.
+        validate_only (bool):
+            Optional. If set to true, the request is
+            validated and the user is provided with an
+            expected result, but no actual change is made.
+    """
+
+    update_mask: field_mask_pb2.FieldMask = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=field_mask_pb2.FieldMask,
+    )
+    deploy_policy: "DeployPolicy" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message="DeployPolicy",
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+    allow_missing: bool = proto.Field(
+        proto.BOOL,
+        number=4,
+    )
+    validate_only: bool = proto.Field(
+        proto.BOOL,
+        number=5,
+    )
+
+
+class DeleteDeployPolicyRequest(proto.Message):
+    r"""The request object for ``DeleteDeployPolicy``.
+
+    Attributes:
+        name (str):
+            Required. The name of the ``DeployPolicy`` to delete. The
+            format is
+            ``projects/{project_id}/locations/{location_name}/deployPolicies/{deploy_policy_name}``.
+        request_id (str):
+            Optional. A request ID to identify requests.
+            Specify a unique request ID so that if you must
+            retry your request, the server knows to ignore
+            the request if it has already been completed.
+            The server guarantees that for at least 60
+            minutes after the first request.
+
+            For example, consider a situation where you make
+            an initial request and the request times out. If
+            you make the request again with the same request
+            ID, the server can check if original operation
+            with the same request ID was received, and if
+            so, will ignore the second request. This
+            prevents clients from accidentally creating
+            duplicate commitments.
+
+            The request ID must be a valid UUID with the
+            exception that zero UUID is not supported
+            (00000000-0000-0000-0000-000000000000).
+        allow_missing (bool):
+            Optional. If set to true, then deleting an already deleted
+            or non-existing ``DeployPolicy`` will succeed.
+        validate_only (bool):
+            Optional. If set, validate the request and
+            preview the review, but do not actually post it.
+        etag (str):
+            Optional. This checksum is computed by the
+            server based on the value of other fields, and
+            may be sent on update and delete requests to
+            ensure the client has an up-to-date value before
+            proceeding.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    allow_missing: bool = proto.Field(
+        proto.BOOL,
+        number=3,
+    )
+    validate_only: bool = proto.Field(
+        proto.BOOL,
+        number=4,
+    )
+    etag: str = proto.Field(
+        proto.STRING,
+        number=5,
+    )
+
+
+class ListDeployPoliciesRequest(proto.Message):
+    r"""The request object for ``ListDeployPolicies``.
+
+    Attributes:
+        parent (str):
+            Required. The parent, which owns this collection of deploy
+            policies. Format must be
+            ``projects/{project_id}/locations/{location_name}``.
+        page_size (int):
+            The maximum number of deploy policies to
+            return. The service may return fewer than this
+            value. If unspecified, at most 50 deploy
+            policies will be returned. The maximum value is
+            1000; values above 1000 will be set to 1000.
+        page_token (str):
+            A page token, received from a previous
+            ``ListDeployPolicies`` call. Provide this to retrieve the
+            subsequent page.
+
+            When paginating, all other provided parameters match the
+            call that provided the page token.
+        filter (str):
+            Filter deploy policies to be returned. See
+            https://google.aip.dev/160 for more details. All
+            fields can be used in the filter.
+        order_by (str):
+            Field to sort by. See
+            https://google.aip.dev/132#ordering for more
+            details.
+    """
+
+    parent: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    page_size: int = proto.Field(
+        proto.INT32,
+        number=2,
+    )
+    page_token: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+    filter: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
+    order_by: str = proto.Field(
+        proto.STRING,
+        number=5,
+    )
+
+
+class ListDeployPoliciesResponse(proto.Message):
+    r"""The response object from ``ListDeployPolicies``.
+
+    Attributes:
+        deploy_policies (MutableSequence[google.cloud.deploy_v1.types.DeployPolicy]):
+            The ``DeployPolicy`` objects.
+        next_page_token (str):
+            A token, which can be sent as ``page_token`` to retrieve the
+            next page. If this field is omitted, there are no subsequent
+            pages.
+        unreachable (MutableSequence[str]):
+            Locations that could not be reached.
+    """
+
+    @property
+    def raw_page(self):
+        return self
+
+    deploy_policies: MutableSequence["DeployPolicy"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message="DeployPolicy",
+    )
+    next_page_token: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    unreachable: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=3,
+    )
+
+
+class GetDeployPolicyRequest(proto.Message):
+    r"""The request object for ``GetDeployPolicy``
+
+    Attributes:
+        name (str):
+            Required. Name of the ``DeployPolicy``. Format must be
+            ``projects/{project_id}/locations/{location_name}/deployPolicies/{deploy_policy_name}``.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
 class BuildArtifact(proto.Message):
     r"""Description of an a image to use during Skaffold rendering.
 
@@ -3504,6 +4387,9 @@ class CreateReleaseRequest(proto.Message):
             Optional. If set to true, the request is
             validated and the user is provided with an
             expected result, but no actual change is made.
+        override_deploy_policy (MutableSequence[str]):
+            Optional. Deploy policies to override. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deployPolicy}``.
     """
 
     parent: str = proto.Field(
@@ -3526,6 +4412,10 @@ class CreateReleaseRequest(proto.Message):
     validate_only: bool = proto.Field(
         proto.BOOL,
         number=5,
+    )
+    override_deploy_policy: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=6,
     )
 
 
@@ -3618,6 +4508,9 @@ class Rollout(proto.Message):
         rolled_back_by_rollouts (MutableSequence[str]):
             Output only. Names of ``Rollouts`` that rolled back this
             ``Rollout``.
+        active_repair_automation_run (str):
+            Output only. The AutomationRun actively
+            repairing the rollout.
     """
 
     class ApprovalState(proto.Enum):
@@ -3821,6 +4714,10 @@ class Rollout(proto.Message):
     rolled_back_by_rollouts: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=27,
+    )
+    active_repair_automation_run: str = proto.Field(
+        proto.STRING,
+        number=28,
     )
 
 
@@ -4457,6 +5354,9 @@ class CreateRolloutRequest(proto.Message):
             Optional. If set to true, the request is
             validated and the user is provided with an
             expected result, but no actual change is made.
+        override_deploy_policy (MutableSequence[str]):
+            Optional. Deploy policies to override. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deployPolicy}``.
         starting_phase_id (str):
             Optional. The starting phase ID for the ``Rollout``. If
             empty the ``Rollout`` will start at the first phase.
@@ -4482,6 +5382,10 @@ class CreateRolloutRequest(proto.Message):
     validate_only: bool = proto.Field(
         proto.BOOL,
         number=5,
+    )
+    override_deploy_policy: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=6,
     )
     starting_phase_id: str = proto.Field(
         proto.STRING,
@@ -4511,9 +5415,11 @@ class OperationMetadata(proto.Message):
         requested_cancellation (bool):
             Output only. Identifies whether the user has requested
             cancellation of the operation. Operations that have
-            successfully been cancelled have [Operation.error][] value
-            with a [google.rpc.Status.code][google.rpc.Status.code] of
-            1, corresponding to ``Code.CANCELLED``.
+            successfully been cancelled have
+            [google.longrunning.Operation.error][google.longrunning.Operation.error]
+            value with a
+            [google.rpc.Status.code][google.rpc.Status.code] of 1,
+            corresponding to ``Code.CANCELLED``.
         api_version (str):
             Output only. API version used to start the
             operation.
@@ -4560,6 +5466,9 @@ class ApproveRolloutRequest(proto.Message):
             ``projects/{project}/locations/{location}/deliveryPipelines/{deliveryPipeline}/releases/{release}/rollouts/{rollout}``.
         approved (bool):
             Required. True = approve; false = reject
+        override_deploy_policy (MutableSequence[str]):
+            Optional. Deploy policies to override. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deployPolicy}``.
     """
 
     name: str = proto.Field(
@@ -4569,6 +5478,10 @@ class ApproveRolloutRequest(proto.Message):
     approved: bool = proto.Field(
         proto.BOOL,
         number=2,
+    )
+    override_deploy_policy: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=3,
     )
 
 
@@ -4585,6 +5498,9 @@ class AdvanceRolloutRequest(proto.Message):
             ``projects/{project}/locations/{location}/deliveryPipelines/{deliveryPipeline}/releases/{release}/rollouts/{rollout}``.
         phase_id (str):
             Required. The phase ID to advance the ``Rollout`` to.
+        override_deploy_policy (MutableSequence[str]):
+            Optional. Deploy policies to override. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deployPolicy}``.
     """
 
     name: str = proto.Field(
@@ -4594,6 +5510,10 @@ class AdvanceRolloutRequest(proto.Message):
     phase_id: str = proto.Field(
         proto.STRING,
         number=2,
+    )
+    override_deploy_policy: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=3,
     )
 
 
@@ -4608,11 +5528,18 @@ class CancelRolloutRequest(proto.Message):
         name (str):
             Required. Name of the Rollout. Format is
             ``projects/{project}/locations/{location}/deliveryPipelines/{deliveryPipeline}/releases/{release}/rollouts/{rollout}``.
+        override_deploy_policy (MutableSequence[str]):
+            Optional. Deploy policies to override. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deployPolicy}``.
     """
 
     name: str = proto.Field(
         proto.STRING,
         number=1,
+    )
+    override_deploy_policy: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=2,
     )
 
 
@@ -4632,6 +5559,9 @@ class IgnoreJobRequest(proto.Message):
             belongs to.
         job_id (str):
             Required. The job ID for the Job to ignore.
+        override_deploy_policy (MutableSequence[str]):
+            Optional. Deploy policies to override. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deployPolicy}``.
     """
 
     rollout: str = proto.Field(
@@ -4645,6 +5575,10 @@ class IgnoreJobRequest(proto.Message):
     job_id: str = proto.Field(
         proto.STRING,
         number=3,
+    )
+    override_deploy_policy: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=4,
     )
 
 
@@ -4664,6 +5598,9 @@ class RetryJobRequest(proto.Message):
             belongs to.
         job_id (str):
             Required. The job ID for the Job to retry.
+        override_deploy_policy (MutableSequence[str]):
+            Optional. Deploy policies to override. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deployPolicy}``.
     """
 
     rollout: str = proto.Field(
@@ -4677,6 +5614,10 @@ class RetryJobRequest(proto.Message):
     job_id: str = proto.Field(
         proto.STRING,
         number=3,
+    )
+    override_deploy_policy: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=4,
     )
 
 
@@ -5310,11 +6251,18 @@ class TerminateJobRunRequest(proto.Message):
         name (str):
             Required. Name of the ``JobRun``. Format must be
             ``projects/{project}/locations/{location}/deliveryPipelines/{deliveryPipeline}/releases/{release}/rollouts/{rollout}/jobRuns/{jobRun}``.
+        override_deploy_policy (MutableSequence[str]):
+            Optional. Deploy policies to override. Format is
+            ``projects/{project}/locations/{location}/deployPolicies/{deployPolicy}``.
     """
 
     name: str = proto.Field(
         proto.STRING,
         number=1,
+    )
+    override_deploy_policy: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=2,
     )
 
 
@@ -5585,6 +6533,12 @@ class AutomationRule(proto.Message):
             repair a failed rollout.
 
             This field is a member of `oneof`_ ``rule``.
+        timed_promote_release_rule (google.cloud.deploy_v1.types.TimedPromoteReleaseRule):
+            Optional. The ``TimedPromoteReleaseRule`` will automatically
+            promote a release from the current target(s) to the
+            specified target(s) on a configured schedule.
+
+            This field is a member of `oneof`_ ``rule``.
     """
 
     promote_release_rule: "PromoteReleaseRule" = proto.Field(
@@ -5604,6 +6558,73 @@ class AutomationRule(proto.Message):
         number=3,
         oneof="rule",
         message="RepairRolloutRule",
+    )
+    timed_promote_release_rule: "TimedPromoteReleaseRule" = proto.Field(
+        proto.MESSAGE,
+        number=4,
+        oneof="rule",
+        message="TimedPromoteReleaseRule",
+    )
+
+
+class TimedPromoteReleaseRule(proto.Message):
+    r"""The ``TimedPromoteReleaseRule`` will automatically promote a release
+    from the current target(s) to the specified target(s) on a
+    configured schedule.
+
+    Attributes:
+        id (str):
+            Required. ID of the rule. This ID must be unique in the
+            ``Automation`` resource to which this rule belongs. The
+            format is ``[a-z]([a-z0-9-]{0,61}[a-z0-9])?``.
+        destination_target_id (str):
+            Optional. The ID of the stage in the pipeline to which this
+            ``Release`` is deploying. If unspecified, default it to the
+            next stage in the promotion flow. The value of this field
+            could be one of the following:
+
+            -  The last segment of a target name
+            -  "@next", the next target in the promotion sequence
+        schedule (str):
+            Required. Schedule in crontab format. e.g. "0 9 \* \* 1" for
+            every Monday at 9am.
+        time_zone (str):
+            Required. The time zone in IANA format `IANA Time Zone
+            Database <https://www.iana.org/time-zones>`__ (e.g.
+            America/New_York).
+        condition (google.cloud.deploy_v1.types.AutomationRuleCondition):
+            Output only. Information around the state of
+            the Automation rule.
+        destination_phase (str):
+            Optional. The starting phase of the rollout
+            created by this rule. Default to the first
+            phase.
+    """
+
+    id: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    destination_target_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    schedule: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+    time_zone: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
+    condition: "AutomationRuleCondition" = proto.Field(
+        proto.MESSAGE,
+        number=5,
+        message="AutomationRuleCondition",
+    )
+    destination_phase: str = proto.Field(
+        proto.STRING,
+        number=6,
     )
 
 
@@ -5713,6 +6734,15 @@ class RepairRolloutRule(proto.Message):
             Required. ID of the rule. This id must be unique in the
             ``Automation`` resource to which this rule belongs. The
             format is ``[a-z]([a-z0-9-]{0,61}[a-z0-9])?``.
+        phases (MutableSequence[str]):
+            Optional. Phases within which jobs are subject to automatic
+            repair actions on failure. Proceeds only after phase name
+            matched any one in the list, or for all phases if
+            unspecified. This value must consist of lower-case letters,
+            numbers, and hyphens, start with a letter and end with a
+            letter or a number, and have a max length of 63 characters.
+            In other words, it must match the following regex:
+            ``^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$``.
         jobs (MutableSequence[str]):
             Optional. Jobs to repair. Proceeds only after job name
             matched any one in the list, or for all jobs if unspecified
@@ -5725,11 +6755,18 @@ class RepairRolloutRule(proto.Message):
         condition (google.cloud.deploy_v1.types.AutomationRuleCondition):
             Output only. Information around the state of
             the 'Automation' rule.
+        repair_phases (MutableSequence[google.cloud.deploy_v1.types.RepairPhaseConfig]):
+            Required. Defines the types of automatic
+            repair phases for failed jobs.
     """
 
     id: str = proto.Field(
         proto.STRING,
         number=1,
+    )
+    phases: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=7,
     )
     jobs: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
@@ -5740,22 +6777,178 @@ class RepairRolloutRule(proto.Message):
         number=6,
         message="AutomationRuleCondition",
     )
+    repair_phases: MutableSequence["RepairPhaseConfig"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=8,
+        message="RepairPhaseConfig",
+    )
+
+
+class RepairPhaseConfig(proto.Message):
+    r"""Configuration of the repair phase.
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        retry (google.cloud.deploy_v1.types.Retry):
+            Optional. Retries a failed job.
+
+            This field is a member of `oneof`_ ``repair_phase``.
+        rollback (google.cloud.deploy_v1.types.Rollback):
+            Optional. Rolls back a ``Rollout``.
+
+            This field is a member of `oneof`_ ``repair_phase``.
+    """
+
+    retry: "Retry" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        oneof="repair_phase",
+        message="Retry",
+    )
+    rollback: "Rollback" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        oneof="repair_phase",
+        message="Rollback",
+    )
+
+
+class Retry(proto.Message):
+    r"""Retries the failed job.
+
+    Attributes:
+        attempts (int):
+            Required. Total number of retries. Retry is
+            skipped if set to 0; The minimum value is 1, and
+            the maximum value is 10.
+        wait (google.protobuf.duration_pb2.Duration):
+            Optional. How long to wait for the first
+            retry. Default is 0, and the maximum value is
+            14d.
+        backoff_mode (google.cloud.deploy_v1.types.BackoffMode):
+            Optional. The pattern of how wait time will be increased.
+            Default is linear. Backoff mode will be ignored if ``wait``
+            is 0.
+    """
+
+    attempts: int = proto.Field(
+        proto.INT64,
+        number=1,
+    )
+    wait: duration_pb2.Duration = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=duration_pb2.Duration,
+    )
+    backoff_mode: "BackoffMode" = proto.Field(
+        proto.ENUM,
+        number=3,
+        enum="BackoffMode",
+    )
+
+
+class Rollback(proto.Message):
+    r"""Rolls back a ``Rollout``.
+
+    Attributes:
+        destination_phase (str):
+            Optional. The starting phase ID for the ``Rollout``. If
+            unspecified, the ``Rollout`` will start in the stable phase.
+        disable_rollback_if_rollout_pending (bool):
+            Optional. If pending rollout exists on the
+            target, the rollback operation will be aborted.
+    """
+
+    destination_phase: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    disable_rollback_if_rollout_pending: bool = proto.Field(
+        proto.BOOL,
+        number=2,
+    )
 
 
 class AutomationRuleCondition(proto.Message):
     r"""``AutomationRuleCondition`` contains conditions relevant to an
     ``Automation`` rule.
 
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
     Attributes:
         targets_present_condition (google.cloud.deploy_v1.types.TargetsPresentCondition):
             Optional. Details around targets enumerated
             in the rule.
+        timed_promote_release_condition (google.cloud.deploy_v1.types.TimedPromoteReleaseCondition):
+            Optional. TimedPromoteReleaseCondition
+            contains rule conditions specific to a an
+            Automation with a timed promote release rule
+            defined.
+
+            This field is a member of `oneof`_ ``rule_type_condition``.
     """
 
     targets_present_condition: "TargetsPresentCondition" = proto.Field(
         proto.MESSAGE,
         number=1,
         message="TargetsPresentCondition",
+    )
+    timed_promote_release_condition: "TimedPromoteReleaseCondition" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        oneof="rule_type_condition",
+        message="TimedPromoteReleaseCondition",
+    )
+
+
+class TimedPromoteReleaseCondition(proto.Message):
+    r"""``TimedPromoteReleaseCondition`` contains conditions specific to an
+    Automation with a Timed Promote Release rule defined.
+
+    Attributes:
+        next_promotion_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. When the next scheduled
+            promotion(s) will occur.
+        targets_list (MutableSequence[google.cloud.deploy_v1.types.TimedPromoteReleaseCondition.Targets]):
+            Output only. A list of targets involved in
+            the upcoming timed promotion(s).
+    """
+
+    class Targets(proto.Message):
+        r"""The targets involved in a single timed promotion.
+
+        Attributes:
+            source_target_id (str):
+                Optional. The source target ID.
+            destination_target_id (str):
+                Optional. The destination target ID.
+        """
+
+        source_target_id: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        destination_target_id: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+
+    next_promotion_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=timestamp_pb2.Timestamp,
+    )
+    targets_list: MutableSequence[Targets] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=2,
+        message=Targets,
     )
 
 
@@ -6086,15 +7279,18 @@ class AutomationRun(proto.Message):
             Output only. Snapshot of the Automation taken
             at AutomationRun creation time.
         target_id (str):
-            Output only. The ID of the target that represents the
-            promotion stage that initiates the ``AutomationRun``. The
-            value of this field is the last segment of a target name.
+            Output only. The ID of the source target that initiates the
+            ``AutomationRun``. The value of this field is the last
+            segment of a target name.
         state (google.cloud.deploy_v1.types.AutomationRun.State):
             Output only. Current state of the ``AutomationRun``.
         state_description (str):
             Output only. Explains the current state of the
             ``AutomationRun``. Present only when an explanation is
             needed.
+        policy_violation (google.cloud.deploy_v1.types.PolicyViolation):
+            Output only. Contains information about what policies
+            prevented the ``AutomationRun`` from proceeding.
         expire_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. Time the ``AutomationRun`` expires. An
             ``AutomationRun`` expires after 14 days from its creation
@@ -6117,6 +7313,12 @@ class AutomationRun(proto.Message):
             This field is a member of `oneof`_ ``operation``.
         repair_rollout_operation (google.cloud.deploy_v1.types.RepairRolloutOperation):
             Output only. Repairs a failed 'Rollout'.
+
+            This field is a member of `oneof`_ ``operation``.
+        timed_promote_release_operation (google.cloud.deploy_v1.types.TimedPromoteReleaseOperation):
+            Output only. Promotes a release to a
+            specified 'Target' as defined in a Timed Promote
+            Release rule.
 
             This field is a member of `oneof`_ ``operation``.
         wait_until_time (google.protobuf.timestamp_pb2.Timestamp):
@@ -6192,6 +7394,11 @@ class AutomationRun(proto.Message):
         proto.STRING,
         number=9,
     )
+    policy_violation: "PolicyViolation" = proto.Field(
+        proto.MESSAGE,
+        number=10,
+        message="PolicyViolation",
+    )
     expire_time: timestamp_pb2.Timestamp = proto.Field(
         proto.MESSAGE,
         number=11,
@@ -6222,6 +7429,12 @@ class AutomationRun(proto.Message):
         number=17,
         oneof="operation",
         message="RepairRolloutOperation",
+    )
+    timed_promote_release_operation: "TimedPromoteReleaseOperation" = proto.Field(
+        proto.MESSAGE,
+        number=19,
+        oneof="operation",
+        message="TimedPromoteReleaseOperation",
     )
     wait_until_time: timestamp_pb2.Timestamp = proto.Field(
         proto.MESSAGE,
@@ -6316,6 +7529,9 @@ class RepairRolloutOperation(proto.Message):
         rollout (str):
             Output only. The name of the rollout that initiates the
             ``AutomationRun``.
+        current_repair_phase_index (int):
+            Output only. The index of the current repair
+            action in the repair sequence.
         repair_phases (MutableSequence[google.cloud.deploy_v1.types.RepairPhase]):
             Output only. Records of the repair attempts.
             Each repair phase may have multiple retry
@@ -6332,6 +7548,10 @@ class RepairRolloutOperation(proto.Message):
         proto.STRING,
         number=1,
     )
+    current_repair_phase_index: int = proto.Field(
+        proto.INT64,
+        number=6,
+    )
     repair_phases: MutableSequence["RepairPhase"] = proto.RepeatedField(
         proto.MESSAGE,
         number=3,
@@ -6344,6 +7564,38 @@ class RepairRolloutOperation(proto.Message):
     job_id: str = proto.Field(
         proto.STRING,
         number=5,
+    )
+
+
+class TimedPromoteReleaseOperation(proto.Message):
+    r"""Contains the information of an automated timed
+    promote-release operation.
+
+    Attributes:
+        target_id (str):
+            Output only. The ID of the target that
+            represents the promotion stage to which the
+            release will be promoted. The value of this
+            field is the last segment of a target name.
+        release (str):
+            Output only. The name of the release to be
+            promoted.
+        phase (str):
+            Output only. The starting phase of the
+            rollout created by this operation.
+    """
+
+    target_id: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    release: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    phase: str = proto.Field(
+        proto.STRING,
+        number=3,
     )
 
 
@@ -6470,6 +7722,9 @@ class RollbackAttempt(proto.Message):
         state_desc (str):
             Output only. Description of the state of the
             Rollback.
+        disable_rollback_if_rollout_pending (bool):
+            Output only. If active rollout exists on the
+            target, abort this rollback.
     """
 
     destination_phase: str = proto.Field(
@@ -6488,6 +7743,10 @@ class RollbackAttempt(proto.Message):
     state_desc: str = proto.Field(
         proto.STRING,
         number=4,
+    )
+    disable_rollback_if_rollout_pending: bool = proto.Field(
+        proto.BOOL,
+        number=5,
     )
 
 

@@ -3242,20 +3242,19 @@ class VertexCustomConfig(proto.Message):
                stored in the annotations field.
             -  To drop the prediction output, simply clear the payload
                field in the returned AppPlatformCloudFunctionResponse.
-
         attach_application_metadata (bool):
             If true, the prediction request received by
             custom model will also contain metadata with the
             following schema:
 
             'appPlatformMetadata': {
-                'ingestionTime': DOUBLE; (UNIX timestamp)
-                'application': STRING;
-                'instanceId': STRING;
-                'node': STRING;
-                'processor': STRING;
+                  'ingestionTime': DOUBLE; (UNIX timestamp)
+                  'application': STRING;
+                  'instanceId': STRING;
+                  'node': STRING;
+                  'processor': STRING;
 
-            }
+             }
 
     """
 

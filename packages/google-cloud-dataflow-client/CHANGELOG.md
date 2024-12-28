@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.8.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataflow-client-v0.8.14...google-cloud-dataflow-client-v0.8.15) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [0.8.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataflow-client-v0.8.13...google-cloud-dataflow-client-v0.8.14) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [0.8.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataflow-client-v0.8.12...google-cloud-dataflow-client-v0.8.13) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
 ## [0.8.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataflow-client-v0.8.11...google-cloud-dataflow-client-v0.8.12) (2024-07-30)
 
 

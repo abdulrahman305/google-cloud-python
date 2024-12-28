@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -61,6 +61,15 @@ from google.maps.fleetengine_delivery_v1.types import (
 from .client import DeliveryServiceClient
 from .transports.base import DEFAULT_CLIENT_INFO, DeliveryServiceTransport
 from .transports.grpc_asyncio import DeliveryServiceGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class DeliveryServiceAsyncClient:
@@ -209,9 +218,7 @@ class DeliveryServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(DeliveryServiceClient).get_transport_class, type(DeliveryServiceClient)
-    )
+    get_transport_class = DeliveryServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -281,6 +288,28 @@ class DeliveryServiceAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `maps.fleetengine.delivery_v1.DeliveryServiceAsyncClient`.",
+                extra={
+                    "serviceName": "maps.fleetengine.delivery.v1.DeliveryService",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "maps.fleetengine.delivery.v1.DeliveryService",
+                    "credentialsType": None,
+                },
+            )
+
     async def create_delivery_vehicle(
         self,
         request: Optional[
@@ -292,7 +321,7 @@ class DeliveryServiceAsyncClient:
         delivery_vehicle_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> delivery_vehicles.DeliveryVehicle:
         r"""Creates and returns a new ``DeliveryVehicle``.
 
@@ -368,8 +397,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.types.DeliveryVehicle:
@@ -416,11 +447,17 @@ class DeliveryServiceAsyncClient:
             self._client._transport.create_delivery_vehicle
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -443,7 +480,7 @@ class DeliveryServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> delivery_vehicles.DeliveryVehicle:
         r"""Returns the specified ``DeliveryVehicle`` instance.
 
@@ -488,8 +525,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.types.DeliveryVehicle:
@@ -532,11 +571,17 @@ class DeliveryServiceAsyncClient:
             self._client._transport.get_delivery_vehicle
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -562,7 +607,7 @@ class DeliveryServiceAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> delivery_vehicles.DeliveryVehicle:
         r"""Writes updated ``DeliveryVehicle`` data to Fleet Engine, and
         assigns ``Tasks`` to the ``DeliveryVehicle``. You cannot update
@@ -625,8 +670,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.types.DeliveryVehicle:
@@ -671,13 +718,17 @@ class DeliveryServiceAsyncClient:
             self._client._transport.update_delivery_vehicle
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (("delivery_vehicle.name", request.delivery_vehicle.name),)
-            ),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.delivery_vehicle.name)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -699,7 +750,7 @@ class DeliveryServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> delivery_api.BatchCreateTasksResponse:
         r"""Creates and returns a batch of new ``Task`` objects.
 
@@ -742,8 +793,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.types.BatchCreateTasksResponse:
@@ -761,11 +814,17 @@ class DeliveryServiceAsyncClient:
             self._client._transport.batch_create_tasks
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -790,7 +849,7 @@ class DeliveryServiceAsyncClient:
         task_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> tasks.Task:
         r"""Creates and returns a new ``Task`` object.
 
@@ -878,8 +937,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.types.Task:
@@ -931,11 +992,17 @@ class DeliveryServiceAsyncClient:
             self._client._transport.create_task
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -958,7 +1025,7 @@ class DeliveryServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> tasks.Task:
         r"""Gets information about a ``Task``.
 
@@ -1003,8 +1070,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.types.Task:
@@ -1050,11 +1119,17 @@ class DeliveryServiceAsyncClient:
         # and friendly error handling.
         rpc = self._client._transport._wrapped_methods[self._client._transport.get_task]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1078,7 +1153,7 @@ class DeliveryServiceAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> tasks.Task:
         r"""Updates ``Task`` data.
 
@@ -1153,8 +1228,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.types.Task:
@@ -1204,13 +1281,17 @@ class DeliveryServiceAsyncClient:
             self._client._transport.update_task
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (("task.name", request.task.name),)
-            ),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.task.name)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1233,7 +1314,7 @@ class DeliveryServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListTasksAsyncPager:
         r"""Gets all ``Task``\ s that meet the specified filtering criteria.
 
@@ -1279,8 +1360,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.services.delivery_service.pagers.ListTasksAsyncPager:
@@ -1317,11 +1400,17 @@ class DeliveryServiceAsyncClient:
             self._client._transport.list_tasks
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1355,7 +1444,7 @@ class DeliveryServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> task_tracking_info.TaskTrackingInfo:
         r"""Returns the specified ``TaskTrackingInfo`` instance.
 
@@ -1402,8 +1491,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.types.TaskTrackingInfo:
@@ -1440,11 +1531,17 @@ class DeliveryServiceAsyncClient:
             self._client._transport.get_task_tracking_info
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1467,7 +1564,7 @@ class DeliveryServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListDeliveryVehiclesAsyncPager:
         r"""Gets all ``DeliveryVehicle``\ s that meet the specified
         filtering criteria.
@@ -1514,8 +1611,10 @@ class DeliveryServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_delivery_v1.services.delivery_service.pagers.ListDeliveryVehiclesAsyncPager:
@@ -1551,11 +1650,17 @@ class DeliveryServiceAsyncClient:
             self._client._transport.list_delivery_vehicles
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()

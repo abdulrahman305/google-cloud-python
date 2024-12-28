@@ -14,9 +14,12 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
+    AsyncIterable,
+    AsyncIterator,
+    Awaitable,
     Callable,
     Dict,
     Mapping,
@@ -50,6 +53,15 @@ from google.cloud.texttospeech_v1beta1.types import cloud_tts
 from .client import TextToSpeechClient
 from .transports.base import DEFAULT_CLIENT_INFO, TextToSpeechTransport
 from .transports.grpc_asyncio import TextToSpeechGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class TextToSpeechAsyncClient:
@@ -184,9 +196,7 @@ class TextToSpeechAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(TextToSpeechClient).get_transport_class, type(TextToSpeechClient)
-    )
+    get_transport_class = TextToSpeechClient.get_transport_class
 
     def __init__(
         self,
@@ -257,6 +267,28 @@ class TextToSpeechAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.cloud.texttospeech_v1beta1.TextToSpeechAsyncClient`.",
+                extra={
+                    "serviceName": "google.cloud.texttospeech.v1beta1.TextToSpeech",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.cloud.texttospeech.v1beta1.TextToSpeech",
+                    "credentialsType": None,
+                },
+            )
+
     async def list_voices(
         self,
         request: Optional[Union[cloud_tts.ListVoicesRequest, dict]] = None,
@@ -264,7 +296,7 @@ class TextToSpeechAsyncClient:
         language_code: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> cloud_tts.ListVoicesResponse:
         r"""Returns a list of Voice supported for synthesis.
 
@@ -314,8 +346,10 @@ class TextToSpeechAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.texttospeech_v1beta1.types.ListVoicesResponse:
@@ -372,7 +406,7 @@ class TextToSpeechAsyncClient:
         audio_config: Optional[cloud_tts.AudioConfig] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> cloud_tts.SynthesizeSpeechResponse:
         r"""Synthesizes speech synchronously: receive results
         after all text input has been processed.
@@ -400,7 +434,7 @@ class TextToSpeechAsyncClient:
                 voice.language_code = "language_code_value"
 
                 audio_config = texttospeech_v1beta1.AudioConfig()
-                audio_config.audio_encoding = "ALAW"
+                audio_config.audio_encoding = "PCM"
 
                 request = texttospeech_v1beta1.SynthesizeSpeechRequest(
                     input=input,
@@ -442,8 +476,10 @@ class TextToSpeechAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.texttospeech_v1beta1.types.SynthesizeSpeechResponse:
@@ -495,13 +531,109 @@ class TextToSpeechAsyncClient:
         # Done; return the response.
         return response
 
+    def streaming_synthesize(
+        self,
+        requests: Optional[AsyncIterator[cloud_tts.StreamingSynthesizeRequest]] = None,
+        *,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> Awaitable[AsyncIterable[cloud_tts.StreamingSynthesizeResponse]]:
+        r"""Performs bidirectional streaming speech synthesis:
+        receive audio while sending text.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import texttospeech_v1beta1
+
+            async def sample_streaming_synthesize():
+                # Create a client
+                client = texttospeech_v1beta1.TextToSpeechAsyncClient()
+
+                # Initialize request argument(s)
+                streaming_config = texttospeech_v1beta1.StreamingSynthesizeConfig()
+                streaming_config.voice.language_code = "language_code_value"
+
+                request = texttospeech_v1beta1.StreamingSynthesizeRequest(
+                    streaming_config=streaming_config,
+                )
+
+                # This method expects an iterator which contains
+                # 'texttospeech_v1beta1.StreamingSynthesizeRequest' objects
+                # Here we create a generator that yields a single `request` for
+                # demonstrative purposes.
+                requests = [request]
+
+                def request_generator():
+                    for request in requests:
+                        yield request
+
+                # Make the request
+                stream = await client.streaming_synthesize(requests=request_generator())
+
+                # Handle the response
+                async for response in stream:
+                    print(response)
+
+        Args:
+            requests (AsyncIterator[`google.cloud.texttospeech_v1beta1.types.StreamingSynthesizeRequest`]):
+                The request object AsyncIterator. Request message for the ``StreamingSynthesize`` method.
+                Multiple ``StreamingSynthesizeRequest`` messages are
+                sent in one call. The first message must contain a
+                ``streaming_config`` that fully specifies the request
+                configuration and must not contain ``input``. All
+                subsequent messages must only have ``input`` set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            AsyncIterable[google.cloud.texttospeech_v1beta1.types.StreamingSynthesizeResponse]:
+                StreamingSynthesizeResponse is the only message returned to the
+                   client by StreamingSynthesize method. A series of
+                   zero or more StreamingSynthesizeResponse messages are
+                   streamed back to the client.
+
+        """
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.streaming_synthesize
+        ]
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            requests,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
     async def list_operations(
         self,
         request: Optional[operations_pb2.ListOperationsRequest] = None,
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.ListOperationsResponse:
         r"""Lists operations that match the specified filter in the request.
 
@@ -512,8 +644,10 @@ class TextToSpeechAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.ListOperationsResponse:
                 Response message for ``ListOperations`` method.
@@ -526,11 +660,7 @@ class TextToSpeechAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.list_operations,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.list_operations]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -558,7 +688,7 @@ class TextToSpeechAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.Operation:
         r"""Gets the latest state of a long-running operation.
 
@@ -569,8 +699,10 @@ class TextToSpeechAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.Operation:
                 An ``Operation`` object.
@@ -583,11 +715,7 @@ class TextToSpeechAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.get_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.get_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.

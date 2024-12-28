@@ -22,12 +22,29 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
+from google.api_core import api_core_version
+from google.protobuf import json_format
+import grpc
+from grpc.experimental import aio
+from proto.marshal.rules import wrappers
+from proto.marshal.rules.dates import DurationRule, TimestampRule
+import pytest
+from requests import PreparedRequest, Request, Response
+from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
 from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
+from google.api_core import client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import retry as retries
 import google.auth
@@ -36,15 +53,7 @@ from google.auth.exceptions import MutualTLSChannelError
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
 from google.protobuf import field_mask_pb2  # type: ignore
-from google.protobuf import json_format
 from google.protobuf import timestamp_pb2  # type: ignore
-import grpc
-from grpc.experimental import aio
-from proto.marshal.rules import wrappers
-from proto.marshal.rules.dates import DurationRule, TimestampRule
-import pytest
-from requests import PreparedRequest, Request, Response
-from requests.sessions import Session
 
 from google.ai.generativelanguage_v1beta.services.retriever_service import (
     RetrieverServiceAsyncClient,
@@ -55,8 +64,22 @@ from google.ai.generativelanguage_v1beta.services.retriever_service import (
 from google.ai.generativelanguage_v1beta.types import retriever, retriever_service
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -297,86 +320,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         RetrieverServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (RetrieverServiceClient, transports.RetrieverServiceGrpcTransport, "grpc"),
-        (RetrieverServiceClient, transports.RetrieverServiceRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1188,25 +1131,6 @@ def test_create_corpus(request_type, transport: str = "grpc"):
     assert response.display_name == "display_name_value"
 
 
-def test_create_corpus_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_corpus), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.CreateCorpusRequest()
-
-
 def test_create_corpus_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1267,30 +1191,6 @@ def test_create_corpus_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_corpus_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_corpus), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever.Corpus(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.create_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.CreateCorpusRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_corpus_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1298,7 +1198,7 @@ async def test_create_corpus_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1313,22 +1213,23 @@ async def test_create_corpus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_corpus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_corpus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_corpus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1336,7 +1237,7 @@ async def test_create_corpus_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.CreateCorpusRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1413,7 +1314,7 @@ def test_create_corpus_flattened_error():
 @pytest.mark.asyncio
 async def test_create_corpus_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1440,7 +1341,7 @@ async def test_create_corpus_flattened_async():
 @pytest.mark.asyncio
 async def test_create_corpus_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1488,25 +1389,6 @@ def test_get_corpus(request_type, transport: str = "grpc"):
     assert isinstance(response, retriever.Corpus)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
-
-
-def test_get_corpus_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_corpus), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.GetCorpusRequest()
 
 
 def test_get_corpus_non_empty_request_with_auto_populated_field():
@@ -1573,36 +1455,12 @@ def test_get_corpus_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_corpus_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_corpus), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever.Corpus(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.get_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.GetCorpusRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_corpus_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1617,22 +1475,23 @@ async def test_get_corpus_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_corpus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_corpus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_corpus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1640,7 +1499,7 @@ async def test_get_corpus_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.GetCorpusRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1708,7 +1567,7 @@ def test_get_corpus_field_headers():
 @pytest.mark.asyncio
 async def test_get_corpus_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1776,7 +1635,7 @@ def test_get_corpus_flattened_error():
 @pytest.mark.asyncio
 async def test_get_corpus_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1803,7 +1662,7 @@ async def test_get_corpus_flattened_async():
 @pytest.mark.asyncio
 async def test_get_corpus_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1851,25 +1710,6 @@ def test_update_corpus(request_type, transport: str = "grpc"):
     assert isinstance(response, retriever.Corpus)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
-
-
-def test_update_corpus_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_corpus), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.UpdateCorpusRequest()
 
 
 def test_update_corpus_non_empty_request_with_auto_populated_field():
@@ -1932,30 +1772,6 @@ def test_update_corpus_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_corpus_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_corpus), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever.Corpus(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.update_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.UpdateCorpusRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_corpus_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1963,7 +1779,7 @@ async def test_update_corpus_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1978,22 +1794,23 @@ async def test_update_corpus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_corpus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_corpus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_corpus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2001,7 +1818,7 @@ async def test_update_corpus_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.UpdateCorpusRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2069,7 +1886,7 @@ def test_update_corpus_field_headers():
 @pytest.mark.asyncio
 async def test_update_corpus_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2142,7 +1959,7 @@ def test_update_corpus_flattened_error():
 @pytest.mark.asyncio
 async def test_update_corpus_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2173,7 +1990,7 @@ async def test_update_corpus_flattened_async():
 @pytest.mark.asyncio
 async def test_update_corpus_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2217,25 +2034,6 @@ def test_delete_corpus(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_corpus_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_corpus), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.DeleteCorpusRequest()
 
 
 def test_delete_corpus_non_empty_request_with_auto_populated_field():
@@ -2302,25 +2100,6 @@ def test_delete_corpus_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_corpus_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_corpus), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.DeleteCorpusRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_corpus_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2328,7 +2107,7 @@ async def test_delete_corpus_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2343,22 +2122,23 @@ async def test_delete_corpus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_corpus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_corpus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_corpus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2366,7 +2146,7 @@ async def test_delete_corpus_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.DeleteCorpusRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2427,7 +2207,7 @@ def test_delete_corpus_field_headers():
 @pytest.mark.asyncio
 async def test_delete_corpus_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2495,7 +2275,7 @@ def test_delete_corpus_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_corpus_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2522,7 +2302,7 @@ async def test_delete_corpus_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_corpus_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2568,25 +2348,6 @@ def test_list_corpora(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListCorporaPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_corpora_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_corpora), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_corpora()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.ListCorporaRequest()
 
 
 def test_list_corpora_non_empty_request_with_auto_populated_field():
@@ -2653,29 +2414,6 @@ def test_list_corpora_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_corpora_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_corpora), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever_service.ListCorporaResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_corpora()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.ListCorporaRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_corpora_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2683,7 +2421,7 @@ async def test_list_corpora_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2698,22 +2436,23 @@ async def test_list_corpora_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_corpora
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_corpora(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_corpora(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2721,7 +2460,7 @@ async def test_list_corpora_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.ListCorporaRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2850,7 +2589,7 @@ def test_list_corpora_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_corpora_async_pager():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2900,7 +2639,7 @@ async def test_list_corpora_async_pager():
 @pytest.mark.asyncio
 async def test_list_corpora_async_pages():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2979,25 +2718,6 @@ def test_query_corpus(request_type, transport: str = "grpc"):
     assert isinstance(response, retriever_service.QueryCorpusResponse)
 
 
-def test_query_corpus_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.query_corpus), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.query_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.QueryCorpusRequest()
-
-
 def test_query_corpus_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3064,27 +2784,6 @@ def test_query_corpus_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_query_corpus_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.query_corpus), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever_service.QueryCorpusResponse()
-        )
-        response = await client.query_corpus()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.QueryCorpusRequest()
-
-
-@pytest.mark.asyncio
 async def test_query_corpus_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3092,7 +2791,7 @@ async def test_query_corpus_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3107,22 +2806,23 @@ async def test_query_corpus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.query_corpus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.query_corpus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.query_corpus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3130,7 +2830,7 @@ async def test_query_corpus_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.QueryCorpusRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3193,7 +2893,7 @@ def test_query_corpus_field_headers():
 @pytest.mark.asyncio
 async def test_query_corpus_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3260,25 +2960,6 @@ def test_create_document(request_type, transport: str = "grpc"):
     assert response.display_name == "display_name_value"
 
 
-def test_create_document_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_document), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.CreateDocumentRequest()
-
-
 def test_create_document_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3343,30 +3024,6 @@ def test_create_document_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_document_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_document), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever.Document(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.create_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.CreateDocumentRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_document_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3374,7 +3031,7 @@ async def test_create_document_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3389,22 +3046,23 @@ async def test_create_document_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_document
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_document(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_document(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3413,7 +3071,7 @@ async def test_create_document_async(
     request_type=retriever_service.CreateDocumentRequest,
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3481,7 +3139,7 @@ def test_create_document_field_headers():
 @pytest.mark.asyncio
 async def test_create_document_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3554,7 +3212,7 @@ def test_create_document_flattened_error():
 @pytest.mark.asyncio
 async def test_create_document_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3585,7 +3243,7 @@ async def test_create_document_flattened_async():
 @pytest.mark.asyncio
 async def test_create_document_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3634,25 +3292,6 @@ def test_get_document(request_type, transport: str = "grpc"):
     assert isinstance(response, retriever.Document)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
-
-
-def test_get_document_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_document), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.GetDocumentRequest()
 
 
 def test_get_document_non_empty_request_with_auto_populated_field():
@@ -3719,30 +3358,6 @@ def test_get_document_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_document_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_document), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever.Document(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.get_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.GetDocumentRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_document_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3750,7 +3365,7 @@ async def test_get_document_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3765,22 +3380,23 @@ async def test_get_document_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_document
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_document(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_document(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3788,7 +3404,7 @@ async def test_get_document_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.GetDocumentRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3856,7 +3472,7 @@ def test_get_document_field_headers():
 @pytest.mark.asyncio
 async def test_get_document_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3924,7 +3540,7 @@ def test_get_document_flattened_error():
 @pytest.mark.asyncio
 async def test_get_document_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3951,7 +3567,7 @@ async def test_get_document_flattened_async():
 @pytest.mark.asyncio
 async def test_get_document_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3999,25 +3615,6 @@ def test_update_document(request_type, transport: str = "grpc"):
     assert isinstance(response, retriever.Document)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
-
-
-def test_update_document_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_document), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.UpdateDocumentRequest()
 
 
 def test_update_document_non_empty_request_with_auto_populated_field():
@@ -4080,30 +3677,6 @@ def test_update_document_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_document_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_document), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever.Document(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.update_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.UpdateDocumentRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_document_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4111,7 +3684,7 @@ async def test_update_document_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4126,22 +3699,23 @@ async def test_update_document_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_document
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_document(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_document(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4150,7 +3724,7 @@ async def test_update_document_async(
     request_type=retriever_service.UpdateDocumentRequest,
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4218,7 +3792,7 @@ def test_update_document_field_headers():
 @pytest.mark.asyncio
 async def test_update_document_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4291,7 +3865,7 @@ def test_update_document_flattened_error():
 @pytest.mark.asyncio
 async def test_update_document_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4322,7 +3896,7 @@ async def test_update_document_flattened_async():
 @pytest.mark.asyncio
 async def test_update_document_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4366,25 +3940,6 @@ def test_delete_document(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_document_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_document), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.DeleteDocumentRequest()
 
 
 def test_delete_document_non_empty_request_with_auto_populated_field():
@@ -4451,25 +4006,6 @@ def test_delete_document_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_document_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_document), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.DeleteDocumentRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_document_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4477,7 +4013,7 @@ async def test_delete_document_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4492,22 +4028,23 @@ async def test_delete_document_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_document
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_document(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_document(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4516,7 +4053,7 @@ async def test_delete_document_async(
     request_type=retriever_service.DeleteDocumentRequest,
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4577,7 +4114,7 @@ def test_delete_document_field_headers():
 @pytest.mark.asyncio
 async def test_delete_document_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4645,7 +4182,7 @@ def test_delete_document_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_document_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4672,7 +4209,7 @@ async def test_delete_document_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_document_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4718,25 +4255,6 @@ def test_list_documents(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListDocumentsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_documents_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_documents), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_documents()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.ListDocumentsRequest()
 
 
 def test_list_documents_non_empty_request_with_auto_populated_field():
@@ -4805,29 +4323,6 @@ def test_list_documents_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_documents_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_documents), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever_service.ListDocumentsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_documents()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.ListDocumentsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_documents_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4835,7 +4330,7 @@ async def test_list_documents_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4850,22 +4345,23 @@ async def test_list_documents_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_documents
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_documents(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_documents(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4873,7 +4369,7 @@ async def test_list_documents_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.ListDocumentsRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4939,7 +4435,7 @@ def test_list_documents_field_headers():
 @pytest.mark.asyncio
 async def test_list_documents_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5009,7 +4505,7 @@ def test_list_documents_flattened_error():
 @pytest.mark.asyncio
 async def test_list_documents_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5038,7 +4534,7 @@ async def test_list_documents_flattened_async():
 @pytest.mark.asyncio
 async def test_list_documents_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5148,7 +4644,7 @@ def test_list_documents_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_documents_async_pager():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5198,7 +4694,7 @@ async def test_list_documents_async_pager():
 @pytest.mark.asyncio
 async def test_list_documents_async_pages():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5277,25 +4773,6 @@ def test_query_document(request_type, transport: str = "grpc"):
     assert isinstance(response, retriever_service.QueryDocumentResponse)
 
 
-def test_query_document_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.query_document), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.query_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.QueryDocumentRequest()
-
-
 def test_query_document_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5362,27 +4839,6 @@ def test_query_document_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_query_document_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.query_document), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever_service.QueryDocumentResponse()
-        )
-        response = await client.query_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.QueryDocumentRequest()
-
-
-@pytest.mark.asyncio
 async def test_query_document_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5390,7 +4846,7 @@ async def test_query_document_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5405,22 +4861,23 @@ async def test_query_document_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.query_document
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.query_document(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.query_document(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5428,7 +4885,7 @@ async def test_query_document_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.QueryDocumentRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5491,7 +4948,7 @@ def test_query_document_field_headers():
 @pytest.mark.asyncio
 async def test_query_document_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5558,25 +5015,6 @@ def test_create_chunk(request_type, transport: str = "grpc"):
     assert response.state == retriever.Chunk.State.STATE_PENDING_PROCESSING
 
 
-def test_create_chunk_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_chunk), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_chunk()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.CreateChunkRequest()
-
-
 def test_create_chunk_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5641,30 +5079,6 @@ def test_create_chunk_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_chunk_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_chunk), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever.Chunk(
-                name="name_value",
-                state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
-            )
-        )
-        response = await client.create_chunk()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.CreateChunkRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_chunk_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5672,7 +5086,7 @@ async def test_create_chunk_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5687,22 +5101,23 @@ async def test_create_chunk_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_chunk
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_chunk(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_chunk(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5710,7 +5125,7 @@ async def test_create_chunk_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.CreateChunkRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5778,7 +5193,7 @@ def test_create_chunk_field_headers():
 @pytest.mark.asyncio
 async def test_create_chunk_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5851,7 +5266,7 @@ def test_create_chunk_flattened_error():
 @pytest.mark.asyncio
 async def test_create_chunk_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5882,7 +5297,7 @@ async def test_create_chunk_flattened_async():
 @pytest.mark.asyncio
 async def test_create_chunk_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5928,27 +5343,6 @@ def test_batch_create_chunks(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, retriever_service.BatchCreateChunksResponse)
-
-
-def test_batch_create_chunks_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.batch_create_chunks), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.batch_create_chunks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.BatchCreateChunksRequest()
 
 
 def test_batch_create_chunks_non_empty_request_with_auto_populated_field():
@@ -6021,29 +5415,6 @@ def test_batch_create_chunks_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_batch_create_chunks_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.batch_create_chunks), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever_service.BatchCreateChunksResponse()
-        )
-        response = await client.batch_create_chunks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.BatchCreateChunksRequest()
-
-
-@pytest.mark.asyncio
 async def test_batch_create_chunks_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6051,7 +5422,7 @@ async def test_batch_create_chunks_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6066,22 +5437,23 @@ async def test_batch_create_chunks_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_create_chunks
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.batch_create_chunks(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.batch_create_chunks(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6090,7 +5462,7 @@ async def test_batch_create_chunks_async(
     request_type=retriever_service.BatchCreateChunksRequest,
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6157,7 +5529,7 @@ def test_batch_create_chunks_field_headers():
 @pytest.mark.asyncio
 async def test_batch_create_chunks_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6226,25 +5598,6 @@ def test_get_chunk(request_type, transport: str = "grpc"):
     assert response.state == retriever.Chunk.State.STATE_PENDING_PROCESSING
 
 
-def test_get_chunk_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_chunk), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_chunk()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.GetChunkRequest()
-
-
 def test_get_chunk_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -6309,36 +5662,12 @@ def test_get_chunk_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_chunk_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_chunk), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever.Chunk(
-                name="name_value",
-                state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
-            )
-        )
-        response = await client.get_chunk()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.GetChunkRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_chunk_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6353,22 +5682,23 @@ async def test_get_chunk_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_chunk
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_chunk(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_chunk(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6376,7 +5706,7 @@ async def test_get_chunk_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.GetChunkRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6444,7 +5774,7 @@ def test_get_chunk_field_headers():
 @pytest.mark.asyncio
 async def test_get_chunk_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6512,7 +5842,7 @@ def test_get_chunk_flattened_error():
 @pytest.mark.asyncio
 async def test_get_chunk_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6539,7 +5869,7 @@ async def test_get_chunk_flattened_async():
 @pytest.mark.asyncio
 async def test_get_chunk_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6587,25 +5917,6 @@ def test_update_chunk(request_type, transport: str = "grpc"):
     assert isinstance(response, retriever.Chunk)
     assert response.name == "name_value"
     assert response.state == retriever.Chunk.State.STATE_PENDING_PROCESSING
-
-
-def test_update_chunk_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_chunk), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_chunk()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.UpdateChunkRequest()
 
 
 def test_update_chunk_non_empty_request_with_auto_populated_field():
@@ -6668,30 +5979,6 @@ def test_update_chunk_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_chunk_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_chunk), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever.Chunk(
-                name="name_value",
-                state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
-            )
-        )
-        response = await client.update_chunk()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.UpdateChunkRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_chunk_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6699,7 +5986,7 @@ async def test_update_chunk_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6714,22 +6001,23 @@ async def test_update_chunk_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_chunk
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_chunk(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_chunk(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6737,7 +6025,7 @@ async def test_update_chunk_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.UpdateChunkRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6805,7 +6093,7 @@ def test_update_chunk_field_headers():
 @pytest.mark.asyncio
 async def test_update_chunk_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6878,7 +6166,7 @@ def test_update_chunk_flattened_error():
 @pytest.mark.asyncio
 async def test_update_chunk_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6909,7 +6197,7 @@ async def test_update_chunk_flattened_async():
 @pytest.mark.asyncio
 async def test_update_chunk_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6955,27 +6243,6 @@ def test_batch_update_chunks(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, retriever_service.BatchUpdateChunksResponse)
-
-
-def test_batch_update_chunks_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.batch_update_chunks), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.batch_update_chunks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.BatchUpdateChunksRequest()
 
 
 def test_batch_update_chunks_non_empty_request_with_auto_populated_field():
@@ -7048,29 +6315,6 @@ def test_batch_update_chunks_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_batch_update_chunks_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.batch_update_chunks), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever_service.BatchUpdateChunksResponse()
-        )
-        response = await client.batch_update_chunks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.BatchUpdateChunksRequest()
-
-
-@pytest.mark.asyncio
 async def test_batch_update_chunks_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7078,7 +6322,7 @@ async def test_batch_update_chunks_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7093,22 +6337,23 @@ async def test_batch_update_chunks_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_update_chunks
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.batch_update_chunks(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.batch_update_chunks(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7117,7 +6362,7 @@ async def test_batch_update_chunks_async(
     request_type=retriever_service.BatchUpdateChunksRequest,
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7184,7 +6429,7 @@ def test_batch_update_chunks_field_headers():
 @pytest.mark.asyncio
 async def test_batch_update_chunks_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7246,25 +6491,6 @@ def test_delete_chunk(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_chunk_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_chunk), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_chunk()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.DeleteChunkRequest()
 
 
 def test_delete_chunk_non_empty_request_with_auto_populated_field():
@@ -7331,25 +6557,6 @@ def test_delete_chunk_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_chunk_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_chunk), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_chunk()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.DeleteChunkRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_chunk_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7357,7 +6564,7 @@ async def test_delete_chunk_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7372,22 +6579,23 @@ async def test_delete_chunk_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_chunk
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_chunk(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_chunk(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7395,7 +6603,7 @@ async def test_delete_chunk_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.DeleteChunkRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7456,7 +6664,7 @@ def test_delete_chunk_field_headers():
 @pytest.mark.asyncio
 async def test_delete_chunk_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7524,7 +6732,7 @@ def test_delete_chunk_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_chunk_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7551,7 +6759,7 @@ async def test_delete_chunk_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_chunk_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7596,27 +6804,6 @@ def test_batch_delete_chunks(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_batch_delete_chunks_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.batch_delete_chunks), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.batch_delete_chunks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.BatchDeleteChunksRequest()
 
 
 def test_batch_delete_chunks_non_empty_request_with_auto_populated_field():
@@ -7689,27 +6876,6 @@ def test_batch_delete_chunks_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_batch_delete_chunks_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.batch_delete_chunks), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.batch_delete_chunks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.BatchDeleteChunksRequest()
-
-
-@pytest.mark.asyncio
 async def test_batch_delete_chunks_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7717,7 +6883,7 @@ async def test_batch_delete_chunks_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7732,22 +6898,23 @@ async def test_batch_delete_chunks_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_delete_chunks
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.batch_delete_chunks(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.batch_delete_chunks(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7756,7 +6923,7 @@ async def test_batch_delete_chunks_async(
     request_type=retriever_service.BatchDeleteChunksRequest,
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7821,7 +6988,7 @@ def test_batch_delete_chunks_field_headers():
 @pytest.mark.asyncio
 async def test_batch_delete_chunks_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7884,25 +7051,6 @@ def test_list_chunks(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListChunksPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_chunks_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_chunks), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_chunks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.ListChunksRequest()
 
 
 def test_list_chunks_non_empty_request_with_auto_populated_field():
@@ -7971,29 +7119,6 @@ def test_list_chunks_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_chunks_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_chunks), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            retriever_service.ListChunksResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_chunks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == retriever_service.ListChunksRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_chunks_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8001,7 +7126,7 @@ async def test_list_chunks_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RetrieverServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8016,22 +7141,23 @@ async def test_list_chunks_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_chunks
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_chunks(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_chunks(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8039,7 +7165,7 @@ async def test_list_chunks_async(
     transport: str = "grpc_asyncio", request_type=retriever_service.ListChunksRequest
 ):
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8105,7 +7231,7 @@ def test_list_chunks_field_headers():
 @pytest.mark.asyncio
 async def test_list_chunks_field_headers_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8175,7 +7301,7 @@ def test_list_chunks_flattened_error():
 @pytest.mark.asyncio
 async def test_list_chunks_flattened_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8204,7 +7330,7 @@ async def test_list_chunks_flattened_async():
 @pytest.mark.asyncio
 async def test_list_chunks_flattened_error_async():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8314,7 +7440,7 @@ def test_list_chunks_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_chunks_async_pager():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8364,7 +7490,7 @@ async def test_list_chunks_async_pager():
 @pytest.mark.asyncio
 async def test_list_chunks_async_pages():
     client = RetrieverServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8408,121 +7534,6 @@ async def test_list_chunks_async_pages():
             pages.append(page_)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.CreateCorpusRequest,
-        dict,
-    ],
-)
-def test_create_corpus_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request_init["corpus"] = {
-        "name": "name_value",
-        "display_name": "display_name_value",
-        "create_time": {"seconds": 751, "nanos": 543},
-        "update_time": {},
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = retriever_service.CreateCorpusRequest.meta.fields["corpus"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["corpus"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["corpus"][field])):
-                    del request_init["corpus"][field][i][subfield]
-            else:
-                del request_init["corpus"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever.Corpus(
-            name="name_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever.Corpus.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_corpus(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever.Corpus)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_create_corpus_rest_use_cached_wrapped_rpc():
@@ -8623,6 +7634,7 @@ def test_create_corpus_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_corpus(request)
 
@@ -8638,85 +7650,6 @@ def test_create_corpus_rest_unset_required_fields():
 
     unset_fields = transport.create_corpus._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("corpus",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_corpus_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_create_corpus"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_create_corpus"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.CreateCorpusRequest.pb(
-            retriever_service.CreateCorpusRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever.Corpus.to_json(retriever.Corpus())
-
-        request = retriever_service.CreateCorpusRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever.Corpus()
-
-        client.create_corpus(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_corpus_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.CreateCorpusRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_corpus(request)
 
 
 def test_create_corpus_rest_flattened():
@@ -8747,6 +7680,7 @@ def test_create_corpus_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_corpus(**mock_args)
 
@@ -8772,54 +7706,6 @@ def test_create_corpus_rest_flattened_error(transport: str = "rest"):
             retriever_service.CreateCorpusRequest(),
             corpus=retriever.Corpus(name="name_value"),
         )
-
-
-def test_create_corpus_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.GetCorpusRequest,
-        dict,
-    ],
-)
-def test_get_corpus_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever.Corpus(
-            name="name_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever.Corpus.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_corpus(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever.Corpus)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_get_corpus_rest_use_cached_wrapped_rpc():
@@ -8924,6 +7810,7 @@ def test_get_corpus_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_corpus(request)
 
@@ -8939,85 +7826,6 @@ def test_get_corpus_rest_unset_required_fields():
 
     unset_fields = transport.get_corpus._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_corpus_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_get_corpus"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_get_corpus"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.GetCorpusRequest.pb(
-            retriever_service.GetCorpusRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever.Corpus.to_json(retriever.Corpus())
-
-        request = retriever_service.GetCorpusRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever.Corpus()
-
-        client.get_corpus(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_corpus_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.GetCorpusRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_corpus(request)
 
 
 def test_get_corpus_rest_flattened():
@@ -9048,6 +7856,7 @@ def test_get_corpus_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_corpus(**mock_args)
 
@@ -9073,127 +7882,6 @@ def test_get_corpus_rest_flattened_error(transport: str = "rest"):
             retriever_service.GetCorpusRequest(),
             name="name_value",
         )
-
-
-def test_get_corpus_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.UpdateCorpusRequest,
-        dict,
-    ],
-)
-def test_update_corpus_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"corpus": {"name": "corpora/sample1"}}
-    request_init["corpus"] = {
-        "name": "corpora/sample1",
-        "display_name": "display_name_value",
-        "create_time": {"seconds": 751, "nanos": 543},
-        "update_time": {},
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = retriever_service.UpdateCorpusRequest.meta.fields["corpus"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["corpus"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["corpus"][field])):
-                    del request_init["corpus"][field][i][subfield]
-            else:
-                del request_init["corpus"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever.Corpus(
-            name="name_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever.Corpus.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_corpus(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever.Corpus)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_update_corpus_rest_use_cached_wrapped_rpc():
@@ -9296,6 +7984,7 @@ def test_update_corpus_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_corpus(request)
 
@@ -9319,85 +8008,6 @@ def test_update_corpus_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_corpus_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_update_corpus"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_update_corpus"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.UpdateCorpusRequest.pb(
-            retriever_service.UpdateCorpusRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever.Corpus.to_json(retriever.Corpus())
-
-        request = retriever_service.UpdateCorpusRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever.Corpus()
-
-        client.update_corpus(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_corpus_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.UpdateCorpusRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"corpus": {"name": "corpora/sample1"}}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_corpus(request)
 
 
 def test_update_corpus_rest_flattened():
@@ -9429,6 +8039,7 @@ def test_update_corpus_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_corpus(**mock_args)
 
@@ -9455,47 +8066,6 @@ def test_update_corpus_rest_flattened_error(transport: str = "rest"):
             corpus=retriever.Corpus(name="name_value"),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
-
-
-def test_update_corpus_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.DeleteCorpusRequest,
-        dict,
-    ],
-)
-def test_delete_corpus_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_corpus(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_delete_corpus_rest_use_cached_wrapped_rpc():
@@ -9599,6 +8169,7 @@ def test_delete_corpus_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_corpus(request)
 
@@ -9614,79 +8185,6 @@ def test_delete_corpus_rest_unset_required_fields():
 
     unset_fields = transport.delete_corpus._get_unset_required_fields({})
     assert set(unset_fields) == (set(("force",)) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_corpus_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_delete_corpus"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = retriever_service.DeleteCorpusRequest.pb(
-            retriever_service.DeleteCorpusRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = retriever_service.DeleteCorpusRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.delete_corpus(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_delete_corpus_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.DeleteCorpusRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_corpus(request)
 
 
 def test_delete_corpus_rest_flattened():
@@ -9715,6 +8213,7 @@ def test_delete_corpus_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_corpus(**mock_args)
 
@@ -9740,52 +8239,6 @@ def test_delete_corpus_rest_flattened_error(transport: str = "rest"):
             retriever_service.DeleteCorpusRequest(),
             name="name_value",
         )
-
-
-def test_delete_corpus_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.ListCorporaRequest,
-        dict,
-    ],
-)
-def test_list_corpora_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever_service.ListCorporaResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever_service.ListCorporaResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_corpora(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListCorporaPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_corpora_rest_use_cached_wrapped_rpc():
@@ -9822,87 +8275,6 @@ def test_list_corpora_rest_use_cached_wrapped_rpc():
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
         assert mock_rpc.call_count == 2
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_corpora_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_list_corpora"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_list_corpora"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.ListCorporaRequest.pb(
-            retriever_service.ListCorporaRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever_service.ListCorporaResponse.to_json(
-            retriever_service.ListCorporaResponse()
-        )
-
-        request = retriever_service.ListCorporaRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever_service.ListCorporaResponse()
-
-        client.list_corpora(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_corpora_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.ListCorporaRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_corpora(request)
 
 
 def test_list_corpora_rest_pager(transport: str = "rest"):
@@ -9966,43 +8338,6 @@ def test_list_corpora_rest_pager(transport: str = "rest"):
         pages = list(client.list_corpora(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.QueryCorpusRequest,
-        dict,
-    ],
-)
-def test_query_corpus_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever_service.QueryCorpusResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever_service.QueryCorpusResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.query_corpus(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever_service.QueryCorpusResponse)
 
 
 def test_query_corpus_rest_use_cached_wrapped_rpc():
@@ -10112,6 +8447,7 @@ def test_query_corpus_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.query_corpus(request)
 
@@ -10135,216 +8471,6 @@ def test_query_corpus_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_query_corpus_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_query_corpus"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_query_corpus"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.QueryCorpusRequest.pb(
-            retriever_service.QueryCorpusRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever_service.QueryCorpusResponse.to_json(
-            retriever_service.QueryCorpusResponse()
-        )
-
-        request = retriever_service.QueryCorpusRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever_service.QueryCorpusResponse()
-
-        client.query_corpus(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_query_corpus_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.QueryCorpusRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.query_corpus(request)
-
-
-def test_query_corpus_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.CreateDocumentRequest,
-        dict,
-    ],
-)
-def test_create_document_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1"}
-    request_init["document"] = {
-        "name": "name_value",
-        "display_name": "display_name_value",
-        "custom_metadata": [
-            {
-                "string_value": "string_value_value",
-                "string_list_value": {"values": ["values_value1", "values_value2"]},
-                "numeric_value": 0.1391,
-                "key": "key_value",
-            }
-        ],
-        "update_time": {"seconds": 751, "nanos": 543},
-        "create_time": {},
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = retriever_service.CreateDocumentRequest.meta.fields["document"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["document"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["document"][field])):
-                    del request_init["document"][field][i][subfield]
-            else:
-                del request_init["document"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever.Document(
-            name="name_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever.Document.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_document(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever.Document)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_create_document_rest_use_cached_wrapped_rpc():
@@ -10450,6 +8576,7 @@ def test_create_document_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_document(request)
 
@@ -10473,85 +8600,6 @@ def test_create_document_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_document_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_create_document"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_create_document"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.CreateDocumentRequest.pb(
-            retriever_service.CreateDocumentRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever.Document.to_json(retriever.Document())
-
-        request = retriever_service.CreateDocumentRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever.Document()
-
-        client.create_document(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_document_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.CreateDocumentRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_document(request)
 
 
 def test_create_document_rest_flattened():
@@ -10583,6 +8631,7 @@ def test_create_document_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_document(**mock_args)
 
@@ -10609,54 +8658,6 @@ def test_create_document_rest_flattened_error(transport: str = "rest"):
             parent="parent_value",
             document=retriever.Document(name="name_value"),
         )
-
-
-def test_create_document_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.GetDocumentRequest,
-        dict,
-    ],
-)
-def test_get_document_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever.Document(
-            name="name_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever.Document.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_document(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever.Document)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_get_document_rest_use_cached_wrapped_rpc():
@@ -10761,6 +8762,7 @@ def test_get_document_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_document(request)
 
@@ -10776,85 +8778,6 @@ def test_get_document_rest_unset_required_fields():
 
     unset_fields = transport.get_document._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_document_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_get_document"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_get_document"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.GetDocumentRequest.pb(
-            retriever_service.GetDocumentRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever.Document.to_json(retriever.Document())
-
-        request = retriever_service.GetDocumentRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever.Document()
-
-        client.get_document(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_document_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.GetDocumentRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_document(request)
 
 
 def test_get_document_rest_flattened():
@@ -10885,6 +8808,7 @@ def test_get_document_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_document(**mock_args)
 
@@ -10910,135 +8834,6 @@ def test_get_document_rest_flattened_error(transport: str = "rest"):
             retriever_service.GetDocumentRequest(),
             name="name_value",
         )
-
-
-def test_get_document_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.UpdateDocumentRequest,
-        dict,
-    ],
-)
-def test_update_document_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"document": {"name": "corpora/sample1/documents/sample2"}}
-    request_init["document"] = {
-        "name": "corpora/sample1/documents/sample2",
-        "display_name": "display_name_value",
-        "custom_metadata": [
-            {
-                "string_value": "string_value_value",
-                "string_list_value": {"values": ["values_value1", "values_value2"]},
-                "numeric_value": 0.1391,
-                "key": "key_value",
-            }
-        ],
-        "update_time": {"seconds": 751, "nanos": 543},
-        "create_time": {},
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = retriever_service.UpdateDocumentRequest.meta.fields["document"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["document"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["document"][field])):
-                    del request_init["document"][field][i][subfield]
-            else:
-                del request_init["document"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever.Document(
-            name="name_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever.Document.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_document(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever.Document)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_update_document_rest_use_cached_wrapped_rpc():
@@ -11141,6 +8936,7 @@ def test_update_document_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_document(request)
 
@@ -11164,85 +8960,6 @@ def test_update_document_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_document_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_update_document"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_update_document"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.UpdateDocumentRequest.pb(
-            retriever_service.UpdateDocumentRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever.Document.to_json(retriever.Document())
-
-        request = retriever_service.UpdateDocumentRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever.Document()
-
-        client.update_document(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_document_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.UpdateDocumentRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"document": {"name": "corpora/sample1/documents/sample2"}}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_document(request)
 
 
 def test_update_document_rest_flattened():
@@ -11274,6 +8991,7 @@ def test_update_document_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_document(**mock_args)
 
@@ -11301,47 +9019,6 @@ def test_update_document_rest_flattened_error(transport: str = "rest"):
             document=retriever.Document(name="name_value"),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
-
-
-def test_update_document_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.DeleteDocumentRequest,
-        dict,
-    ],
-)
-def test_delete_document_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_document(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_delete_document_rest_use_cached_wrapped_rpc():
@@ -11445,6 +9122,7 @@ def test_delete_document_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_document(request)
 
@@ -11460,79 +9138,6 @@ def test_delete_document_rest_unset_required_fields():
 
     unset_fields = transport.delete_document._get_unset_required_fields({})
     assert set(unset_fields) == (set(("force",)) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_document_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_delete_document"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = retriever_service.DeleteDocumentRequest.pb(
-            retriever_service.DeleteDocumentRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = retriever_service.DeleteDocumentRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.delete_document(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_delete_document_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.DeleteDocumentRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_document(request)
 
 
 def test_delete_document_rest_flattened():
@@ -11561,6 +9166,7 @@ def test_delete_document_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_document(**mock_args)
 
@@ -11586,52 +9192,6 @@ def test_delete_document_rest_flattened_error(transport: str = "rest"):
             retriever_service.DeleteDocumentRequest(),
             name="name_value",
         )
-
-
-def test_delete_document_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.ListDocumentsRequest,
-        dict,
-    ],
-)
-def test_list_documents_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever_service.ListDocumentsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever_service.ListDocumentsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_documents(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListDocumentsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_documents_rest_use_cached_wrapped_rpc():
@@ -11743,6 +9303,7 @@ def test_list_documents_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_documents(request)
 
@@ -11766,87 +9327,6 @@ def test_list_documents_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_documents_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_list_documents"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_list_documents"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.ListDocumentsRequest.pb(
-            retriever_service.ListDocumentsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever_service.ListDocumentsResponse.to_json(
-            retriever_service.ListDocumentsResponse()
-        )
-
-        request = retriever_service.ListDocumentsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever_service.ListDocumentsResponse()
-
-        client.list_documents(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_documents_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.ListDocumentsRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_documents(request)
 
 
 def test_list_documents_rest_flattened():
@@ -11877,6 +9357,7 @@ def test_list_documents_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_documents(**mock_args)
 
@@ -11965,43 +9446,6 @@ def test_list_documents_rest_pager(transport: str = "rest"):
         pages = list(client.list_documents(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.QueryDocumentRequest,
-        dict,
-    ],
-)
-def test_query_document_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever_service.QueryDocumentResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever_service.QueryDocumentResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.query_document(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever_service.QueryDocumentResponse)
 
 
 def test_query_document_rest_use_cached_wrapped_rpc():
@@ -12111,6 +9555,7 @@ def test_query_document_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.query_document(request)
 
@@ -12134,217 +9579,6 @@ def test_query_document_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_query_document_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_query_document"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_query_document"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.QueryDocumentRequest.pb(
-            retriever_service.QueryDocumentRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever_service.QueryDocumentResponse.to_json(
-            retriever_service.QueryDocumentResponse()
-        )
-
-        request = retriever_service.QueryDocumentRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever_service.QueryDocumentResponse()
-
-        client.query_document(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_query_document_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.QueryDocumentRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.query_document(request)
-
-
-def test_query_document_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.CreateChunkRequest,
-        dict,
-    ],
-)
-def test_create_chunk_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request_init["chunk"] = {
-        "name": "name_value",
-        "data": {"string_value": "string_value_value"},
-        "custom_metadata": [
-            {
-                "string_value": "string_value_value",
-                "string_list_value": {"values": ["values_value1", "values_value2"]},
-                "numeric_value": 0.1391,
-                "key": "key_value",
-            }
-        ],
-        "create_time": {"seconds": 751, "nanos": 543},
-        "update_time": {},
-        "state": 1,
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = retriever_service.CreateChunkRequest.meta.fields["chunk"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["chunk"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["chunk"][field])):
-                    del request_init["chunk"][field][i][subfield]
-            else:
-                del request_init["chunk"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever.Chunk(
-            name="name_value",
-            state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever.Chunk.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_chunk(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever.Chunk)
-    assert response.name == "name_value"
-    assert response.state == retriever.Chunk.State.STATE_PENDING_PROCESSING
 
 
 def test_create_chunk_rest_use_cached_wrapped_rpc():
@@ -12450,6 +9684,7 @@ def test_create_chunk_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_chunk(request)
 
@@ -12473,85 +9708,6 @@ def test_create_chunk_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_chunk_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_create_chunk"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_create_chunk"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.CreateChunkRequest.pb(
-            retriever_service.CreateChunkRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever.Chunk.to_json(retriever.Chunk())
-
-        request = retriever_service.CreateChunkRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever.Chunk()
-
-        client.create_chunk(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_chunk_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.CreateChunkRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_chunk(request)
 
 
 def test_create_chunk_rest_flattened():
@@ -12583,6 +9739,7 @@ def test_create_chunk_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_chunk(**mock_args)
 
@@ -12610,49 +9767,6 @@ def test_create_chunk_rest_flattened_error(transport: str = "rest"):
             parent="parent_value",
             chunk=retriever.Chunk(name="name_value"),
         )
-
-
-def test_create_chunk_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.BatchCreateChunksRequest,
-        dict,
-    ],
-)
-def test_batch_create_chunks_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever_service.BatchCreateChunksResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever_service.BatchCreateChunksResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.batch_create_chunks(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever_service.BatchCreateChunksResponse)
 
 
 def test_batch_create_chunks_rest_use_cached_wrapped_rpc():
@@ -12757,6 +9871,7 @@ def test_batch_create_chunks_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.batch_create_chunks(request)
 
@@ -12772,135 +9887,6 @@ def test_batch_create_chunks_rest_unset_required_fields():
 
     unset_fields = transport.batch_create_chunks._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("requests",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_batch_create_chunks_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_batch_create_chunks"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_batch_create_chunks"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.BatchCreateChunksRequest.pb(
-            retriever_service.BatchCreateChunksRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever_service.BatchCreateChunksResponse.to_json(
-            retriever_service.BatchCreateChunksResponse()
-        )
-
-        request = retriever_service.BatchCreateChunksRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever_service.BatchCreateChunksResponse()
-
-        client.batch_create_chunks(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_batch_create_chunks_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.BatchCreateChunksRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.batch_create_chunks(request)
-
-
-def test_batch_create_chunks_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.GetChunkRequest,
-        dict,
-    ],
-)
-def test_get_chunk_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever.Chunk(
-            name="name_value",
-            state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever.Chunk.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_chunk(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever.Chunk)
-    assert response.name == "name_value"
-    assert response.state == retriever.Chunk.State.STATE_PENDING_PROCESSING
 
 
 def test_get_chunk_rest_use_cached_wrapped_rpc():
@@ -13003,6 +9989,7 @@ def test_get_chunk_rest_required_fields(request_type=retriever_service.GetChunkR
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_chunk(request)
 
@@ -13018,85 +10005,6 @@ def test_get_chunk_rest_unset_required_fields():
 
     unset_fields = transport.get_chunk._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_chunk_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_get_chunk"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_get_chunk"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.GetChunkRequest.pb(
-            retriever_service.GetChunkRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever.Chunk.to_json(retriever.Chunk())
-
-        request = retriever_service.GetChunkRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever.Chunk()
-
-        client.get_chunk(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_chunk_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.GetChunkRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_chunk(request)
 
 
 def test_get_chunk_rest_flattened():
@@ -13127,6 +10035,7 @@ def test_get_chunk_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_chunk(**mock_args)
 
@@ -13153,138 +10062,6 @@ def test_get_chunk_rest_flattened_error(transport: str = "rest"):
             retriever_service.GetChunkRequest(),
             name="name_value",
         )
-
-
-def test_get_chunk_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.UpdateChunkRequest,
-        dict,
-    ],
-)
-def test_update_chunk_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "chunk": {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
-    }
-    request_init["chunk"] = {
-        "name": "corpora/sample1/documents/sample2/chunks/sample3",
-        "data": {"string_value": "string_value_value"},
-        "custom_metadata": [
-            {
-                "string_value": "string_value_value",
-                "string_list_value": {"values": ["values_value1", "values_value2"]},
-                "numeric_value": 0.1391,
-                "key": "key_value",
-            }
-        ],
-        "create_time": {"seconds": 751, "nanos": 543},
-        "update_time": {},
-        "state": 1,
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = retriever_service.UpdateChunkRequest.meta.fields["chunk"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["chunk"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["chunk"][field])):
-                    del request_init["chunk"][field][i][subfield]
-            else:
-                del request_init["chunk"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever.Chunk(
-            name="name_value",
-            state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever.Chunk.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_chunk(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever.Chunk)
-    assert response.name == "name_value"
-    assert response.state == retriever.Chunk.State.STATE_PENDING_PROCESSING
 
 
 def test_update_chunk_rest_use_cached_wrapped_rpc():
@@ -13387,6 +10164,7 @@ def test_update_chunk_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_chunk(request)
 
@@ -13410,87 +10188,6 @@ def test_update_chunk_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_chunk_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_update_chunk"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_update_chunk"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.UpdateChunkRequest.pb(
-            retriever_service.UpdateChunkRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever.Chunk.to_json(retriever.Chunk())
-
-        request = retriever_service.UpdateChunkRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever.Chunk()
-
-        client.update_chunk(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_chunk_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.UpdateChunkRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "chunk": {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_chunk(request)
 
 
 def test_update_chunk_rest_flattened():
@@ -13524,6 +10221,7 @@ def test_update_chunk_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_chunk(**mock_args)
 
@@ -13552,49 +10250,6 @@ def test_update_chunk_rest_flattened_error(transport: str = "rest"):
             chunk=retriever.Chunk(name="name_value"),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
-
-
-def test_update_chunk_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.BatchUpdateChunksRequest,
-        dict,
-    ],
-)
-def test_batch_update_chunks_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever_service.BatchUpdateChunksResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever_service.BatchUpdateChunksResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.batch_update_chunks(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, retriever_service.BatchUpdateChunksResponse)
 
 
 def test_batch_update_chunks_rest_use_cached_wrapped_rpc():
@@ -13699,6 +10354,7 @@ def test_batch_update_chunks_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.batch_update_chunks(request)
 
@@ -13714,128 +10370,6 @@ def test_batch_update_chunks_rest_unset_required_fields():
 
     unset_fields = transport.batch_update_chunks._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("requests",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_batch_update_chunks_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_batch_update_chunks"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_batch_update_chunks"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.BatchUpdateChunksRequest.pb(
-            retriever_service.BatchUpdateChunksRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever_service.BatchUpdateChunksResponse.to_json(
-            retriever_service.BatchUpdateChunksResponse()
-        )
-
-        request = retriever_service.BatchUpdateChunksRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever_service.BatchUpdateChunksResponse()
-
-        client.batch_update_chunks(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_batch_update_chunks_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.BatchUpdateChunksRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.batch_update_chunks(request)
-
-
-def test_batch_update_chunks_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.DeleteChunkRequest,
-        dict,
-    ],
-)
-def test_delete_chunk_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_chunk(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_delete_chunk_rest_use_cached_wrapped_rpc():
@@ -13937,6 +10471,7 @@ def test_delete_chunk_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_chunk(request)
 
@@ -13952,79 +10487,6 @@ def test_delete_chunk_rest_unset_required_fields():
 
     unset_fields = transport.delete_chunk._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_chunk_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_delete_chunk"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = retriever_service.DeleteChunkRequest.pb(
-            retriever_service.DeleteChunkRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = retriever_service.DeleteChunkRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.delete_chunk(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_delete_chunk_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.DeleteChunkRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_chunk(request)
 
 
 def test_delete_chunk_rest_flattened():
@@ -14053,6 +10515,7 @@ def test_delete_chunk_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_chunk(**mock_args)
 
@@ -14079,47 +10542,6 @@ def test_delete_chunk_rest_flattened_error(transport: str = "rest"):
             retriever_service.DeleteChunkRequest(),
             name="name_value",
         )
-
-
-def test_delete_chunk_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.BatchDeleteChunksRequest,
-        dict,
-    ],
-)
-def test_batch_delete_chunks_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.batch_delete_chunks(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_batch_delete_chunks_rest_use_cached_wrapped_rpc():
@@ -14221,6 +10643,7 @@ def test_batch_delete_chunks_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.batch_delete_chunks(request)
 
@@ -14236,125 +10659,6 @@ def test_batch_delete_chunks_rest_unset_required_fields():
 
     unset_fields = transport.batch_delete_chunks._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("requests",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_batch_delete_chunks_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_batch_delete_chunks"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = retriever_service.BatchDeleteChunksRequest.pb(
-            retriever_service.BatchDeleteChunksRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = retriever_service.BatchDeleteChunksRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.batch_delete_chunks(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_batch_delete_chunks_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.BatchDeleteChunksRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.batch_delete_chunks(request)
-
-
-def test_batch_delete_chunks_rest_error():
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        retriever_service.ListChunksRequest,
-        dict,
-    ],
-)
-def test_list_chunks_rest(request_type):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = retriever_service.ListChunksResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = retriever_service.ListChunksResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_chunks(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListChunksPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_chunks_rest_use_cached_wrapped_rpc():
@@ -14466,6 +10770,7 @@ def test_list_chunks_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_chunks(request)
 
@@ -14489,87 +10794,6 @@ def test_list_chunks_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_chunks_rest_interceptors(null_interceptor):
-    transport = transports.RetrieverServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RetrieverServiceRestInterceptor(),
-    )
-    client = RetrieverServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "post_list_chunks"
-    ) as post, mock.patch.object(
-        transports.RetrieverServiceRestInterceptor, "pre_list_chunks"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = retriever_service.ListChunksRequest.pb(
-            retriever_service.ListChunksRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = retriever_service.ListChunksResponse.to_json(
-            retriever_service.ListChunksResponse()
-        )
-
-        request = retriever_service.ListChunksRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = retriever_service.ListChunksResponse()
-
-        client.list_chunks(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_chunks_rest_bad_request(
-    transport: str = "rest", request_type=retriever_service.ListChunksRequest
-):
-    client = RetrieverServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "corpora/sample1/documents/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_chunks(request)
 
 
 def test_list_chunks_rest_flattened():
@@ -14600,6 +10824,7 @@ def test_list_chunks_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_chunks(**mock_args)
 
@@ -14783,18 +11008,4409 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_grpc():
+    transport = RetrieverServiceClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_corpus_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_corpus), "__call__") as call:
+        call.return_value = retriever.Corpus()
+        client.create_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.CreateCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_corpus_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_corpus), "__call__") as call:
+        call.return_value = retriever.Corpus()
+        client.get_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.GetCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_corpus_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_corpus), "__call__") as call:
+        call.return_value = retriever.Corpus()
+        client.update_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.UpdateCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_corpus_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_corpus), "__call__") as call:
+        call.return_value = None
+        client.delete_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.DeleteCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_corpora_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_corpora), "__call__") as call:
+        call.return_value = retriever_service.ListCorporaResponse()
+        client.list_corpora(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.ListCorporaRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_query_corpus_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.query_corpus), "__call__") as call:
+        call.return_value = retriever_service.QueryCorpusResponse()
+        client.query_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.QueryCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_document_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_document), "__call__") as call:
+        call.return_value = retriever.Document()
+        client.create_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.CreateDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_document_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_document), "__call__") as call:
+        call.return_value = retriever.Document()
+        client.get_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.GetDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_document_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_document), "__call__") as call:
+        call.return_value = retriever.Document()
+        client.update_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.UpdateDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_document_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_document), "__call__") as call:
+        call.return_value = None
+        client.delete_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.DeleteDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_documents_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_documents), "__call__") as call:
+        call.return_value = retriever_service.ListDocumentsResponse()
+        client.list_documents(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.ListDocumentsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_query_document_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.query_document), "__call__") as call:
+        call.return_value = retriever_service.QueryDocumentResponse()
+        client.query_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.QueryDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_chunk_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_chunk), "__call__") as call:
+        call.return_value = retriever.Chunk()
+        client.create_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.CreateChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_batch_create_chunks_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_create_chunks), "__call__"
+    ) as call:
+        call.return_value = retriever_service.BatchCreateChunksResponse()
+        client.batch_create_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.BatchCreateChunksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_chunk_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_chunk), "__call__") as call:
+        call.return_value = retriever.Chunk()
+        client.get_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.GetChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_chunk_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_chunk), "__call__") as call:
+        call.return_value = retriever.Chunk()
+        client.update_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.UpdateChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_batch_update_chunks_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_update_chunks), "__call__"
+    ) as call:
+        call.return_value = retriever_service.BatchUpdateChunksResponse()
+        client.batch_update_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.BatchUpdateChunksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_chunk_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_chunk), "__call__") as call:
+        call.return_value = None
+        client.delete_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.DeleteChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_batch_delete_chunks_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_delete_chunks), "__call__"
+    ) as call:
+        call.return_value = None
+        client.batch_delete_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.BatchDeleteChunksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_chunks_empty_call_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_chunks), "__call__") as call:
+        call.return_value = retriever_service.ListChunksResponse()
+        client.list_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.ListChunksRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = RetrieverServiceAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_corpus_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_corpus), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever.Corpus(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.create_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.CreateCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_corpus_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_corpus), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever.Corpus(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.get_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.GetCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_corpus_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_corpus), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever.Corpus(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.update_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.UpdateCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_corpus_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_corpus), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.DeleteCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_corpora_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_corpora), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever_service.ListCorporaResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_corpora(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.ListCorporaRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_query_corpus_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.query_corpus), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever_service.QueryCorpusResponse()
+        )
+        await client.query_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.QueryCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_document_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_document), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever.Document(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.create_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.CreateDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_document_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_document), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever.Document(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.get_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.GetDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_document_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_document), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever.Document(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.update_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.UpdateDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_document_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_document), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.DeleteDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_documents_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_documents), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever_service.ListDocumentsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_documents(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.ListDocumentsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_query_document_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.query_document), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever_service.QueryDocumentResponse()
+        )
+        await client.query_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.QueryDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_chunk_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_chunk), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever.Chunk(
+                name="name_value",
+                state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
+            )
+        )
+        await client.create_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.CreateChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_batch_create_chunks_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_create_chunks), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever_service.BatchCreateChunksResponse()
+        )
+        await client.batch_create_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.BatchCreateChunksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_chunk_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_chunk), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever.Chunk(
+                name="name_value",
+                state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
+            )
+        )
+        await client.get_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.GetChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_chunk_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_chunk), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever.Chunk(
+                name="name_value",
+                state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
+            )
+        )
+        await client.update_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.UpdateChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_batch_update_chunks_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_update_chunks), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever_service.BatchUpdateChunksResponse()
+        )
+        await client.batch_update_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.BatchUpdateChunksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_chunk_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_chunk), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.DeleteChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_batch_delete_chunks_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_delete_chunks), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.batch_delete_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.BatchDeleteChunksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_chunks_empty_call_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_chunks), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            retriever_service.ListChunksResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.ListChunksRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = RetrieverServiceClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_create_corpus_rest_bad_request(
+    request_type=retriever_service.CreateCorpusRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_corpus(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "grpc",
-        "rest",
+        retriever_service.CreateCorpusRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = RetrieverServiceClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_create_corpus_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request_init["corpus"] = {
+        "name": "name_value",
+        "display_name": "display_name_value",
+        "create_time": {"seconds": 751, "nanos": 543},
+        "update_time": {},
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = retriever_service.CreateCorpusRequest.meta.fields["corpus"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["corpus"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["corpus"][field])):
+                    del request_init["corpus"][field][i][subfield]
+            else:
+                del request_init["corpus"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever.Corpus(
+            name="name_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever.Corpus.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_corpus(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever.Corpus)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_corpus_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_create_corpus"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_create_corpus"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.CreateCorpusRequest.pb(
+            retriever_service.CreateCorpusRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever.Corpus.to_json(retriever.Corpus())
+        req.return_value.content = return_value
+
+        request = retriever_service.CreateCorpusRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever.Corpus()
+
+        client.create_corpus(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_corpus_rest_bad_request(request_type=retriever_service.GetCorpusRequest):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_corpus(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.GetCorpusRequest,
+        dict,
+    ],
+)
+def test_get_corpus_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever.Corpus(
+            name="name_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever.Corpus.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_corpus(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever.Corpus)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_corpus_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_get_corpus"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_get_corpus"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.GetCorpusRequest.pb(
+            retriever_service.GetCorpusRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever.Corpus.to_json(retriever.Corpus())
+        req.return_value.content = return_value
+
+        request = retriever_service.GetCorpusRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever.Corpus()
+
+        client.get_corpus(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_corpus_rest_bad_request(
+    request_type=retriever_service.UpdateCorpusRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"corpus": {"name": "corpora/sample1"}}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_corpus(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.UpdateCorpusRequest,
+        dict,
+    ],
+)
+def test_update_corpus_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"corpus": {"name": "corpora/sample1"}}
+    request_init["corpus"] = {
+        "name": "corpora/sample1",
+        "display_name": "display_name_value",
+        "create_time": {"seconds": 751, "nanos": 543},
+        "update_time": {},
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = retriever_service.UpdateCorpusRequest.meta.fields["corpus"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["corpus"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["corpus"][field])):
+                    del request_init["corpus"][field][i][subfield]
+            else:
+                del request_init["corpus"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever.Corpus(
+            name="name_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever.Corpus.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_corpus(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever.Corpus)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_corpus_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_update_corpus"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_update_corpus"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.UpdateCorpusRequest.pb(
+            retriever_service.UpdateCorpusRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever.Corpus.to_json(retriever.Corpus())
+        req.return_value.content = return_value
+
+        request = retriever_service.UpdateCorpusRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever.Corpus()
+
+        client.update_corpus(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_corpus_rest_bad_request(
+    request_type=retriever_service.DeleteCorpusRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_corpus(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.DeleteCorpusRequest,
+        dict,
+    ],
+)
+def test_delete_corpus_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_corpus(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_corpus_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_delete_corpus"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = retriever_service.DeleteCorpusRequest.pb(
+            retriever_service.DeleteCorpusRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = retriever_service.DeleteCorpusRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_corpus(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_list_corpora_rest_bad_request(
+    request_type=retriever_service.ListCorporaRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_corpora(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.ListCorporaRequest,
+        dict,
+    ],
+)
+def test_list_corpora_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever_service.ListCorporaResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever_service.ListCorporaResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_corpora(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListCorporaPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_corpora_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_list_corpora"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_list_corpora"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.ListCorporaRequest.pb(
+            retriever_service.ListCorporaRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever_service.ListCorporaResponse.to_json(
+            retriever_service.ListCorporaResponse()
+        )
+        req.return_value.content = return_value
+
+        request = retriever_service.ListCorporaRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever_service.ListCorporaResponse()
+
+        client.list_corpora(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_query_corpus_rest_bad_request(
+    request_type=retriever_service.QueryCorpusRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.query_corpus(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.QueryCorpusRequest,
+        dict,
+    ],
+)
+def test_query_corpus_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever_service.QueryCorpusResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever_service.QueryCorpusResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.query_corpus(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever_service.QueryCorpusResponse)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_query_corpus_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_query_corpus"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_query_corpus"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.QueryCorpusRequest.pb(
+            retriever_service.QueryCorpusRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever_service.QueryCorpusResponse.to_json(
+            retriever_service.QueryCorpusResponse()
+        )
+        req.return_value.content = return_value
+
+        request = retriever_service.QueryCorpusRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever_service.QueryCorpusResponse()
+
+        client.query_corpus(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_document_rest_bad_request(
+    request_type=retriever_service.CreateDocumentRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_document(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.CreateDocumentRequest,
+        dict,
+    ],
+)
+def test_create_document_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1"}
+    request_init["document"] = {
+        "name": "name_value",
+        "display_name": "display_name_value",
+        "custom_metadata": [
+            {
+                "string_value": "string_value_value",
+                "string_list_value": {"values": ["values_value1", "values_value2"]},
+                "numeric_value": 0.1391,
+                "key": "key_value",
+            }
+        ],
+        "update_time": {"seconds": 751, "nanos": 543},
+        "create_time": {},
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = retriever_service.CreateDocumentRequest.meta.fields["document"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["document"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["document"][field])):
+                    del request_init["document"][field][i][subfield]
+            else:
+                del request_init["document"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever.Document(
+            name="name_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever.Document.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_document(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever.Document)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_document_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_create_document"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_create_document"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.CreateDocumentRequest.pb(
+            retriever_service.CreateDocumentRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever.Document.to_json(retriever.Document())
+        req.return_value.content = return_value
+
+        request = retriever_service.CreateDocumentRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever.Document()
+
+        client.create_document(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_document_rest_bad_request(
+    request_type=retriever_service.GetDocumentRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_document(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.GetDocumentRequest,
+        dict,
+    ],
+)
+def test_get_document_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever.Document(
+            name="name_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever.Document.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_document(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever.Document)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_document_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_get_document"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_get_document"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.GetDocumentRequest.pb(
+            retriever_service.GetDocumentRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever.Document.to_json(retriever.Document())
+        req.return_value.content = return_value
+
+        request = retriever_service.GetDocumentRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever.Document()
+
+        client.get_document(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_document_rest_bad_request(
+    request_type=retriever_service.UpdateDocumentRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"document": {"name": "corpora/sample1/documents/sample2"}}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_document(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.UpdateDocumentRequest,
+        dict,
+    ],
+)
+def test_update_document_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"document": {"name": "corpora/sample1/documents/sample2"}}
+    request_init["document"] = {
+        "name": "corpora/sample1/documents/sample2",
+        "display_name": "display_name_value",
+        "custom_metadata": [
+            {
+                "string_value": "string_value_value",
+                "string_list_value": {"values": ["values_value1", "values_value2"]},
+                "numeric_value": 0.1391,
+                "key": "key_value",
+            }
+        ],
+        "update_time": {"seconds": 751, "nanos": 543},
+        "create_time": {},
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = retriever_service.UpdateDocumentRequest.meta.fields["document"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["document"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["document"][field])):
+                    del request_init["document"][field][i][subfield]
+            else:
+                del request_init["document"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever.Document(
+            name="name_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever.Document.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_document(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever.Document)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_document_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_update_document"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_update_document"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.UpdateDocumentRequest.pb(
+            retriever_service.UpdateDocumentRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever.Document.to_json(retriever.Document())
+        req.return_value.content = return_value
+
+        request = retriever_service.UpdateDocumentRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever.Document()
+
+        client.update_document(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_document_rest_bad_request(
+    request_type=retriever_service.DeleteDocumentRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_document(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.DeleteDocumentRequest,
+        dict,
+    ],
+)
+def test_delete_document_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_document(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_document_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_delete_document"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = retriever_service.DeleteDocumentRequest.pb(
+            retriever_service.DeleteDocumentRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = retriever_service.DeleteDocumentRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_document(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_list_documents_rest_bad_request(
+    request_type=retriever_service.ListDocumentsRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_documents(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.ListDocumentsRequest,
+        dict,
+    ],
+)
+def test_list_documents_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever_service.ListDocumentsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever_service.ListDocumentsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_documents(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListDocumentsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_documents_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_list_documents"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_list_documents"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.ListDocumentsRequest.pb(
+            retriever_service.ListDocumentsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever_service.ListDocumentsResponse.to_json(
+            retriever_service.ListDocumentsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = retriever_service.ListDocumentsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever_service.ListDocumentsResponse()
+
+        client.list_documents(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_query_document_rest_bad_request(
+    request_type=retriever_service.QueryDocumentRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.query_document(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.QueryDocumentRequest,
+        dict,
+    ],
+)
+def test_query_document_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever_service.QueryDocumentResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever_service.QueryDocumentResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.query_document(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever_service.QueryDocumentResponse)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_query_document_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_query_document"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_query_document"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.QueryDocumentRequest.pb(
+            retriever_service.QueryDocumentRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever_service.QueryDocumentResponse.to_json(
+            retriever_service.QueryDocumentResponse()
+        )
+        req.return_value.content = return_value
+
+        request = retriever_service.QueryDocumentRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever_service.QueryDocumentResponse()
+
+        client.query_document(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_chunk_rest_bad_request(
+    request_type=retriever_service.CreateChunkRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_chunk(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.CreateChunkRequest,
+        dict,
+    ],
+)
+def test_create_chunk_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request_init["chunk"] = {
+        "name": "name_value",
+        "data": {"string_value": "string_value_value"},
+        "custom_metadata": [
+            {
+                "string_value": "string_value_value",
+                "string_list_value": {"values": ["values_value1", "values_value2"]},
+                "numeric_value": 0.1391,
+                "key": "key_value",
+            }
+        ],
+        "create_time": {"seconds": 751, "nanos": 543},
+        "update_time": {},
+        "state": 1,
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = retriever_service.CreateChunkRequest.meta.fields["chunk"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["chunk"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["chunk"][field])):
+                    del request_init["chunk"][field][i][subfield]
+            else:
+                del request_init["chunk"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever.Chunk(
+            name="name_value",
+            state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever.Chunk.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_chunk(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever.Chunk)
+    assert response.name == "name_value"
+    assert response.state == retriever.Chunk.State.STATE_PENDING_PROCESSING
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_chunk_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_create_chunk"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_create_chunk"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.CreateChunkRequest.pb(
+            retriever_service.CreateChunkRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever.Chunk.to_json(retriever.Chunk())
+        req.return_value.content = return_value
+
+        request = retriever_service.CreateChunkRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever.Chunk()
+
+        client.create_chunk(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_batch_create_chunks_rest_bad_request(
+    request_type=retriever_service.BatchCreateChunksRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.batch_create_chunks(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.BatchCreateChunksRequest,
+        dict,
+    ],
+)
+def test_batch_create_chunks_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever_service.BatchCreateChunksResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever_service.BatchCreateChunksResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.batch_create_chunks(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever_service.BatchCreateChunksResponse)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_batch_create_chunks_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_batch_create_chunks"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_batch_create_chunks"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.BatchCreateChunksRequest.pb(
+            retriever_service.BatchCreateChunksRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever_service.BatchCreateChunksResponse.to_json(
+            retriever_service.BatchCreateChunksResponse()
+        )
+        req.return_value.content = return_value
+
+        request = retriever_service.BatchCreateChunksRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever_service.BatchCreateChunksResponse()
+
+        client.batch_create_chunks(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_chunk_rest_bad_request(request_type=retriever_service.GetChunkRequest):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_chunk(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.GetChunkRequest,
+        dict,
+    ],
+)
+def test_get_chunk_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever.Chunk(
+            name="name_value",
+            state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever.Chunk.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_chunk(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever.Chunk)
+    assert response.name == "name_value"
+    assert response.state == retriever.Chunk.State.STATE_PENDING_PROCESSING
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_chunk_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_get_chunk"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_get_chunk"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.GetChunkRequest.pb(
+            retriever_service.GetChunkRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever.Chunk.to_json(retriever.Chunk())
+        req.return_value.content = return_value
+
+        request = retriever_service.GetChunkRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever.Chunk()
+
+        client.get_chunk(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_chunk_rest_bad_request(
+    request_type=retriever_service.UpdateChunkRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "chunk": {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_chunk(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.UpdateChunkRequest,
+        dict,
+    ],
+)
+def test_update_chunk_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "chunk": {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
+    }
+    request_init["chunk"] = {
+        "name": "corpora/sample1/documents/sample2/chunks/sample3",
+        "data": {"string_value": "string_value_value"},
+        "custom_metadata": [
+            {
+                "string_value": "string_value_value",
+                "string_list_value": {"values": ["values_value1", "values_value2"]},
+                "numeric_value": 0.1391,
+                "key": "key_value",
+            }
+        ],
+        "create_time": {"seconds": 751, "nanos": 543},
+        "update_time": {},
+        "state": 1,
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = retriever_service.UpdateChunkRequest.meta.fields["chunk"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["chunk"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["chunk"][field])):
+                    del request_init["chunk"][field][i][subfield]
+            else:
+                del request_init["chunk"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever.Chunk(
+            name="name_value",
+            state=retriever.Chunk.State.STATE_PENDING_PROCESSING,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever.Chunk.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_chunk(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever.Chunk)
+    assert response.name == "name_value"
+    assert response.state == retriever.Chunk.State.STATE_PENDING_PROCESSING
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_chunk_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_update_chunk"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_update_chunk"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.UpdateChunkRequest.pb(
+            retriever_service.UpdateChunkRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever.Chunk.to_json(retriever.Chunk())
+        req.return_value.content = return_value
+
+        request = retriever_service.UpdateChunkRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever.Chunk()
+
+        client.update_chunk(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_batch_update_chunks_rest_bad_request(
+    request_type=retriever_service.BatchUpdateChunksRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.batch_update_chunks(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.BatchUpdateChunksRequest,
+        dict,
+    ],
+)
+def test_batch_update_chunks_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever_service.BatchUpdateChunksResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever_service.BatchUpdateChunksResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.batch_update_chunks(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, retriever_service.BatchUpdateChunksResponse)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_batch_update_chunks_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_batch_update_chunks"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_batch_update_chunks"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.BatchUpdateChunksRequest.pb(
+            retriever_service.BatchUpdateChunksRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever_service.BatchUpdateChunksResponse.to_json(
+            retriever_service.BatchUpdateChunksResponse()
+        )
+        req.return_value.content = return_value
+
+        request = retriever_service.BatchUpdateChunksRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever_service.BatchUpdateChunksResponse()
+
+        client.batch_update_chunks(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_chunk_rest_bad_request(
+    request_type=retriever_service.DeleteChunkRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_chunk(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.DeleteChunkRequest,
+        dict,
+    ],
+)
+def test_delete_chunk_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "corpora/sample1/documents/sample2/chunks/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_chunk(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_chunk_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_delete_chunk"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = retriever_service.DeleteChunkRequest.pb(
+            retriever_service.DeleteChunkRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = retriever_service.DeleteChunkRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_chunk(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_batch_delete_chunks_rest_bad_request(
+    request_type=retriever_service.BatchDeleteChunksRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.batch_delete_chunks(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.BatchDeleteChunksRequest,
+        dict,
+    ],
+)
+def test_batch_delete_chunks_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.batch_delete_chunks(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_batch_delete_chunks_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_batch_delete_chunks"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = retriever_service.BatchDeleteChunksRequest.pb(
+            retriever_service.BatchDeleteChunksRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = retriever_service.BatchDeleteChunksRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.batch_delete_chunks(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_list_chunks_rest_bad_request(request_type=retriever_service.ListChunksRequest):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_chunks(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        retriever_service.ListChunksRequest,
+        dict,
+    ],
+)
+def test_list_chunks_rest_call_success(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "corpora/sample1/documents/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = retriever_service.ListChunksResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = retriever_service.ListChunksResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_chunks(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListChunksPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_chunks_rest_interceptors(null_interceptor):
+    transport = transports.RetrieverServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RetrieverServiceRestInterceptor(),
+    )
+    client = RetrieverServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "post_list_chunks"
+    ) as post, mock.patch.object(
+        transports.RetrieverServiceRestInterceptor, "pre_list_chunks"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = retriever_service.ListChunksRequest.pb(
+            retriever_service.ListChunksRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = retriever_service.ListChunksResponse.to_json(
+            retriever_service.ListChunksResponse()
+        )
+        req.return_value.content = return_value
+
+        request = retriever_service.ListChunksRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = retriever_service.ListChunksResponse()
+
+        client.list_chunks(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_operation_rest_bad_request(
+    request_type=operations_pb2.GetOperationRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict(
+        {"name": "tunedModels/sample1/operations/sample2"}, request
+    )
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.GetOperationRequest,
+        dict,
+    ],
+)
+def test_get_operation_rest(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "tunedModels/sample1/operations/sample2"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.get_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.Operation)
+
+
+def test_list_operations_rest_bad_request(
+    request_type=operations_pb2.ListOperationsRequest,
+):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict({"name": "tunedModels/sample1"}, request)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_operations(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.ListOperationsRequest,
+        dict,
+    ],
+)
+def test_list_operations_rest(request_type):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "tunedModels/sample1"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.ListOperationsResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.list_operations(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.ListOperationsResponse)
+
+
+def test_initialize_client_w_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_corpus_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_corpus), "__call__") as call:
+        client.create_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.CreateCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_corpus_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_corpus), "__call__") as call:
+        client.get_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.GetCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_corpus_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_corpus), "__call__") as call:
+        client.update_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.UpdateCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_corpus_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_corpus), "__call__") as call:
+        client.delete_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.DeleteCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_corpora_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_corpora), "__call__") as call:
+        client.list_corpora(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.ListCorporaRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_query_corpus_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.query_corpus), "__call__") as call:
+        client.query_corpus(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.QueryCorpusRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_document_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_document), "__call__") as call:
+        client.create_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.CreateDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_document_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_document), "__call__") as call:
+        client.get_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.GetDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_document_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_document), "__call__") as call:
+        client.update_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.UpdateDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_document_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_document), "__call__") as call:
+        client.delete_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.DeleteDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_documents_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_documents), "__call__") as call:
+        client.list_documents(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.ListDocumentsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_query_document_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.query_document), "__call__") as call:
+        client.query_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.QueryDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_chunk_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_chunk), "__call__") as call:
+        client.create_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.CreateChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_batch_create_chunks_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_create_chunks), "__call__"
+    ) as call:
+        client.batch_create_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.BatchCreateChunksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_chunk_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_chunk), "__call__") as call:
+        client.get_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.GetChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_chunk_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_chunk), "__call__") as call:
+        client.update_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.UpdateChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_batch_update_chunks_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_update_chunks), "__call__"
+    ) as call:
+        client.batch_update_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.BatchUpdateChunksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_chunk_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_chunk), "__call__") as call:
+        client.delete_chunk(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.DeleteChunkRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_batch_delete_chunks_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_delete_chunks), "__call__"
+    ) as call:
+        client.batch_delete_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.BatchDeleteChunksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_chunks_empty_call_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_chunks), "__call__") as call:
+        client.list_chunks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = retriever_service.ListChunksRequest()
+
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -14850,6 +15466,8 @@ def test_retriever_service_base_transport():
         "delete_chunk",
         "batch_delete_chunks",
         "list_chunks",
+        "get_operation",
+        "list_operations",
     )
     for method in methods:
         with pytest.raises(NotImplementedError):
@@ -15491,36 +16109,331 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = RetrieverServiceAsyncClient(
+def test_get_operation(transport: str = "grpc"):
+    client = RetrieverServiceClient(
         credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = operations_pb2.GetOperationRequest()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation()
+        response = client.get_operation(request)
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.Operation)
+
+
+@pytest.mark.asyncio
+async def test_get_operation_async(transport: str = "grpc_asyncio"):
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = operations_pb2.GetOperationRequest()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation()
+        )
+        response = await client.get_operation(request)
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.Operation)
+
+
+def test_get_operation_field_headers():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = operations_pb2.GetOperationRequest()
+    request.name = "locations"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
+        call.return_value = operations_pb2.Operation()
+
+        client.get_operation(request)
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=locations",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_get_operation_field_headers_async():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = operations_pb2.GetOperationRequest()
+    request.name = "locations"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation()
+        )
+        await client.get_operation(request)
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=locations",
+    ) in kw["metadata"]
+
+
+def test_get_operation_from_dict():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation()
+
+        response = client.get_operation(
+            request={
+                "name": "locations",
+            }
+        )
+        call.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_get_operation_from_dict_async():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation()
+        )
+        response = await client.get_operation(
+            request={
+                "name": "locations",
+            }
+        )
+        call.assert_called()
+
+
+def test_list_operations(transport: str = "grpc"):
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = operations_pb2.ListOperationsRequest()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.ListOperationsResponse()
+        response = client.list_operations(request)
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.ListOperationsResponse)
+
+
+@pytest.mark.asyncio
+async def test_list_operations_async(transport: str = "grpc_asyncio"):
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = operations_pb2.ListOperationsRequest()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.ListOperationsResponse()
+        )
+        response = await client.list_operations(request)
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.ListOperationsResponse)
+
+
+def test_list_operations_field_headers():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = operations_pb2.ListOperationsRequest()
+    request.name = "locations"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
+        call.return_value = operations_pb2.ListOperationsResponse()
+
+        client.list_operations(request)
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=locations",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_list_operations_field_headers_async():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = operations_pb2.ListOperationsRequest()
+    request.name = "locations"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.ListOperationsResponse()
+        )
+        await client.list_operations(request)
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=locations",
+    ) in kw["metadata"]
+
+
+def test_list_operations_from_dict():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.ListOperationsResponse()
+
+        response = client.list_operations(
+            request={
+                "name": "locations",
+            }
+        )
+        call.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_list_operations_from_dict_async():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.ListOperationsResponse()
+        )
+        response = await client.list_operations(
+            request={
+                "name": "locations",
+            }
+        )
+        call.assert_called()
+
+
+def test_transport_close_grpc():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = RetrieverServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
         async with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = RetrieverServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = RetrieverServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

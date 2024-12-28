@@ -1,5 +1,85 @@
 # Changelog
 
+## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.10.1...google-cloud-datastream-v1.11.0) (2024-12-12)
+
+
+### Features
+
+* A new field `append_only` is added to message `.google.cloud.datastream.v1.BigQueryDestinationConfig` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `binary_log_parser` is added to message `.google.cloud.datastream.v1.OracleSourceConfig` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `binary_log_position` is added to message `.google.cloud.datastream.v1.MysqlSourceConfig` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `gtid` is added to message `.google.cloud.datastream.v1.MysqlSourceConfig` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `last_recovery_time` is added to message `.google.cloud.datastream.v1.Stream` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `log_miner` is added to message `.google.cloud.datastream.v1.OracleSourceConfig` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `merge` is added to message `.google.cloud.datastream.v1.BigQueryDestinationConfig` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `oracle_asm_config` is added to message `.google.cloud.datastream.v1.OracleProfile` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `oracle_ssl_config` is added to message `.google.cloud.datastream.v1.OracleProfile` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `secret_manager_stored_password` is added to message `.google.cloud.datastream.v1.OracleProfile` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `sql_server_excluded_objects` is added to message `.google.cloud.datastream.v1.Stream` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `sql_server_identifier` is added to message `.google.cloud.datastream.v1.SourceObjectIdentifier` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `sql_server_profile` is added to message `.google.cloud.datastream.v1.ConnectionProfile` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `sql_server_rdbms` is added to message `.google.cloud.datastream.v1.DiscoverConnectionProfileRequest` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `sql_server_rdbms` is added to message `.google.cloud.datastream.v1.DiscoverConnectionProfileResponse` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new field `sql_server_source_config` is added to message `.google.cloud.datastream.v1.SourceConfig` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `AppendOnly` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `BinaryLogParser` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `BinaryLogPosition` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `CdcStrategy` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `Gtid` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `LogMiner` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `Merge` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `MysqlLogPosition` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `OracleAsmConfig` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `OracleScnPosition` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `OracleSslConfig` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `RunStreamRequest` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerChangeTables` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerColumn` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerLsnPosition` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerObjectIdentifier` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerProfile` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerRdbms` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerSchema` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerSourceConfig` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerTable` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new message `SqlServerTransactionLogs` is added ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new method `RunStream` is added to service `Datastream` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A new value `WARNING` is added to enum `State` ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Documentation
+
+* A comment for field `dataset_id` in message `.google.cloud.datastream.v1.BigQueryDestinationConfig` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A comment for field `password` in message `.google.cloud.datastream.v1.MysqlProfile` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A comment for field `password` in message `.google.cloud.datastream.v1.OracleProfile` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A comment for field `password` in message `.google.cloud.datastream.v1.PostgresqlProfile` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A comment for field `requested_cancellation` in message `.google.cloud.datastream.v1.OperationMetadata` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A comment for field `state` in message `.google.cloud.datastream.v1.BackfillJob` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A comment for field `state` in message `.google.cloud.datastream.v1.Validation` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A comment for field `stream_large_objects` in message `.google.cloud.datastream.v1.OracleSourceConfig` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A comment for message `MysqlProfile` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+* A comment for message `OracleProfile` is changed ([e3cdd49](https://github.com/googleapis/google-cloud-python/commit/e3cdd49f466bdec4e98fd14f9b49fa8e307d795d))
+
+## [1.10.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.10.0...google-cloud-datastream-v1.10.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [1.10.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.9.5...google-cloud-datastream-v1.10.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13202](https://github.com/googleapis/google-cloud-python/issues/13202)) ([5b1f2f3](https://github.com/googleapis/google-cloud-python/commit/5b1f2f3a81ed171b643812e67a7ed179b9b703ea))
+
 ## [1.9.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.9.4...google-cloud-datastream-v1.9.5) (2024-07-30)
 
 

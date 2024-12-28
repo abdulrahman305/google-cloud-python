@@ -1,5 +1,66 @@
 # Changelog
 
+## [3.1.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v3.0.1...google-cloud-documentai-v3.1.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [3.0.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v3.0.0...google-cloud-documentai-v3.0.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [3.0.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.35.0...google-cloud-documentai-v3.0.0) (2024-10-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* Remove google.cloud.documentai_v1beta2 ([#13218](https://github.com/googleapis/google-cloud-python/issues/13218))
+
+### Bug Fixes
+
+* Remove google.cloud.documentai_v1beta2 ([#13218](https://github.com/googleapis/google-cloud-python/issues/13218)) ([a98df65](https://github.com/googleapis/google-cloud-python/commit/a98df654c18a6ea37119e7d55bdedb1b0135c475))
+
+## [2.35.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.34.0...google-cloud-documentai-v2.35.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13205](https://github.com/googleapis/google-cloud-python/issues/13205)) ([4f4fdcf](https://github.com/googleapis/google-cloud-python/commit/4f4fdcf845621cea69facb568b7fe17d4f38d467))
+
+## [2.34.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.33.0...google-cloud-documentai-v2.34.0) (2024-10-23)
+
+
+### Features
+
+* [google-cloud-documentai] Updated the exponential backoff settings for the Document AI ProcessDocument and BatchProcessDocuments methods ([91e9f9f](https://github.com/googleapis/google-cloud-python/commit/91e9f9f262ac350cb6fa537eceac104460b1bfc0))
+* Add RESOURCE_EXHAUSTED to retryable status codes for ProcessDocument method ([91e9f9f](https://github.com/googleapis/google-cloud-python/commit/91e9f9f262ac350cb6fa537eceac104460b1bfc0))
+* Add RESOURCE_EXHAUSTED to retryable status codes for ProcessDocument method ([98a4a8d](https://github.com/googleapis/google-cloud-python/commit/98a4a8de41dd24d542f592f06f68dd5adac0ceeb))
+* Updated the exponential backoff settings for the Document AI ProcessDocument and BatchProcessDocuments methods ([98a4a8d](https://github.com/googleapis/google-cloud-python/commit/98a4a8de41dd24d542f592f06f68dd5adac0ceeb))
+
+## [2.33.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.32.0...google-cloud-documentai-v2.33.0) (2024-10-08)
+
+
+### Features
+
+* Removed deprecated api versions ([eeab5c1](https://github.com/googleapis/google-cloud-python/commit/eeab5c1ee68559605ab3dc251314d45bd92191cd))
+
+## [2.32.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.31.0...google-cloud-documentai-v2.32.0) (2024-09-06)
+
+
+### Features
+
+* [google-cloud-documentai] Add API fields for the descriptions of entity type and property in the document schema ([#13067](https://github.com/googleapis/google-cloud-python/issues/13067)) ([1a2b325](https://github.com/googleapis/google-cloud-python/commit/1a2b325c0da966131072673e06d17015b16c7a1a))
+
 ## [2.31.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.30.0...google-cloud-documentai-v2.31.0) (2024-08-08)
 
 

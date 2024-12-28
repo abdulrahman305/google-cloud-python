@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.6.13](https://github.com/googleapis/google-cloud-python/compare/google-maps-routing-v0.6.12...google-maps-routing-v0.6.13) (2024-12-12)
+
+
+### Features
+
+* [google-maps-routing] add API for shorter distance reference routes ([#13306](https://github.com/googleapis/google-cloud-python/issues/13306)) ([104d44d](https://github.com/googleapis/google-cloud-python/commit/104d44d5886a32bc61483d8d25d2557aee1dd5a6))
+* [Many APIs] Add support for opt-in debug logging ([#13349](https://github.com/googleapis/google-cloud-python/issues/13349)) ([8b9c7bf](https://github.com/googleapis/google-cloud-python/commit/8b9c7bf3bb1c4f0beabd71a45c469fcedb19a2c8))
+* add API for experimental flyover and narrow road polyline details ([eb4c7f9](https://github.com/googleapis/google-cloud-python/commit/eb4c7f9f785f5433191efac7e21a7d2ccc2d28bc))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([8b9c7bf](https://github.com/googleapis/google-cloud-python/commit/8b9c7bf3bb1c4f0beabd71a45c469fcedb19a2c8))
+
+## [0.6.12](https://github.com/googleapis/google-cloud-python/compare/google-maps-routing-v0.6.11...google-maps-routing-v0.6.12) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13247](https://github.com/googleapis/google-cloud-python/issues/13247)) ([5adc8b7](https://github.com/googleapis/google-cloud-python/commit/5adc8b7d2cc8ab9707ab5a65f15270c125cee051))
+
+## [0.6.11](https://github.com/googleapis/google-cloud-python/compare/google-maps-routing-v0.6.10...google-maps-routing-v0.6.11) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13211](https://github.com/googleapis/google-cloud-python/issues/13211)) ([f712162](https://github.com/googleapis/google-cloud-python/commit/f712162c01f065da29fffbbed1e856a1f3876b1b))
+
 ## [0.6.10](https://github.com/googleapis/google-cloud-python/compare/google-maps-routing-v0.6.9...google-maps-routing-v0.6.10) (2024-07-30)
 
 

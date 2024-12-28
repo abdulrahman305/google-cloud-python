@@ -22,25 +22,11 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import (
-    future,
-    gapic_v1,
-    grpc_helpers,
-    grpc_helpers_async,
-    path_template,
-)
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import extended_operation  # type: ignore
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
+from google.api_core import api_core_version
 from google.protobuf import json_format
 import grpc
 from grpc.experimental import aio
@@ -50,6 +36,29 @@ import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
 
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import (
+    future,
+    gapic_v1,
+    grpc_helpers,
+    grpc_helpers_async,
+    path_template,
+)
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import extended_operation  # type: ignore
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
+
 from google.cloud.compute_v1.services.region_instance_group_managers import (
     RegionInstanceGroupManagersClient,
     pagers,
@@ -58,8 +67,22 @@ from google.cloud.compute_v1.services.region_instance_group_managers import (
 from google.cloud.compute_v1.types import compute
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -319,89 +342,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         RegionInstanceGroupManagersClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            RegionInstanceGroupManagersClient,
-            transports.RegionInstanceGroupManagersRestTransport,
-            "rest",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1022,177 +962,6 @@ def test_region_instance_group_managers_client_client_options_credentials_file(
         )
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.AbandonInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_abandon_instances_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init[
-        "region_instance_group_managers_abandon_instances_request_resource"
-    ] = {"instances": ["instances_value1", "instances_value2"]}
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.AbandonInstancesRegionInstanceGroupManagerRequest.meta.fields[
-        "region_instance_group_managers_abandon_instances_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_abandon_instances_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_abandon_instances_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_abandon_instances_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_abandon_instances_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.abandon_instances(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
-
-
 def test_abandon_instances_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -1312,6 +1081,7 @@ def test_abandon_instances_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.abandon_instances(request)
 
@@ -1337,90 +1107,6 @@ def test_abandon_instances_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_abandon_instances_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_abandon_instances"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_abandon_instances"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.AbandonInstancesRegionInstanceGroupManagerRequest.pb(
-            compute.AbandonInstancesRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.AbandonInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.abandon_instances(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_abandon_instances_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.AbandonInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.abandon_instances(request)
 
 
 def test_abandon_instances_rest_flattened():
@@ -1460,6 +1146,7 @@ def test_abandon_instances_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.abandon_instances(**mock_args)
 
@@ -1492,161 +1179,6 @@ def test_abandon_instances_rest_flattened_error(transport: str = "rest"):
                 instances=["instances_value"]
             ),
         )
-
-
-def test_abandon_instances_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.AbandonInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_abandon_instances_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init[
-        "region_instance_group_managers_abandon_instances_request_resource"
-    ] = {"instances": ["instances_value1", "instances_value2"]}
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.AbandonInstancesRegionInstanceGroupManagerRequest.meta.fields[
-        "region_instance_group_managers_abandon_instances_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_abandon_instances_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_abandon_instances_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_abandon_instances_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_abandon_instances_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.abandon_instances_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_abandon_instances_unary_rest_use_cached_wrapped_rpc():
@@ -1768,6 +1300,7 @@ def test_abandon_instances_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.abandon_instances_unary(request)
 
@@ -1793,90 +1326,6 @@ def test_abandon_instances_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_abandon_instances_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_abandon_instances"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_abandon_instances"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.AbandonInstancesRegionInstanceGroupManagerRequest.pb(
-            compute.AbandonInstancesRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.AbandonInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.abandon_instances_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_abandon_instances_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.AbandonInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.abandon_instances_unary(request)
 
 
 def test_abandon_instances_unary_rest_flattened():
@@ -1916,6 +1365,7 @@ def test_abandon_instances_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.abandon_instances_unary(**mock_args)
 
@@ -1948,188 +1398,6 @@ def test_abandon_instances_unary_rest_flattened_error(transport: str = "rest"):
                 instances=["instances_value"]
             ),
         )
-
-
-def test_abandon_instances_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_apply_updates_to_instances_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_managers_apply_updates_request_resource"] = {
-        "all_instances": True,
-        "instances": ["instances_value1", "instances_value2"],
-        "minimal_action": "minimal_action_value",
-        "most_disruptive_allowed_action": "most_disruptive_allowed_action_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = (
-        compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest.meta.fields[
-            "region_instance_group_managers_apply_updates_request_resource"
-        ]
-    )
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_apply_updates_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_apply_updates_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_apply_updates_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_apply_updates_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.apply_updates_to_instances(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_apply_updates_to_instances_rest_use_cached_wrapped_rpc():
@@ -2252,6 +1520,7 @@ def test_apply_updates_to_instances_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.apply_updates_to_instances(request)
 
@@ -2277,94 +1546,6 @@ def test_apply_updates_to_instances_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_apply_updates_to_instances_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_apply_updates_to_instances",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_apply_updates_to_instances",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = (
-            compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest.pb(
-                compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest()
-            )
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.apply_updates_to_instances(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_apply_updates_to_instances_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.apply_updates_to_instances(request)
 
 
 def test_apply_updates_to_instances_rest_flattened():
@@ -2404,6 +1585,7 @@ def test_apply_updates_to_instances_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.apply_updates_to_instances(**mock_args)
 
@@ -2436,166 +1618,6 @@ def test_apply_updates_to_instances_rest_flattened_error(transport: str = "rest"
                 all_instances=True
             ),
         )
-
-
-def test_apply_updates_to_instances_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_apply_updates_to_instances_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_managers_apply_updates_request_resource"] = {
-        "all_instances": True,
-        "instances": ["instances_value1", "instances_value2"],
-        "minimal_action": "minimal_action_value",
-        "most_disruptive_allowed_action": "most_disruptive_allowed_action_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = (
-        compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest.meta.fields[
-            "region_instance_group_managers_apply_updates_request_resource"
-        ]
-    )
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_apply_updates_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_apply_updates_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_apply_updates_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_apply_updates_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.apply_updates_to_instances_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_apply_updates_to_instances_unary_rest_use_cached_wrapped_rpc():
@@ -2718,6 +1740,7 @@ def test_apply_updates_to_instances_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.apply_updates_to_instances_unary(request)
 
@@ -2743,94 +1766,6 @@ def test_apply_updates_to_instances_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_apply_updates_to_instances_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_apply_updates_to_instances",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_apply_updates_to_instances",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = (
-            compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest.pb(
-                compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest()
-            )
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.apply_updates_to_instances_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_apply_updates_to_instances_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.apply_updates_to_instances_unary(request)
 
 
 def test_apply_updates_to_instances_unary_rest_flattened():
@@ -2870,6 +1805,7 @@ def test_apply_updates_to_instances_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.apply_updates_to_instances_unary(**mock_args)
 
@@ -2902,195 +1838,6 @@ def test_apply_updates_to_instances_unary_rest_flattened_error(transport: str = 
                 all_instances=True
             ),
         )
-
-
-def test_apply_updates_to_instances_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.CreateInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_create_instances_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_managers_create_instances_request_resource"] = {
-        "instances": [
-            {
-                "fingerprint": "fingerprint_value",
-                "name": "name_value",
-                "preserved_state": {
-                    "disks": {},
-                    "external_i_ps": {},
-                    "internal_i_ps": {},
-                    "metadata": {},
-                },
-                "status": "status_value",
-            }
-        ]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.CreateInstancesRegionInstanceGroupManagerRequest.meta.fields[
-        "region_instance_group_managers_create_instances_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_create_instances_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_create_instances_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_create_instances_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_create_instances_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_instances(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_create_instances_rest_use_cached_wrapped_rpc():
@@ -3212,6 +1959,7 @@ def test_create_instances_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_instances(request)
 
@@ -3237,90 +1985,6 @@ def test_create_instances_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_instances_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_create_instances"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_create_instances"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.CreateInstancesRegionInstanceGroupManagerRequest.pb(
-            compute.CreateInstancesRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.CreateInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.create_instances(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_instances_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.CreateInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_instances(request)
 
 
 def test_create_instances_rest_flattened():
@@ -3360,6 +2024,7 @@ def test_create_instances_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_instances(**mock_args)
 
@@ -3392,173 +2057,6 @@ def test_create_instances_rest_flattened_error(transport: str = "rest"):
                 instances=[compute.PerInstanceConfig(fingerprint="fingerprint_value")]
             ),
         )
-
-
-def test_create_instances_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.CreateInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_create_instances_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_managers_create_instances_request_resource"] = {
-        "instances": [
-            {
-                "fingerprint": "fingerprint_value",
-                "name": "name_value",
-                "preserved_state": {
-                    "disks": {},
-                    "external_i_ps": {},
-                    "internal_i_ps": {},
-                    "metadata": {},
-                },
-                "status": "status_value",
-            }
-        ]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.CreateInstancesRegionInstanceGroupManagerRequest.meta.fields[
-        "region_instance_group_managers_create_instances_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_create_instances_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_create_instances_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_create_instances_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_create_instances_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_instances_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_create_instances_unary_rest_use_cached_wrapped_rpc():
@@ -3680,6 +2178,7 @@ def test_create_instances_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_instances_unary(request)
 
@@ -3705,90 +2204,6 @@ def test_create_instances_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_instances_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_create_instances"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_create_instances"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.CreateInstancesRegionInstanceGroupManagerRequest.pb(
-            compute.CreateInstancesRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.CreateInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.create_instances_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_instances_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.CreateInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_instances_unary(request)
 
 
 def test_create_instances_unary_rest_flattened():
@@ -3828,6 +2243,7 @@ def test_create_instances_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_instances_unary(**mock_args)
 
@@ -3860,98 +2276,6 @@ def test_create_instances_unary_rest_flattened_error(transport: str = "rest"):
                 instances=[compute.PerInstanceConfig(fingerprint="fingerprint_value")]
             ),
         )
-
-
-def test_create_instances_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_delete_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_delete_rest_use_cached_wrapped_rpc():
@@ -4070,6 +2394,7 @@ def test_delete_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete(request)
 
@@ -4094,90 +2419,6 @@ def test_delete_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_delete"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_delete"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteRegionInstanceGroupManagerRequest.pb(
-            compute.DeleteRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.DeleteRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete(request)
 
 
 def test_delete_rest_flattened():
@@ -4214,6 +2455,7 @@ def test_delete_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete(**mock_args)
 
@@ -4243,76 +2485,6 @@ def test_delete_rest_flattened_error(transport: str = "rest"):
             region="region_value",
             instance_group_manager="instance_group_manager_value",
         )
-
-
-def test_delete_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_delete_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_delete_unary_rest_use_cached_wrapped_rpc():
@@ -4431,6 +2603,7 @@ def test_delete_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_unary(request)
 
@@ -4455,90 +2628,6 @@ def test_delete_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_delete"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_delete"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteRegionInstanceGroupManagerRequest.pb(
-            compute.DeleteRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.DeleteRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_unary(request)
 
 
 def test_delete_unary_rest_flattened():
@@ -4575,6 +2664,7 @@ def test_delete_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_unary(**mock_args)
 
@@ -4604,184 +2694,6 @@ def test_delete_unary_rest_flattened_error(transport: str = "rest"):
             region="region_value",
             instance_group_manager="instance_group_manager_value",
         )
-
-
-def test_delete_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_delete_instances_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_managers_delete_instances_request_resource"] = {
-        "instances": ["instances_value1", "instances_value2"],
-        "skip_instances_on_validation_error": True,
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.DeleteInstancesRegionInstanceGroupManagerRequest.meta.fields[
-        "region_instance_group_managers_delete_instances_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_delete_instances_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_delete_instances_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_delete_instances_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_delete_instances_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_instances(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_delete_instances_rest_use_cached_wrapped_rpc():
@@ -4903,6 +2815,7 @@ def test_delete_instances_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_instances(request)
 
@@ -4928,90 +2841,6 @@ def test_delete_instances_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_instances_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_delete_instances"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_delete_instances"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteInstancesRegionInstanceGroupManagerRequest.pb(
-            compute.DeleteInstancesRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_instances(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_instances_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.DeleteInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_instances(request)
 
 
 def test_delete_instances_rest_flattened():
@@ -5051,6 +2880,7 @@ def test_delete_instances_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_instances(**mock_args)
 
@@ -5083,162 +2913,6 @@ def test_delete_instances_rest_flattened_error(transport: str = "rest"):
                 instances=["instances_value"]
             ),
         )
-
-
-def test_delete_instances_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_delete_instances_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_managers_delete_instances_request_resource"] = {
-        "instances": ["instances_value1", "instances_value2"],
-        "skip_instances_on_validation_error": True,
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.DeleteInstancesRegionInstanceGroupManagerRequest.meta.fields[
-        "region_instance_group_managers_delete_instances_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_delete_instances_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_delete_instances_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_delete_instances_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_delete_instances_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_instances_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_delete_instances_unary_rest_use_cached_wrapped_rpc():
@@ -5360,6 +3034,7 @@ def test_delete_instances_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_instances_unary(request)
 
@@ -5385,90 +3060,6 @@ def test_delete_instances_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_instances_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_delete_instances"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_delete_instances"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteInstancesRegionInstanceGroupManagerRequest.pb(
-            compute.DeleteInstancesRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_instances_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_instances_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.DeleteInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_instances_unary(request)
 
 
 def test_delete_instances_unary_rest_flattened():
@@ -5508,6 +3099,7 @@ def test_delete_instances_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_instances_unary(**mock_args)
 
@@ -5540,185 +3132,6 @@ def test_delete_instances_unary_rest_flattened_error(transport: str = "rest"):
                 instances=["instances_value"]
             ),
         )
-
-
-def test_delete_instances_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_delete_per_instance_configs_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init[
-        "region_instance_group_manager_delete_instance_config_req_resource"
-    ] = {"names": ["names_value1", "names_value2"]}
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = (
-        compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest.meta.fields[
-            "region_instance_group_manager_delete_instance_config_req_resource"
-        ]
-    )
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_manager_delete_instance_config_req_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_manager_delete_instance_config_req_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_manager_delete_instance_config_req_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_manager_delete_instance_config_req_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_per_instance_configs(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_delete_per_instance_configs_rest_use_cached_wrapped_rpc():
@@ -5841,6 +3254,7 @@ def test_delete_per_instance_configs_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_per_instance_configs(request)
 
@@ -5866,94 +3280,6 @@ def test_delete_per_instance_configs_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_per_instance_configs_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_delete_per_instance_configs",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_delete_per_instance_configs",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = (
-            compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest.pb(
-                compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest()
-            )
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_per_instance_configs(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_per_instance_configs_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_per_instance_configs(request)
 
 
 def test_delete_per_instance_configs_rest_flattened():
@@ -5993,6 +3319,7 @@ def test_delete_per_instance_configs_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_per_instance_configs(**mock_args)
 
@@ -6025,163 +3352,6 @@ def test_delete_per_instance_configs_rest_flattened_error(transport: str = "rest
                 names=["names_value"]
             ),
         )
-
-
-def test_delete_per_instance_configs_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_delete_per_instance_configs_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init[
-        "region_instance_group_manager_delete_instance_config_req_resource"
-    ] = {"names": ["names_value1", "names_value2"]}
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = (
-        compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest.meta.fields[
-            "region_instance_group_manager_delete_instance_config_req_resource"
-        ]
-    )
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_manager_delete_instance_config_req_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_manager_delete_instance_config_req_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_manager_delete_instance_config_req_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_manager_delete_instance_config_req_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_per_instance_configs_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_delete_per_instance_configs_unary_rest_use_cached_wrapped_rpc():
@@ -6304,6 +3474,7 @@ def test_delete_per_instance_configs_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_per_instance_configs_unary(request)
 
@@ -6329,94 +3500,6 @@ def test_delete_per_instance_configs_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_per_instance_configs_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_delete_per_instance_configs",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_delete_per_instance_configs",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = (
-            compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest.pb(
-                compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest()
-            )
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_per_instance_configs_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_per_instance_configs_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_per_instance_configs_unary(request)
 
 
 def test_delete_per_instance_configs_unary_rest_flattened():
@@ -6456,6 +3539,7 @@ def test_delete_per_instance_configs_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_per_instance_configs_unary(**mock_args)
 
@@ -6490,87 +3574,6 @@ def test_delete_per_instance_configs_unary_rest_flattened_error(
                 names=["names_value"]
             ),
         )
-
-
-def test_delete_per_instance_configs_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.GetRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_get_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.InstanceGroupManager(
-            base_instance_name="base_instance_name_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            fingerprint="fingerprint_value",
-            id=205,
-            instance_group="instance_group_value",
-            instance_template="instance_template_value",
-            kind="kind_value",
-            list_managed_instances_results="list_managed_instances_results_value",
-            name="name_value",
-            region="region_value",
-            self_link="self_link_value",
-            target_pools=["target_pools_value"],
-            target_size=1185,
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.InstanceGroupManager.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.InstanceGroupManager)
-    assert response.base_instance_name == "base_instance_name_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.fingerprint == "fingerprint_value"
-    assert response.id == 205
-    assert response.instance_group == "instance_group_value"
-    assert response.instance_template == "instance_template_value"
-    assert response.kind == "kind_value"
-    assert (
-        response.list_managed_instances_results
-        == "list_managed_instances_results_value"
-    )
-    assert response.name == "name_value"
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_pools == ["target_pools_value"]
-    assert response.target_size == 1185
-    assert response.zone == "zone_value"
 
 
 def test_get_rest_use_cached_wrapped_rpc():
@@ -6683,6 +3686,7 @@ def test_get_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get(request)
 
@@ -6707,91 +3711,6 @@ def test_get_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_get"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_get"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.GetRegionInstanceGroupManagerRequest.pb(
-            compute.GetRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.InstanceGroupManager.to_json(
-            compute.InstanceGroupManager()
-        )
-
-        request = compute.GetRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.InstanceGroupManager()
-
-        client.get(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_rest_bad_request(
-    transport: str = "rest", request_type=compute.GetRegionInstanceGroupManagerRequest
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get(request)
 
 
 def test_get_rest_flattened():
@@ -6828,6 +3747,7 @@ def test_get_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get(**mock_args)
 
@@ -6857,246 +3777,6 @@ def test_get_rest_flattened_error(transport: str = "rest"):
             region="region_value",
             instance_group_manager="instance_group_manager_value",
         )
-
-
-def test_get_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.InsertRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_insert_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "region": "sample2"}
-    request_init["instance_group_manager_resource"] = {
-        "all_instances_config": {"properties": {"labels": {}, "metadata": {}}},
-        "auto_healing_policies": [
-            {"health_check": "health_check_value", "initial_delay_sec": 1778}
-        ],
-        "base_instance_name": "base_instance_name_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "current_actions": {
-            "abandoning": 1041,
-            "creating": 845,
-            "creating_without_retries": 2589,
-            "deleting": 844,
-            "none": 432,
-            "recreating": 1060,
-            "refreshing": 1069,
-            "restarting": 1091,
-            "resuming": 874,
-            "starting": 876,
-            "stopping": 884,
-            "suspending": 1088,
-            "verifying": 979,
-        },
-        "description": "description_value",
-        "distribution_policy": {
-            "target_shape": "target_shape_value",
-            "zones": [{"zone": "zone_value"}],
-        },
-        "fingerprint": "fingerprint_value",
-        "id": 205,
-        "instance_group": "instance_group_value",
-        "instance_lifecycle_policy": {
-            "default_action_on_failure": "default_action_on_failure_value",
-            "force_update_on_repair": "force_update_on_repair_value",
-        },
-        "instance_template": "instance_template_value",
-        "kind": "kind_value",
-        "list_managed_instances_results": "list_managed_instances_results_value",
-        "name": "name_value",
-        "named_ports": [{"name": "name_value", "port": 453}],
-        "region": "region_value",
-        "self_link": "self_link_value",
-        "stateful_policy": {
-            "preserved_state": {"disks": {}, "external_i_ps": {}, "internal_i_ps": {}}
-        },
-        "status": {
-            "all_instances_config": {
-                "current_revision": "current_revision_value",
-                "effective": True,
-            },
-            "autoscaler": "autoscaler_value",
-            "is_stable": True,
-            "stateful": {
-                "has_stateful_config": True,
-                "per_instance_configs": {"all_effective": True},
-            },
-            "version_target": {"is_reached": True},
-        },
-        "target_pools": ["target_pools_value1", "target_pools_value2"],
-        "target_size": 1185,
-        "update_policy": {
-            "instance_redistribution_type": "instance_redistribution_type_value",
-            "max_surge": {"calculated": 1042, "fixed": 528, "percent": 753},
-            "max_unavailable": {},
-            "minimal_action": "minimal_action_value",
-            "most_disruptive_allowed_action": "most_disruptive_allowed_action_value",
-            "replacement_method": "replacement_method_value",
-            "type_": "type__value",
-        },
-        "versions": [
-            {
-                "instance_template": "instance_template_value",
-                "name": "name_value",
-                "target_size": {},
-            }
-        ],
-        "zone": "zone_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.InsertRegionInstanceGroupManagerRequest.meta.fields[
-        "instance_group_manager_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "instance_group_manager_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["instance_group_manager_resource"][field])
-                ):
-                    del request_init["instance_group_manager_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["instance_group_manager_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.insert(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_insert_rest_use_cached_wrapped_rpc():
@@ -7212,6 +3892,7 @@ def test_insert_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.insert(request)
 
@@ -7236,86 +3917,6 @@ def test_insert_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_insert_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_insert"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_insert"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.InsertRegionInstanceGroupManagerRequest.pb(
-            compute.InsertRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.InsertRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.insert(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_insert_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.InsertRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "region": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.insert(request)
 
 
 def test_insert_rest_flattened():
@@ -7354,6 +3955,7 @@ def test_insert_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.insert(**mock_args)
 
@@ -7389,224 +3991,6 @@ def test_insert_rest_flattened_error(transport: str = "rest"):
                 )
             ),
         )
-
-
-def test_insert_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.InsertRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_insert_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "region": "sample2"}
-    request_init["instance_group_manager_resource"] = {
-        "all_instances_config": {"properties": {"labels": {}, "metadata": {}}},
-        "auto_healing_policies": [
-            {"health_check": "health_check_value", "initial_delay_sec": 1778}
-        ],
-        "base_instance_name": "base_instance_name_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "current_actions": {
-            "abandoning": 1041,
-            "creating": 845,
-            "creating_without_retries": 2589,
-            "deleting": 844,
-            "none": 432,
-            "recreating": 1060,
-            "refreshing": 1069,
-            "restarting": 1091,
-            "resuming": 874,
-            "starting": 876,
-            "stopping": 884,
-            "suspending": 1088,
-            "verifying": 979,
-        },
-        "description": "description_value",
-        "distribution_policy": {
-            "target_shape": "target_shape_value",
-            "zones": [{"zone": "zone_value"}],
-        },
-        "fingerprint": "fingerprint_value",
-        "id": 205,
-        "instance_group": "instance_group_value",
-        "instance_lifecycle_policy": {
-            "default_action_on_failure": "default_action_on_failure_value",
-            "force_update_on_repair": "force_update_on_repair_value",
-        },
-        "instance_template": "instance_template_value",
-        "kind": "kind_value",
-        "list_managed_instances_results": "list_managed_instances_results_value",
-        "name": "name_value",
-        "named_ports": [{"name": "name_value", "port": 453}],
-        "region": "region_value",
-        "self_link": "self_link_value",
-        "stateful_policy": {
-            "preserved_state": {"disks": {}, "external_i_ps": {}, "internal_i_ps": {}}
-        },
-        "status": {
-            "all_instances_config": {
-                "current_revision": "current_revision_value",
-                "effective": True,
-            },
-            "autoscaler": "autoscaler_value",
-            "is_stable": True,
-            "stateful": {
-                "has_stateful_config": True,
-                "per_instance_configs": {"all_effective": True},
-            },
-            "version_target": {"is_reached": True},
-        },
-        "target_pools": ["target_pools_value1", "target_pools_value2"],
-        "target_size": 1185,
-        "update_policy": {
-            "instance_redistribution_type": "instance_redistribution_type_value",
-            "max_surge": {"calculated": 1042, "fixed": 528, "percent": 753},
-            "max_unavailable": {},
-            "minimal_action": "minimal_action_value",
-            "most_disruptive_allowed_action": "most_disruptive_allowed_action_value",
-            "replacement_method": "replacement_method_value",
-            "type_": "type__value",
-        },
-        "versions": [
-            {
-                "instance_template": "instance_template_value",
-                "name": "name_value",
-                "target_size": {},
-            }
-        ],
-        "zone": "zone_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.InsertRegionInstanceGroupManagerRequest.meta.fields[
-        "instance_group_manager_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "instance_group_manager_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["instance_group_manager_resource"][field])
-                ):
-                    del request_init["instance_group_manager_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["instance_group_manager_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.insert_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_insert_unary_rest_use_cached_wrapped_rpc():
@@ -7722,6 +4106,7 @@ def test_insert_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.insert_unary(request)
 
@@ -7746,86 +4131,6 @@ def test_insert_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_insert_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_insert"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_insert"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.InsertRegionInstanceGroupManagerRequest.pb(
-            compute.InsertRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.InsertRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.insert_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_insert_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.InsertRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "region": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.insert_unary(request)
 
 
 def test_insert_unary_rest_flattened():
@@ -7864,6 +4169,7 @@ def test_insert_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.insert_unary(**mock_args)
 
@@ -7899,58 +4205,6 @@ def test_insert_unary_rest_flattened_error(transport: str = "rest"):
                 )
             ),
         )
-
-
-def test_insert_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ListRegionInstanceGroupManagersRequest,
-        dict,
-    ],
-)
-def test_list_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "region": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.RegionInstanceGroupManagerList(
-            id="id_value",
-            kind="kind_value",
-            next_page_token="next_page_token_value",
-            self_link="self_link_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.RegionInstanceGroupManagerList.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListPager)
-    assert response.id == "id_value"
-    assert response.kind == "kind_value"
-    assert response.next_page_token == "next_page_token_value"
-    assert response.self_link == "self_link_value"
 
 
 def test_list_rest_use_cached_wrapped_rpc():
@@ -8069,6 +4323,7 @@ def test_list_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list(request)
 
@@ -8102,87 +4357,6 @@ def test_list_rest_unset_required_fields():
     )
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_list"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ListRegionInstanceGroupManagersRequest.pb(
-            compute.ListRegionInstanceGroupManagersRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.RegionInstanceGroupManagerList.to_json(
-            compute.RegionInstanceGroupManagerList()
-        )
-
-        request = compute.ListRegionInstanceGroupManagersRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.RegionInstanceGroupManagerList()
-
-        client.list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_rest_bad_request(
-    transport: str = "rest", request_type=compute.ListRegionInstanceGroupManagersRequest
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "region": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list(request)
-
-
 def test_list_rest_flattened():
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -8212,6 +4386,7 @@ def test_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list(**mock_args)
 
@@ -8303,52 +4478,6 @@ def test_list_rest_pager(transport: str = "rest"):
         pages = list(client.list(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ListErrorsRegionInstanceGroupManagersRequest,
-        dict,
-    ],
-)
-def test_list_errors_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.RegionInstanceGroupManagersListErrorsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.RegionInstanceGroupManagersListErrorsResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_errors(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListErrorsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_errors_rest_use_cached_wrapped_rpc():
@@ -8473,6 +4602,7 @@ def test_list_errors_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_errors(request)
 
@@ -8505,94 +4635,6 @@ def test_list_errors_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_errors_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_list_errors"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_list_errors"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ListErrorsRegionInstanceGroupManagersRequest.pb(
-            compute.ListErrorsRegionInstanceGroupManagersRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            compute.RegionInstanceGroupManagersListErrorsResponse.to_json(
-                compute.RegionInstanceGroupManagersListErrorsResponse()
-            )
-        )
-
-        request = compute.ListErrorsRegionInstanceGroupManagersRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.RegionInstanceGroupManagersListErrorsResponse()
-
-        client.list_errors(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_errors_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.ListErrorsRegionInstanceGroupManagersRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_errors(request)
 
 
 def test_list_errors_rest_flattened():
@@ -8631,6 +4673,7 @@ def test_list_errors_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_errors(**mock_args)
 
@@ -8728,52 +4771,6 @@ def test_list_errors_rest_pager(transport: str = "rest"):
         pages = list(client.list_errors(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ListManagedInstancesRegionInstanceGroupManagersRequest,
-        dict,
-    ],
-)
-def test_list_managed_instances_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.RegionInstanceGroupManagersListInstancesResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.RegionInstanceGroupManagersListInstancesResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_managed_instances(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListManagedInstancesPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_managed_instances_rest_use_cached_wrapped_rpc():
@@ -8903,6 +4900,7 @@ def test_list_managed_instances_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_managed_instances(request)
 
@@ -8935,96 +4933,6 @@ def test_list_managed_instances_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_managed_instances_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_list_managed_instances",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_list_managed_instances",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ListManagedInstancesRegionInstanceGroupManagersRequest.pb(
-            compute.ListManagedInstancesRegionInstanceGroupManagersRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            compute.RegionInstanceGroupManagersListInstancesResponse.to_json(
-                compute.RegionInstanceGroupManagersListInstancesResponse()
-            )
-        )
-
-        request = compute.ListManagedInstancesRegionInstanceGroupManagersRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.RegionInstanceGroupManagersListInstancesResponse()
-
-        client.list_managed_instances(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_managed_instances_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.ListManagedInstancesRegionInstanceGroupManagersRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_managed_instances(request)
 
 
 def test_list_managed_instances_rest_flattened():
@@ -9063,6 +4971,7 @@ def test_list_managed_instances_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_managed_instances(**mock_args)
 
@@ -9160,52 +5069,6 @@ def test_list_managed_instances_rest_pager(transport: str = "rest"):
         pages = list(client.list_managed_instances(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest,
-        dict,
-    ],
-)
-def test_list_per_instance_configs_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.RegionInstanceGroupManagersListInstanceConfigsResp(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.RegionInstanceGroupManagersListInstanceConfigsResp.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_per_instance_configs(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListPerInstanceConfigsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_per_instance_configs_rest_use_cached_wrapped_rpc():
@@ -9337,6 +5200,7 @@ def test_list_per_instance_configs_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_per_instance_configs(request)
 
@@ -9369,98 +5233,6 @@ def test_list_per_instance_configs_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_per_instance_configs_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_list_per_instance_configs",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_list_per_instance_configs",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = (
-            compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest.pb(
-                compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest()
-            )
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            compute.RegionInstanceGroupManagersListInstanceConfigsResp.to_json(
-                compute.RegionInstanceGroupManagersListInstanceConfigsResp()
-            )
-        )
-
-        request = compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.RegionInstanceGroupManagersListInstanceConfigsResp()
-
-        client.list_per_instance_configs(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_per_instance_configs_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_per_instance_configs(request)
 
 
 def test_list_per_instance_configs_rest_flattened():
@@ -9499,6 +5271,7 @@ def test_list_per_instance_configs_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_per_instance_configs(**mock_args)
 
@@ -9596,244 +5369,6 @@ def test_list_per_instance_configs_rest_pager(transport: str = "rest"):
         pages = list(client.list_per_instance_configs(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.PatchRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_patch_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["instance_group_manager_resource"] = {
-        "all_instances_config": {"properties": {"labels": {}, "metadata": {}}},
-        "auto_healing_policies": [
-            {"health_check": "health_check_value", "initial_delay_sec": 1778}
-        ],
-        "base_instance_name": "base_instance_name_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "current_actions": {
-            "abandoning": 1041,
-            "creating": 845,
-            "creating_without_retries": 2589,
-            "deleting": 844,
-            "none": 432,
-            "recreating": 1060,
-            "refreshing": 1069,
-            "restarting": 1091,
-            "resuming": 874,
-            "starting": 876,
-            "stopping": 884,
-            "suspending": 1088,
-            "verifying": 979,
-        },
-        "description": "description_value",
-        "distribution_policy": {
-            "target_shape": "target_shape_value",
-            "zones": [{"zone": "zone_value"}],
-        },
-        "fingerprint": "fingerprint_value",
-        "id": 205,
-        "instance_group": "instance_group_value",
-        "instance_lifecycle_policy": {
-            "default_action_on_failure": "default_action_on_failure_value",
-            "force_update_on_repair": "force_update_on_repair_value",
-        },
-        "instance_template": "instance_template_value",
-        "kind": "kind_value",
-        "list_managed_instances_results": "list_managed_instances_results_value",
-        "name": "name_value",
-        "named_ports": [{"name": "name_value", "port": 453}],
-        "region": "region_value",
-        "self_link": "self_link_value",
-        "stateful_policy": {
-            "preserved_state": {"disks": {}, "external_i_ps": {}, "internal_i_ps": {}}
-        },
-        "status": {
-            "all_instances_config": {
-                "current_revision": "current_revision_value",
-                "effective": True,
-            },
-            "autoscaler": "autoscaler_value",
-            "is_stable": True,
-            "stateful": {
-                "has_stateful_config": True,
-                "per_instance_configs": {"all_effective": True},
-            },
-            "version_target": {"is_reached": True},
-        },
-        "target_pools": ["target_pools_value1", "target_pools_value2"],
-        "target_size": 1185,
-        "update_policy": {
-            "instance_redistribution_type": "instance_redistribution_type_value",
-            "max_surge": {"calculated": 1042, "fixed": 528, "percent": 753},
-            "max_unavailable": {},
-            "minimal_action": "minimal_action_value",
-            "most_disruptive_allowed_action": "most_disruptive_allowed_action_value",
-            "replacement_method": "replacement_method_value",
-            "type_": "type__value",
-        },
-        "versions": [
-            {
-                "instance_template": "instance_template_value",
-                "name": "name_value",
-                "target_size": {},
-            }
-        ],
-        "zone": "zone_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.PatchRegionInstanceGroupManagerRequest.meta.fields[
-        "instance_group_manager_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "instance_group_manager_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["instance_group_manager_resource"][field])
-                ):
-                    del request_init["instance_group_manager_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["instance_group_manager_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.patch(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_patch_rest_use_cached_wrapped_rpc():
@@ -9953,6 +5488,7 @@ def test_patch_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.patch(request)
 
@@ -9978,89 +5514,6 @@ def test_patch_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_patch_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_patch"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_patch"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.PatchRegionInstanceGroupManagerRequest.pb(
-            compute.PatchRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.PatchRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.patch(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_patch_rest_bad_request(
-    transport: str = "rest", request_type=compute.PatchRegionInstanceGroupManagerRequest
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.patch(request)
 
 
 def test_patch_rest_flattened():
@@ -10104,6 +5557,7 @@ def test_patch_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.patch(**mock_args)
 
@@ -10140,228 +5594,6 @@ def test_patch_rest_flattened_error(transport: str = "rest"):
                 )
             ),
         )
-
-
-def test_patch_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.PatchRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_patch_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["instance_group_manager_resource"] = {
-        "all_instances_config": {"properties": {"labels": {}, "metadata": {}}},
-        "auto_healing_policies": [
-            {"health_check": "health_check_value", "initial_delay_sec": 1778}
-        ],
-        "base_instance_name": "base_instance_name_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "current_actions": {
-            "abandoning": 1041,
-            "creating": 845,
-            "creating_without_retries": 2589,
-            "deleting": 844,
-            "none": 432,
-            "recreating": 1060,
-            "refreshing": 1069,
-            "restarting": 1091,
-            "resuming": 874,
-            "starting": 876,
-            "stopping": 884,
-            "suspending": 1088,
-            "verifying": 979,
-        },
-        "description": "description_value",
-        "distribution_policy": {
-            "target_shape": "target_shape_value",
-            "zones": [{"zone": "zone_value"}],
-        },
-        "fingerprint": "fingerprint_value",
-        "id": 205,
-        "instance_group": "instance_group_value",
-        "instance_lifecycle_policy": {
-            "default_action_on_failure": "default_action_on_failure_value",
-            "force_update_on_repair": "force_update_on_repair_value",
-        },
-        "instance_template": "instance_template_value",
-        "kind": "kind_value",
-        "list_managed_instances_results": "list_managed_instances_results_value",
-        "name": "name_value",
-        "named_ports": [{"name": "name_value", "port": 453}],
-        "region": "region_value",
-        "self_link": "self_link_value",
-        "stateful_policy": {
-            "preserved_state": {"disks": {}, "external_i_ps": {}, "internal_i_ps": {}}
-        },
-        "status": {
-            "all_instances_config": {
-                "current_revision": "current_revision_value",
-                "effective": True,
-            },
-            "autoscaler": "autoscaler_value",
-            "is_stable": True,
-            "stateful": {
-                "has_stateful_config": True,
-                "per_instance_configs": {"all_effective": True},
-            },
-            "version_target": {"is_reached": True},
-        },
-        "target_pools": ["target_pools_value1", "target_pools_value2"],
-        "target_size": 1185,
-        "update_policy": {
-            "instance_redistribution_type": "instance_redistribution_type_value",
-            "max_surge": {"calculated": 1042, "fixed": 528, "percent": 753},
-            "max_unavailable": {},
-            "minimal_action": "minimal_action_value",
-            "most_disruptive_allowed_action": "most_disruptive_allowed_action_value",
-            "replacement_method": "replacement_method_value",
-            "type_": "type__value",
-        },
-        "versions": [
-            {
-                "instance_template": "instance_template_value",
-                "name": "name_value",
-                "target_size": {},
-            }
-        ],
-        "zone": "zone_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.PatchRegionInstanceGroupManagerRequest.meta.fields[
-        "instance_group_manager_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "instance_group_manager_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["instance_group_manager_resource"][field])
-                ):
-                    del request_init["instance_group_manager_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["instance_group_manager_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.patch_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_patch_unary_rest_use_cached_wrapped_rpc():
@@ -10481,6 +5713,7 @@ def test_patch_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.patch_unary(request)
 
@@ -10506,89 +5739,6 @@ def test_patch_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_patch_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_patch"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_patch"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.PatchRegionInstanceGroupManagerRequest.pb(
-            compute.PatchRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.PatchRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.patch_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_patch_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.PatchRegionInstanceGroupManagerRequest
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.patch_unary(request)
 
 
 def test_patch_unary_rest_flattened():
@@ -10632,6 +5782,7 @@ def test_patch_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.patch_unary(**mock_args)
 
@@ -10668,197 +5819,6 @@ def test_patch_unary_rest_flattened_error(transport: str = "rest"):
                 )
             ),
         )
-
-
-def test_patch_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_patch_per_instance_configs_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_manager_patch_instance_config_req_resource"] = {
-        "per_instance_configs": [
-            {
-                "fingerprint": "fingerprint_value",
-                "name": "name_value",
-                "preserved_state": {
-                    "disks": {},
-                    "external_i_ps": {},
-                    "internal_i_ps": {},
-                    "metadata": {},
-                },
-                "status": "status_value",
-            }
-        ]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = (
-        compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest.meta.fields[
-            "region_instance_group_manager_patch_instance_config_req_resource"
-        ]
-    )
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_manager_patch_instance_config_req_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_manager_patch_instance_config_req_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_manager_patch_instance_config_req_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_manager_patch_instance_config_req_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.patch_per_instance_configs(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_patch_per_instance_configs_rest_use_cached_wrapped_rpc():
@@ -10983,6 +5943,7 @@ def test_patch_per_instance_configs_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.patch_per_instance_configs(request)
 
@@ -11008,94 +5969,6 @@ def test_patch_per_instance_configs_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_patch_per_instance_configs_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_patch_per_instance_configs",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_patch_per_instance_configs",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = (
-            compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest.pb(
-                compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest()
-            )
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.patch_per_instance_configs(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_patch_per_instance_configs_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.patch_per_instance_configs(request)
 
 
 def test_patch_per_instance_configs_rest_flattened():
@@ -11137,6 +6010,7 @@ def test_patch_per_instance_configs_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.patch_per_instance_configs(**mock_args)
 
@@ -11171,175 +6045,6 @@ def test_patch_per_instance_configs_rest_flattened_error(transport: str = "rest"
                 ]
             ),
         )
-
-
-def test_patch_per_instance_configs_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_patch_per_instance_configs_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_manager_patch_instance_config_req_resource"] = {
-        "per_instance_configs": [
-            {
-                "fingerprint": "fingerprint_value",
-                "name": "name_value",
-                "preserved_state": {
-                    "disks": {},
-                    "external_i_ps": {},
-                    "internal_i_ps": {},
-                    "metadata": {},
-                },
-                "status": "status_value",
-            }
-        ]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = (
-        compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest.meta.fields[
-            "region_instance_group_manager_patch_instance_config_req_resource"
-        ]
-    )
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_manager_patch_instance_config_req_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_manager_patch_instance_config_req_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_manager_patch_instance_config_req_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_manager_patch_instance_config_req_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.patch_per_instance_configs_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_patch_per_instance_configs_unary_rest_use_cached_wrapped_rpc():
@@ -11464,6 +6169,7 @@ def test_patch_per_instance_configs_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.patch_per_instance_configs_unary(request)
 
@@ -11489,94 +6195,6 @@ def test_patch_per_instance_configs_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_patch_per_instance_configs_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_patch_per_instance_configs",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_patch_per_instance_configs",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = (
-            compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest.pb(
-                compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest()
-            )
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.patch_per_instance_configs_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_patch_per_instance_configs_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.patch_per_instance_configs_unary(request)
 
 
 def test_patch_per_instance_configs_unary_rest_flattened():
@@ -11618,6 +6236,7 @@ def test_patch_per_instance_configs_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.patch_per_instance_configs_unary(**mock_args)
 
@@ -11652,183 +6271,6 @@ def test_patch_per_instance_configs_unary_rest_flattened_error(transport: str = 
                 ]
             ),
         )
-
-
-def test_patch_per_instance_configs_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.RecreateInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_recreate_instances_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_managers_recreate_request_resource"] = {
-        "instances": ["instances_value1", "instances_value2"]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.RecreateInstancesRegionInstanceGroupManagerRequest.meta.fields[
-        "region_instance_group_managers_recreate_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_recreate_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_recreate_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_recreate_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_recreate_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.recreate_instances(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_recreate_instances_rest_use_cached_wrapped_rpc():
@@ -11952,6 +6394,7 @@ def test_recreate_instances_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.recreate_instances(request)
 
@@ -11977,90 +6420,6 @@ def test_recreate_instances_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_recreate_instances_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_recreate_instances"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_recreate_instances"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.RecreateInstancesRegionInstanceGroupManagerRequest.pb(
-            compute.RecreateInstancesRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.RecreateInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.recreate_instances(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_recreate_instances_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.RecreateInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.recreate_instances(request)
 
 
 def test_recreate_instances_rest_flattened():
@@ -12100,6 +6459,7 @@ def test_recreate_instances_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.recreate_instances(**mock_args)
 
@@ -12132,161 +6492,6 @@ def test_recreate_instances_rest_flattened_error(transport: str = "rest"):
                 instances=["instances_value"]
             ),
         )
-
-
-def test_recreate_instances_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.RecreateInstancesRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_recreate_instances_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_managers_recreate_request_resource"] = {
-        "instances": ["instances_value1", "instances_value2"]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.RecreateInstancesRegionInstanceGroupManagerRequest.meta.fields[
-        "region_instance_group_managers_recreate_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_recreate_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_recreate_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_recreate_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_recreate_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.recreate_instances_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_recreate_instances_unary_rest_use_cached_wrapped_rpc():
@@ -12410,6 +6615,7 @@ def test_recreate_instances_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.recreate_instances_unary(request)
 
@@ -12435,90 +6641,6 @@ def test_recreate_instances_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_recreate_instances_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_recreate_instances"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_recreate_instances"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.RecreateInstancesRegionInstanceGroupManagerRequest.pb(
-            compute.RecreateInstancesRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.RecreateInstancesRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.recreate_instances_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_recreate_instances_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.RecreateInstancesRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.recreate_instances_unary(request)
 
 
 def test_recreate_instances_unary_rest_flattened():
@@ -12558,6 +6680,7 @@ def test_recreate_instances_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.recreate_instances_unary(**mock_args)
 
@@ -12590,98 +6713,6 @@ def test_recreate_instances_unary_rest_flattened_error(transport: str = "rest"):
                 instances=["instances_value"]
             ),
         )
-
-
-def test_recreate_instances_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ResizeRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_resize_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.resize(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_resize_rest_use_cached_wrapped_rpc():
@@ -12812,6 +6843,7 @@ def test_resize_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.resize(request)
 
@@ -12849,90 +6881,6 @@ def test_resize_rest_unset_required_fields():
     )
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_resize_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_resize"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_resize"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ResizeRegionInstanceGroupManagerRequest.pb(
-            compute.ResizeRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.ResizeRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.resize(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_resize_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.ResizeRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.resize(request)
-
-
 def test_resize_rest_flattened():
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -12968,6 +6916,7 @@ def test_resize_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.resize(**mock_args)
 
@@ -12998,76 +6947,6 @@ def test_resize_rest_flattened_error(transport: str = "rest"):
             instance_group_manager="instance_group_manager_value",
             size=443,
         )
-
-
-def test_resize_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ResizeRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_resize_unary_rest(request_type):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.resize_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_resize_unary_rest_use_cached_wrapped_rpc():
@@ -13198,6 +7077,7 @@ def test_resize_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.resize_unary(request)
 
@@ -13235,90 +7115,6 @@ def test_resize_unary_rest_unset_required_fields():
     )
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_resize_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_resize"
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_resize"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ResizeRegionInstanceGroupManagerRequest.pb(
-            compute.ResizeRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.ResizeRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.resize_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_resize_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.ResizeRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.resize_unary(request)
-
-
 def test_resize_unary_rest_flattened():
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -13354,6 +7150,7 @@ def test_resize_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.resize_unary(**mock_args)
 
@@ -13386,147 +7183,181 @@ def test_resize_unary_rest_flattened_error(transport: str = "rest"):
         )
 
 
-def test_resize_unary_rest_error():
+def test_resume_instances_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.resume_instances in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.resume_instances
+        ] = mock_rpc
+
+        request = {}
+        client.resume_instances(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.resume_instances(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_resume_instances_rest_required_fields(
+    request_type=compute.ResumeInstancesRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).resume_instances._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).resume_instances._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.resume_instances(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_resume_instances_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.resume_instances._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersResumeInstancesRequestResource",
+            )
+        )
     )
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetInstanceTemplateRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_set_instance_template_rest(request_type):
+def test_resume_instances_rest_flattened():
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(),
         transport="rest",
     )
 
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init["region_instance_group_managers_set_template_request_resource"] = {
-        "instance_template": "instance_template_value"
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = (
-        compute.SetInstanceTemplateRegionInstanceGroupManagerRequest.meta.fields[
-            "region_instance_group_managers_set_template_request_resource"
-        ]
-    )
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_managers_set_template_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_managers_set_template_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_managers_set_template_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_managers_set_template_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
             region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_resume_instances_request_resource=compute.RegionInstanceGroupManagersResumeInstancesRequest(
+                instances=["instances_value"]
+            ),
         )
+        mock_args.update(sample_request)
 
         # Wrap the value into a proper Response obj
         response_value = Response()
@@ -13534,35 +7365,260 @@ def test_set_instance_template_rest(request_type):
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
-        response = client.set_instance_template(request)
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
+        client.resume_instances(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/resumeInstances"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_resume_instances_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.resume_instances(
+            compute.ResumeInstancesRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_resume_instances_request_resource=compute.RegionInstanceGroupManagersResumeInstancesRequest(
+                instances=["instances_value"]
+            ),
+        )
+
+
+def test_resume_instances_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.resume_instances in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.resume_instances
+        ] = mock_rpc
+
+        request = {}
+        client.resume_instances_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.resume_instances_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_resume_instances_unary_rest_required_fields(
+    request_type=compute.ResumeInstancesRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).resume_instances._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).resume_instances._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.resume_instances_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_resume_instances_unary_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.resume_instances._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersResumeInstancesRequestResource",
+            )
+        )
+    )
+
+
+def test_resume_instances_unary_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_resume_instances_request_resource=compute.RegionInstanceGroupManagersResumeInstancesRequest(
+                instances=["instances_value"]
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.resume_instances_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/resumeInstances"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_resume_instances_unary_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.resume_instances_unary(
+            compute.ResumeInstancesRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_resume_instances_request_resource=compute.RegionInstanceGroupManagersResumeInstancesRequest(
+                instances=["instances_value"]
+            ),
+        )
 
 
 def test_set_instance_template_rest_use_cached_wrapped_rpc():
@@ -13687,6 +7743,7 @@ def test_set_instance_template_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_instance_template(request)
 
@@ -13712,92 +7769,6 @@ def test_set_instance_template_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_instance_template_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_set_instance_template",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_set_instance_template",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetInstanceTemplateRegionInstanceGroupManagerRequest.pb(
-            compute.SetInstanceTemplateRegionInstanceGroupManagerRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.SetInstanceTemplateRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_instance_template(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_instance_template_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.SetInstanceTemplateRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_instance_template(request)
 
 
 def test_set_instance_template_rest_flattened():
@@ -13837,6 +7808,7 @@ def test_set_instance_template_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_instance_template(**mock_args)
 
@@ -13871,10 +7843,6344 @@ def test_set_instance_template_rest_flattened_error(transport: str = "rest"):
         )
 
 
-def test_set_instance_template_rest_error():
+def test_set_instance_template_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.set_instance_template
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_instance_template
+        ] = mock_rpc
+
+        request = {}
+        client.set_instance_template_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_instance_template_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_instance_template_unary_rest_required_fields(
+    request_type=compute.SetInstanceTemplateRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_instance_template._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_instance_template._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_instance_template_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_instance_template_unary_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_instance_template._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersSetTemplateRequestResource",
+            )
+        )
+    )
+
+
+def test_set_instance_template_unary_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_set_template_request_resource=compute.RegionInstanceGroupManagersSetTemplateRequest(
+                instance_template="instance_template_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_instance_template_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/setInstanceTemplate"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_instance_template_unary_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_instance_template_unary(
+            compute.SetInstanceTemplateRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_set_template_request_resource=compute.RegionInstanceGroupManagersSetTemplateRequest(
+                instance_template="instance_template_value"
+            ),
+        )
+
+
+def test_set_target_pools_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.set_target_pools in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_target_pools
+        ] = mock_rpc
+
+        request = {}
+        client.set_target_pools(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_target_pools(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_target_pools_rest_required_fields(
+    request_type=compute.SetTargetPoolsRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_target_pools._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_target_pools._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_target_pools(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_target_pools_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_target_pools._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersSetTargetPoolsRequestResource",
+            )
+        )
+    )
+
+
+def test_set_target_pools_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_set_target_pools_request_resource=compute.RegionInstanceGroupManagersSetTargetPoolsRequest(
+                fingerprint="fingerprint_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_target_pools(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/setTargetPools"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_target_pools_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_target_pools(
+            compute.SetTargetPoolsRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_set_target_pools_request_resource=compute.RegionInstanceGroupManagersSetTargetPoolsRequest(
+                fingerprint="fingerprint_value"
+            ),
+        )
+
+
+def test_set_target_pools_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.set_target_pools in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_target_pools
+        ] = mock_rpc
+
+        request = {}
+        client.set_target_pools_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_target_pools_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_target_pools_unary_rest_required_fields(
+    request_type=compute.SetTargetPoolsRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_target_pools._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_target_pools._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_target_pools_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_target_pools_unary_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_target_pools._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersSetTargetPoolsRequestResource",
+            )
+        )
+    )
+
+
+def test_set_target_pools_unary_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_set_target_pools_request_resource=compute.RegionInstanceGroupManagersSetTargetPoolsRequest(
+                fingerprint="fingerprint_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_target_pools_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/setTargetPools"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_target_pools_unary_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_target_pools_unary(
+            compute.SetTargetPoolsRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_set_target_pools_request_resource=compute.RegionInstanceGroupManagersSetTargetPoolsRequest(
+                fingerprint="fingerprint_value"
+            ),
+        )
+
+
+def test_start_instances_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.start_instances in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.start_instances] = mock_rpc
+
+        request = {}
+        client.start_instances(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.start_instances(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_start_instances_rest_required_fields(
+    request_type=compute.StartInstancesRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).start_instances._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).start_instances._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.start_instances(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_start_instances_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.start_instances._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersStartInstancesRequestResource",
+            )
+        )
+    )
+
+
+def test_start_instances_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_start_instances_request_resource=compute.RegionInstanceGroupManagersStartInstancesRequest(
+                instances=["instances_value"]
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.start_instances(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/startInstances"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_start_instances_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.start_instances(
+            compute.StartInstancesRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_start_instances_request_resource=compute.RegionInstanceGroupManagersStartInstancesRequest(
+                instances=["instances_value"]
+            ),
+        )
+
+
+def test_start_instances_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.start_instances in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.start_instances] = mock_rpc
+
+        request = {}
+        client.start_instances_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.start_instances_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_start_instances_unary_rest_required_fields(
+    request_type=compute.StartInstancesRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).start_instances._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).start_instances._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.start_instances_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_start_instances_unary_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.start_instances._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersStartInstancesRequestResource",
+            )
+        )
+    )
+
+
+def test_start_instances_unary_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_start_instances_request_resource=compute.RegionInstanceGroupManagersStartInstancesRequest(
+                instances=["instances_value"]
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.start_instances_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/startInstances"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_start_instances_unary_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.start_instances_unary(
+            compute.StartInstancesRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_start_instances_request_resource=compute.RegionInstanceGroupManagersStartInstancesRequest(
+                instances=["instances_value"]
+            ),
+        )
+
+
+def test_stop_instances_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.stop_instances in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.stop_instances] = mock_rpc
+
+        request = {}
+        client.stop_instances(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.stop_instances(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_stop_instances_rest_required_fields(
+    request_type=compute.StopInstancesRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).stop_instances._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).stop_instances._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.stop_instances(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_stop_instances_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.stop_instances._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersStopInstancesRequestResource",
+            )
+        )
+    )
+
+
+def test_stop_instances_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_stop_instances_request_resource=compute.RegionInstanceGroupManagersStopInstancesRequest(
+                force_stop=True
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.stop_instances(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/stopInstances"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_stop_instances_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.stop_instances(
+            compute.StopInstancesRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_stop_instances_request_resource=compute.RegionInstanceGroupManagersStopInstancesRequest(
+                force_stop=True
+            ),
+        )
+
+
+def test_stop_instances_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.stop_instances in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.stop_instances] = mock_rpc
+
+        request = {}
+        client.stop_instances_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.stop_instances_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_stop_instances_unary_rest_required_fields(
+    request_type=compute.StopInstancesRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).stop_instances._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).stop_instances._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.stop_instances_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_stop_instances_unary_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.stop_instances._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersStopInstancesRequestResource",
+            )
+        )
+    )
+
+
+def test_stop_instances_unary_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_stop_instances_request_resource=compute.RegionInstanceGroupManagersStopInstancesRequest(
+                force_stop=True
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.stop_instances_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/stopInstances"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_stop_instances_unary_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.stop_instances_unary(
+            compute.StopInstancesRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_stop_instances_request_resource=compute.RegionInstanceGroupManagersStopInstancesRequest(
+                force_stop=True
+            ),
+        )
+
+
+def test_suspend_instances_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.suspend_instances in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.suspend_instances
+        ] = mock_rpc
+
+        request = {}
+        client.suspend_instances(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.suspend_instances(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_suspend_instances_rest_required_fields(
+    request_type=compute.SuspendInstancesRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).suspend_instances._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).suspend_instances._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.suspend_instances(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_suspend_instances_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.suspend_instances._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersSuspendInstancesRequestResource",
+            )
+        )
+    )
+
+
+def test_suspend_instances_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_suspend_instances_request_resource=compute.RegionInstanceGroupManagersSuspendInstancesRequest(
+                force_suspend=True
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.suspend_instances(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/suspendInstances"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_suspend_instances_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.suspend_instances(
+            compute.SuspendInstancesRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_suspend_instances_request_resource=compute.RegionInstanceGroupManagersSuspendInstancesRequest(
+                force_suspend=True
+            ),
+        )
+
+
+def test_suspend_instances_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.suspend_instances in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.suspend_instances
+        ] = mock_rpc
+
+        request = {}
+        client.suspend_instances_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.suspend_instances_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_suspend_instances_unary_rest_required_fields(
+    request_type=compute.SuspendInstancesRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).suspend_instances._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).suspend_instances._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.suspend_instances_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_suspend_instances_unary_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.suspend_instances._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagersSuspendInstancesRequestResource",
+            )
+        )
+    )
+
+
+def test_suspend_instances_unary_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_suspend_instances_request_resource=compute.RegionInstanceGroupManagersSuspendInstancesRequest(
+                force_suspend=True
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.suspend_instances_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/suspendInstances"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_suspend_instances_unary_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.suspend_instances_unary(
+            compute.SuspendInstancesRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_managers_suspend_instances_request_resource=compute.RegionInstanceGroupManagersSuspendInstancesRequest(
+                force_suspend=True
+            ),
+        )
+
+
+def test_update_per_instance_configs_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.update_per_instance_configs
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.update_per_instance_configs
+        ] = mock_rpc
+
+        request = {}
+        client.update_per_instance_configs(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.update_per_instance_configs(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_update_per_instance_configs_rest_required_fields(
+    request_type=compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update_per_instance_configs._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update_per_instance_configs._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.update_per_instance_configs(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_update_per_instance_configs_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.update_per_instance_configs._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagerUpdateInstanceConfigReqResource",
+            )
+        )
+    )
+
+
+def test_update_per_instance_configs_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_manager_update_instance_config_req_resource=compute.RegionInstanceGroupManagerUpdateInstanceConfigReq(
+                per_instance_configs=[
+                    compute.PerInstanceConfig(fingerprint="fingerprint_value")
+                ]
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.update_per_instance_configs(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/updatePerInstanceConfigs"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_update_per_instance_configs_rest_flattened_error(transport: str = "rest"):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.update_per_instance_configs(
+            compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_manager_update_instance_config_req_resource=compute.RegionInstanceGroupManagerUpdateInstanceConfigReq(
+                per_instance_configs=[
+                    compute.PerInstanceConfig(fingerprint="fingerprint_value")
+                ]
+            ),
+        )
+
+
+def test_update_per_instance_configs_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.update_per_instance_configs
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.update_per_instance_configs
+        ] = mock_rpc
+
+        request = {}
+        client.update_per_instance_configs_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.update_per_instance_configs_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_update_per_instance_configs_unary_rest_required_fields(
+    request_type=compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest,
+):
+    transport_class = transports.RegionInstanceGroupManagersRestTransport
+
+    request_init = {}
+    request_init["instance_group_manager"] = ""
+    request_init["project"] = ""
+    request_init["region"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update_per_instance_configs._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["region"] = "region_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update_per_instance_configs._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instanceGroupManager" in jsonified_request
+    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "region" in jsonified_request
+    assert jsonified_request["region"] == "region_value"
+
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.update_per_instance_configs_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_update_per_instance_configs_unary_rest_unset_required_fields():
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.update_per_instance_configs._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instanceGroupManager",
+                "project",
+                "region",
+                "regionInstanceGroupManagerUpdateInstanceConfigReqResource",
+            )
+        )
+    )
+
+
+def test_update_per_instance_configs_unary_rest_flattened():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "region": "sample2",
+            "instance_group_manager": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_manager_update_instance_config_req_resource=compute.RegionInstanceGroupManagerUpdateInstanceConfigReq(
+                per_instance_configs=[
+                    compute.PerInstanceConfig(fingerprint="fingerprint_value")
+                ]
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.update_per_instance_configs_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/updatePerInstanceConfigs"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_update_per_instance_configs_unary_rest_flattened_error(
+    transport: str = "rest",
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.update_per_instance_configs_unary(
+            compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest(),
+            project="project_value",
+            region="region_value",
+            instance_group_manager="instance_group_manager_value",
+            region_instance_group_manager_update_instance_config_req_resource=compute.RegionInstanceGroupManagerUpdateInstanceConfigReq(
+                per_instance_configs=[
+                    compute.PerInstanceConfig(fingerprint="fingerprint_value")
+                ]
+            ),
+        )
+
+
+def test_credentials_transport_error():
+    # It is an error to provide credentials and a transport instance.
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = RegionInstanceGroupManagersClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport=transport,
+        )
+
+    # It is an error to provide a credentials file and a transport instance.
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = RegionInstanceGroupManagersClient(
+            client_options={"credentials_file": "credentials.json"},
+            transport=transport,
+        )
+
+    # It is an error to provide an api_key and a transport instance.
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    options = client_options.ClientOptions()
+    options.api_key = "api_key"
+    with pytest.raises(ValueError):
+        client = RegionInstanceGroupManagersClient(
+            client_options=options,
+            transport=transport,
+        )
+
+    # It is an error to provide an api_key and a credential.
+    options = client_options.ClientOptions()
+    options.api_key = "api_key"
+    with pytest.raises(ValueError):
+        client = RegionInstanceGroupManagersClient(
+            client_options=options, credentials=ga_credentials.AnonymousCredentials()
+        )
+
+    # It is an error to provide scopes and a transport instance.
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = RegionInstanceGroupManagersClient(
+            client_options={"scopes": ["1", "2"]},
+            transport=transport,
+        )
+
+
+def test_transport_instance():
+    # A client may be instantiated with a custom transport instance.
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+    assert client.transport is transport
+
+
+@pytest.mark.parametrize(
+    "transport_class",
+    [
+        transports.RegionInstanceGroupManagersRestTransport,
+    ],
+)
+def test_transport_adc(transport_class):
+    # Test default credentials are used if not provided.
+    with mock.patch.object(google.auth, "default") as adc:
+        adc.return_value = (ga_credentials.AnonymousCredentials(), None)
+        transport_class()
+        adc.assert_called_once()
+
+
+def test_transport_kind_rest():
+    transport = RegionInstanceGroupManagersClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_abandon_instances_rest_bad_request(
+    request_type=compute.AbandonInstancesRegionInstanceGroupManagerRequest,
+):
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.abandon_instances(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.AbandonInstancesRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_abandon_instances_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init[
+        "region_instance_group_managers_abandon_instances_request_resource"
+    ] = {"instances": ["instances_value1", "instances_value2"]}
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.AbandonInstancesRegionInstanceGroupManagerRequest.meta.fields[
+        "region_instance_group_managers_abandon_instances_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_managers_abandon_instances_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_managers_abandon_instances_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_managers_abandon_instances_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_managers_abandon_instances_request_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.abandon_instances(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_abandon_instances_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_abandon_instances"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_abandon_instances"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.AbandonInstancesRegionInstanceGroupManagerRequest.pb(
+            compute.AbandonInstancesRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.AbandonInstancesRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.abandon_instances(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_apply_updates_to_instances_rest_bad_request(
+    request_type=compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.apply_updates_to_instances(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_apply_updates_to_instances_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init["region_instance_group_managers_apply_updates_request_resource"] = {
+        "all_instances": True,
+        "instances": ["instances_value1", "instances_value2"],
+        "minimal_action": "minimal_action_value",
+        "most_disruptive_allowed_action": "most_disruptive_allowed_action_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = (
+        compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest.meta.fields[
+            "region_instance_group_managers_apply_updates_request_resource"
+        ]
+    )
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_managers_apply_updates_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_managers_apply_updates_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_managers_apply_updates_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_managers_apply_updates_request_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.apply_updates_to_instances(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_apply_updates_to_instances_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "post_apply_updates_to_instances",
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "pre_apply_updates_to_instances",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = (
+            compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest.pb(
+                compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest()
+            )
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.apply_updates_to_instances(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_instances_rest_bad_request(
+    request_type=compute.CreateInstancesRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_instances(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.CreateInstancesRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_create_instances_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init["region_instance_group_managers_create_instances_request_resource"] = {
+        "instances": [
+            {
+                "fingerprint": "fingerprint_value",
+                "name": "name_value",
+                "preserved_state": {
+                    "disks": {},
+                    "external_i_ps": {},
+                    "internal_i_ps": {},
+                    "metadata": {},
+                },
+                "status": "status_value",
+            }
+        ]
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.CreateInstancesRegionInstanceGroupManagerRequest.meta.fields[
+        "region_instance_group_managers_create_instances_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_managers_create_instances_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_managers_create_instances_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_managers_create_instances_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_managers_create_instances_request_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_instances(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_instances_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_create_instances"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_create_instances"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.CreateInstancesRegionInstanceGroupManagerRequest.pb(
+            compute.CreateInstancesRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.CreateInstancesRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.create_instances(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_rest_bad_request(
+    request_type=compute.DeleteRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.DeleteRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_delete_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_delete"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_delete"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.DeleteRegionInstanceGroupManagerRequest.pb(
+            compute.DeleteRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.DeleteRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.delete(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_instances_rest_bad_request(
+    request_type=compute.DeleteInstancesRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_instances(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.DeleteInstancesRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_delete_instances_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init["region_instance_group_managers_delete_instances_request_resource"] = {
+        "instances": ["instances_value1", "instances_value2"],
+        "skip_instances_on_validation_error": True,
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.DeleteInstancesRegionInstanceGroupManagerRequest.meta.fields[
+        "region_instance_group_managers_delete_instances_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_managers_delete_instances_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_managers_delete_instances_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_managers_delete_instances_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_managers_delete_instances_request_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_instances(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_instances_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_delete_instances"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_delete_instances"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.DeleteInstancesRegionInstanceGroupManagerRequest.pb(
+            compute.DeleteInstancesRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.DeleteInstancesRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.delete_instances(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_per_instance_configs_rest_bad_request(
+    request_type=compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_per_instance_configs(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_delete_per_instance_configs_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init[
+        "region_instance_group_manager_delete_instance_config_req_resource"
+    ] = {"names": ["names_value1", "names_value2"]}
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = (
+        compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest.meta.fields[
+            "region_instance_group_manager_delete_instance_config_req_resource"
+        ]
+    )
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_manager_delete_instance_config_req_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_manager_delete_instance_config_req_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_manager_delete_instance_config_req_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_manager_delete_instance_config_req_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_per_instance_configs(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_per_instance_configs_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "post_delete_per_instance_configs",
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "pre_delete_per_instance_configs",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = (
+            compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest.pb(
+                compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest()
+            )
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.delete_per_instance_configs(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_rest_bad_request(
+    request_type=compute.GetRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.GetRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_get_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.InstanceGroupManager(
+            base_instance_name="base_instance_name_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            fingerprint="fingerprint_value",
+            id=205,
+            instance_group="instance_group_value",
+            instance_template="instance_template_value",
+            kind="kind_value",
+            list_managed_instances_results="list_managed_instances_results_value",
+            name="name_value",
+            region="region_value",
+            satisfies_pzi=True,
+            satisfies_pzs=True,
+            self_link="self_link_value",
+            target_pools=["target_pools_value"],
+            target_size=1185,
+            target_stopped_size=2047,
+            target_suspended_size=2251,
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.InstanceGroupManager.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.InstanceGroupManager)
+    assert response.base_instance_name == "base_instance_name_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.fingerprint == "fingerprint_value"
+    assert response.id == 205
+    assert response.instance_group == "instance_group_value"
+    assert response.instance_template == "instance_template_value"
+    assert response.kind == "kind_value"
+    assert (
+        response.list_managed_instances_results
+        == "list_managed_instances_results_value"
+    )
+    assert response.name == "name_value"
+    assert response.region == "region_value"
+    assert response.satisfies_pzi is True
+    assert response.satisfies_pzs is True
+    assert response.self_link == "self_link_value"
+    assert response.target_pools == ["target_pools_value"]
+    assert response.target_size == 1185
+    assert response.target_stopped_size == 2047
+    assert response.target_suspended_size == 2251
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_get"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_get"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.GetRegionInstanceGroupManagerRequest.pb(
+            compute.GetRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.InstanceGroupManager.to_json(
+            compute.InstanceGroupManager()
+        )
+        req.return_value.content = return_value
+
+        request = compute.GetRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.InstanceGroupManager()
+
+        client.get(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_insert_rest_bad_request(
+    request_type=compute.InsertRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "region": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.insert(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.InsertRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_insert_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "region": "sample2"}
+    request_init["instance_group_manager_resource"] = {
+        "all_instances_config": {"properties": {"labels": {}, "metadata": {}}},
+        "auto_healing_policies": [
+            {"health_check": "health_check_value", "initial_delay_sec": 1778}
+        ],
+        "base_instance_name": "base_instance_name_value",
+        "creation_timestamp": "creation_timestamp_value",
+        "current_actions": {
+            "abandoning": 1041,
+            "creating": 845,
+            "creating_without_retries": 2589,
+            "deleting": 844,
+            "none": 432,
+            "recreating": 1060,
+            "refreshing": 1069,
+            "restarting": 1091,
+            "resuming": 874,
+            "starting": 876,
+            "stopping": 884,
+            "suspending": 1088,
+            "verifying": 979,
+        },
+        "description": "description_value",
+        "distribution_policy": {
+            "target_shape": "target_shape_value",
+            "zones": [{"zone": "zone_value"}],
+        },
+        "fingerprint": "fingerprint_value",
+        "id": 205,
+        "instance_flexibility_policy": {"instance_selections": {}},
+        "instance_group": "instance_group_value",
+        "instance_lifecycle_policy": {
+            "default_action_on_failure": "default_action_on_failure_value",
+            "force_update_on_repair": "force_update_on_repair_value",
+        },
+        "instance_template": "instance_template_value",
+        "kind": "kind_value",
+        "list_managed_instances_results": "list_managed_instances_results_value",
+        "name": "name_value",
+        "named_ports": [{"name": "name_value", "port": 453}],
+        "region": "region_value",
+        "satisfies_pzi": True,
+        "satisfies_pzs": True,
+        "self_link": "self_link_value",
+        "standby_policy": {"initial_delay_sec": 1778, "mode": "mode_value"},
+        "stateful_policy": {
+            "preserved_state": {"disks": {}, "external_i_ps": {}, "internal_i_ps": {}}
+        },
+        "status": {
+            "all_instances_config": {
+                "current_revision": "current_revision_value",
+                "effective": True,
+            },
+            "autoscaler": "autoscaler_value",
+            "is_stable": True,
+            "stateful": {
+                "has_stateful_config": True,
+                "per_instance_configs": {"all_effective": True},
+            },
+            "version_target": {"is_reached": True},
+        },
+        "target_pools": ["target_pools_value1", "target_pools_value2"],
+        "target_size": 1185,
+        "target_stopped_size": 2047,
+        "target_suspended_size": 2251,
+        "update_policy": {
+            "instance_redistribution_type": "instance_redistribution_type_value",
+            "max_surge": {"calculated": 1042, "fixed": 528, "percent": 753},
+            "max_unavailable": {},
+            "minimal_action": "minimal_action_value",
+            "most_disruptive_allowed_action": "most_disruptive_allowed_action_value",
+            "replacement_method": "replacement_method_value",
+            "type_": "type__value",
+        },
+        "versions": [
+            {
+                "instance_template": "instance_template_value",
+                "name": "name_value",
+                "target_size": {},
+            }
+        ],
+        "zone": "zone_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.InsertRegionInstanceGroupManagerRequest.meta.fields[
+        "instance_group_manager_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "instance_group_manager_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["instance_group_manager_resource"][field])
+                ):
+                    del request_init["instance_group_manager_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["instance_group_manager_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.insert(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_insert_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_insert"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_insert"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.InsertRegionInstanceGroupManagerRequest.pb(
+            compute.InsertRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.InsertRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.insert(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_rest_bad_request(
+    request_type=compute.ListRegionInstanceGroupManagersRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "region": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ListRegionInstanceGroupManagersRequest,
+        dict,
+    ],
+)
+def test_list_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "region": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.RegionInstanceGroupManagerList(
+            id="id_value",
+            kind="kind_value",
+            next_page_token="next_page_token_value",
+            self_link="self_link_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.RegionInstanceGroupManagerList.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListPager)
+    assert response.id == "id_value"
+    assert response.kind == "kind_value"
+    assert response.next_page_token == "next_page_token_value"
+    assert response.self_link == "self_link_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_list"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ListRegionInstanceGroupManagersRequest.pb(
+            compute.ListRegionInstanceGroupManagersRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.RegionInstanceGroupManagerList.to_json(
+            compute.RegionInstanceGroupManagerList()
+        )
+        req.return_value.content = return_value
+
+        request = compute.ListRegionInstanceGroupManagersRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.RegionInstanceGroupManagerList()
+
+        client.list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_errors_rest_bad_request(
+    request_type=compute.ListErrorsRegionInstanceGroupManagersRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_errors(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ListErrorsRegionInstanceGroupManagersRequest,
+        dict,
+    ],
+)
+def test_list_errors_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.RegionInstanceGroupManagersListErrorsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.RegionInstanceGroupManagersListErrorsResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_errors(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListErrorsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_errors_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_list_errors"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_list_errors"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ListErrorsRegionInstanceGroupManagersRequest.pb(
+            compute.ListErrorsRegionInstanceGroupManagersRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.RegionInstanceGroupManagersListErrorsResponse.to_json(
+            compute.RegionInstanceGroupManagersListErrorsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = compute.ListErrorsRegionInstanceGroupManagersRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.RegionInstanceGroupManagersListErrorsResponse()
+
+        client.list_errors(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_managed_instances_rest_bad_request(
+    request_type=compute.ListManagedInstancesRegionInstanceGroupManagersRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_managed_instances(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ListManagedInstancesRegionInstanceGroupManagersRequest,
+        dict,
+    ],
+)
+def test_list_managed_instances_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.RegionInstanceGroupManagersListInstancesResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.RegionInstanceGroupManagersListInstancesResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_managed_instances(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListManagedInstancesPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_managed_instances_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "post_list_managed_instances",
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "pre_list_managed_instances",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ListManagedInstancesRegionInstanceGroupManagersRequest.pb(
+            compute.ListManagedInstancesRegionInstanceGroupManagersRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.RegionInstanceGroupManagersListInstancesResponse.to_json(
+            compute.RegionInstanceGroupManagersListInstancesResponse()
+        )
+        req.return_value.content = return_value
+
+        request = compute.ListManagedInstancesRegionInstanceGroupManagersRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.RegionInstanceGroupManagersListInstancesResponse()
+
+        client.list_managed_instances(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_per_instance_configs_rest_bad_request(
+    request_type=compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_per_instance_configs(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest,
+        dict,
+    ],
+)
+def test_list_per_instance_configs_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.RegionInstanceGroupManagersListInstanceConfigsResp(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.RegionInstanceGroupManagersListInstanceConfigsResp.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_per_instance_configs(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListPerInstanceConfigsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_per_instance_configs_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "post_list_per_instance_configs",
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "pre_list_per_instance_configs",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = (
+            compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest.pb(
+                compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest()
+            )
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = (
+            compute.RegionInstanceGroupManagersListInstanceConfigsResp.to_json(
+                compute.RegionInstanceGroupManagersListInstanceConfigsResp()
+            )
+        )
+        req.return_value.content = return_value
+
+        request = compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.RegionInstanceGroupManagersListInstanceConfigsResp()
+
+        client.list_per_instance_configs(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_patch_rest_bad_request(
+    request_type=compute.PatchRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.patch(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.PatchRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_patch_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init["instance_group_manager_resource"] = {
+        "all_instances_config": {"properties": {"labels": {}, "metadata": {}}},
+        "auto_healing_policies": [
+            {"health_check": "health_check_value", "initial_delay_sec": 1778}
+        ],
+        "base_instance_name": "base_instance_name_value",
+        "creation_timestamp": "creation_timestamp_value",
+        "current_actions": {
+            "abandoning": 1041,
+            "creating": 845,
+            "creating_without_retries": 2589,
+            "deleting": 844,
+            "none": 432,
+            "recreating": 1060,
+            "refreshing": 1069,
+            "restarting": 1091,
+            "resuming": 874,
+            "starting": 876,
+            "stopping": 884,
+            "suspending": 1088,
+            "verifying": 979,
+        },
+        "description": "description_value",
+        "distribution_policy": {
+            "target_shape": "target_shape_value",
+            "zones": [{"zone": "zone_value"}],
+        },
+        "fingerprint": "fingerprint_value",
+        "id": 205,
+        "instance_flexibility_policy": {"instance_selections": {}},
+        "instance_group": "instance_group_value",
+        "instance_lifecycle_policy": {
+            "default_action_on_failure": "default_action_on_failure_value",
+            "force_update_on_repair": "force_update_on_repair_value",
+        },
+        "instance_template": "instance_template_value",
+        "kind": "kind_value",
+        "list_managed_instances_results": "list_managed_instances_results_value",
+        "name": "name_value",
+        "named_ports": [{"name": "name_value", "port": 453}],
+        "region": "region_value",
+        "satisfies_pzi": True,
+        "satisfies_pzs": True,
+        "self_link": "self_link_value",
+        "standby_policy": {"initial_delay_sec": 1778, "mode": "mode_value"},
+        "stateful_policy": {
+            "preserved_state": {"disks": {}, "external_i_ps": {}, "internal_i_ps": {}}
+        },
+        "status": {
+            "all_instances_config": {
+                "current_revision": "current_revision_value",
+                "effective": True,
+            },
+            "autoscaler": "autoscaler_value",
+            "is_stable": True,
+            "stateful": {
+                "has_stateful_config": True,
+                "per_instance_configs": {"all_effective": True},
+            },
+            "version_target": {"is_reached": True},
+        },
+        "target_pools": ["target_pools_value1", "target_pools_value2"],
+        "target_size": 1185,
+        "target_stopped_size": 2047,
+        "target_suspended_size": 2251,
+        "update_policy": {
+            "instance_redistribution_type": "instance_redistribution_type_value",
+            "max_surge": {"calculated": 1042, "fixed": 528, "percent": 753},
+            "max_unavailable": {},
+            "minimal_action": "minimal_action_value",
+            "most_disruptive_allowed_action": "most_disruptive_allowed_action_value",
+            "replacement_method": "replacement_method_value",
+            "type_": "type__value",
+        },
+        "versions": [
+            {
+                "instance_template": "instance_template_value",
+                "name": "name_value",
+                "target_size": {},
+            }
+        ],
+        "zone": "zone_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.PatchRegionInstanceGroupManagerRequest.meta.fields[
+        "instance_group_manager_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "instance_group_manager_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["instance_group_manager_resource"][field])
+                ):
+                    del request_init["instance_group_manager_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["instance_group_manager_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.patch(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_patch_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_patch"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_patch"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.PatchRegionInstanceGroupManagerRequest.pb(
+            compute.PatchRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.PatchRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.patch(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_patch_per_instance_configs_rest_bad_request(
+    request_type=compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.patch_per_instance_configs(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_patch_per_instance_configs_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init["region_instance_group_manager_patch_instance_config_req_resource"] = {
+        "per_instance_configs": [
+            {
+                "fingerprint": "fingerprint_value",
+                "name": "name_value",
+                "preserved_state": {
+                    "disks": {},
+                    "external_i_ps": {},
+                    "internal_i_ps": {},
+                    "metadata": {},
+                },
+                "status": "status_value",
+            }
+        ]
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = (
+        compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest.meta.fields[
+            "region_instance_group_manager_patch_instance_config_req_resource"
+        ]
+    )
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_manager_patch_instance_config_req_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_manager_patch_instance_config_req_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_manager_patch_instance_config_req_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_manager_patch_instance_config_req_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.patch_per_instance_configs(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_patch_per_instance_configs_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "post_patch_per_instance_configs",
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor,
+        "pre_patch_per_instance_configs",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = (
+            compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest.pb(
+                compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest()
+            )
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.patch_per_instance_configs(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_recreate_instances_rest_bad_request(
+    request_type=compute.RecreateInstancesRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.recreate_instances(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.RecreateInstancesRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_recreate_instances_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init["region_instance_group_managers_recreate_request_resource"] = {
+        "instances": ["instances_value1", "instances_value2"]
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.RecreateInstancesRegionInstanceGroupManagerRequest.meta.fields[
+        "region_instance_group_managers_recreate_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_managers_recreate_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_managers_recreate_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_managers_recreate_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_managers_recreate_request_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.recreate_instances(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_recreate_instances_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_recreate_instances"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_recreate_instances"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.RecreateInstancesRegionInstanceGroupManagerRequest.pb(
+            compute.RecreateInstancesRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.RecreateInstancesRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.recreate_instances(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_resize_rest_bad_request(
+    request_type=compute.ResizeRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.resize(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ResizeRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_resize_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.resize(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_resize_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_resize"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_resize"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ResizeRegionInstanceGroupManagerRequest.pb(
+            compute.ResizeRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.ResizeRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.resize(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_resume_instances_rest_bad_request(
+    request_type=compute.ResumeInstancesRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.resume_instances(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ResumeInstancesRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_resume_instances_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init["region_instance_group_managers_resume_instances_request_resource"] = {
+        "instances": ["instances_value1", "instances_value2"]
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.ResumeInstancesRegionInstanceGroupManagerRequest.meta.fields[
+        "region_instance_group_managers_resume_instances_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_managers_resume_instances_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_managers_resume_instances_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_managers_resume_instances_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_managers_resume_instances_request_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.resume_instances(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_resume_instances_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_resume_instances"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_resume_instances"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ResumeInstancesRegionInstanceGroupManagerRequest.pb(
+            compute.ResumeInstancesRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.ResumeInstancesRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.resume_instances(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_instance_template_rest_bad_request(
+    request_type=compute.SetInstanceTemplateRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_instance_template(request)
 
 
 @pytest.mark.parametrize(
@@ -13884,10 +14190,9 @@ def test_set_instance_template_rest_error():
         dict,
     ],
 )
-def test_set_instance_template_unary_rest(request_type):
+def test_set_instance_template_rest_call_success(request_type):
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -14014,171 +14319,45 @@ def test_set_instance_template_unary_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
-        response = client.set_instance_template_unary(request)
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_instance_template(request)
 
     # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
-
-
-def test_set_instance_template_unary_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = RegionInstanceGroupManagersClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.set_instance_template
-            in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_instance_template
-        ] = mock_rpc
-
-        request = {}
-        client.set_instance_template_unary(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_instance_template_unary(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_instance_template_unary_rest_required_fields(
-    request_type=compute.SetInstanceTemplateRegionInstanceGroupManagerRequest,
-):
-    transport_class = transports.RegionInstanceGroupManagersRestTransport
-
-    request_init = {}
-    request_init["instance_group_manager"] = ""
-    request_init["project"] = ""
-    request_init["region"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_instance_template._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
-    jsonified_request["project"] = "project_value"
-    jsonified_request["region"] = "region_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_instance_template._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "instanceGroupManager" in jsonified_request
-    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "region" in jsonified_request
-    assert jsonified_request["region"] == "region_value"
-
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_instance_template_unary(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_instance_template_unary_rest_unset_required_fields():
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_instance_template._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "instanceGroupManager",
-                "project",
-                "region",
-                "regionInstanceGroupManagersSetTemplateRequestResource",
-            )
-        )
-    )
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_instance_template_unary_rest_interceptors(null_interceptor):
+def test_set_instance_template_rest_interceptors(null_interceptor):
     transport = transports.RegionInstanceGroupManagersRestTransport(
         credentials=ga_credentials.AnonymousCredentials(),
         interceptor=None
@@ -14186,6 +14365,7 @@ def test_set_instance_template_unary_rest_interceptors(null_interceptor):
         else transports.RegionInstanceGroupManagersRestInterceptor(),
     )
     client = RegionInstanceGroupManagersClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -14209,10 +14389,11 @@ def test_set_instance_template_unary_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
 
         request = compute.SetInstanceTemplateRegionInstanceGroupManagerRequest()
         metadata = [
@@ -14222,7 +14403,7 @@ def test_set_instance_template_unary_rest_interceptors(null_interceptor):
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
 
-        client.set_instance_template_unary(
+        client.set_instance_template(
             request,
             metadata=[
                 ("key", "val"),
@@ -14234,15 +14415,12 @@ def test_set_instance_template_unary_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_set_instance_template_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.SetInstanceTemplateRegionInstanceGroupManagerRequest,
+def test_set_target_pools_rest_bad_request(
+    request_type=compute.SetTargetPoolsRegionInstanceGroupManagerRequest,
 ):
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
     request_init = {
         "project": "sample1",
@@ -14256,88 +14434,14 @@ def test_set_instance_template_unary_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.set_instance_template_unary(request)
-
-
-def test_set_instance_template_unary_rest_flattened():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {
-            "project": "sample1",
-            "region": "sample2",
-            "instance_group_manager": "sample3",
-        }
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_managers_set_template_request_resource=compute.RegionInstanceGroupManagersSetTemplateRequest(
-                instance_template="instance_template_value"
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_instance_template_unary(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/setInstanceTemplate"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_instance_template_unary_rest_flattened_error(transport: str = "rest"):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_instance_template_unary(
-            compute.SetInstanceTemplateRegionInstanceGroupManagerRequest(),
-            project="project_value",
-            region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_managers_set_template_request_resource=compute.RegionInstanceGroupManagersSetTemplateRequest(
-                instance_template="instance_template_value"
-            ),
-        )
-
-
-def test_set_instance_template_unary_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_target_pools(request)
 
 
 @pytest.mark.parametrize(
@@ -14347,10 +14451,9 @@ def test_set_instance_template_unary_rest_error():
         dict,
     ],
 )
-def test_set_target_pools_rest(request_type):
+def test_set_target_pools_rest_call_success(request_type):
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -14476,14 +14579,15 @@ def test_set_target_pools_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.set_target_pools(request)
 
     # Establish that the response is the type that we expect.
@@ -14512,152 +14616,6 @@ def test_set_target_pools_rest(request_type):
     assert response.zone == "zone_value"
 
 
-def test_set_target_pools_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = RegionInstanceGroupManagersClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.set_target_pools in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_target_pools
-        ] = mock_rpc
-
-        request = {}
-        client.set_target_pools(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_target_pools(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_target_pools_rest_required_fields(
-    request_type=compute.SetTargetPoolsRegionInstanceGroupManagerRequest,
-):
-    transport_class = transports.RegionInstanceGroupManagersRestTransport
-
-    request_init = {}
-    request_init["instance_group_manager"] = ""
-    request_init["project"] = ""
-    request_init["region"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_target_pools._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
-    jsonified_request["project"] = "project_value"
-    jsonified_request["region"] = "region_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_target_pools._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "instanceGroupManager" in jsonified_request
-    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "region" in jsonified_request
-    assert jsonified_request["region"] == "region_value"
-
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_target_pools(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_target_pools_rest_unset_required_fields():
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_target_pools._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "instanceGroupManager",
-                "project",
-                "region",
-                "regionInstanceGroupManagersSetTargetPoolsRequestResource",
-            )
-        )
-    )
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_set_target_pools_rest_interceptors(null_interceptor):
     transport = transports.RegionInstanceGroupManagersRestTransport(
@@ -14667,6 +14625,7 @@ def test_set_target_pools_rest_interceptors(null_interceptor):
         else transports.RegionInstanceGroupManagersRestInterceptor(),
     )
     client = RegionInstanceGroupManagersClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -14688,10 +14647,11 @@ def test_set_target_pools_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
 
         request = compute.SetTargetPoolsRegionInstanceGroupManagerRequest()
         metadata = [
@@ -14713,15 +14673,12 @@ def test_set_target_pools_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_set_target_pools_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.SetTargetPoolsRegionInstanceGroupManagerRequest,
+def test_start_instances_rest_bad_request(
+    request_type=compute.StartInstancesRegionInstanceGroupManagerRequest,
 ):
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
     request_init = {
         "project": "sample1",
@@ -14735,101 +14692,26 @@ def test_set_target_pools_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.set_target_pools(request)
-
-
-def test_set_target_pools_rest_flattened():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {
-            "project": "sample1",
-            "region": "sample2",
-            "instance_group_manager": "sample3",
-        }
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_managers_set_target_pools_request_resource=compute.RegionInstanceGroupManagersSetTargetPoolsRequest(
-                fingerprint="fingerprint_value"
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_target_pools(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/setTargetPools"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_target_pools_rest_flattened_error(transport: str = "rest"):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_target_pools(
-            compute.SetTargetPoolsRegionInstanceGroupManagerRequest(),
-            project="project_value",
-            region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_managers_set_target_pools_request_resource=compute.RegionInstanceGroupManagersSetTargetPoolsRequest(
-                fingerprint="fingerprint_value"
-            ),
-        )
-
-
-def test_set_target_pools_rest_error():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.start_instances(request)
 
 
 @pytest.mark.parametrize(
     "request_type",
     [
-        compute.SetTargetPoolsRegionInstanceGroupManagerRequest,
+        compute.StartInstancesRegionInstanceGroupManagerRequest,
         dict,
     ],
 )
-def test_set_target_pools_unary_rest(request_type):
+def test_start_instances_rest_call_success(request_type):
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -14838,17 +14720,16 @@ def test_set_target_pools_unary_rest(request_type):
         "region": "sample2",
         "instance_group_manager": "sample3",
     }
-    request_init["region_instance_group_managers_set_target_pools_request_resource"] = {
-        "fingerprint": "fingerprint_value",
-        "target_pools": ["target_pools_value1", "target_pools_value2"],
+    request_init["region_instance_group_managers_start_instances_request_resource"] = {
+        "instances": ["instances_value1", "instances_value2"]
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
     # See https://github.com/googleapis/gapic-generator-python/issues/1748
 
     # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetTargetPoolsRegionInstanceGroupManagerRequest.meta.fields[
-        "region_instance_group_managers_set_target_pools_request_resource"
+    test_field = compute.StartInstancesRegionInstanceGroupManagerRequest.meta.fields[
+        "region_instance_group_managers_start_instances_request_resource"
     ]
 
     def get_message_fields(field):
@@ -14878,7 +14759,7 @@ def test_set_target_pools_unary_rest(request_type):
     # For each item in the sample request, create a list of sub fields which are not present at runtime
     # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
     for field, value in request_init[
-        "region_instance_group_managers_set_target_pools_request_resource"
+        "region_instance_group_managers_start_instances_request_resource"
     ].items():  # pragma: NO COVER
         result = None
         is_repeated = False
@@ -14913,16 +14794,16 @@ def test_set_target_pools_unary_rest(request_type):
                     0,
                     len(
                         request_init[
-                            "region_instance_group_managers_set_target_pools_request_resource"
+                            "region_instance_group_managers_start_instances_request_resource"
                         ][field]
                     ),
                 ):
                     del request_init[
-                        "region_instance_group_managers_set_target_pools_request_resource"
+                        "region_instance_group_managers_start_instances_request_resource"
                     ][field][i][subfield]
             else:
                 del request_init[
-                    "region_instance_group_managers_set_target_pools_request_resource"
+                    "region_instance_group_managers_start_instances_request_resource"
                 ][field][subfield]
     request = request_type(**request_init)
 
@@ -14955,168 +14836,45 @@ def test_set_target_pools_unary_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
-        response = client.set_target_pools_unary(request)
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.start_instances(request)
 
     # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
-
-
-def test_set_target_pools_unary_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = RegionInstanceGroupManagersClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.set_target_pools in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_target_pools
-        ] = mock_rpc
-
-        request = {}
-        client.set_target_pools_unary(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_target_pools_unary(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_target_pools_unary_rest_required_fields(
-    request_type=compute.SetTargetPoolsRegionInstanceGroupManagerRequest,
-):
-    transport_class = transports.RegionInstanceGroupManagersRestTransport
-
-    request_init = {}
-    request_init["instance_group_manager"] = ""
-    request_init["project"] = ""
-    request_init["region"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_target_pools._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
-    jsonified_request["project"] = "project_value"
-    jsonified_request["region"] = "region_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_target_pools._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "instanceGroupManager" in jsonified_request
-    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "region" in jsonified_request
-    assert jsonified_request["region"] == "region_value"
-
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_target_pools_unary(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_target_pools_unary_rest_unset_required_fields():
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_target_pools._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "instanceGroupManager",
-                "project",
-                "region",
-                "regionInstanceGroupManagersSetTargetPoolsRequestResource",
-            )
-        )
-    )
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_target_pools_unary_rest_interceptors(null_interceptor):
+def test_start_instances_rest_interceptors(null_interceptor):
     transport = transports.RegionInstanceGroupManagersRestTransport(
         credentials=ga_credentials.AnonymousCredentials(),
         interceptor=None
@@ -15124,19 +14882,20 @@ def test_set_target_pools_unary_rest_interceptors(null_interceptor):
         else transports.RegionInstanceGroupManagersRestInterceptor(),
     )
     client = RegionInstanceGroupManagersClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
         path_template, "transcode"
     ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "post_set_target_pools"
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_start_instances"
     ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor, "pre_set_target_pools"
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_start_instances"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
-        pb_message = compute.SetTargetPoolsRegionInstanceGroupManagerRequest.pb(
-            compute.SetTargetPoolsRegionInstanceGroupManagerRequest()
+        pb_message = compute.StartInstancesRegionInstanceGroupManagerRequest.pb(
+            compute.StartInstancesRegionInstanceGroupManagerRequest()
         )
         transcode.return_value = {
             "method": "post",
@@ -15145,12 +14904,13 @@ def test_set_target_pools_unary_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
 
-        request = compute.SetTargetPoolsRegionInstanceGroupManagerRequest()
+        request = compute.StartInstancesRegionInstanceGroupManagerRequest()
         metadata = [
             ("key", "val"),
             ("cephalopod", "squid"),
@@ -15158,7 +14918,7 @@ def test_set_target_pools_unary_rest_interceptors(null_interceptor):
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
 
-        client.set_target_pools_unary(
+        client.start_instances(
             request,
             metadata=[
                 ("key", "val"),
@@ -15170,15 +14930,12 @@ def test_set_target_pools_unary_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_set_target_pools_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.SetTargetPoolsRegionInstanceGroupManagerRequest,
+def test_stop_instances_rest_bad_request(
+    request_type=compute.StopInstancesRegionInstanceGroupManagerRequest,
 ):
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
     request_init = {
         "project": "sample1",
@@ -15192,88 +14949,529 @@ def test_set_target_pools_unary_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.set_target_pools_unary(request)
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.stop_instances(request)
 
 
-def test_set_target_pools_unary_rest_flattened():
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.StopInstancesRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_stop_instances_rest_call_success(request_type):
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init["region_instance_group_managers_stop_instances_request_resource"] = {
+        "force_stop": True,
+        "instances": ["instances_value1", "instances_value2"],
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.StopInstancesRegionInstanceGroupManagerRequest.meta.fields[
+        "region_instance_group_managers_stop_instances_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_managers_stop_instances_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_managers_stop_instances_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_managers_stop_instances_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_managers_stop_instances_request_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {
-            "project": "sample1",
-            "region": "sample2",
-            "instance_group_manager": "sample3",
-        }
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
             region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_managers_set_target_pools_request_resource=compute.RegionInstanceGroupManagersSetTargetPoolsRequest(
-                fingerprint="fingerprint_value"
-            ),
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
         )
-        mock_args.update(sample_request)
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.stop_instances(request)
 
-        client.set_target_pools_unary(**mock_args)
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
 
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/setTargetPools"
-            % client.transport._host,
-            args[1],
-        )
 
-
-def test_set_target_pools_unary_rest_flattened_error(transport: str = "rest"):
-    client = RegionInstanceGroupManagersClient(
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_stop_instances_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
         credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
     )
+    client = RegionInstanceGroupManagersClient(transport=transport)
 
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_target_pools_unary(
-            compute.SetTargetPoolsRegionInstanceGroupManagerRequest(),
-            project="project_value",
-            region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_managers_set_target_pools_request_resource=compute.RegionInstanceGroupManagersSetTargetPoolsRequest(
-                fingerprint="fingerprint_value"
-            ),
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_stop_instances"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_stop_instances"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.StopInstancesRegionInstanceGroupManagerRequest.pb(
+            compute.StopInstancesRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.StopInstancesRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.stop_instances(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
         )
 
+        pre.assert_called_once()
+        post.assert_called_once()
 
-def test_set_target_pools_unary_rest_error():
+
+def test_suspend_instances_rest_bad_request(
+    request_type=compute.SuspendInstancesRegionInstanceGroupManagerRequest,
+):
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.suspend_instances(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.SuspendInstancesRegionInstanceGroupManagerRequest,
+        dict,
+    ],
+)
+def test_suspend_instances_rest_call_success(request_type):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request_init[
+        "region_instance_group_managers_suspend_instances_request_resource"
+    ] = {"force_suspend": True, "instances": ["instances_value1", "instances_value2"]}
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.SuspendInstancesRegionInstanceGroupManagerRequest.meta.fields[
+        "region_instance_group_managers_suspend_instances_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "region_instance_group_managers_suspend_instances_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "region_instance_group_managers_suspend_instances_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "region_instance_group_managers_suspend_instances_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init[
+                    "region_instance_group_managers_suspend_instances_request_resource"
+                ][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.suspend_instances(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_suspend_instances_rest_interceptors(null_interceptor):
+    transport = transports.RegionInstanceGroupManagersRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.RegionInstanceGroupManagersRestInterceptor(),
+    )
+    client = RegionInstanceGroupManagersClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "post_suspend_instances"
+    ) as post, mock.patch.object(
+        transports.RegionInstanceGroupManagersRestInterceptor, "pre_suspend_instances"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.SuspendInstancesRegionInstanceGroupManagerRequest.pb(
+            compute.SuspendInstancesRegionInstanceGroupManagerRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.SuspendInstancesRegionInstanceGroupManagerRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.suspend_instances(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_per_instance_configs_rest_bad_request(
+    request_type=compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest,
+):
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "project": "sample1",
+        "region": "sample2",
+        "instance_group_manager": "sample3",
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_per_instance_configs(request)
 
 
 @pytest.mark.parametrize(
@@ -15283,10 +15481,9 @@ def test_set_target_pools_unary_rest_error():
         dict,
     ],
 )
-def test_update_per_instance_configs_rest(request_type):
+def test_update_per_instance_configs_rest_call_success(request_type):
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -15427,14 +15624,15 @@ def test_update_per_instance_configs_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.update_per_instance_configs(request)
 
     # Establish that the response is the type that we expect.
@@ -15463,155 +15661,6 @@ def test_update_per_instance_configs_rest(request_type):
     assert response.zone == "zone_value"
 
 
-def test_update_per_instance_configs_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = RegionInstanceGroupManagersClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.update_per_instance_configs
-            in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.update_per_instance_configs
-        ] = mock_rpc
-
-        request = {}
-        client.update_per_instance_configs(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.update_per_instance_configs(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_update_per_instance_configs_rest_required_fields(
-    request_type=compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest,
-):
-    transport_class = transports.RegionInstanceGroupManagersRestTransport
-
-    request_init = {}
-    request_init["instance_group_manager"] = ""
-    request_init["project"] = ""
-    request_init["region"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).update_per_instance_configs._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
-    jsonified_request["project"] = "project_value"
-    jsonified_request["region"] = "region_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).update_per_instance_configs._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "instanceGroupManager" in jsonified_request
-    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "region" in jsonified_request
-    assert jsonified_request["region"] == "region_value"
-
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.update_per_instance_configs(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_update_per_instance_configs_rest_unset_required_fields():
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.update_per_instance_configs._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "instanceGroupManager",
-                "project",
-                "region",
-                "regionInstanceGroupManagerUpdateInstanceConfigReqResource",
-            )
-        )
-    )
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_update_per_instance_configs_rest_interceptors(null_interceptor):
     transport = transports.RegionInstanceGroupManagersRestTransport(
@@ -15621,6 +15670,7 @@ def test_update_per_instance_configs_rest_interceptors(null_interceptor):
         else transports.RegionInstanceGroupManagersRestInterceptor(),
     )
     client = RegionInstanceGroupManagersClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -15646,10 +15696,11 @@ def test_update_per_instance_configs_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
 
         request = compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest()
         metadata = [
@@ -15671,687 +15722,495 @@ def test_update_per_instance_configs_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_update_per_instance_configs_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_per_instance_configs(request)
-
-
-def test_update_per_instance_configs_rest_flattened():
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {
-            "project": "sample1",
-            "region": "sample2",
-            "instance_group_manager": "sample3",
-        }
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_manager_update_instance_config_req_resource=compute.RegionInstanceGroupManagerUpdateInstanceConfigReq(
-                per_instance_configs=[
-                    compute.PerInstanceConfig(fingerprint="fingerprint_value")
-                ]
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.update_per_instance_configs(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/updatePerInstanceConfigs"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_update_per_instance_configs_rest_flattened_error(transport: str = "rest"):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.update_per_instance_configs(
-            compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest(),
-            project="project_value",
-            region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_manager_update_instance_config_req_resource=compute.RegionInstanceGroupManagerUpdateInstanceConfigReq(
-                per_instance_configs=[
-                    compute.PerInstanceConfig(fingerprint="fingerprint_value")
-                ]
-            ),
-        )
-
-
-def test_update_per_instance_configs_rest_error():
+def test_initialize_client_w_rest():
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
+    assert client is not None
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest,
-        dict,
-    ],
-)
-def test_update_per_instance_configs_unary_rest(request_type):
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_abandon_instances_unary_empty_call_rest():
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(),
         transport="rest",
     )
 
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request_init[
-        "region_instance_group_manager_update_instance_config_req_resource"
-    ] = {
-        "per_instance_configs": [
-            {
-                "fingerprint": "fingerprint_value",
-                "name": "name_value",
-                "preserved_state": {
-                    "disks": {},
-                    "external_i_ps": {},
-                    "internal_i_ps": {},
-                    "metadata": {},
-                },
-                "status": "status_value",
-            }
-        ]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = (
-        compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest.meta.fields[
-            "region_instance_group_manager_update_instance_config_req_resource"
-        ]
-    )
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "region_instance_group_manager_update_instance_config_req_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "region_instance_group_manager_update_instance_config_req_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "region_instance_group_manager_update_instance_config_req_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "region_instance_group_manager_update_instance_config_req_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_per_instance_configs_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
-
-
-def test_update_per_instance_configs_unary_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = RegionInstanceGroupManagersClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.update_per_instance_configs
-            in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.update_per_instance_configs
-        ] = mock_rpc
-
-        request = {}
-        client.update_per_instance_configs_unary(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.update_per_instance_configs_unary(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_update_per_instance_configs_unary_rest_required_fields(
-    request_type=compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest,
-):
-    transport_class = transports.RegionInstanceGroupManagersRestTransport
-
-    request_init = {}
-    request_init["instance_group_manager"] = ""
-    request_init["project"] = ""
-    request_init["region"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).update_per_instance_configs._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["instanceGroupManager"] = "instance_group_manager_value"
-    jsonified_request["project"] = "project_value"
-    jsonified_request["region"] = "region_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).update_per_instance_configs._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "instanceGroupManager" in jsonified_request
-    assert jsonified_request["instanceGroupManager"] == "instance_group_manager_value"
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "region" in jsonified_request
-    assert jsonified_request["region"] == "region_value"
-
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.update_per_instance_configs_unary(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_update_per_instance_configs_unary_rest_unset_required_fields():
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.update_per_instance_configs._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "instanceGroupManager",
-                "project",
-                "region",
-                "regionInstanceGroupManagerUpdateInstanceConfigReqResource",
-            )
-        )
-    )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_per_instance_configs_unary_rest_interceptors(null_interceptor):
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.RegionInstanceGroupManagersRestInterceptor(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
+    # Mock the actual call, and fake the request.
     with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "post_update_per_instance_configs",
-    ) as post, mock.patch.object(
-        transports.RegionInstanceGroupManagersRestInterceptor,
-        "pre_update_per_instance_configs",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = (
-            compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest.pb(
-                compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest()
-            )
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
+        type(client.transport.abandon_instances), "__call__"
+    ) as call:
+        client.abandon_instances_unary(request=None)
 
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.AbandonInstancesRegionInstanceGroupManagerRequest()
 
-        request = compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.update_per_instance_configs_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
+        assert args[0] == request_msg
 
 
-def test_update_per_instance_configs_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest,
-):
-    client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "project": "sample1",
-        "region": "sample2",
-        "instance_group_manager": "sample3",
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_per_instance_configs_unary(request)
-
-
-def test_update_per_instance_configs_unary_rest_flattened():
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_apply_updates_to_instances_unary_empty_call_rest():
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(),
         transport="rest",
     )
 
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.apply_updates_to_instances), "__call__"
+    ) as call:
+        client.apply_updates_to_instances_unary(request=None)
 
-        # get arguments that satisfy an http rule for this method
-        sample_request = {
-            "project": "sample1",
-            "region": "sample2",
-            "instance_group_manager": "sample3",
-        }
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ApplyUpdatesToInstancesRegionInstanceGroupManagerRequest()
 
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_manager_update_instance_config_req_resource=compute.RegionInstanceGroupManagerUpdateInstanceConfigReq(
-                per_instance_configs=[
-                    compute.PerInstanceConfig(fingerprint="fingerprint_value")
-                ]
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.update_per_instance_configs_unary(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/regions/{region}/instanceGroupManagers/{instance_group_manager}/updatePerInstanceConfigs"
-            % client.transport._host,
-            args[1],
-        )
+        assert args[0] == request_msg
 
 
-def test_update_per_instance_configs_unary_rest_flattened_error(
-    transport: str = "rest",
-):
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_instances_unary_empty_call_rest():
     client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        transport="rest",
     )
 
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.update_per_instance_configs_unary(
-            compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest(),
-            project="project_value",
-            region="region_value",
-            instance_group_manager="instance_group_manager_value",
-            region_instance_group_manager_update_instance_config_req_resource=compute.RegionInstanceGroupManagerUpdateInstanceConfigReq(
-                per_instance_configs=[
-                    compute.PerInstanceConfig(fingerprint="fingerprint_value")
-                ]
-            ),
-        )
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_instances), "__call__") as call:
+        client.create_instances_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.CreateInstancesRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
 
 
-def test_update_per_instance_configs_unary_rest_error():
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_unary_empty_call_rest():
     client = RegionInstanceGroupManagersClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-def test_credentials_transport_error():
-    # It is an error to provide credentials and a transport instance.
-    transport = transports.RegionInstanceGroupManagersRestTransport(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = RegionInstanceGroupManagersClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport=transport,
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete), "__call__") as call:
+        client.delete_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.DeleteRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_instances_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_instances), "__call__") as call:
+        client.delete_instances_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.DeleteInstancesRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_per_instance_configs_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_per_instance_configs), "__call__"
+    ) as call:
+        client.delete_per_instance_configs_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = (
+            compute.DeletePerInstanceConfigsRegionInstanceGroupManagerRequest()
         )
 
-    # It is an error to provide a credentials file and a transport instance.
-    transport = transports.RegionInstanceGroupManagersRestTransport(
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = RegionInstanceGroupManagersClient(
-            client_options={"credentials_file": "credentials.json"},
-            transport=transport,
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get), "__call__") as call:
+        client.get(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.GetRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_insert_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.insert), "__call__") as call:
+        client.insert_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.InsertRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list), "__call__") as call:
+        client.list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ListRegionInstanceGroupManagersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_errors_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_errors), "__call__") as call:
+        client.list_errors(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ListErrorsRegionInstanceGroupManagersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_managed_instances_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_managed_instances), "__call__"
+    ) as call:
+        client.list_managed_instances(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ListManagedInstancesRegionInstanceGroupManagersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_per_instance_configs_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_per_instance_configs), "__call__"
+    ) as call:
+        client.list_per_instance_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ListPerInstanceConfigsRegionInstanceGroupManagersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_patch_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.patch), "__call__") as call:
+        client.patch_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.PatchRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_patch_per_instance_configs_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.patch_per_instance_configs), "__call__"
+    ) as call:
+        client.patch_per_instance_configs_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.PatchPerInstanceConfigsRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_recreate_instances_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.recreate_instances), "__call__"
+    ) as call:
+        client.recreate_instances_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.RecreateInstancesRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_resize_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.resize), "__call__") as call:
+        client.resize_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ResizeRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_resume_instances_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.resume_instances), "__call__") as call:
+        client.resume_instances_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ResumeInstancesRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_instance_template_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_instance_template), "__call__"
+    ) as call:
+        client.set_instance_template_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetInstanceTemplateRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_target_pools_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_target_pools), "__call__") as call:
+        client.set_target_pools_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetTargetPoolsRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_start_instances_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.start_instances), "__call__") as call:
+        client.start_instances_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.StartInstancesRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_stop_instances_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.stop_instances), "__call__") as call:
+        client.stop_instances_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.StopInstancesRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_suspend_instances_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.suspend_instances), "__call__"
+    ) as call:
+        client.suspend_instances_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SuspendInstancesRegionInstanceGroupManagerRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_per_instance_configs_unary_empty_call_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_per_instance_configs), "__call__"
+    ) as call:
+        client.update_per_instance_configs_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = (
+            compute.UpdatePerInstanceConfigsRegionInstanceGroupManagerRequest()
         )
 
-    # It is an error to provide an api_key and a transport instance.
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-    )
-    options = client_options.ClientOptions()
-    options.api_key = "api_key"
-    with pytest.raises(ValueError):
-        client = RegionInstanceGroupManagersClient(
-            client_options=options,
-            transport=transport,
-        )
-
-    # It is an error to provide an api_key and a credential.
-    options = client_options.ClientOptions()
-    options.api_key = "api_key"
-    with pytest.raises(ValueError):
-        client = RegionInstanceGroupManagersClient(
-            client_options=options, credentials=ga_credentials.AnonymousCredentials()
-        )
-
-    # It is an error to provide scopes and a transport instance.
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-    )
-    with pytest.raises(ValueError):
-        client = RegionInstanceGroupManagersClient(
-            client_options={"scopes": ["1", "2"]},
-            transport=transport,
-        )
-
-
-def test_transport_instance():
-    # A client may be instantiated with a custom transport instance.
-    transport = transports.RegionInstanceGroupManagersRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-    )
-    client = RegionInstanceGroupManagersClient(transport=transport)
-    assert client.transport is transport
-
-
-@pytest.mark.parametrize(
-    "transport_class",
-    [
-        transports.RegionInstanceGroupManagersRestTransport,
-    ],
-)
-def test_transport_adc(transport_class):
-    # Test default credentials are used if not provided.
-    with mock.patch.object(google.auth, "default") as adc:
-        adc.return_value = (ga_credentials.AnonymousCredentials(), None)
-        transport_class()
-        adc.assert_called_once()
-
-
-@pytest.mark.parametrize(
-    "transport_name",
-    [
-        "rest",
-    ],
-)
-def test_transport_kind(transport_name):
-    transport = RegionInstanceGroupManagersClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
-    )
-    assert transport.kind == transport_name
+        assert args[0] == request_msg
 
 
 def test_region_instance_group_managers_base_transport_error():
@@ -16392,8 +16251,12 @@ def test_region_instance_group_managers_base_transport():
         "patch_per_instance_configs",
         "recreate_instances",
         "resize",
+        "resume_instances",
         "set_instance_template",
         "set_target_pools",
+        "start_instances",
+        "stop_instances",
+        "suspend_instances",
         "update_per_instance_configs",
     )
     for method in methods:
@@ -16582,11 +16445,23 @@ def test_region_instance_group_managers_client_transport_session_collision(
     session1 = client1.transport.resize._session
     session2 = client2.transport.resize._session
     assert session1 != session2
+    session1 = client1.transport.resume_instances._session
+    session2 = client2.transport.resume_instances._session
+    assert session1 != session2
     session1 = client1.transport.set_instance_template._session
     session2 = client2.transport.set_instance_template._session
     assert session1 != session2
     session1 = client1.transport.set_target_pools._session
     session2 = client2.transport.set_target_pools._session
+    assert session1 != session2
+    session1 = client1.transport.start_instances._session
+    session2 = client2.transport.start_instances._session
+    assert session1 != session2
+    session1 = client1.transport.stop_instances._session
+    session2 = client2.transport.stop_instances._session
+    assert session1 != session2
+    session1 = client1.transport.suspend_instances._session
+    session2 = client2.transport.suspend_instances._session
     assert session1 != session2
     session1 = client1.transport.update_per_instance_configs._session
     session2 = client2.transport.update_per_instance_configs._session
@@ -16721,21 +16596,16 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-    }
-
-    for transport, close_name in transports.items():
-        client = RegionInstanceGroupManagersClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = RegionInstanceGroupManagersClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

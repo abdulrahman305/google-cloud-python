@@ -13,41 +13,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
+from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.cloud.securitycentermanagement_v1.types import security_center_management
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseSecurityCenterManagementRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.protobuf import empty_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.cloud.securitycentermanagement_v1.types import security_center_management
-
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import SecurityCenterManagementTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -235,10 +239,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_create_event_threat_detection_custom_module(
         self,
         request: security_center_management.CreateEventThreatDetectionCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.CreateEventThreatDetectionCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for create_event_threat_detection_custom_module
 
@@ -261,10 +265,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_create_security_health_analytics_custom_module(
         self,
         request: security_center_management.CreateSecurityHealthAnalyticsCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.CreateSecurityHealthAnalyticsCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for create_security_health_analytics_custom_module
 
@@ -287,10 +291,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_delete_event_threat_detection_custom_module(
         self,
         request: security_center_management.DeleteEventThreatDetectionCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.DeleteEventThreatDetectionCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for delete_event_threat_detection_custom_module
 
@@ -302,10 +306,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_delete_security_health_analytics_custom_module(
         self,
         request: security_center_management.DeleteSecurityHealthAnalyticsCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.DeleteSecurityHealthAnalyticsCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for delete_security_health_analytics_custom_module
 
@@ -317,10 +321,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_get_effective_event_threat_detection_custom_module(
         self,
         request: security_center_management.GetEffectiveEventThreatDetectionCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.GetEffectiveEventThreatDetectionCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for get_effective_event_threat_detection_custom_module
 
@@ -344,10 +348,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_get_effective_security_health_analytics_custom_module(
         self,
         request: security_center_management.GetEffectiveSecurityHealthAnalyticsCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.GetEffectiveSecurityHealthAnalyticsCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for get_effective_security_health_analytics_custom_module
 
@@ -371,10 +375,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_get_event_threat_detection_custom_module(
         self,
         request: security_center_management.GetEventThreatDetectionCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.GetEventThreatDetectionCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for get_event_threat_detection_custom_module
 
@@ -397,10 +401,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_get_security_center_service(
         self,
         request: security_center_management.GetSecurityCenterServiceRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.GetSecurityCenterServiceRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for get_security_center_service
 
@@ -423,10 +427,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_get_security_health_analytics_custom_module(
         self,
         request: security_center_management.GetSecurityHealthAnalyticsCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.GetSecurityHealthAnalyticsCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for get_security_health_analytics_custom_module
 
@@ -449,10 +453,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_list_descendant_event_threat_detection_custom_modules(
         self,
         request: security_center_management.ListDescendantEventThreatDetectionCustomModulesRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.ListDescendantEventThreatDetectionCustomModulesRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_descendant_event_threat_detection_custom_modules
 
@@ -478,10 +482,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_list_descendant_security_health_analytics_custom_modules(
         self,
         request: security_center_management.ListDescendantSecurityHealthAnalyticsCustomModulesRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.ListDescendantSecurityHealthAnalyticsCustomModulesRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_descendant_security_health_analytics_custom_modules
 
@@ -507,10 +511,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_list_effective_event_threat_detection_custom_modules(
         self,
         request: security_center_management.ListEffectiveEventThreatDetectionCustomModulesRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.ListEffectiveEventThreatDetectionCustomModulesRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_effective_event_threat_detection_custom_modules
 
@@ -536,10 +540,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_list_effective_security_health_analytics_custom_modules(
         self,
         request: security_center_management.ListEffectiveSecurityHealthAnalyticsCustomModulesRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.ListEffectiveSecurityHealthAnalyticsCustomModulesRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_effective_security_health_analytics_custom_modules
 
@@ -565,10 +569,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_list_event_threat_detection_custom_modules(
         self,
         request: security_center_management.ListEventThreatDetectionCustomModulesRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.ListEventThreatDetectionCustomModulesRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_event_threat_detection_custom_modules
 
@@ -592,10 +596,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_list_security_center_services(
         self,
         request: security_center_management.ListSecurityCenterServicesRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.ListSecurityCenterServicesRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_security_center_services
 
@@ -618,10 +622,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_list_security_health_analytics_custom_modules(
         self,
         request: security_center_management.ListSecurityHealthAnalyticsCustomModulesRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.ListSecurityHealthAnalyticsCustomModulesRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_security_health_analytics_custom_modules
 
@@ -645,10 +649,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_simulate_security_health_analytics_custom_module(
         self,
         request: security_center_management.SimulateSecurityHealthAnalyticsCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.SimulateSecurityHealthAnalyticsCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for simulate_security_health_analytics_custom_module
 
@@ -672,10 +676,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_update_event_threat_detection_custom_module(
         self,
         request: security_center_management.UpdateEventThreatDetectionCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.UpdateEventThreatDetectionCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for update_event_threat_detection_custom_module
 
@@ -698,10 +702,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_update_security_center_service(
         self,
         request: security_center_management.UpdateSecurityCenterServiceRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.UpdateSecurityCenterServiceRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for update_security_center_service
 
@@ -724,10 +728,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_update_security_health_analytics_custom_module(
         self,
         request: security_center_management.UpdateSecurityHealthAnalyticsCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.UpdateSecurityHealthAnalyticsCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for update_security_health_analytics_custom_module
 
@@ -750,10 +754,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_validate_event_threat_detection_custom_module(
         self,
         request: security_center_management.ValidateEventThreatDetectionCustomModuleRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         security_center_management.ValidateEventThreatDetectionCustomModuleRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for validate_event_threat_detection_custom_module
 
@@ -777,8 +781,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_get_location(
         self,
         request: locations_pb2.GetLocationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[locations_pb2.GetLocationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        locations_pb2.GetLocationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_location
 
         Override in a subclass to manipulate the request or metadata
@@ -800,8 +806,10 @@ class SecurityCenterManagementRestInterceptor:
     def pre_list_locations(
         self,
         request: locations_pb2.ListLocationsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[locations_pb2.ListLocationsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        locations_pb2.ListLocationsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_locations
 
         Override in a subclass to manipulate the request or metadata
@@ -828,8 +836,8 @@ class SecurityCenterManagementRestStub:
     _interceptor: SecurityCenterManagementRestInterceptor
 
 
-class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
-    """REST backend transport for SecurityCenterManagement.
+class SecurityCenterManagementRestTransport(_BaseSecurityCenterManagementRestTransport):
+    """REST backend synchronous transport for SecurityCenterManagement.
 
     Service describing handlers for resources
 
@@ -838,7 +846,6 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -892,21 +899,12 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -917,19 +915,37 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
         self._interceptor = interceptor or SecurityCenterManagementRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _CreateEventThreatDetectionCustomModule(SecurityCenterManagementRestStub):
+    class _CreateEventThreatDetectionCustomModule(
+        _BaseSecurityCenterManagementRestTransport._BaseCreateEventThreatDetectionCustomModule,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateEventThreatDetectionCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.CreateEventThreatDetectionCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -937,88 +953,93 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.EventThreatDetectionCustomModule:
             r"""Call the create event threat
             detection custom module method over HTTP.
 
                 Args:
                     request (~.security_center_management.CreateEventThreatDetectionCustomModuleRequest):
-                        The request object. Message for creating a
-                    EventThreatDetectionCustomModule
+                        The request object. Request message for
+                    [SecurityCenterManagement.CreateEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.CreateEventThreatDetectionCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.EventThreatDetectionCustomModule:
-                        An event threat detection custom
-                    module is a Cloud SCC resource that
-                    contains the configuration and
+                        A Security Command Center resource
+                    that contains the configuration and
                     enablement state of a custom module,
-                    which enables ETD to write certain
-                    findings to Cloud SCC.
+                    which enables Event Threat Detection to
+                    write certain findings to Security
+                    Command Center.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*}/eventThreatDetectionCustomModules",
-                    "body": "event_threat_detection_custom_module",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=folders/*/locations/*}/eventThreatDetectionCustomModules",
-                    "body": "event_threat_detection_custom_module",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/eventThreatDetectionCustomModules",
-                    "body": "event_threat_detection_custom_module",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseCreateEventThreatDetectionCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_create_event_threat_detection_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.CreateEventThreatDetectionCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseCreateEventThreatDetectionCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseSecurityCenterManagementRestTransport._BaseCreateEventThreatDetectionCustomModule._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseCreateEventThreatDetectionCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.CreateEventThreatDetectionCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "CreateEventThreatDetectionCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = SecurityCenterManagementRestTransport._CreateEventThreatDetectionCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1033,24 +1054,66 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_event_threat_detection_custom_module(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.EventThreatDetectionCustomModule.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.create_event_threat_detection_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "CreateEventThreatDetectionCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CreateSecurityHealthAnalyticsCustomModule(SecurityCenterManagementRestStub):
+    class _CreateSecurityHealthAnalyticsCustomModule(
+        _BaseSecurityCenterManagementRestTransport._BaseCreateSecurityHealthAnalyticsCustomModule,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateSecurityHealthAnalyticsCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.CreateSecurityHealthAnalyticsCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1058,20 +1121,22 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.SecurityHealthAnalyticsCustomModule:
             r"""Call the create security health
             analytics custom module method over HTTP.
 
                 Args:
                     request (~.security_center_management.CreateSecurityHealthAnalyticsCustomModuleRequest):
-                        The request object. Message for creating a
-                    SecurityHealthAnalyticsCustomModule
+                        The request object. Request message for
+                    [SecurityCenterManagement.CreateSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.CreateSecurityHealthAnalyticsCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.SecurityHealthAnalyticsCustomModule:
@@ -1083,67 +1148,70 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
                     the organization, folder, or project
                     level. Custom modules that you create at
                     the organization or folder level are
-                    inherited by the child folders and
+                    inherited by the descendant folders and
                     projects.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*}/securityHealthAnalyticsCustomModules",
-                    "body": "security_health_analytics_custom_module",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=folders/*/locations/*}/securityHealthAnalyticsCustomModules",
-                    "body": "security_health_analytics_custom_module",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/securityHealthAnalyticsCustomModules",
-                    "body": "security_health_analytics_custom_module",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseCreateSecurityHealthAnalyticsCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_create_security_health_analytics_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.CreateSecurityHealthAnalyticsCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseCreateSecurityHealthAnalyticsCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseSecurityCenterManagementRestTransport._BaseCreateSecurityHealthAnalyticsCustomModule._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseCreateSecurityHealthAnalyticsCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.CreateSecurityHealthAnalyticsCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "CreateSecurityHealthAnalyticsCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = SecurityCenterManagementRestTransport._CreateSecurityHealthAnalyticsCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1158,26 +1226,67 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = (
                 self._interceptor.post_create_security_health_analytics_custom_module(
                     resp
                 )
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.SecurityHealthAnalyticsCustomModule.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.create_security_health_analytics_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "CreateSecurityHealthAnalyticsCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _DeleteEventThreatDetectionCustomModule(SecurityCenterManagementRestStub):
+    class _DeleteEventThreatDetectionCustomModule(
+        _BaseSecurityCenterManagementRestTransport._BaseDeleteEventThreatDetectionCustomModule,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("DeleteEventThreatDetectionCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.DeleteEventThreatDetectionCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1185,69 +1294,78 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete event threat
             detection custom module method over HTTP.
 
                 Args:
                     request (~.security_center_management.DeleteEventThreatDetectionCustomModuleRequest):
-                        The request object. Message for deleting a
-                    EventThreatDetectionCustomModule
+                        The request object. Request message for
+                    [SecurityCenterManagement.DeleteEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.DeleteEventThreatDetectionCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=projects/*/locations/*/eventThreatDetectionCustomModules/*}",
-                },
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=folders/*/locations/*/eventThreatDetectionCustomModules/*}",
-                },
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=organizations/*/locations/*/eventThreatDetectionCustomModules/*}",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseDeleteEventThreatDetectionCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_delete_event_threat_detection_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.DeleteEventThreatDetectionCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseDeleteEventThreatDetectionCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseDeleteEventThreatDetectionCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.DeleteEventThreatDetectionCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "DeleteEventThreatDetectionCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._DeleteEventThreatDetectionCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1255,19 +1373,36 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _DeleteSecurityHealthAnalyticsCustomModule(SecurityCenterManagementRestStub):
+    class _DeleteSecurityHealthAnalyticsCustomModule(
+        _BaseSecurityCenterManagementRestTransport._BaseDeleteSecurityHealthAnalyticsCustomModule,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("DeleteSecurityHealthAnalyticsCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.DeleteSecurityHealthAnalyticsCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1275,69 +1410,78 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete security health
             analytics custom module method over HTTP.
 
                 Args:
                     request (~.security_center_management.DeleteSecurityHealthAnalyticsCustomModuleRequest):
-                        The request object. Message for deleting a
-                    SecurityHealthAnalyticsCustomModule
+                        The request object. Request message for
+                    [SecurityCenterManagement.DeleteSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.DeleteSecurityHealthAnalyticsCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=projects/*/locations/*/securityHealthAnalyticsCustomModules/*}",
-                },
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=folders/*/locations/*/securityHealthAnalyticsCustomModules/*}",
-                },
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=organizations/*/locations/*/securityHealthAnalyticsCustomModules/*}",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseDeleteSecurityHealthAnalyticsCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_delete_security_health_analytics_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.DeleteSecurityHealthAnalyticsCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseDeleteSecurityHealthAnalyticsCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseDeleteSecurityHealthAnalyticsCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.DeleteSecurityHealthAnalyticsCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "DeleteSecurityHealthAnalyticsCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._DeleteSecurityHealthAnalyticsCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1346,20 +1490,35 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
                 raise core_exceptions.from_http_response(response)
 
     class _GetEffectiveEventThreatDetectionCustomModule(
-        SecurityCenterManagementRestStub
+        _BaseSecurityCenterManagementRestTransport._BaseGetEffectiveEventThreatDetectionCustomModule,
+        SecurityCenterManagementRestStub,
     ):
         def __hash__(self):
-            return hash("GetEffectiveEventThreatDetectionCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.GetEffectiveEventThreatDetectionCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1367,83 +1526,91 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.EffectiveEventThreatDetectionCustomModule:
             r"""Call the get effective event
             threat detection custom module method over HTTP.
 
                 Args:
                     request (~.security_center_management.GetEffectiveEventThreatDetectionCustomModuleRequest):
-                        The request object. Message for getting a
-                    EffectiveEventThreatDetectionCustomModule
+                        The request object. Request message for
+                    [SecurityCenterManagement.GetEffectiveEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetEffectiveEventThreatDetectionCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.EffectiveEventThreatDetectionCustomModule:
-                        An EffectiveEventThreatDetectionCustomModule is the
-                    representation of EventThreatDetectionCustomModule at a
-                    given level taking hierarchy into account and resolving
-                    various fields accordingly. e.g. if the module is
-                    enabled at the ancestor level, effective modules at all
-                    descendant levels will have enablement_state set to
-                    ENABLED. Similarly, if module.inherited is set, then
-                    effective module's config will contain the ancestor's
-                    config details.
-                    EffectiveEventThreatDetectionCustomModule is read-only.
+                        The representation of an
+                    [EventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.EventThreatDetectionCustomModule]
+                    at a given level, taking hierarchy into account and
+                    resolving various fields accordingly. For example, if
+                    the module is enabled at the ancestor level, then
+                    effective modules at all descendant levels will have
+                    their enablement state set to ``ENABLED``. Similarly, if
+                    ``module.inherited`` is set, then the effective module's
+                    configuration will reflect the ancestor's configuration.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/effectiveEventThreatDetectionCustomModules/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*/effectiveEventThreatDetectionCustomModules/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/effectiveEventThreatDetectionCustomModules/*}",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseGetEffectiveEventThreatDetectionCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_get_effective_event_threat_detection_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.GetEffectiveEventThreatDetectionCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseGetEffectiveEventThreatDetectionCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseGetEffectiveEventThreatDetectionCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.GetEffectiveEventThreatDetectionCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetEffectiveEventThreatDetectionCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._GetEffectiveEventThreatDetectionCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1462,26 +1629,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_effective_event_threat_detection_custom_module(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.EffectiveEventThreatDetectionCustomModule.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.get_effective_event_threat_detection_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetEffectiveEventThreatDetectionCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     class _GetEffectiveSecurityHealthAnalyticsCustomModule(
-        SecurityCenterManagementRestStub
+        _BaseSecurityCenterManagementRestTransport._BaseGetEffectiveSecurityHealthAnalyticsCustomModule,
+        SecurityCenterManagementRestStub,
     ):
         def __hash__(self):
-            return hash("GetEffectiveSecurityHealthAnalyticsCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.GetEffectiveSecurityHealthAnalyticsCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1489,87 +1695,92 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.EffectiveSecurityHealthAnalyticsCustomModule:
             r"""Call the get effective security
             health analytics custom module method over HTTP.
 
                 Args:
                     request (~.security_center_management.GetEffectiveSecurityHealthAnalyticsCustomModuleRequest):
-                        The request object. Message for getting a
-                    EffectiveSecurityHealthAnalyticsCustomModule
+                        The request object. Request message for
+                    [SecurityCenterManagement.GetEffectiveSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetEffectiveSecurityHealthAnalyticsCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.EffectiveSecurityHealthAnalyticsCustomModule:
-                        An EffectiveSecurityHealthAnalyticsCustomModule is the
-                    representation of a Security Health Analytics custom
+                        The representation of a Security Health Analytics custom
                     module at a specified level of the resource hierarchy:
                     organization, folder, or project. If a custom module is
-                    inherited from a parent organization or folder, the
-                    value of the ``enablementState`` property in
-                    EffectiveSecurityHealthAnalyticsCustomModule is set to
-                    the value that is effective in the parent, instead of
-                    ``INHERITED``. For example, if the module is enabled in
-                    a parent organization or folder, the effective
-                    enablement_state for the module in all child folders or
-                    projects is also ``enabled``.
-                    EffectiveSecurityHealthAnalyticsCustomModule is
-                    read-only.
+                    inherited from an ancestor organization or folder, then
+                    the enablement state is set to the value that is
+                    effective in the parent, not to ``INHERITED``. For
+                    example, if the module is enabled in an organization or
+                    folder, then the effective enablement state for the
+                    module is ``ENABLED`` in all descendant folders or
+                    projects.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/effectiveSecurityHealthAnalyticsCustomModules/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*/effectiveSecurityHealthAnalyticsCustomModules/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/effectiveSecurityHealthAnalyticsCustomModules/*}",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseGetEffectiveSecurityHealthAnalyticsCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_get_effective_security_health_analytics_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.GetEffectiveSecurityHealthAnalyticsCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseGetEffectiveSecurityHealthAnalyticsCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseGetEffectiveSecurityHealthAnalyticsCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.GetEffectiveSecurityHealthAnalyticsCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetEffectiveSecurityHealthAnalyticsCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._GetEffectiveSecurityHealthAnalyticsCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1586,24 +1797,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_effective_security_health_analytics_custom_module(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.EffectiveSecurityHealthAnalyticsCustomModule.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.get_effective_security_health_analytics_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetEffectiveSecurityHealthAnalyticsCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetEventThreatDetectionCustomModule(SecurityCenterManagementRestStub):
+    class _GetEventThreatDetectionCustomModule(
+        _BaseSecurityCenterManagementRestTransport._BaseGetEventThreatDetectionCustomModule,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("GetEventThreatDetectionCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.GetEventThreatDetectionCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1611,79 +1863,88 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.EventThreatDetectionCustomModule:
             r"""Call the get event threat
             detection custom module method over HTTP.
 
                 Args:
                     request (~.security_center_management.GetEventThreatDetectionCustomModuleRequest):
-                        The request object. Message for getting a
-                    EventThreatDetectionCustomModule
+                        The request object. Request message for
+                    [SecurityCenterManagement.GetEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetEventThreatDetectionCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.EventThreatDetectionCustomModule:
-                        An event threat detection custom
-                    module is a Cloud SCC resource that
-                    contains the configuration and
+                        A Security Command Center resource
+                    that contains the configuration and
                     enablement state of a custom module,
-                    which enables ETD to write certain
-                    findings to Cloud SCC.
+                    which enables Event Threat Detection to
+                    write certain findings to Security
+                    Command Center.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/eventThreatDetectionCustomModules/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*/eventThreatDetectionCustomModules/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/eventThreatDetectionCustomModules/*}",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseGetEventThreatDetectionCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_get_event_threat_detection_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.GetEventThreatDetectionCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseGetEventThreatDetectionCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseGetEventThreatDetectionCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.GetEventThreatDetectionCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetEventThreatDetectionCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._GetEventThreatDetectionCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1698,22 +1959,63 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_event_threat_detection_custom_module(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.EventThreatDetectionCustomModule.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.get_event_threat_detection_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetEventThreatDetectionCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetSecurityCenterService(SecurityCenterManagementRestStub):
+    class _GetSecurityCenterService(
+        _BaseSecurityCenterManagementRestTransport._BaseGetSecurityCenterService,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("GetSecurityCenterService")
+            return hash(
+                "SecurityCenterManagementRestTransport.GetSecurityCenterService"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1721,20 +2023,22 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.SecurityCenterService:
             r"""Call the get security center
             service method over HTTP.
 
                 Args:
                     request (~.security_center_management.GetSecurityCenterServiceRequest):
-                        The request object. Request message for getting a
-                    Security Command Center service.
+                        The request object. Request message for
+                    [SecurityCenterManagement.GetSecurityCenterService][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetSecurityCenterService].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.SecurityCenterService:
@@ -1746,55 +2050,62 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
                     configured at the organization, folder,
                     or project level. Service settings at
                     the organization or folder level are
-                    inherited by those in child folders and
-                    projects.
+                    inherited by those in descendant folders
+                    and projects.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/securityCenterServices/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*/securityCenterServices/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/securityCenterServices/*}",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseGetSecurityCenterService._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_security_center_service(
                 request, metadata
             )
-            pb_request = security_center_management.GetSecurityCenterServiceRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseGetSecurityCenterService._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseGetSecurityCenterService._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.GetSecurityCenterService",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetSecurityCenterService",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._GetSecurityCenterService._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1807,22 +2118,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             pb_resp = security_center_management.SecurityCenterService.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_security_center_service(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        security_center_management.SecurityCenterService.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.get_security_center_service",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetSecurityCenterService",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetSecurityHealthAnalyticsCustomModule(SecurityCenterManagementRestStub):
+    class _GetSecurityHealthAnalyticsCustomModule(
+        _BaseSecurityCenterManagementRestTransport._BaseGetSecurityHealthAnalyticsCustomModule,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("GetSecurityHealthAnalyticsCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.GetSecurityHealthAnalyticsCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1830,20 +2184,22 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.SecurityHealthAnalyticsCustomModule:
             r"""Call the get security health
             analytics custom module method over HTTP.
 
                 Args:
                     request (~.security_center_management.GetSecurityHealthAnalyticsCustomModuleRequest):
-                        The request object. Message for getting a
-                    SecurityHealthAnalyticsCustomModule
+                        The request object. Request message for
+                    [SecurityCenterManagement.GetSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetSecurityHealthAnalyticsCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.SecurityHealthAnalyticsCustomModule:
@@ -1855,58 +2211,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
                     the organization, folder, or project
                     level. Custom modules that you create at
                     the organization or folder level are
-                    inherited by the child folders and
+                    inherited by the descendant folders and
                     projects.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/securityHealthAnalyticsCustomModules/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*/securityHealthAnalyticsCustomModules/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/securityHealthAnalyticsCustomModules/*}",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseGetSecurityHealthAnalyticsCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_get_security_health_analytics_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.GetSecurityHealthAnalyticsCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseGetSecurityHealthAnalyticsCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseGetSecurityHealthAnalyticsCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.GetSecurityHealthAnalyticsCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetSecurityHealthAnalyticsCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._GetSecurityHealthAnalyticsCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1921,26 +2284,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_security_health_analytics_custom_module(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.SecurityHealthAnalyticsCustomModule.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.get_security_health_analytics_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetSecurityHealthAnalyticsCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     class _ListDescendantEventThreatDetectionCustomModules(
-        SecurityCenterManagementRestStub
+        _BaseSecurityCenterManagementRestTransport._BaseListDescendantEventThreatDetectionCustomModules,
+        SecurityCenterManagementRestStub,
     ):
         def __hash__(self):
-            return hash("ListDescendantEventThreatDetectionCustomModules")
+            return hash(
+                "SecurityCenterManagementRestTransport.ListDescendantEventThreatDetectionCustomModules"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1948,7 +2350,7 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> (
             security_center_management.ListDescendantEventThreatDetectionCustomModulesResponse
         ):
@@ -1957,70 +2359,77 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
 
                 Args:
                     request (~.security_center_management.ListDescendantEventThreatDetectionCustomModulesRequest):
-                        The request object. Request message for listing
-                    descendant Event Threat Detection custom
-                    modules.
+                        The request object. Request message for
+                    [SecurityCenterManagement.ListDescendantEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListDescendantEventThreatDetectionCustomModules].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.ListDescendantEventThreatDetectionCustomModulesResponse:
-                        Response message for listing
-                    descendant Event Threat Detection custom
-                    modules.
+                        Response message for
+                    [SecurityCenterManagement.ListDescendantEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListDescendantEventThreatDetectionCustomModules].
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/eventThreatDetectionCustomModules:listDescendant",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}/eventThreatDetectionCustomModules:listDescendant",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/eventThreatDetectionCustomModules:listDescendant",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseListDescendantEventThreatDetectionCustomModules._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_list_descendant_event_threat_detection_custom_modules(
                 request, metadata
             )
-            pb_request = security_center_management.ListDescendantEventThreatDetectionCustomModulesRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseListDescendantEventThreatDetectionCustomModules._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseListDescendantEventThreatDetectionCustomModules._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.ListDescendantEventThreatDetectionCustomModules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListDescendantEventThreatDetectionCustomModules",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._ListDescendantEventThreatDetectionCustomModules._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2037,26 +2446,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_descendant_event_threat_detection_custom_modules(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.ListDescendantEventThreatDetectionCustomModulesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.list_descendant_event_threat_detection_custom_modules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListDescendantEventThreatDetectionCustomModules",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     class _ListDescendantSecurityHealthAnalyticsCustomModules(
-        SecurityCenterManagementRestStub
+        _BaseSecurityCenterManagementRestTransport._BaseListDescendantSecurityHealthAnalyticsCustomModules,
+        SecurityCenterManagementRestStub,
     ):
         def __hash__(self):
-            return hash("ListDescendantSecurityHealthAnalyticsCustomModules")
+            return hash(
+                "SecurityCenterManagementRestTransport.ListDescendantSecurityHealthAnalyticsCustomModules"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -2064,7 +2512,7 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> (
             security_center_management.ListDescendantSecurityHealthAnalyticsCustomModulesResponse
         ):
@@ -2073,70 +2521,77 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
 
                 Args:
                     request (~.security_center_management.ListDescendantSecurityHealthAnalyticsCustomModulesRequest):
-                        The request object. Request message for listing
-                    descendant Security Health Analytics
-                    custom modules.
+                        The request object. Request message for
+                    [SecurityCenterManagement.ListDescendantSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListDescendantSecurityHealthAnalyticsCustomModules].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.ListDescendantSecurityHealthAnalyticsCustomModulesResponse:
-                        Response message for listing
-                    descendant Security Health Analytics
-                    custom modules.
+                        Response message for
+                    [SecurityCenterManagement.ListDescendantSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListDescendantSecurityHealthAnalyticsCustomModules].
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/securityHealthAnalyticsCustomModules:listDescendant",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}/securityHealthAnalyticsCustomModules:listDescendant",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/securityHealthAnalyticsCustomModules:listDescendant",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseListDescendantSecurityHealthAnalyticsCustomModules._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_list_descendant_security_health_analytics_custom_modules(
                 request, metadata
             )
-            pb_request = security_center_management.ListDescendantSecurityHealthAnalyticsCustomModulesRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseListDescendantSecurityHealthAnalyticsCustomModules._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseListDescendantSecurityHealthAnalyticsCustomModules._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.ListDescendantSecurityHealthAnalyticsCustomModules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListDescendantSecurityHealthAnalyticsCustomModules",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._ListDescendantSecurityHealthAnalyticsCustomModules._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2153,26 +2608,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_descendant_security_health_analytics_custom_modules(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.ListDescendantSecurityHealthAnalyticsCustomModulesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.list_descendant_security_health_analytics_custom_modules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListDescendantSecurityHealthAnalyticsCustomModules",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     class _ListEffectiveEventThreatDetectionCustomModules(
-        SecurityCenterManagementRestStub
+        _BaseSecurityCenterManagementRestTransport._BaseListEffectiveEventThreatDetectionCustomModules,
+        SecurityCenterManagementRestStub,
     ):
         def __hash__(self):
-            return hash("ListEffectiveEventThreatDetectionCustomModules")
+            return hash(
+                "SecurityCenterManagementRestTransport.ListEffectiveEventThreatDetectionCustomModules"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -2180,7 +2674,7 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> (
             security_center_management.ListEffectiveEventThreatDetectionCustomModulesResponse
         ):
@@ -2189,69 +2683,77 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
 
                 Args:
                     request (~.security_center_management.ListEffectiveEventThreatDetectionCustomModulesRequest):
-                        The request object. Request message for listing effective
-                    Event Threat Detection custom modules.
+                        The request object. Request message for
+                    [SecurityCenterManagement.ListEffectiveEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEffectiveEventThreatDetectionCustomModules].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.ListEffectiveEventThreatDetectionCustomModulesResponse:
-                        Response message for listing
-                    effective Event Threat Detection custom
-                    modules.
+                        Response message for
+                    [SecurityCenterManagement.ListEffectiveEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEffectiveEventThreatDetectionCustomModules].
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/effectiveEventThreatDetectionCustomModules",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}/effectiveEventThreatDetectionCustomModules",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/effectiveEventThreatDetectionCustomModules",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseListEffectiveEventThreatDetectionCustomModules._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_list_effective_event_threat_detection_custom_modules(
                 request, metadata
             )
-            pb_request = security_center_management.ListEffectiveEventThreatDetectionCustomModulesRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseListEffectiveEventThreatDetectionCustomModules._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseListEffectiveEventThreatDetectionCustomModules._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.ListEffectiveEventThreatDetectionCustomModules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListEffectiveEventThreatDetectionCustomModules",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._ListEffectiveEventThreatDetectionCustomModules._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2268,26 +2770,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_effective_event_threat_detection_custom_modules(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.ListEffectiveEventThreatDetectionCustomModulesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.list_effective_event_threat_detection_custom_modules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListEffectiveEventThreatDetectionCustomModules",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     class _ListEffectiveSecurityHealthAnalyticsCustomModules(
-        SecurityCenterManagementRestStub
+        _BaseSecurityCenterManagementRestTransport._BaseListEffectiveSecurityHealthAnalyticsCustomModules,
+        SecurityCenterManagementRestStub,
     ):
         def __hash__(self):
-            return hash("ListEffectiveSecurityHealthAnalyticsCustomModules")
+            return hash(
+                "SecurityCenterManagementRestTransport.ListEffectiveSecurityHealthAnalyticsCustomModules"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -2295,7 +2836,7 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> (
             security_center_management.ListEffectiveSecurityHealthAnalyticsCustomModulesResponse
         ):
@@ -2304,70 +2845,77 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
 
                 Args:
                     request (~.security_center_management.ListEffectiveSecurityHealthAnalyticsCustomModulesRequest):
-                        The request object. Request message for listing effective
-                    Security Health Analytics custom
-                    modules.
+                        The request object. Request message for
+                    [SecurityCenterManagement.ListEffectiveSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEffectiveSecurityHealthAnalyticsCustomModules].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.ListEffectiveSecurityHealthAnalyticsCustomModulesResponse:
-                        Response message for listing
-                    effective Security Health Analytics
-                    custom modules.
+                        Response message for
+                    [SecurityCenterManagement.ListEffectiveSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEffectiveSecurityHealthAnalyticsCustomModules].
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/effectiveSecurityHealthAnalyticsCustomModules",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}/effectiveSecurityHealthAnalyticsCustomModules",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/effectiveSecurityHealthAnalyticsCustomModules",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseListEffectiveSecurityHealthAnalyticsCustomModules._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_list_effective_security_health_analytics_custom_modules(
                 request, metadata
             )
-            pb_request = security_center_management.ListEffectiveSecurityHealthAnalyticsCustomModulesRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseListEffectiveSecurityHealthAnalyticsCustomModules._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseListEffectiveSecurityHealthAnalyticsCustomModules._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.ListEffectiveSecurityHealthAnalyticsCustomModules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListEffectiveSecurityHealthAnalyticsCustomModules",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._ListEffectiveSecurityHealthAnalyticsCustomModules._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2384,24 +2932,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_effective_security_health_analytics_custom_modules(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.ListEffectiveSecurityHealthAnalyticsCustomModulesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.list_effective_security_health_analytics_custom_modules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListEffectiveSecurityHealthAnalyticsCustomModules",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListEventThreatDetectionCustomModules(SecurityCenterManagementRestStub):
+    class _ListEventThreatDetectionCustomModules(
+        _BaseSecurityCenterManagementRestTransport._BaseListEventThreatDetectionCustomModules,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("ListEventThreatDetectionCustomModules")
+            return hash(
+                "SecurityCenterManagementRestTransport.ListEventThreatDetectionCustomModules"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -2409,75 +2998,84 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.ListEventThreatDetectionCustomModulesResponse:
             r"""Call the list event threat
             detection custom modules method over HTTP.
 
                 Args:
                     request (~.security_center_management.ListEventThreatDetectionCustomModulesRequest):
-                        The request object. Request message for listing Event
-                    Threat Detection custom modules.
+                        The request object. Request message for
+                    [SecurityCenterManagement.ListEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEventThreatDetectionCustomModules].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.ListEventThreatDetectionCustomModulesResponse:
-                        Response message for listing Event
-                    Threat Detection custom modules.
+                        Response message for
+                    [SecurityCenterManagement.ListEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEventThreatDetectionCustomModules].
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/eventThreatDetectionCustomModules",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}/eventThreatDetectionCustomModules",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/eventThreatDetectionCustomModules",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseListEventThreatDetectionCustomModules._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_list_event_threat_detection_custom_modules(
                 request, metadata
             )
-            pb_request = security_center_management.ListEventThreatDetectionCustomModulesRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseListEventThreatDetectionCustomModules._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseListEventThreatDetectionCustomModules._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.ListEventThreatDetectionCustomModules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListEventThreatDetectionCustomModules",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._ListEventThreatDetectionCustomModules._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2494,24 +3092,65 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_event_threat_detection_custom_modules(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.ListEventThreatDetectionCustomModulesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.list_event_threat_detection_custom_modules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListEventThreatDetectionCustomModules",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListSecurityCenterServices(SecurityCenterManagementRestStub):
+    class _ListSecurityCenterServices(
+        _BaseSecurityCenterManagementRestTransport._BaseListSecurityCenterServices,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("ListSecurityCenterServices")
+            return hash(
+                "SecurityCenterManagementRestTransport.ListSecurityCenterServices"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -2519,72 +3158,81 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.ListSecurityCenterServicesResponse:
             r"""Call the list security center
             services method over HTTP.
 
                 Args:
                     request (~.security_center_management.ListSecurityCenterServicesRequest):
-                        The request object. Request message for listing Security
-                    Command Center services.
+                        The request object. Request message for
+                    [SecurityCenterManagement.ListSecurityCenterServices][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListSecurityCenterServices].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.ListSecurityCenterServicesResponse:
-                        Response message for listing Security
-                    Command Center services.
+                        Response message for
+                    [SecurityCenterManagement.ListSecurityCenterServices][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListSecurityCenterServices].
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/securityCenterServices",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}/securityCenterServices",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/securityCenterServices",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseListSecurityCenterServices._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_security_center_services(
                 request, metadata
             )
-            pb_request = (
-                security_center_management.ListSecurityCenterServicesRequest.pb(request)
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseListSecurityCenterServices._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseListSecurityCenterServices._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.ListSecurityCenterServices",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListSecurityCenterServices",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._ListSecurityCenterServices._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2599,22 +3247,63 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_security_center_services(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.ListSecurityCenterServicesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.list_security_center_services",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListSecurityCenterServices",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListSecurityHealthAnalyticsCustomModules(SecurityCenterManagementRestStub):
+    class _ListSecurityHealthAnalyticsCustomModules(
+        _BaseSecurityCenterManagementRestTransport._BaseListSecurityHealthAnalyticsCustomModules,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("ListSecurityHealthAnalyticsCustomModules")
+            return hash(
+                "SecurityCenterManagementRestTransport.ListSecurityHealthAnalyticsCustomModules"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -2622,7 +3311,7 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> (
             security_center_management.ListSecurityHealthAnalyticsCustomModulesResponse
         ):
@@ -2631,68 +3320,77 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
 
                 Args:
                     request (~.security_center_management.ListSecurityHealthAnalyticsCustomModulesRequest):
-                        The request object. Request message for listing Security
-                    Health Analytics custom modules.
+                        The request object. Request message for
+                    [SecurityCenterManagement.ListSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListSecurityHealthAnalyticsCustomModules].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.ListSecurityHealthAnalyticsCustomModulesResponse:
-                        Response message for listing Security
-                    Health Analytics custom modules.
+                        Response message for
+                    [SecurityCenterManagement.ListSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListSecurityHealthAnalyticsCustomModules].
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/securityHealthAnalyticsCustomModules",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}/securityHealthAnalyticsCustomModules",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/securityHealthAnalyticsCustomModules",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseListSecurityHealthAnalyticsCustomModules._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_list_security_health_analytics_custom_modules(
                 request, metadata
             )
-            pb_request = security_center_management.ListSecurityHealthAnalyticsCustomModulesRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseListSecurityHealthAnalyticsCustomModules._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseListSecurityHealthAnalyticsCustomModules._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.ListSecurityHealthAnalyticsCustomModules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListSecurityHealthAnalyticsCustomModules",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = SecurityCenterManagementRestTransport._ListSecurityHealthAnalyticsCustomModules._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2709,26 +3407,66 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_security_health_analytics_custom_modules(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.ListSecurityHealthAnalyticsCustomModulesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.list_security_health_analytics_custom_modules",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListSecurityHealthAnalyticsCustomModules",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     class _SimulateSecurityHealthAnalyticsCustomModule(
-        SecurityCenterManagementRestStub
+        _BaseSecurityCenterManagementRestTransport._BaseSimulateSecurityHealthAnalyticsCustomModule,
+        SecurityCenterManagementRestStub,
     ):
         def __hash__(self):
-            return hash("SimulateSecurityHealthAnalyticsCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.SimulateSecurityHealthAnalyticsCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -2736,7 +3474,7 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> (
             security_center_management.SimulateSecurityHealthAnalyticsCustomModuleResponse
         ):
@@ -2745,80 +3483,83 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
 
                 Args:
                     request (~.security_center_management.SimulateSecurityHealthAnalyticsCustomModuleRequest):
-                        The request object. Request message to simulate a
-                    CustomConfig against a given test
-                    resource. Maximum size of the request is
-                    4 MB by default.
+                        The request object. Request message for
+                    [SecurityCenterManagement.SimulateSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.SimulateSecurityHealthAnalyticsCustomModule].
+                    The maximum size of the request is 4 MiB.
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.SimulateSecurityHealthAnalyticsCustomModuleResponse:
-                        Response message for simulating a
-                    ``SecurityHealthAnalyticsCustomModule`` against a given
-                    resource.
+                        Response message for
+                    [SecurityCenterManagement.SimulateSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.SimulateSecurityHealthAnalyticsCustomModule].
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*}/securityHealthAnalyticsCustomModules:simulate",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=folders/*/locations/*}/securityHealthAnalyticsCustomModules:simulate",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/securityHealthAnalyticsCustomModules:simulate",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseSimulateSecurityHealthAnalyticsCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_simulate_security_health_analytics_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.SimulateSecurityHealthAnalyticsCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseSimulateSecurityHealthAnalyticsCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseSecurityCenterManagementRestTransport._BaseSimulateSecurityHealthAnalyticsCustomModule._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseSimulateSecurityHealthAnalyticsCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.SimulateSecurityHealthAnalyticsCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "SimulateSecurityHealthAnalyticsCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = SecurityCenterManagementRestTransport._SimulateSecurityHealthAnalyticsCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2835,28 +3576,68 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = (
                 self._interceptor.post_simulate_security_health_analytics_custom_module(
                     resp
                 )
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.SimulateSecurityHealthAnalyticsCustomModuleResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.simulate_security_health_analytics_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "SimulateSecurityHealthAnalyticsCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateEventThreatDetectionCustomModule(SecurityCenterManagementRestStub):
+    class _UpdateEventThreatDetectionCustomModule(
+        _BaseSecurityCenterManagementRestTransport._BaseUpdateEventThreatDetectionCustomModule,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateEventThreatDetectionCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.UpdateEventThreatDetectionCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "updateMask": {},
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -2864,7 +3645,7 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.EventThreatDetectionCustomModule:
             r"""Call the update event threat
             detection custom module method over HTTP.
@@ -2876,76 +3657,81 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.EventThreatDetectionCustomModule:
-                        An event threat detection custom
-                    module is a Cloud SCC resource that
-                    contains the configuration and
+                        A Security Command Center resource
+                    that contains the configuration and
                     enablement state of a custom module,
-                    which enables ETD to write certain
-                    findings to Cloud SCC.
+                    which enables Event Threat Detection to
+                    write certain findings to Security
+                    Command Center.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{event_threat_detection_custom_module.name=projects/*/locations/*/eventThreatDetectionCustomModules/*}",
-                    "body": "event_threat_detection_custom_module",
-                },
-                {
-                    "method": "patch",
-                    "uri": "/v1/{event_threat_detection_custom_module.name=folders/*/locations/*/eventThreatDetectionCustomModules/*}",
-                    "body": "event_threat_detection_custom_module",
-                },
-                {
-                    "method": "patch",
-                    "uri": "/v1/{event_threat_detection_custom_module.name=organizations/*/locations/*/eventThreatDetectionCustomModules/*}",
-                    "body": "event_threat_detection_custom_module",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseUpdateEventThreatDetectionCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_update_event_threat_detection_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.UpdateEventThreatDetectionCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseUpdateEventThreatDetectionCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseSecurityCenterManagementRestTransport._BaseUpdateEventThreatDetectionCustomModule._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseUpdateEventThreatDetectionCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.UpdateEventThreatDetectionCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "UpdateEventThreatDetectionCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = SecurityCenterManagementRestTransport._UpdateEventThreatDetectionCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2960,26 +3746,66 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_event_threat_detection_custom_module(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.EventThreatDetectionCustomModule.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.update_event_threat_detection_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "UpdateEventThreatDetectionCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateSecurityCenterService(SecurityCenterManagementRestStub):
+    class _UpdateSecurityCenterService(
+        _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityCenterService,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateSecurityCenterService")
+            return hash(
+                "SecurityCenterManagementRestTransport.UpdateSecurityCenterService"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "updateMask": {},
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -2987,20 +3813,22 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.SecurityCenterService:
             r"""Call the update security center
             service method over HTTP.
 
                 Args:
                     request (~.security_center_management.UpdateSecurityCenterServiceRequest):
-                        The request object. Request message for updating a
-                    Security Command Center service.
+                        The request object. Request message for
+                    [SecurityCenterManagement.UpdateSecurityCenterService][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.UpdateSecurityCenterService].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.SecurityCenterService:
@@ -3012,66 +3840,67 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
                     configured at the organization, folder,
                     or project level. Service settings at
                     the organization or folder level are
-                    inherited by those in child folders and
-                    projects.
+                    inherited by those in descendant folders
+                    and projects.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{security_center_service.name=projects/*/locations/*/securityCenterServices/*}",
-                    "body": "security_center_service",
-                },
-                {
-                    "method": "patch",
-                    "uri": "/v1/{security_center_service.name=folders/*/locations/*/securityCenterServices/*}",
-                    "body": "security_center_service",
-                },
-                {
-                    "method": "patch",
-                    "uri": "/v1/{security_center_service.name=organizations/*/locations/*/securityCenterServices/*}",
-                    "body": "security_center_service",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityCenterService._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_update_security_center_service(
                 request, metadata
             )
-            pb_request = (
-                security_center_management.UpdateSecurityCenterServiceRequest.pb(
-                    request
-                )
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityCenterService._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityCenterService._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityCenterService._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.UpdateSecurityCenterService",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "UpdateSecurityCenterService",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = SecurityCenterManagementRestTransport._UpdateSecurityCenterService._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -3084,24 +3913,66 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             pb_resp = security_center_management.SecurityCenterService.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_security_center_service(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        security_center_management.SecurityCenterService.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.update_security_center_service",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "UpdateSecurityCenterService",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateSecurityHealthAnalyticsCustomModule(SecurityCenterManagementRestStub):
+    class _UpdateSecurityHealthAnalyticsCustomModule(
+        _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityHealthAnalyticsCustomModule,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateSecurityHealthAnalyticsCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.UpdateSecurityHealthAnalyticsCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "updateMask": {},
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -3109,20 +3980,22 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> security_center_management.SecurityHealthAnalyticsCustomModule:
             r"""Call the update security health
             analytics custom module method over HTTP.
 
                 Args:
                     request (~.security_center_management.UpdateSecurityHealthAnalyticsCustomModuleRequest):
-                        The request object. Message for updating a
-                    SecurityHealthAnalyticsCustomModule
+                        The request object. Request message for
+                    [SecurityCenterManagement.UpdateSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.UpdateSecurityHealthAnalyticsCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.SecurityHealthAnalyticsCustomModule:
@@ -3134,67 +4007,70 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
                     the organization, folder, or project
                     level. Custom modules that you create at
                     the organization or folder level are
-                    inherited by the child folders and
+                    inherited by the descendant folders and
                     projects.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{security_health_analytics_custom_module.name=projects/*/locations/*/securityHealthAnalyticsCustomModules/*}",
-                    "body": "security_health_analytics_custom_module",
-                },
-                {
-                    "method": "patch",
-                    "uri": "/v1/{security_health_analytics_custom_module.name=folders/*/locations/*/securityHealthAnalyticsCustomModules/*}",
-                    "body": "security_health_analytics_custom_module",
-                },
-                {
-                    "method": "patch",
-                    "uri": "/v1/{security_health_analytics_custom_module.name=organizations/*/locations/*/securityHealthAnalyticsCustomModules/*}",
-                    "body": "security_health_analytics_custom_module",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityHealthAnalyticsCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_update_security_health_analytics_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.UpdateSecurityHealthAnalyticsCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityHealthAnalyticsCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityHealthAnalyticsCustomModule._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseUpdateSecurityHealthAnalyticsCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.UpdateSecurityHealthAnalyticsCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "UpdateSecurityHealthAnalyticsCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = SecurityCenterManagementRestTransport._UpdateSecurityHealthAnalyticsCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -3209,26 +4085,68 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = (
                 self._interceptor.post_update_security_health_analytics_custom_module(
                     resp
                 )
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.SecurityHealthAnalyticsCustomModule.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.update_security_health_analytics_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "UpdateSecurityHealthAnalyticsCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ValidateEventThreatDetectionCustomModule(SecurityCenterManagementRestStub):
+    class _ValidateEventThreatDetectionCustomModule(
+        _BaseSecurityCenterManagementRestTransport._BaseValidateEventThreatDetectionCustomModule,
+        SecurityCenterManagementRestStub,
+    ):
         def __hash__(self):
-            return hash("ValidateEventThreatDetectionCustomModule")
+            return hash(
+                "SecurityCenterManagementRestTransport.ValidateEventThreatDetectionCustomModule"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -3236,7 +4154,7 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> (
             security_center_management.ValidateEventThreatDetectionCustomModuleResponse
         ):
@@ -3245,77 +4163,82 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
 
                 Args:
                     request (~.security_center_management.ValidateEventThreatDetectionCustomModuleRequest):
-                        The request object. Request to validate an Event Threat
-                    Detection custom module.
+                        The request object. Request message for
+                    [SecurityCenterManagement.ValidateEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ValidateEventThreatDetectionCustomModule].
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.security_center_management.ValidateEventThreatDetectionCustomModuleResponse:
-                        Response to validating an Event
-                    Threat Detection custom module.
+                        Response message for
+                    [SecurityCenterManagement.ValidateEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ValidateEventThreatDetectionCustomModule].
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*}/eventThreatDetectionCustomModules:validate",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=folders/*/locations/*}/eventThreatDetectionCustomModules:validate",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/eventThreatDetectionCustomModules:validate",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseValidateEventThreatDetectionCustomModule._get_http_options()
+            )
+
             (
                 request,
                 metadata,
             ) = self._interceptor.pre_validate_event_threat_detection_custom_module(
                 request, metadata
             )
-            pb_request = security_center_management.ValidateEventThreatDetectionCustomModuleRequest.pb(
-                request
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseValidateEventThreatDetectionCustomModule._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseSecurityCenterManagementRestTransport._BaseValidateEventThreatDetectionCustomModule._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseValidateEventThreatDetectionCustomModule._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.ValidateEventThreatDetectionCustomModule",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ValidateEventThreatDetectionCustomModule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = SecurityCenterManagementRestTransport._ValidateEventThreatDetectionCustomModule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -3332,9 +4255,33 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             )
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_validate_event_threat_detection_custom_module(
                 resp
             )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = security_center_management.ValidateEventThreatDetectionCustomModuleResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.validate_event_threat_detection_custom_module",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ValidateEventThreatDetectionCustomModule",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property
@@ -3584,14 +4531,42 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
     def get_location(self):
         return self._GetLocation(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _GetLocation(SecurityCenterManagementRestStub):
+    class _GetLocation(
+        _BaseSecurityCenterManagementRestTransport._BaseGetLocation,
+        SecurityCenterManagementRestStub,
+    ):
+        def __hash__(self):
+            return hash("SecurityCenterManagementRestTransport.GetLocation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: locations_pb2.GetLocationRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> locations_pb2.Location:
             r"""Call the get location method over HTTP.
 
@@ -3601,39 +4576,64 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 locations_pb2.Location: Response from GetLocation method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*}",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseGetLocation._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_get_location(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseGetLocation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseGetLocation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.GetLocation",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetLocation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = SecurityCenterManagementRestTransport._GetLocation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -3641,23 +4641,73 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = locations_pb2.Location()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_get_location(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementAsyncClient.GetLocation",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "GetLocation",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property
     def list_locations(self):
         return self._ListLocations(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _ListLocations(SecurityCenterManagementRestStub):
+    class _ListLocations(
+        _BaseSecurityCenterManagementRestTransport._BaseListLocations,
+        SecurityCenterManagementRestStub,
+    ):
+        def __hash__(self):
+            return hash("SecurityCenterManagementRestTransport.ListLocations")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: locations_pb2.ListLocationsRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> locations_pb2.ListLocationsResponse:
             r"""Call the list locations method over HTTP.
 
@@ -3667,39 +4717,66 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 locations_pb2.ListLocationsResponse: Response from ListLocations method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*}/locations",
-                },
-            ]
+            http_options = (
+                _BaseSecurityCenterManagementRestTransport._BaseListLocations._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_list_locations(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseSecurityCenterManagementRestTransport._BaseListLocations._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BaseSecurityCenterManagementRestTransport._BaseListLocations._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient.ListLocations",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListLocations",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = (
+                SecurityCenterManagementRestTransport._ListLocations._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -3707,9 +4784,31 @@ class SecurityCenterManagementRestTransport(SecurityCenterManagementTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = locations_pb2.ListLocationsResponse()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_list_locations(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.securitycentermanagement_v1.SecurityCenterManagementAsyncClient.ListLocations",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "rpcName": "ListLocations",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property

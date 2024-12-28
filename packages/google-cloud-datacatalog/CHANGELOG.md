@@ -4,6 +4,88 @@
 
 [1]: https://pypi.org/project/google-cloud-datacatalog/#history
 
+## [3.24.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.24.0...google-cloud-datacatalog-v3.24.1) (2024-12-18)
+
+
+### Documentation
+
+* [google-cloud-datacatalog] fix markdown reference in `TagTemplate.is_publicly_readable` comment ([#13369](https://github.com/googleapis/google-cloud-python/issues/13369)) ([d8afab0](https://github.com/googleapis/google-cloud-python/commit/d8afab0223e90ea0f13a8669cfd88ff06318d4ec))
+
+## [3.24.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.23.0...google-cloud-datacatalog-v3.24.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [3.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.22.0...google-cloud-datacatalog-v3.23.0) (2024-11-21)
+
+
+### Features
+
+* A new enum `CatalogUIExperience` is added ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new enum `TagTemplateMigration` is added ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new field `dataplex_transfer_status` is added to message `.google.cloud.datacatalog.v1.Tag` ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new field `transferred_to_dataplex` is added to message `.google.cloud.datacatalog.v1.EntryGroup` ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new message `MigrationConfig` is added ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new message `OrganizationConfig` is added ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new message `RetrieveConfigRequest` is added ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new message `RetrieveEffectiveConfigRequest` is added ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new message `SetConfigRequest` is added ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new method `RetrieveConfig` is added to service `DataCatalog` ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new method `RetrieveEffectiveConfig` is added to service `DataCatalog` ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new method `SetConfig` is added to service `DataCatalog` ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+* A new value `TRANSFERRED` is added to enum `DataplexTransferStatus` ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+
+
+### Documentation
+
+* A comment for message `EntryGroup` is changed ([09a3381](https://github.com/googleapis/google-cloud-python/commit/09a3381b370950980685d0aa2d1292db0d9f34c9))
+
+## [3.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.21.1...google-cloud-datacatalog-v3.22.0) (2024-11-14)
+
+
+### Features
+
+* A new enum `DataplexTransferStatus` is added ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A new field `dataplex_transfer_status` is added to message `.google.cloud.datacatalog.v1.TagTemplate` ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A new field `feature_online_store_spec` is added to message `.google.cloud.datacatalog.v1.Entry` ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A new message `FeatureOnlineStoreSpec` is added ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A new value `CUSTOM_TEXT_EMBEDDING` is added to enum `ModelSourceType` ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A new value `FEATURE_GROUP` is added to enum `EntryType` ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A new value `FEATURE_ONLINE_STORE` is added to enum `EntryType` ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A new value `FEATURE_VIEW` is added to enum `EntryType` ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A new value `GENIE` is added to enum `ModelSourceType` ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A new value `MARKETPLACE` is added to enum `ModelSourceType` ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+
+
+### Documentation
+
+* A comment for field `name` in message `.google.cloud.datacatalog.v1.Entry` is changed ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A comment for field `name` in message `.google.cloud.datacatalog.v1.EntryGroup` is changed ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A comment for field `name` in message `.google.cloud.datacatalog.v1.Tag` is changed ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A comment for field `name` in message `.google.cloud.datacatalog.v1.TagTemplate` is changed ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+* A comment for field `name` in message `.google.cloud.datacatalog.v1.TagTemplateField` is changed ([e0ea31c](https://github.com/googleapis/google-cloud-python/commit/e0ea31cf3bdb110297b8764bfe598250d6d00b6e))
+
+## [3.21.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.21.0...google-cloud-datacatalog-v3.21.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [3.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.20.1...google-cloud-datacatalog-v3.21.0) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
 ## [3.20.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.20.0...google-cloud-datacatalog-v3.20.1) (2024-07-31)
 
 

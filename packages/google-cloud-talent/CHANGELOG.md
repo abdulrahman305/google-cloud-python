@@ -4,6 +4,32 @@
 
 [1]: https://pypi.org/project/google-cloud-talent/#history
 
+## [2.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-talent-v2.14.1...google-cloud-talent-v2.15.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+## [2.14.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-talent-v2.14.0...google-cloud-talent-v2.14.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13246](https://github.com/googleapis/google-cloud-python/issues/13246)) ([bcad563](https://github.com/googleapis/google-cloud-python/commit/bcad563acea541bb51f9fbd005f18e9f32e381f0))
+
+## [2.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-talent-v2.13.5...google-cloud-talent-v2.14.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13210](https://github.com/googleapis/google-cloud-python/issues/13210)) ([0b62ac6](https://github.com/googleapis/google-cloud-python/commit/0b62ac6aa99bd3259a088097630f2bd1f06825e6))
+
 ## [2.13.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-talent-v2.13.4...google-cloud-talent-v2.13.5) (2024-07-30)
 
 

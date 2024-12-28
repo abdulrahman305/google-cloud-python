@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-connection-v1.16.1...google-cloud-bigquery-connection-v1.17.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+## [1.16.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-connection-v1.16.0...google-cloud-bigquery-connection-v1.16.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([4ed4108](https://github.com/googleapis/google-cloud-python/commit/4ed41088ab3cbadfe4de7fa170f172666015ed24))
+
+## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-connection-v1.15.5...google-cloud-bigquery-connection-v1.16.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13200](https://github.com/googleapis/google-cloud-python/issues/13200)) ([19dc048](https://github.com/googleapis/google-cloud-python/commit/19dc0485852406b90743297bcf257020e6012593))
+
 ## [1.15.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-connection-v1.15.4...google-cloud-bigquery-connection-v1.15.5) (2024-07-30)
 
 

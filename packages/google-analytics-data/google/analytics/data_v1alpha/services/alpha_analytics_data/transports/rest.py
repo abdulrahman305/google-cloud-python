@@ -13,46 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import (
-    gapic_v1,
-    operations_v1,
-    path_template,
-    rest_helpers,
-    rest_streaming,
-)
+from google.api_core import gapic_v1, operations_v1, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.analytics.data_v1alpha.types import analytics_data_api
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseAlphaAnalyticsDataRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.longrunning import operations_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.analytics.data_v1alpha.types import analytics_data_api
-
-from .base import AlphaAnalyticsDataTransport
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -100,6 +98,14 @@ class AlphaAnalyticsDataRestInterceptor:
                 return request, metadata
 
             def post_get_audience_list(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_get_property_quotas_snapshot(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_property_quotas_snapshot(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -184,8 +190,11 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_create_audience_list(
         self,
         request: analytics_data_api.CreateAudienceListRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.CreateAudienceListRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.CreateAudienceListRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for create_audience_list
 
         Override in a subclass to manipulate the request or metadata
@@ -207,9 +216,10 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_create_recurring_audience_list(
         self,
         request: analytics_data_api.CreateRecurringAudienceListRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        analytics_data_api.CreateRecurringAudienceListRequest, Sequence[Tuple[str, str]]
+        analytics_data_api.CreateRecurringAudienceListRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for create_recurring_audience_list
 
@@ -232,8 +242,11 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_create_report_task(
         self,
         request: analytics_data_api.CreateReportTaskRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.CreateReportTaskRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.CreateReportTaskRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for create_report_task
 
         Override in a subclass to manipulate the request or metadata
@@ -255,8 +268,11 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_get_audience_list(
         self,
         request: analytics_data_api.GetAudienceListRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.GetAudienceListRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.GetAudienceListRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for get_audience_list
 
         Override in a subclass to manipulate the request or metadata
@@ -275,12 +291,39 @@ class AlphaAnalyticsDataRestInterceptor:
         """
         return response
 
+    def pre_get_property_quotas_snapshot(
+        self,
+        request: analytics_data_api.GetPropertyQuotasSnapshotRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.GetPropertyQuotasSnapshotRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for get_property_quotas_snapshot
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AlphaAnalyticsData server.
+        """
+        return request, metadata
+
+    def post_get_property_quotas_snapshot(
+        self, response: analytics_data_api.PropertyQuotasSnapshot
+    ) -> analytics_data_api.PropertyQuotasSnapshot:
+        """Post-rpc interceptor for get_property_quotas_snapshot
+
+        Override in a subclass to manipulate the response
+        after it is returned by the AlphaAnalyticsData server but before
+        it is returned to user code.
+        """
+        return response
+
     def pre_get_recurring_audience_list(
         self,
         request: analytics_data_api.GetRecurringAudienceListRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        analytics_data_api.GetRecurringAudienceListRequest, Sequence[Tuple[str, str]]
+        analytics_data_api.GetRecurringAudienceListRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for get_recurring_audience_list
 
@@ -303,8 +346,10 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_get_report_task(
         self,
         request: analytics_data_api.GetReportTaskRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.GetReportTaskRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.GetReportTaskRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_report_task
 
         Override in a subclass to manipulate the request or metadata
@@ -326,8 +371,11 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_list_audience_lists(
         self,
         request: analytics_data_api.ListAudienceListsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.ListAudienceListsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.ListAudienceListsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for list_audience_lists
 
         Override in a subclass to manipulate the request or metadata
@@ -349,9 +397,10 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_list_recurring_audience_lists(
         self,
         request: analytics_data_api.ListRecurringAudienceListsRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        analytics_data_api.ListRecurringAudienceListsRequest, Sequence[Tuple[str, str]]
+        analytics_data_api.ListRecurringAudienceListsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_recurring_audience_lists
 
@@ -374,8 +423,11 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_list_report_tasks(
         self,
         request: analytics_data_api.ListReportTasksRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.ListReportTasksRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.ListReportTasksRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for list_report_tasks
 
         Override in a subclass to manipulate the request or metadata
@@ -397,8 +449,11 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_query_audience_list(
         self,
         request: analytics_data_api.QueryAudienceListRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.QueryAudienceListRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.QueryAudienceListRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for query_audience_list
 
         Override in a subclass to manipulate the request or metadata
@@ -420,8 +475,11 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_query_report_task(
         self,
         request: analytics_data_api.QueryReportTaskRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.QueryReportTaskRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.QueryReportTaskRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for query_report_task
 
         Override in a subclass to manipulate the request or metadata
@@ -443,8 +501,11 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_run_funnel_report(
         self,
         request: analytics_data_api.RunFunnelReportRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.RunFunnelReportRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RunFunnelReportRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for run_funnel_report
 
         Override in a subclass to manipulate the request or metadata
@@ -466,9 +527,10 @@ class AlphaAnalyticsDataRestInterceptor:
     def pre_sheet_export_audience_list(
         self,
         request: analytics_data_api.SheetExportAudienceListRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        analytics_data_api.SheetExportAudienceListRequest, Sequence[Tuple[str, str]]
+        analytics_data_api.SheetExportAudienceListRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for sheet_export_audience_list
 
@@ -496,8 +558,8 @@ class AlphaAnalyticsDataRestStub:
     _interceptor: AlphaAnalyticsDataRestInterceptor
 
 
-class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
-    """REST backend transport for AlphaAnalyticsData.
+class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
+    """REST backend synchronous transport for AlphaAnalyticsData.
 
     Google Analytics reporting data service.
 
@@ -506,7 +568,6 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -560,21 +621,12 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -613,19 +665,35 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
         # Return the client from cache.
         return self._operations_client
 
-    class _CreateAudienceList(AlphaAnalyticsDataRestStub):
+    class _CreateAudienceList(
+        _BaseAlphaAnalyticsDataRestTransport._BaseCreateAudienceList,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateAudienceList")
+            return hash("AlphaAnalyticsDataRestTransport.CreateAudienceList")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -633,7 +701,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the create audience list method over HTTP.
 
@@ -644,8 +712,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.operations_pb2.Operation:
@@ -655,47 +725,64 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1alpha/{parent=properties/*}/audienceLists",
-                    "body": "audience_list",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseCreateAudienceList._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_audience_list(
                 request, metadata
             )
-            pb_request = analytics_data_api.CreateAudienceListRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseCreateAudienceList._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseAlphaAnalyticsDataRestTransport._BaseCreateAudienceList._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseCreateAudienceList._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.CreateAudienceList",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "CreateAudienceList",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                AlphaAnalyticsDataRestTransport._CreateAudienceList._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -706,22 +793,60 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             # Return the response
             resp = operations_pb2.Operation()
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_audience_list(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.create_audience_list",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "CreateAudienceList",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CreateRecurringAudienceList(AlphaAnalyticsDataRestStub):
+    class _CreateRecurringAudienceList(
+        _BaseAlphaAnalyticsDataRestTransport._BaseCreateRecurringAudienceList,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateRecurringAudienceList")
+            return hash("AlphaAnalyticsDataRestTransport.CreateRecurringAudienceList")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -729,7 +854,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.RecurringAudienceList:
             r"""Call the create recurring audience
             list method over HTTP.
@@ -741,8 +866,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.analytics_data_api.RecurringAudienceList:
@@ -756,49 +883,62 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1alpha/{parent=properties/*}/recurringAudienceLists",
-                    "body": "recurring_audience_list",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseCreateRecurringAudienceList._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_recurring_audience_list(
                 request, metadata
             )
-            pb_request = analytics_data_api.CreateRecurringAudienceListRequest.pb(
-                request
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseCreateRecurringAudienceList._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseAlphaAnalyticsDataRestTransport._BaseCreateRecurringAudienceList._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseCreateRecurringAudienceList._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.CreateRecurringAudienceList",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "CreateRecurringAudienceList",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = AlphaAnalyticsDataRestTransport._CreateRecurringAudienceList._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -811,22 +951,62 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.RecurringAudienceList.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_recurring_audience_list(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = analytics_data_api.RecurringAudienceList.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.create_recurring_audience_list",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "CreateRecurringAudienceList",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CreateReportTask(AlphaAnalyticsDataRestStub):
+    class _CreateReportTask(
+        _BaseAlphaAnalyticsDataRestTransport._BaseCreateReportTask,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateReportTask")
+            return hash("AlphaAnalyticsDataRestTransport.CreateReportTask")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -834,7 +1014,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the create report task method over HTTP.
 
@@ -844,8 +1024,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.operations_pb2.Operation:
@@ -855,47 +1037,62 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1alpha/{parent=properties/*}/reportTasks",
-                    "body": "report_task",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseCreateReportTask._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_report_task(
                 request, metadata
             )
-            pb_request = analytics_data_api.CreateReportTaskRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseCreateReportTask._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseAlphaAnalyticsDataRestTransport._BaseCreateReportTask._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseCreateReportTask._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.CreateReportTask",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "CreateReportTask",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = AlphaAnalyticsDataRestTransport._CreateReportTask._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -906,22 +1103,59 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             # Return the response
             resp = operations_pb2.Operation()
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_report_task(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.create_report_task",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "CreateReportTask",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetAudienceList(AlphaAnalyticsDataRestStub):
+    class _GetAudienceList(
+        _BaseAlphaAnalyticsDataRestTransport._BaseGetAudienceList,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("GetAudienceList")
+            return hash("AlphaAnalyticsDataRestTransport.GetAudienceList")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -929,7 +1163,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.AudienceList:
             r"""Call the get audience list method over HTTP.
 
@@ -940,8 +1174,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.AudienceList:
@@ -953,40 +1189,57 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1alpha/{name=properties/*/audienceLists/*}",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseGetAudienceList._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_audience_list(
                 request, metadata
             )
-            pb_request = analytics_data_api.GetAudienceListRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseGetAudienceList._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseGetAudienceList._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.GetAudienceList",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "GetAudienceList",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = AlphaAnalyticsDataRestTransport._GetAudienceList._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -999,22 +1252,209 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.AudienceList.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_audience_list(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = analytics_data_api.AudienceList.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.get_audience_list",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "GetAudienceList",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetRecurringAudienceList(AlphaAnalyticsDataRestStub):
+    class _GetPropertyQuotasSnapshot(
+        _BaseAlphaAnalyticsDataRestTransport._BaseGetPropertyQuotasSnapshot,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("GetRecurringAudienceList")
+            return hash("AlphaAnalyticsDataRestTransport.GetPropertyQuotasSnapshot")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        def __call__(
+            self,
+            request: analytics_data_api.GetPropertyQuotasSnapshotRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> analytics_data_api.PropertyQuotasSnapshot:
+            r"""Call the get property quotas
+            snapshot method over HTTP.
+
+                Args:
+                    request (~.analytics_data_api.GetPropertyQuotasSnapshotRequest):
+                        The request object. A request to return the
+                    PropertyQuotasSnapshot for a given
+                    category.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.analytics_data_api.PropertyQuotasSnapshot:
+                        Current state of all Property Quotas
+                    organized by quota category.
+
+            """
+
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseGetPropertyQuotasSnapshot._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_property_quotas_snapshot(
+                request, metadata
+            )
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseGetPropertyQuotasSnapshot._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseGetPropertyQuotasSnapshot._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.GetPropertyQuotasSnapshot",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "GetPropertyQuotasSnapshot",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AlphaAnalyticsDataRestTransport._GetPropertyQuotasSnapshot._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = analytics_data_api.PropertyQuotasSnapshot()
+            pb_resp = analytics_data_api.PropertyQuotasSnapshot.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_property_quotas_snapshot(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.PropertyQuotasSnapshot.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.get_property_quotas_snapshot",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "GetPropertyQuotasSnapshot",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetRecurringAudienceList(
+        _BaseAlphaAnalyticsDataRestTransport._BaseGetRecurringAudienceList,
+        AlphaAnalyticsDataRestStub,
+    ):
+        def __hash__(self):
+            return hash("AlphaAnalyticsDataRestTransport.GetRecurringAudienceList")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1022,7 +1462,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.RecurringAudienceList:
             r"""Call the get recurring audience
             list method over HTTP.
@@ -1035,8 +1475,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.analytics_data_api.RecurringAudienceList:
@@ -1050,40 +1492,59 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1alpha/{name=properties/*/recurringAudienceLists/*}",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseGetRecurringAudienceList._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_recurring_audience_list(
                 request, metadata
             )
-            pb_request = analytics_data_api.GetRecurringAudienceListRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseGetRecurringAudienceList._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseGetRecurringAudienceList._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.GetRecurringAudienceList",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "GetRecurringAudienceList",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                AlphaAnalyticsDataRestTransport._GetRecurringAudienceList._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1096,22 +1557,61 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.RecurringAudienceList.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_recurring_audience_list(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = analytics_data_api.RecurringAudienceList.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.get_recurring_audience_list",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "GetRecurringAudienceList",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetReportTask(AlphaAnalyticsDataRestStub):
+    class _GetReportTask(
+        _BaseAlphaAnalyticsDataRestTransport._BaseGetReportTask,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("GetReportTask")
+            return hash("AlphaAnalyticsDataRestTransport.GetReportTask")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1119,7 +1619,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.ReportTask:
             r"""Call the get report task method over HTTP.
 
@@ -1130,46 +1630,65 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.ReportTask:
                     A specific report task configuration.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1alpha/{name=properties/*/reportTasks/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_report_task(request, metadata)
-            pb_request = analytics_data_api.GetReportTaskRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseGetReportTask._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_report_task(request, metadata)
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseGetReportTask._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseGetReportTask._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.GetReportTask",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "GetReportTask",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = AlphaAnalyticsDataRestTransport._GetReportTask._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1182,22 +1701,59 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.ReportTask.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_report_task(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = analytics_data_api.ReportTask.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.get_report_task",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "GetReportTask",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListAudienceLists(AlphaAnalyticsDataRestStub):
+    class _ListAudienceLists(
+        _BaseAlphaAnalyticsDataRestTransport._BaseListAudienceLists,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("ListAudienceLists")
+            return hash("AlphaAnalyticsDataRestTransport.ListAudienceLists")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1205,7 +1761,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.ListAudienceListsResponse:
             r"""Call the list audience lists method over HTTP.
 
@@ -1216,8 +1772,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.ListAudienceListsResponse:
@@ -1226,40 +1784,57 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1alpha/{parent=properties/*}/audienceLists",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseListAudienceLists._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_audience_lists(
                 request, metadata
             )
-            pb_request = analytics_data_api.ListAudienceListsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseListAudienceLists._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseListAudienceLists._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.ListAudienceLists",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "ListAudienceLists",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = AlphaAnalyticsDataRestTransport._ListAudienceLists._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1272,22 +1847,61 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.ListAudienceListsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_audience_lists(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.ListAudienceListsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.list_audience_lists",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "ListAudienceLists",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListRecurringAudienceLists(AlphaAnalyticsDataRestStub):
+    class _ListRecurringAudienceLists(
+        _BaseAlphaAnalyticsDataRestTransport._BaseListRecurringAudienceLists,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("ListRecurringAudienceLists")
+            return hash("AlphaAnalyticsDataRestTransport.ListRecurringAudienceLists")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1295,7 +1909,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.ListRecurringAudienceListsResponse:
             r"""Call the list recurring audience
             lists method over HTTP.
@@ -1307,8 +1921,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.analytics_data_api.ListRecurringAudienceListsResponse:
@@ -1317,42 +1933,57 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1alpha/{parent=properties/*}/recurringAudienceLists",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseListRecurringAudienceLists._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_recurring_audience_lists(
                 request, metadata
             )
-            pb_request = analytics_data_api.ListRecurringAudienceListsRequest.pb(
-                request
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseListRecurringAudienceLists._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseListRecurringAudienceLists._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.ListRecurringAudienceLists",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "ListRecurringAudienceLists",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = AlphaAnalyticsDataRestTransport._ListRecurringAudienceLists._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1365,22 +1996,63 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.ListRecurringAudienceListsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_recurring_audience_lists(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.ListRecurringAudienceListsResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.list_recurring_audience_lists",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "ListRecurringAudienceLists",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListReportTasks(AlphaAnalyticsDataRestStub):
+    class _ListReportTasks(
+        _BaseAlphaAnalyticsDataRestTransport._BaseListReportTasks,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("ListReportTasks")
+            return hash("AlphaAnalyticsDataRestTransport.ListReportTasks")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1388,7 +2060,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.ListReportTasksResponse:
             r"""Call the list report tasks method over HTTP.
 
@@ -1399,8 +2071,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.ListReportTasksResponse:
@@ -1409,40 +2083,57 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1alpha/{parent=properties/*}/reportTasks",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseListReportTasks._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_report_tasks(
                 request, metadata
             )
-            pb_request = analytics_data_api.ListReportTasksRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseListReportTasks._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseListReportTasks._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.ListReportTasks",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "ListReportTasks",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = AlphaAnalyticsDataRestTransport._ListReportTasks._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1455,22 +2146,62 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.ListReportTasksResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_report_tasks(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.ListReportTasksResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.list_report_tasks",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "ListReportTasks",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _QueryAudienceList(AlphaAnalyticsDataRestStub):
+    class _QueryAudienceList(
+        _BaseAlphaAnalyticsDataRestTransport._BaseQueryAudienceList,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("QueryAudienceList")
+            return hash("AlphaAnalyticsDataRestTransport.QueryAudienceList")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1478,7 +2209,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.QueryAudienceListResponse:
             r"""Call the query audience list method over HTTP.
 
@@ -1489,55 +2220,72 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.QueryAudienceListResponse:
                     A list of users in an audience list.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1alpha/{name=properties/*/audienceLists/*}:query",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseQueryAudienceList._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_query_audience_list(
                 request, metadata
             )
-            pb_request = analytics_data_api.QueryAudienceListRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseQueryAudienceList._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseAlphaAnalyticsDataRestTransport._BaseQueryAudienceList._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseQueryAudienceList._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.QueryAudienceList",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "QueryAudienceList",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = AlphaAnalyticsDataRestTransport._QueryAudienceList._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1550,22 +2298,62 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.QueryAudienceListResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_query_audience_list(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.QueryAudienceListResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.query_audience_list",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "QueryAudienceList",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _QueryReportTask(AlphaAnalyticsDataRestStub):
+    class _QueryReportTask(
+        _BaseAlphaAnalyticsDataRestTransport._BaseQueryReportTask,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("QueryReportTask")
+            return hash("AlphaAnalyticsDataRestTransport.QueryReportTask")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1573,7 +2361,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.QueryReportTaskResponse:
             r"""Call the query report task method over HTTP.
 
@@ -1584,8 +2372,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.QueryReportTaskResponse:
@@ -1594,47 +2384,62 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1alpha/{name=properties/*/reportTasks/*}:query",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseQueryReportTask._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_query_report_task(
                 request, metadata
             )
-            pb_request = analytics_data_api.QueryReportTaskRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseQueryReportTask._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseAlphaAnalyticsDataRestTransport._BaseQueryReportTask._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseQueryReportTask._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.QueryReportTask",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "QueryReportTask",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = AlphaAnalyticsDataRestTransport._QueryReportTask._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1647,12 +2452,62 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.QueryReportTaskResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_query_report_task(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.QueryReportTaskResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.query_report_task",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "QueryReportTask",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _RunFunnelReport(AlphaAnalyticsDataRestStub):
+    class _RunFunnelReport(
+        _BaseAlphaAnalyticsDataRestTransport._BaseRunFunnelReport,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("RunFunnelReport")
+            return hash("AlphaAnalyticsDataRestTransport.RunFunnelReport")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1660,7 +2515,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.RunFunnelReportResponse:
             r"""Call the run funnel report method over HTTP.
 
@@ -1670,8 +2525,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.RunFunnelReportResponse:
@@ -1682,46 +2539,62 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1alpha/{property=properties/*}:runFunnelReport",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseRunFunnelReport._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_run_funnel_report(
                 request, metadata
             )
-            pb_request = analytics_data_api.RunFunnelReportRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseRunFunnelReport._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseAlphaAnalyticsDataRestTransport._BaseRunFunnelReport._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseRunFunnelReport._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.RunFunnelReport",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "RunFunnelReport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = AlphaAnalyticsDataRestTransport._RunFunnelReport._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1734,22 +2607,62 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.RunFunnelReportResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_run_funnel_report(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.RunFunnelReportResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.run_funnel_report",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "RunFunnelReport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _SheetExportAudienceList(AlphaAnalyticsDataRestStub):
+    class _SheetExportAudienceList(
+        _BaseAlphaAnalyticsDataRestTransport._BaseSheetExportAudienceList,
+        AlphaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("SheetExportAudienceList")
+            return hash("AlphaAnalyticsDataRestTransport.SheetExportAudienceList")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1757,7 +2670,7 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.SheetExportAudienceListResponse:
             r"""Call the sheet export audience
             list method over HTTP.
@@ -1769,8 +2682,10 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.analytics_data_api.SheetExportAudienceListResponse:
@@ -1779,47 +2694,64 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1alpha/{name=properties/*/audienceLists/*}:exportSheet",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseAlphaAnalyticsDataRestTransport._BaseSheetExportAudienceList._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_sheet_export_audience_list(
                 request, metadata
             )
-            pb_request = analytics_data_api.SheetExportAudienceListRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseAlphaAnalyticsDataRestTransport._BaseSheetExportAudienceList._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseAlphaAnalyticsDataRestTransport._BaseSheetExportAudienceList._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseAlphaAnalyticsDataRestTransport._BaseSheetExportAudienceList._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.SheetExportAudienceList",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "SheetExportAudienceList",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                AlphaAnalyticsDataRestTransport._SheetExportAudienceList._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1832,7 +2764,33 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
             pb_resp = analytics_data_api.SheetExportAudienceListResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_sheet_export_audience_list(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.SheetExportAudienceListResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1alpha.AlphaAnalyticsDataClient.sheet_export_audience_list",
+                    extra={
+                        "serviceName": "google.analytics.data.v1alpha.AlphaAnalyticsData",
+                        "rpcName": "SheetExportAudienceList",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property
@@ -1875,6 +2833,17 @@ class AlphaAnalyticsDataRestTransport(AlphaAnalyticsDataTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetAudienceList(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def get_property_quotas_snapshot(
+        self,
+    ) -> Callable[
+        [analytics_data_api.GetPropertyQuotasSnapshotRequest],
+        analytics_data_api.PropertyQuotasSnapshot,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetPropertyQuotasSnapshot(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def get_recurring_audience_list(

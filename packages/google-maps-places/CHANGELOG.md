@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.1.21](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.20...google-maps-places-v0.1.21) (2024-12-12)
+
+
+### Features
+
+* [Many APIs] Add support for opt-in debug logging ([#13349](https://github.com/googleapis/google-cloud-python/issues/13349)) ([8b9c7bf](https://github.com/googleapis/google-cloud-python/commit/8b9c7bf3bb1c4f0beabd71a45c469fcedb19a2c8))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([8b9c7bf](https://github.com/googleapis/google-cloud-python/commit/8b9c7bf3bb1c4f0beabd71a45c469fcedb19a2c8))
+
+## [0.1.20](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.19...google-maps-places-v0.1.20) (2024-11-11)
+
+
+### Features
+
+* [google-maps-places] update attributes in Places API ([#13259](https://github.com/googleapis/google-cloud-python/issues/13259)) ([450fa0b](https://github.com/googleapis/google-cloud-python/commit/450fa0bbfc511c8532928925a24ae36c8ef4cd75))
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13247](https://github.com/googleapis/google-cloud-python/issues/13247)) ([5adc8b7](https://github.com/googleapis/google-cloud-python/commit/5adc8b7d2cc8ab9707ab5a65f15270c125cee051))
+
+## [0.1.19](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.18...google-maps-places-v0.1.19) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13211](https://github.com/googleapis/google-cloud-python/issues/13211)) ([f712162](https://github.com/googleapis/google-cloud-python/commit/f712162c01f065da29fffbbed1e856a1f3876b1b))
+
+## [0.1.18](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.17...google-maps-places-v0.1.18) (2024-09-23)
+
+
+### Features
+
+* action for publishing data profiles to SecOps (formelly known as Chronicle) ([2cc1550](https://github.com/googleapis/google-cloud-python/commit/2cc1550492a2b78ed7240aab84a8449de5e5afa2))
+* action for publishing data profiles to Security Command Center ([2cc1550](https://github.com/googleapis/google-cloud-python/commit/2cc1550492a2b78ed7240aab84a8449de5e5afa2))
+* discovery configs for AWS S3 buckets ([2cc1550](https://github.com/googleapis/google-cloud-python/commit/2cc1550492a2b78ed7240aab84a8449de5e5afa2))
+
+
+### Documentation
+
+* small improvements and clarifications ([2cc1550](https://github.com/googleapis/google-cloud-python/commit/2cc1550492a2b78ed7240aab84a8449de5e5afa2))
+
 ## [0.1.17](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.16...google-maps-places-v0.1.17) (2024-07-30)
 
 

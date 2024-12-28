@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -55,6 +55,15 @@ from google.cloud.monitoring_v3.types import snooze_service
 from .client import SnoozeServiceClient
 from .transports.base import DEFAULT_CLIENT_INFO, SnoozeServiceTransport
 from .transports.grpc_asyncio import SnoozeServiceGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class SnoozeServiceAsyncClient:
@@ -199,9 +208,7 @@ class SnoozeServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(SnoozeServiceClient).get_transport_class, type(SnoozeServiceClient)
-    )
+    get_transport_class = SnoozeServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -269,6 +276,28 @@ class SnoozeServiceAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.monitoring_v3.SnoozeServiceAsyncClient`.",
+                extra={
+                    "serviceName": "google.monitoring.v3.SnoozeService",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.monitoring.v3.SnoozeService",
+                    "credentialsType": None,
+                },
+            )
+
     async def create_snooze(
         self,
         request: Optional[Union[snooze_service.CreateSnoozeRequest, dict]] = None,
@@ -277,7 +306,7 @@ class SnoozeServiceAsyncClient:
         snooze: Optional[gm_snooze.Snooze] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> gm_snooze.Snooze:
         r"""Creates a ``Snooze`` that will prevent alerts, which match the
         provided criteria, from being opened. The ``Snooze`` applies for
@@ -300,7 +329,6 @@ class SnoozeServiceAsyncClient:
 
                 # Initialize request argument(s)
                 snooze = monitoring_v3.Snooze()
-                snooze.name = "name_value"
                 snooze.display_name = "display_name_value"
 
                 request = monitoring_v3.CreateSnoozeRequest(
@@ -341,8 +369,10 @@ class SnoozeServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.types.Snooze:
@@ -408,7 +438,7 @@ class SnoozeServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListSnoozesAsyncPager:
         r"""Lists the ``Snooze``\ s associated with a project. Can
         optionally pass in ``filter``, which specifies predicates to
@@ -461,8 +491,10 @@ class SnoozeServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.services.snooze_service.pagers.ListSnoozesAsyncPager:
@@ -537,7 +569,7 @@ class SnoozeServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> snooze.Snooze:
         r"""Retrieves a ``Snooze`` by ``name``.
 
@@ -586,8 +618,10 @@ class SnoozeServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.types.Snooze:
@@ -652,7 +686,7 @@ class SnoozeServiceAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> gm_snooze.Snooze:
         r"""Updates a ``Snooze``, identified by its ``name``, with the
         parameters in the given ``Snooze`` object.
@@ -674,7 +708,6 @@ class SnoozeServiceAsyncClient:
 
                 # Initialize request argument(s)
                 snooze = monitoring_v3.Snooze()
-                snooze.name = "name_value"
                 snooze.display_name = "display_name_value"
 
                 request = monitoring_v3.UpdateSnoozeRequest(
@@ -747,8 +780,10 @@ class SnoozeServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.monitoring_v3.types.Snooze:

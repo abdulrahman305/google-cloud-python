@@ -27,12 +27,21 @@ __protobuf__ = proto.module(
         "ListVoicesRequest",
         "ListVoicesResponse",
         "Voice",
+        "AdvancedVoiceOptions",
         "SynthesizeSpeechRequest",
+        "CustomPronunciationParams",
+        "CustomPronunciations",
+        "MultiSpeakerMarkup",
         "SynthesisInput",
         "VoiceSelectionParams",
         "AudioConfig",
         "CustomVoiceParams",
+        "VoiceCloneParams",
         "SynthesizeSpeechResponse",
+        "StreamingSynthesizeConfig",
+        "StreamingSynthesisInput",
+        "StreamingSynthesizeRequest",
+        "StreamingSynthesizeResponse",
     },
 )
 
@@ -178,9 +187,33 @@ class Voice(proto.Message):
     )
 
 
+class AdvancedVoiceOptions(proto.Message):
+    r"""Used for advanced voice options.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        low_latency_journey_synthesis (bool):
+            Only for Journey voices. If false, the
+            synthesis will be context aware and have higher
+            latency.
+
+            This field is a member of `oneof`_ ``_low_latency_journey_synthesis``.
+    """
+
+    low_latency_journey_synthesis: bool = proto.Field(
+        proto.BOOL,
+        number=1,
+        optional=True,
+    )
+
+
 class SynthesizeSpeechRequest(proto.Message):
     r"""The top-level message sent by the client for the
     ``SynthesizeSpeech`` method.
+
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
 
     Attributes:
         input (google.cloud.texttospeech_v1.types.SynthesisInput):
@@ -192,6 +225,10 @@ class SynthesizeSpeechRequest(proto.Message):
         audio_config (google.cloud.texttospeech_v1.types.AudioConfig):
             Required. The configuration of the
             synthesized audio.
+        advanced_voice_options (google.cloud.texttospeech_v1.types.AdvancedVoiceOptions):
+            Advanced voice options.
+
+            This field is a member of `oneof`_ ``_advanced_voice_options``.
     """
 
     input: "SynthesisInput" = proto.Field(
@@ -208,6 +245,123 @@ class SynthesizeSpeechRequest(proto.Message):
         proto.MESSAGE,
         number=3,
         message="AudioConfig",
+    )
+    advanced_voice_options: "AdvancedVoiceOptions" = proto.Field(
+        proto.MESSAGE,
+        number=8,
+        optional=True,
+        message="AdvancedVoiceOptions",
+    )
+
+
+class CustomPronunciationParams(proto.Message):
+    r"""Pronunciation customization for a phrase.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        phrase (str):
+            The phrase to which the customization will be
+            applied. The phrase can be multiple words (in
+            the case of proper nouns etc), but should not
+            span to a whole sentence.
+
+            This field is a member of `oneof`_ ``_phrase``.
+        phonetic_encoding (google.cloud.texttospeech_v1.types.CustomPronunciationParams.PhoneticEncoding):
+            The phonetic encoding of the phrase.
+
+            This field is a member of `oneof`_ ``_phonetic_encoding``.
+        pronunciation (str):
+            The pronunciation of the phrase. This must be
+            in the phonetic encoding specified above.
+
+            This field is a member of `oneof`_ ``_pronunciation``.
+    """
+
+    class PhoneticEncoding(proto.Enum):
+        r"""The phonetic encoding of the phrase.
+
+        Values:
+            PHONETIC_ENCODING_UNSPECIFIED (0):
+                Not specified.
+            PHONETIC_ENCODING_IPA (1):
+                IPA. (e.g. apple -> ˈæpəl )
+                https://en.wikipedia.org/wiki/International_Phonetic_Alphabet
+            PHONETIC_ENCODING_X_SAMPA (2):
+                X-SAMPA (e.g. apple -> "{p@l" )
+                https://en.wikipedia.org/wiki/X-SAMPA
+        """
+        PHONETIC_ENCODING_UNSPECIFIED = 0
+        PHONETIC_ENCODING_IPA = 1
+        PHONETIC_ENCODING_X_SAMPA = 2
+
+    phrase: str = proto.Field(
+        proto.STRING,
+        number=1,
+        optional=True,
+    )
+    phonetic_encoding: PhoneticEncoding = proto.Field(
+        proto.ENUM,
+        number=2,
+        optional=True,
+        enum=PhoneticEncoding,
+    )
+    pronunciation: str = proto.Field(
+        proto.STRING,
+        number=3,
+        optional=True,
+    )
+
+
+class CustomPronunciations(proto.Message):
+    r"""A collection of pronunciation customizations.
+
+    Attributes:
+        pronunciations (MutableSequence[google.cloud.texttospeech_v1.types.CustomPronunciationParams]):
+            The pronunciation customizations to be
+            applied.
+    """
+
+    pronunciations: MutableSequence["CustomPronunciationParams"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message="CustomPronunciationParams",
+    )
+
+
+class MultiSpeakerMarkup(proto.Message):
+    r"""A collection of turns for multi-speaker synthesis.
+
+    Attributes:
+        turns (MutableSequence[google.cloud.texttospeech_v1.types.MultiSpeakerMarkup.Turn]):
+            Required. Speaker turns.
+    """
+
+    class Turn(proto.Message):
+        r"""A Multi-speaker turn.
+
+        Attributes:
+            speaker (str):
+                Required. The speaker of the turn, for
+                example, 'O' or 'Q'. Please refer to
+                documentation for available speakers.
+            text (str):
+                Required. The text to speak.
+        """
+
+        speaker: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        text: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+
+    turns: MutableSequence[Turn] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message=Turn,
     )
 
 
@@ -238,6 +392,27 @@ class SynthesisInput(proto.Message):
             `SSML <https://cloud.google.com/text-to-speech/docs/ssml>`__.
 
             This field is a member of `oneof`_ ``input_source``.
+        multi_speaker_markup (google.cloud.texttospeech_v1.types.MultiSpeakerMarkup):
+            The multi-speaker input to be synthesized.
+            Only applicable for multi-speaker synthesis.
+
+            This field is a member of `oneof`_ ``input_source``.
+        custom_pronunciations (google.cloud.texttospeech_v1.types.CustomPronunciations):
+            Optional. The pronunciation customizations to
+            be applied to the input. If this is set, the
+            input will be synthesized using the given
+            pronunciation customizations.
+
+            The initial support will be for EFIGS (English,
+            French, Italian, German, Spanish) languages, as
+            provided in VoiceSelectionParams. Journey and
+            Instant Clone voices are not supported yet.
+
+            In order to customize the pronunciation of a
+            phrase, there must be an exact match of the
+            phrase in the input types. If using SSML, the
+            phrase must not be inside a phoneme tag
+            (entirely or partially).
     """
 
     text: str = proto.Field(
@@ -249,6 +424,17 @@ class SynthesisInput(proto.Message):
         proto.STRING,
         number=2,
         oneof="input_source",
+    )
+    multi_speaker_markup: "MultiSpeakerMarkup" = proto.Field(
+        proto.MESSAGE,
+        number=4,
+        oneof="input_source",
+        message="MultiSpeakerMarkup",
+    )
+    custom_pronunciations: "CustomPronunciations" = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message="CustomPronunciations",
     )
 
 
@@ -272,9 +458,9 @@ class VoiceSelectionParams(proto.Message):
             e.g. using "nb" (Norwegian Bokmal) instead of "no"
             (Norwegian)".
         name (str):
-            The name of the voice. If not set, the service will choose a
-            voice based on the other parameters such as language_code
-            and gender.
+            The name of the voice. If both the name and the gender are
+            not set, the service will choose a voice based on the other
+            parameters such as language_code.
         ssml_gender (google.cloud.texttospeech_v1.types.SsmlVoiceGender):
             The preferred gender of the voice. If not set, the service
             will choose a voice based on the other parameters such as
@@ -286,6 +472,10 @@ class VoiceSelectionParams(proto.Message):
             The configuration for a custom voice. If
             [CustomVoiceParams.model] is set, the service will choose
             the custom voice matching the specified configuration.
+        voice_clone (google.cloud.texttospeech_v1.types.VoiceCloneParams):
+            Optional. The configuration for a voice clone. If
+            [VoiceCloneParams.voice_clone_key] is set, the service will
+            choose the voice clone matching the specified configuration.
     """
 
     language_code: str = proto.Field(
@@ -305,6 +495,11 @@ class VoiceSelectionParams(proto.Message):
         proto.MESSAGE,
         number=4,
         message="CustomVoiceParams",
+    )
+    voice_clone: "VoiceCloneParams" = proto.Field(
+        proto.MESSAGE,
+        number=5,
+        message="VoiceCloneParams",
     )
 
 
@@ -428,6 +623,20 @@ class CustomVoiceParams(proto.Message):
     )
 
 
+class VoiceCloneParams(proto.Message):
+    r"""The configuration of Voice Clone feature.
+
+    Attributes:
+        voice_cloning_key (str):
+            Required. Created by GenerateVoiceCloningKey.
+    """
+
+    voice_cloning_key: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
 class SynthesizeSpeechResponse(proto.Message):
     r"""The message returned to the client by the ``SynthesizeSpeech``
     method.
@@ -440,6 +649,108 @@ class SynthesizeSpeechResponse(proto.Message):
             include the WAV header. Note: as with all bytes fields,
             protobuffers use a pure binary representation, whereas JSON
             representations use base64.
+    """
+
+    audio_content: bytes = proto.Field(
+        proto.BYTES,
+        number=1,
+    )
+
+
+class StreamingSynthesizeConfig(proto.Message):
+    r"""Provides configuration information for the
+    StreamingSynthesize request.
+
+    Attributes:
+        voice (google.cloud.texttospeech_v1.types.VoiceSelectionParams):
+            Required. The desired voice of the
+            synthesized audio.
+    """
+
+    voice: "VoiceSelectionParams" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="VoiceSelectionParams",
+    )
+
+
+class StreamingSynthesisInput(proto.Message):
+    r"""Input to be synthesized.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        text (str):
+            The raw text to be synthesized. It is
+            recommended that each input contains complete,
+            terminating sentences, as this will likely
+            result in better prosody in the output audio.
+            That being said, users are free to input text
+            however they please.
+
+            This field is a member of `oneof`_ ``input_source``.
+    """
+
+    text: str = proto.Field(
+        proto.STRING,
+        number=1,
+        oneof="input_source",
+    )
+
+
+class StreamingSynthesizeRequest(proto.Message):
+    r"""Request message for the ``StreamingSynthesize`` method. Multiple
+    ``StreamingSynthesizeRequest`` messages are sent in one call. The
+    first message must contain a ``streaming_config`` that fully
+    specifies the request configuration and must not contain ``input``.
+    All subsequent messages must only have ``input`` set.
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        streaming_config (google.cloud.texttospeech_v1.types.StreamingSynthesizeConfig):
+            StreamingSynthesizeConfig to be used in this streaming
+            attempt. Only specified in the first message sent in a
+            ``StreamingSynthesize`` call.
+
+            This field is a member of `oneof`_ ``streaming_request``.
+        input (google.cloud.texttospeech_v1.types.StreamingSynthesisInput):
+            Input to synthesize. Specified in all messages but the first
+            in a ``StreamingSynthesize`` call.
+
+            This field is a member of `oneof`_ ``streaming_request``.
+    """
+
+    streaming_config: "StreamingSynthesizeConfig" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        oneof="streaming_request",
+        message="StreamingSynthesizeConfig",
+    )
+    input: "StreamingSynthesisInput" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        oneof="streaming_request",
+        message="StreamingSynthesisInput",
+    )
+
+
+class StreamingSynthesizeResponse(proto.Message):
+    r"""``StreamingSynthesizeResponse`` is the only message returned to the
+    client by ``StreamingSynthesize`` method. A series of zero or more
+    ``StreamingSynthesizeResponse`` messages are streamed back to the
+    client.
+
+    Attributes:
+        audio_content (bytes):
+            The audio data bytes encoded as specified in
+            the request. This is headerless LINEAR16 audio
+            with a sample rate of 24000.
     """
 
     audio_content: bytes = proto.Field(

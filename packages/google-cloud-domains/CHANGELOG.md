@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.9.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-domains-v1.8.1...google-cloud-domains-v1.9.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [1.8.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-domains-v1.8.0...google-cloud-domains-v1.8.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [1.8.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-domains-v1.7.5...google-cloud-domains-v1.8.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13204](https://github.com/googleapis/google-cloud-python/issues/13204)) ([2605ae0](https://github.com/googleapis/google-cloud-python/commit/2605ae0c5f9558657b67c94d80ddcc3e45b93b5d))
+
 ## [1.7.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-domains-v1.7.4...google-cloud-domains-v1.7.5) (2024-07-30)
 
 

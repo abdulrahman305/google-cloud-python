@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.3.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-public-ca-v0.3.14...google-cloud-public-ca-v0.3.15) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([8e6b0cc](https://github.com/googleapis/google-cloud-python/commit/8e6b0cca8709ae8c7f0c722c5ebf0707358d3359))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([8e6b0cc](https://github.com/googleapis/google-cloud-python/commit/8e6b0cca8709ae8c7f0c722c5ebf0707358d3359))
+
+## [0.3.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-public-ca-v0.3.13...google-cloud-public-ca-v0.3.14) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13245](https://github.com/googleapis/google-cloud-python/issues/13245)) ([875f712](https://github.com/googleapis/google-cloud-python/commit/875f712265a36919409964f5ade218330f1d0147))
+
+## [0.3.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-public-ca-v0.3.12...google-cloud-public-ca-v0.3.13) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13208](https://github.com/googleapis/google-cloud-python/issues/13208)) ([a019409](https://github.com/googleapis/google-cloud-python/commit/a019409a5b5a983402301f1ac175d8b7e45c3818))
+
 ## [0.3.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-public-ca-v0.3.11...google-cloud-public-ca-v0.3.12) (2024-07-30)
 
 

@@ -22,18 +22,11 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
+from google.api_core import api_core_version
 from google.protobuf import json_format
 import grpc
 from grpc.experimental import aio
@@ -42,6 +35,22 @@ from proto.marshal.rules.dates import DurationRule, TimestampRule
 import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
 
 from google.cloud.iap_v1.services.identity_aware_proxy_o_auth_service import (
     IdentityAwareProxyOAuthServiceAsyncClient,
@@ -52,8 +61,22 @@ from google.cloud.iap_v1.services.identity_aware_proxy_o_auth_service import (
 from google.cloud.iap_v1.types import service
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -325,94 +348,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         IdentityAwareProxyOAuthServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            IdentityAwareProxyOAuthServiceClient,
-            transports.IdentityAwareProxyOAuthServiceGrpcTransport,
-            "grpc",
-        ),
-        (
-            IdentityAwareProxyOAuthServiceClient,
-            transports.IdentityAwareProxyOAuthServiceRestTransport,
-            "rest",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1247,25 +1182,6 @@ def test_list_brands(request_type, transport: str = "grpc"):
     assert isinstance(response, service.ListBrandsResponse)
 
 
-def test_list_brands_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_brands), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_brands()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListBrandsRequest()
-
-
 def test_list_brands_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1330,27 +1246,6 @@ def test_list_brands_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_brands_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_brands), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListBrandsResponse()
-        )
-        response = await client.list_brands()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListBrandsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_brands_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1358,7 +1253,7 @@ async def test_list_brands_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = IdentityAwareProxyOAuthServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1373,22 +1268,23 @@ async def test_list_brands_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_brands
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_brands(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_brands(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1396,7 +1292,7 @@ async def test_list_brands_async(
     transport: str = "grpc_asyncio", request_type=service.ListBrandsRequest
 ):
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1459,7 +1355,7 @@ def test_list_brands_field_headers():
 @pytest.mark.asyncio
 async def test_list_brands_field_headers_async():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1530,25 +1426,6 @@ def test_create_brand(request_type, transport: str = "grpc"):
     assert response.org_internal_only is True
 
 
-def test_create_brand_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_brand), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_brand()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateBrandRequest()
-
-
 def test_create_brand_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1613,32 +1490,6 @@ def test_create_brand_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_brand_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_brand), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.Brand(
-                name="name_value",
-                support_email="support_email_value",
-                application_title="application_title_value",
-                org_internal_only=True,
-            )
-        )
-        response = await client.create_brand()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateBrandRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_brand_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1646,7 +1497,7 @@ async def test_create_brand_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = IdentityAwareProxyOAuthServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1661,22 +1512,23 @@ async def test_create_brand_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_brand
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_brand(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_brand(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1684,7 +1536,7 @@ async def test_create_brand_async(
     transport: str = "grpc_asyncio", request_type=service.CreateBrandRequest
 ):
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1756,7 +1608,7 @@ def test_create_brand_field_headers():
 @pytest.mark.asyncio
 async def test_create_brand_field_headers_async():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1825,25 +1677,6 @@ def test_get_brand(request_type, transport: str = "grpc"):
     assert response.org_internal_only is True
 
 
-def test_get_brand_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_brand), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_brand()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetBrandRequest()
-
-
 def test_get_brand_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1908,38 +1741,12 @@ def test_get_brand_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_brand_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_brand), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.Brand(
-                name="name_value",
-                support_email="support_email_value",
-                application_title="application_title_value",
-                org_internal_only=True,
-            )
-        )
-        response = await client.get_brand()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetBrandRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_brand_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = IdentityAwareProxyOAuthServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1954,22 +1761,23 @@ async def test_get_brand_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_brand
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_brand(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_brand(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1977,7 +1785,7 @@ async def test_get_brand_async(
     transport: str = "grpc_asyncio", request_type=service.GetBrandRequest
 ):
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2049,7 +1857,7 @@ def test_get_brand_field_headers():
 @pytest.mark.asyncio
 async def test_get_brand_field_headers_async():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2116,27 +1924,6 @@ def test_create_identity_aware_proxy_client(request_type, transport: str = "grpc
     assert response.name == "name_value"
     assert response.secret == "secret_value"
     assert response.display_name == "display_name_value"
-
-
-def test_create_identity_aware_proxy_client_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_identity_aware_proxy_client), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_identity_aware_proxy_client()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateIdentityAwareProxyClientRequest()
 
 
 def test_create_identity_aware_proxy_client_non_empty_request_with_auto_populated_field():
@@ -2210,33 +1997,6 @@ def test_create_identity_aware_proxy_client_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_identity_aware_proxy_client_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_identity_aware_proxy_client), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.IdentityAwareProxyClient(
-                name="name_value",
-                secret="secret_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.create_identity_aware_proxy_client()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.CreateIdentityAwareProxyClientRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_identity_aware_proxy_client_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2244,7 +2004,7 @@ async def test_create_identity_aware_proxy_client_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = IdentityAwareProxyOAuthServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2259,22 +2019,23 @@ async def test_create_identity_aware_proxy_client_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_identity_aware_proxy_client
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_identity_aware_proxy_client(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_identity_aware_proxy_client(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2283,7 +2044,7 @@ async def test_create_identity_aware_proxy_client_async(
     request_type=service.CreateIdentityAwareProxyClientRequest,
 ):
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2357,7 +2118,7 @@ def test_create_identity_aware_proxy_client_field_headers():
 @pytest.mark.asyncio
 async def test_create_identity_aware_proxy_client_field_headers_async():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2424,27 +2185,6 @@ def test_list_identity_aware_proxy_clients(request_type, transport: str = "grpc"
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListIdentityAwareProxyClientsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_identity_aware_proxy_clients_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_identity_aware_proxy_clients), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_identity_aware_proxy_clients()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListIdentityAwareProxyClientsRequest()
 
 
 def test_list_identity_aware_proxy_clients_non_empty_request_with_auto_populated_field():
@@ -2520,31 +2260,6 @@ def test_list_identity_aware_proxy_clients_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_identity_aware_proxy_clients_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_identity_aware_proxy_clients), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListIdentityAwareProxyClientsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_identity_aware_proxy_clients()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListIdentityAwareProxyClientsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_identity_aware_proxy_clients_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2552,7 +2267,7 @@ async def test_list_identity_aware_proxy_clients_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = IdentityAwareProxyOAuthServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2567,22 +2282,23 @@ async def test_list_identity_aware_proxy_clients_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_identity_aware_proxy_clients
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_identity_aware_proxy_clients(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_identity_aware_proxy_clients(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2591,7 +2307,7 @@ async def test_list_identity_aware_proxy_clients_async(
     request_type=service.ListIdentityAwareProxyClientsRequest,
 ):
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2661,7 +2377,7 @@ def test_list_identity_aware_proxy_clients_field_headers():
 @pytest.mark.asyncio
 async def test_list_identity_aware_proxy_clients_field_headers_async():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2796,7 +2512,7 @@ def test_list_identity_aware_proxy_clients_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_identity_aware_proxy_clients_async_pager():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2848,7 +2564,7 @@ async def test_list_identity_aware_proxy_clients_async_pager():
 @pytest.mark.asyncio
 async def test_list_identity_aware_proxy_clients_async_pages():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2938,27 +2654,6 @@ def test_get_identity_aware_proxy_client(request_type, transport: str = "grpc"):
     assert response.display_name == "display_name_value"
 
 
-def test_get_identity_aware_proxy_client_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_identity_aware_proxy_client), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_identity_aware_proxy_client()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetIdentityAwareProxyClientRequest()
-
-
 def test_get_identity_aware_proxy_client_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3030,33 +2725,6 @@ def test_get_identity_aware_proxy_client_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_identity_aware_proxy_client_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_identity_aware_proxy_client), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.IdentityAwareProxyClient(
-                name="name_value",
-                secret="secret_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.get_identity_aware_proxy_client()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetIdentityAwareProxyClientRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_identity_aware_proxy_client_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3064,7 +2732,7 @@ async def test_get_identity_aware_proxy_client_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = IdentityAwareProxyOAuthServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3079,22 +2747,23 @@ async def test_get_identity_aware_proxy_client_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_identity_aware_proxy_client
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_identity_aware_proxy_client(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_identity_aware_proxy_client(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3103,7 +2772,7 @@ async def test_get_identity_aware_proxy_client_async(
     request_type=service.GetIdentityAwareProxyClientRequest,
 ):
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3177,7 +2846,7 @@ def test_get_identity_aware_proxy_client_field_headers():
 @pytest.mark.asyncio
 async def test_get_identity_aware_proxy_client_field_headers_async():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3252,27 +2921,6 @@ def test_reset_identity_aware_proxy_client_secret(
     assert response.display_name == "display_name_value"
 
 
-def test_reset_identity_aware_proxy_client_secret_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.reset_identity_aware_proxy_client_secret), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.reset_identity_aware_proxy_client_secret()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ResetIdentityAwareProxyClientSecretRequest()
-
-
 def test_reset_identity_aware_proxy_client_secret_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3344,33 +2992,6 @@ def test_reset_identity_aware_proxy_client_secret_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_reset_identity_aware_proxy_client_secret_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.reset_identity_aware_proxy_client_secret), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.IdentityAwareProxyClient(
-                name="name_value",
-                secret="secret_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.reset_identity_aware_proxy_client_secret()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ResetIdentityAwareProxyClientSecretRequest()
-
-
-@pytest.mark.asyncio
 async def test_reset_identity_aware_proxy_client_secret_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3378,7 +2999,7 @@ async def test_reset_identity_aware_proxy_client_secret_async_use_cached_wrapped
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = IdentityAwareProxyOAuthServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3393,22 +3014,23 @@ async def test_reset_identity_aware_proxy_client_secret_async_use_cached_wrapped
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.reset_identity_aware_proxy_client_secret
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.reset_identity_aware_proxy_client_secret(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.reset_identity_aware_proxy_client_secret(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3417,7 +3039,7 @@ async def test_reset_identity_aware_proxy_client_secret_async(
     request_type=service.ResetIdentityAwareProxyClientSecretRequest,
 ):
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3491,7 +3113,7 @@ def test_reset_identity_aware_proxy_client_secret_field_headers():
 @pytest.mark.asyncio
 async def test_reset_identity_aware_proxy_client_secret_field_headers_async():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3555,27 +3177,6 @@ def test_delete_identity_aware_proxy_client(request_type, transport: str = "grpc
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_identity_aware_proxy_client_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_identity_aware_proxy_client), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_identity_aware_proxy_client()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.DeleteIdentityAwareProxyClientRequest()
 
 
 def test_delete_identity_aware_proxy_client_non_empty_request_with_auto_populated_field():
@@ -3649,27 +3250,6 @@ def test_delete_identity_aware_proxy_client_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_identity_aware_proxy_client_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_identity_aware_proxy_client), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_identity_aware_proxy_client()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.DeleteIdentityAwareProxyClientRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_identity_aware_proxy_client_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3677,7 +3257,7 @@ async def test_delete_identity_aware_proxy_client_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = IdentityAwareProxyOAuthServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3692,22 +3272,23 @@ async def test_delete_identity_aware_proxy_client_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_identity_aware_proxy_client
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_identity_aware_proxy_client(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_identity_aware_proxy_client(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3716,7 +3297,7 @@ async def test_delete_identity_aware_proxy_client_async(
     request_type=service.DeleteIdentityAwareProxyClientRequest,
 ):
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3781,7 +3362,7 @@ def test_delete_identity_aware_proxy_client_field_headers():
 @pytest.mark.asyncio
 async def test_delete_identity_aware_proxy_client_field_headers_async():
     client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3808,43 +3389,6 @@ async def test_delete_identity_aware_proxy_client_field_headers_async():
         "x-goog-request-params",
         "name=name_value",
     ) in kw["metadata"]
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.ListBrandsRequest,
-        dict,
-    ],
-)
-def test_list_brands_rest(request_type):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.ListBrandsResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.ListBrandsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_brands(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, service.ListBrandsResponse)
 
 
 def test_list_brands_rest_use_cached_wrapped_rpc():
@@ -3947,6 +3491,7 @@ def test_list_brands_rest_required_fields(request_type=service.ListBrandsRequest
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_brands(request)
 
@@ -3962,210 +3507,6 @@ def test_list_brands_rest_unset_required_fields():
 
     unset_fields = transport.list_brands._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("parent",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_brands_rest_interceptors(null_interceptor):
-    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
-    )
-    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "post_list_brands"
-    ) as post, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "pre_list_brands"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.ListBrandsRequest.pb(service.ListBrandsRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.ListBrandsResponse.to_json(
-            service.ListBrandsResponse()
-        )
-
-        request = service.ListBrandsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.ListBrandsResponse()
-
-        client.list_brands(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_brands_rest_bad_request(
-    transport: str = "rest", request_type=service.ListBrandsRequest
-):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_brands(request)
-
-
-def test_list_brands_rest_error():
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.CreateBrandRequest,
-        dict,
-    ],
-)
-def test_create_brand_rest(request_type):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
-    request_init["brand"] = {
-        "name": "name_value",
-        "support_email": "support_email_value",
-        "application_title": "application_title_value",
-        "org_internal_only": True,
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = service.CreateBrandRequest.meta.fields["brand"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["brand"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["brand"][field])):
-                    del request_init["brand"][field][i][subfield]
-            else:
-                del request_init["brand"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.Brand(
-            name="name_value",
-            support_email="support_email_value",
-            application_title="application_title_value",
-            org_internal_only=True,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.Brand.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_brand(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, service.Brand)
-    assert response.name == "name_value"
-    assert response.support_email == "support_email_value"
-    assert response.application_title == "application_title_value"
-    assert response.org_internal_only is True
 
 
 def test_create_brand_rest_use_cached_wrapped_rpc():
@@ -4269,6 +3610,7 @@ def test_create_brand_rest_required_fields(request_type=service.CreateBrandReque
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_brand(request)
 
@@ -4292,135 +3634,6 @@ def test_create_brand_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_brand_rest_interceptors(null_interceptor):
-    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
-    )
-    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "post_create_brand"
-    ) as post, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "pre_create_brand"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.CreateBrandRequest.pb(service.CreateBrandRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.Brand.to_json(service.Brand())
-
-        request = service.CreateBrandRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.Brand()
-
-        client.create_brand(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_brand_rest_bad_request(
-    transport: str = "rest", request_type=service.CreateBrandRequest
-):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_brand(request)
-
-
-def test_create_brand_rest_error():
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.GetBrandRequest,
-        dict,
-    ],
-)
-def test_get_brand_rest(request_type):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/brands/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.Brand(
-            name="name_value",
-            support_email="support_email_value",
-            application_title="application_title_value",
-            org_internal_only=True,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.Brand.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_brand(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, service.Brand)
-    assert response.name == "name_value"
-    assert response.support_email == "support_email_value"
-    assert response.application_title == "application_title_value"
-    assert response.org_internal_only is True
 
 
 def test_get_brand_rest_use_cached_wrapped_rpc():
@@ -4523,6 +3736,7 @@ def test_get_brand_rest_required_fields(request_type=service.GetBrandRequest):
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_brand(request)
 
@@ -4538,211 +3752,6 @@ def test_get_brand_rest_unset_required_fields():
 
     unset_fields = transport.get_brand._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_brand_rest_interceptors(null_interceptor):
-    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
-    )
-    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "post_get_brand"
-    ) as post, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "pre_get_brand"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.GetBrandRequest.pb(service.GetBrandRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.Brand.to_json(service.Brand())
-
-        request = service.GetBrandRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.Brand()
-
-        client.get_brand(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_brand_rest_bad_request(
-    transport: str = "rest", request_type=service.GetBrandRequest
-):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/brands/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_brand(request)
-
-
-def test_get_brand_rest_error():
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.CreateIdentityAwareProxyClientRequest,
-        dict,
-    ],
-)
-def test_create_identity_aware_proxy_client_rest(request_type):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/brands/sample2"}
-    request_init["identity_aware_proxy_client"] = {
-        "name": "name_value",
-        "secret": "secret_value",
-        "display_name": "display_name_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = service.CreateIdentityAwareProxyClientRequest.meta.fields[
-        "identity_aware_proxy_client"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "identity_aware_proxy_client"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["identity_aware_proxy_client"][field])
-                ):
-                    del request_init["identity_aware_proxy_client"][field][i][subfield]
-            else:
-                del request_init["identity_aware_proxy_client"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.IdentityAwareProxyClient(
-            name="name_value",
-            secret="secret_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.IdentityAwareProxyClient.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_identity_aware_proxy_client(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, service.IdentityAwareProxyClient)
-    assert response.name == "name_value"
-    assert response.secret == "secret_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_create_identity_aware_proxy_client_rest_use_cached_wrapped_rpc():
@@ -4853,6 +3862,7 @@ def test_create_identity_aware_proxy_client_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_identity_aware_proxy_client(request)
 
@@ -4878,135 +3888,6 @@ def test_create_identity_aware_proxy_client_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_identity_aware_proxy_client_rest_interceptors(null_interceptor):
-    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
-    )
-    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
-        "post_create_identity_aware_proxy_client",
-    ) as post, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
-        "pre_create_identity_aware_proxy_client",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.CreateIdentityAwareProxyClientRequest.pb(
-            service.CreateIdentityAwareProxyClientRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.IdentityAwareProxyClient.to_json(
-            service.IdentityAwareProxyClient()
-        )
-
-        request = service.CreateIdentityAwareProxyClientRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.IdentityAwareProxyClient()
-
-        client.create_identity_aware_proxy_client(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_identity_aware_proxy_client_rest_bad_request(
-    transport: str = "rest", request_type=service.CreateIdentityAwareProxyClientRequest
-):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/brands/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_identity_aware_proxy_client(request)
-
-
-def test_create_identity_aware_proxy_client_rest_error():
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.ListIdentityAwareProxyClientsRequest,
-        dict,
-    ],
-)
-def test_list_identity_aware_proxy_clients_rest(request_type):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/brands/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.ListIdentityAwareProxyClientsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.ListIdentityAwareProxyClientsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_identity_aware_proxy_clients(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListIdentityAwareProxyClientsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_identity_aware_proxy_clients_rest_use_cached_wrapped_rpc():
@@ -5125,6 +4006,7 @@ def test_list_identity_aware_proxy_clients_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_identity_aware_proxy_clients(request)
 
@@ -5150,91 +4032,6 @@ def test_list_identity_aware_proxy_clients_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_identity_aware_proxy_clients_rest_interceptors(null_interceptor):
-    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
-    )
-    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
-        "post_list_identity_aware_proxy_clients",
-    ) as post, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
-        "pre_list_identity_aware_proxy_clients",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.ListIdentityAwareProxyClientsRequest.pb(
-            service.ListIdentityAwareProxyClientsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            service.ListIdentityAwareProxyClientsResponse.to_json(
-                service.ListIdentityAwareProxyClientsResponse()
-            )
-        )
-
-        request = service.ListIdentityAwareProxyClientsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.ListIdentityAwareProxyClientsResponse()
-
-        client.list_identity_aware_proxy_clients(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_identity_aware_proxy_clients_rest_bad_request(
-    transport: str = "rest", request_type=service.ListIdentityAwareProxyClientsRequest
-):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/brands/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_identity_aware_proxy_clients(request)
 
 
 def test_list_identity_aware_proxy_clients_rest_pager(transport: str = "rest"):
@@ -5300,52 +4097,6 @@ def test_list_identity_aware_proxy_clients_rest_pager(transport: str = "rest"):
         )
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.GetIdentityAwareProxyClientRequest,
-        dict,
-    ],
-)
-def test_get_identity_aware_proxy_client_rest(request_type):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.IdentityAwareProxyClient(
-            name="name_value",
-            secret="secret_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.IdentityAwareProxyClient.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_identity_aware_proxy_client(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, service.IdentityAwareProxyClient)
-    assert response.name == "name_value"
-    assert response.secret == "secret_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_get_identity_aware_proxy_client_rest_use_cached_wrapped_rpc():
@@ -5455,6 +4206,7 @@ def test_get_identity_aware_proxy_client_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_identity_aware_proxy_client(request)
 
@@ -5472,143 +4224,6 @@ def test_get_identity_aware_proxy_client_rest_unset_required_fields():
         {}
     )
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_identity_aware_proxy_client_rest_interceptors(null_interceptor):
-    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
-    )
-    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
-        "post_get_identity_aware_proxy_client",
-    ) as post, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
-        "pre_get_identity_aware_proxy_client",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.GetIdentityAwareProxyClientRequest.pb(
-            service.GetIdentityAwareProxyClientRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.IdentityAwareProxyClient.to_json(
-            service.IdentityAwareProxyClient()
-        )
-
-        request = service.GetIdentityAwareProxyClientRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.IdentityAwareProxyClient()
-
-        client.get_identity_aware_proxy_client(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_identity_aware_proxy_client_rest_bad_request(
-    transport: str = "rest", request_type=service.GetIdentityAwareProxyClientRequest
-):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_identity_aware_proxy_client(request)
-
-
-def test_get_identity_aware_proxy_client_rest_error():
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.ResetIdentityAwareProxyClientSecretRequest,
-        dict,
-    ],
-)
-def test_reset_identity_aware_proxy_client_secret_rest(request_type):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.IdentityAwareProxyClient(
-            name="name_value",
-            secret="secret_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.IdentityAwareProxyClient.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.reset_identity_aware_proxy_client_secret(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, service.IdentityAwareProxyClient)
-    assert response.name == "name_value"
-    assert response.secret == "secret_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_reset_identity_aware_proxy_client_secret_rest_use_cached_wrapped_rpc():
@@ -5723,6 +4338,7 @@ def test_reset_identity_aware_proxy_client_secret_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.reset_identity_aware_proxy_client_secret(request)
 
@@ -5742,135 +4358,6 @@ def test_reset_identity_aware_proxy_client_secret_rest_unset_required_fields():
         )
     )
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_reset_identity_aware_proxy_client_secret_rest_interceptors(null_interceptor):
-    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
-    )
-    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
-        "post_reset_identity_aware_proxy_client_secret",
-    ) as post, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
-        "pre_reset_identity_aware_proxy_client_secret",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.ResetIdentityAwareProxyClientSecretRequest.pb(
-            service.ResetIdentityAwareProxyClientSecretRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.IdentityAwareProxyClient.to_json(
-            service.IdentityAwareProxyClient()
-        )
-
-        request = service.ResetIdentityAwareProxyClientSecretRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.IdentityAwareProxyClient()
-
-        client.reset_identity_aware_proxy_client_secret(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_reset_identity_aware_proxy_client_secret_rest_bad_request(
-    transport: str = "rest",
-    request_type=service.ResetIdentityAwareProxyClientSecretRequest,
-):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.reset_identity_aware_proxy_client_secret(request)
-
-
-def test_reset_identity_aware_proxy_client_secret_rest_error():
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.DeleteIdentityAwareProxyClientRequest,
-        dict,
-    ],
-)
-def test_delete_identity_aware_proxy_client_rest(request_type):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_identity_aware_proxy_client(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_delete_identity_aware_proxy_client_rest_use_cached_wrapped_rpc():
@@ -5977,6 +4464,7 @@ def test_delete_identity_aware_proxy_client_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_identity_aware_proxy_client(request)
 
@@ -5994,88 +4482,6 @@ def test_delete_identity_aware_proxy_client_rest_unset_required_fields():
         transport.delete_identity_aware_proxy_client._get_unset_required_fields({})
     )
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_identity_aware_proxy_client_rest_interceptors(null_interceptor):
-    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
-    )
-    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
-        "pre_delete_identity_aware_proxy_client",
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = service.DeleteIdentityAwareProxyClientRequest.pb(
-            service.DeleteIdentityAwareProxyClientRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = service.DeleteIdentityAwareProxyClientRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.delete_identity_aware_proxy_client(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_delete_identity_aware_proxy_client_rest_bad_request(
-    transport: str = "rest", request_type=service.DeleteIdentityAwareProxyClientRequest
-):
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_identity_aware_proxy_client(request)
-
-
-def test_delete_identity_aware_proxy_client_rest_error():
-    client = IdentityAwareProxyOAuthServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
 
 
 def test_credentials_transport_error():
@@ -6170,20 +4576,1778 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_grpc():
+    transport = IdentityAwareProxyOAuthServiceClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_brands_empty_call_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_brands), "__call__") as call:
+        call.return_value = service.ListBrandsResponse()
+        client.list_brands(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListBrandsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_brand_empty_call_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_brand), "__call__") as call:
+        call.return_value = service.Brand()
+        client.create_brand(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateBrandRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_brand_empty_call_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_brand), "__call__") as call:
+        call.return_value = service.Brand()
+        client.get_brand(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetBrandRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_identity_aware_proxy_client_empty_call_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_identity_aware_proxy_client), "__call__"
+    ) as call:
+        call.return_value = service.IdentityAwareProxyClient()
+        client.create_identity_aware_proxy_client(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateIdentityAwareProxyClientRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_identity_aware_proxy_clients_empty_call_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_identity_aware_proxy_clients), "__call__"
+    ) as call:
+        call.return_value = service.ListIdentityAwareProxyClientsResponse()
+        client.list_identity_aware_proxy_clients(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListIdentityAwareProxyClientsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_identity_aware_proxy_client_empty_call_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_identity_aware_proxy_client), "__call__"
+    ) as call:
+        call.return_value = service.IdentityAwareProxyClient()
+        client.get_identity_aware_proxy_client(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetIdentityAwareProxyClientRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_reset_identity_aware_proxy_client_secret_empty_call_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.reset_identity_aware_proxy_client_secret), "__call__"
+    ) as call:
+        call.return_value = service.IdentityAwareProxyClient()
+        client.reset_identity_aware_proxy_client_secret(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ResetIdentityAwareProxyClientSecretRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_identity_aware_proxy_client_empty_call_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_identity_aware_proxy_client), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_identity_aware_proxy_client(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.DeleteIdentityAwareProxyClientRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = IdentityAwareProxyOAuthServiceAsyncClient.get_transport_class(
+        "grpc_asyncio"
+    )(credentials=async_anonymous_credentials())
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_brands_empty_call_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_brands), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListBrandsResponse()
+        )
+        await client.list_brands(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListBrandsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_brand_empty_call_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_brand), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.Brand(
+                name="name_value",
+                support_email="support_email_value",
+                application_title="application_title_value",
+                org_internal_only=True,
+            )
+        )
+        await client.create_brand(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateBrandRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_brand_empty_call_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_brand), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.Brand(
+                name="name_value",
+                support_email="support_email_value",
+                application_title="application_title_value",
+                org_internal_only=True,
+            )
+        )
+        await client.get_brand(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetBrandRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_identity_aware_proxy_client_empty_call_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_identity_aware_proxy_client), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.IdentityAwareProxyClient(
+                name="name_value",
+                secret="secret_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.create_identity_aware_proxy_client(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateIdentityAwareProxyClientRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_identity_aware_proxy_clients_empty_call_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_identity_aware_proxy_clients), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListIdentityAwareProxyClientsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_identity_aware_proxy_clients(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListIdentityAwareProxyClientsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_identity_aware_proxy_client_empty_call_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_identity_aware_proxy_client), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.IdentityAwareProxyClient(
+                name="name_value",
+                secret="secret_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.get_identity_aware_proxy_client(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetIdentityAwareProxyClientRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_reset_identity_aware_proxy_client_secret_empty_call_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.reset_identity_aware_proxy_client_secret), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.IdentityAwareProxyClient(
+                name="name_value",
+                secret="secret_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.reset_identity_aware_proxy_client_secret(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ResetIdentityAwareProxyClientSecretRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_identity_aware_proxy_client_empty_call_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_identity_aware_proxy_client), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_identity_aware_proxy_client(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.DeleteIdentityAwareProxyClientRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = IdentityAwareProxyOAuthServiceClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_list_brands_rest_bad_request(request_type=service.ListBrandsRequest):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_brands(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "grpc",
-        "rest",
+        service.ListBrandsRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = IdentityAwareProxyOAuthServiceClient.get_transport_class(
-        transport_name
-    )(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_list_brands_rest_call_success(request_type):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.ListBrandsResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.ListBrandsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_brands(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, service.ListBrandsResponse)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_brands_rest_interceptors(null_interceptor):
+    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
+    )
+    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "post_list_brands"
+    ) as post, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "pre_list_brands"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.ListBrandsRequest.pb(service.ListBrandsRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.ListBrandsResponse.to_json(service.ListBrandsResponse())
+        req.return_value.content = return_value
+
+        request = service.ListBrandsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.ListBrandsResponse()
+
+        client.list_brands(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_brand_rest_bad_request(request_type=service.CreateBrandRequest):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_brand(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.CreateBrandRequest,
+        dict,
+    ],
+)
+def test_create_brand_rest_call_success(request_type):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1"}
+    request_init["brand"] = {
+        "name": "name_value",
+        "support_email": "support_email_value",
+        "application_title": "application_title_value",
+        "org_internal_only": True,
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = service.CreateBrandRequest.meta.fields["brand"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["brand"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["brand"][field])):
+                    del request_init["brand"][field][i][subfield]
+            else:
+                del request_init["brand"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.Brand(
+            name="name_value",
+            support_email="support_email_value",
+            application_title="application_title_value",
+            org_internal_only=True,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.Brand.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_brand(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, service.Brand)
+    assert response.name == "name_value"
+    assert response.support_email == "support_email_value"
+    assert response.application_title == "application_title_value"
+    assert response.org_internal_only is True
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_brand_rest_interceptors(null_interceptor):
+    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
+    )
+    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "post_create_brand"
+    ) as post, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "pre_create_brand"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.CreateBrandRequest.pb(service.CreateBrandRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.Brand.to_json(service.Brand())
+        req.return_value.content = return_value
+
+        request = service.CreateBrandRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.Brand()
+
+        client.create_brand(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_brand_rest_bad_request(request_type=service.GetBrandRequest):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/brands/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_brand(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.GetBrandRequest,
+        dict,
+    ],
+)
+def test_get_brand_rest_call_success(request_type):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/brands/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.Brand(
+            name="name_value",
+            support_email="support_email_value",
+            application_title="application_title_value",
+            org_internal_only=True,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.Brand.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_brand(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, service.Brand)
+    assert response.name == "name_value"
+    assert response.support_email == "support_email_value"
+    assert response.application_title == "application_title_value"
+    assert response.org_internal_only is True
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_brand_rest_interceptors(null_interceptor):
+    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
+    )
+    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "post_get_brand"
+    ) as post, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor, "pre_get_brand"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.GetBrandRequest.pb(service.GetBrandRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.Brand.to_json(service.Brand())
+        req.return_value.content = return_value
+
+        request = service.GetBrandRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.Brand()
+
+        client.get_brand(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_identity_aware_proxy_client_rest_bad_request(
+    request_type=service.CreateIdentityAwareProxyClientRequest,
+):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/brands/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_identity_aware_proxy_client(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.CreateIdentityAwareProxyClientRequest,
+        dict,
+    ],
+)
+def test_create_identity_aware_proxy_client_rest_call_success(request_type):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/brands/sample2"}
+    request_init["identity_aware_proxy_client"] = {
+        "name": "name_value",
+        "secret": "secret_value",
+        "display_name": "display_name_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = service.CreateIdentityAwareProxyClientRequest.meta.fields[
+        "identity_aware_proxy_client"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "identity_aware_proxy_client"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["identity_aware_proxy_client"][field])
+                ):
+                    del request_init["identity_aware_proxy_client"][field][i][subfield]
+            else:
+                del request_init["identity_aware_proxy_client"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.IdentityAwareProxyClient(
+            name="name_value",
+            secret="secret_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.IdentityAwareProxyClient.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_identity_aware_proxy_client(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, service.IdentityAwareProxyClient)
+    assert response.name == "name_value"
+    assert response.secret == "secret_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_identity_aware_proxy_client_rest_interceptors(null_interceptor):
+    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
+    )
+    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
+        "post_create_identity_aware_proxy_client",
+    ) as post, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
+        "pre_create_identity_aware_proxy_client",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.CreateIdentityAwareProxyClientRequest.pb(
+            service.CreateIdentityAwareProxyClientRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.IdentityAwareProxyClient.to_json(
+            service.IdentityAwareProxyClient()
+        )
+        req.return_value.content = return_value
+
+        request = service.CreateIdentityAwareProxyClientRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.IdentityAwareProxyClient()
+
+        client.create_identity_aware_proxy_client(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_identity_aware_proxy_clients_rest_bad_request(
+    request_type=service.ListIdentityAwareProxyClientsRequest,
+):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/brands/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_identity_aware_proxy_clients(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ListIdentityAwareProxyClientsRequest,
+        dict,
+    ],
+)
+def test_list_identity_aware_proxy_clients_rest_call_success(request_type):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/brands/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.ListIdentityAwareProxyClientsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.ListIdentityAwareProxyClientsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_identity_aware_proxy_clients(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListIdentityAwareProxyClientsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_identity_aware_proxy_clients_rest_interceptors(null_interceptor):
+    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
+    )
+    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
+        "post_list_identity_aware_proxy_clients",
+    ) as post, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
+        "pre_list_identity_aware_proxy_clients",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.ListIdentityAwareProxyClientsRequest.pb(
+            service.ListIdentityAwareProxyClientsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.ListIdentityAwareProxyClientsResponse.to_json(
+            service.ListIdentityAwareProxyClientsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = service.ListIdentityAwareProxyClientsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.ListIdentityAwareProxyClientsResponse()
+
+        client.list_identity_aware_proxy_clients(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_identity_aware_proxy_client_rest_bad_request(
+    request_type=service.GetIdentityAwareProxyClientRequest,
+):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_identity_aware_proxy_client(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.GetIdentityAwareProxyClientRequest,
+        dict,
+    ],
+)
+def test_get_identity_aware_proxy_client_rest_call_success(request_type):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.IdentityAwareProxyClient(
+            name="name_value",
+            secret="secret_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.IdentityAwareProxyClient.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_identity_aware_proxy_client(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, service.IdentityAwareProxyClient)
+    assert response.name == "name_value"
+    assert response.secret == "secret_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_identity_aware_proxy_client_rest_interceptors(null_interceptor):
+    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
+    )
+    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
+        "post_get_identity_aware_proxy_client",
+    ) as post, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
+        "pre_get_identity_aware_proxy_client",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.GetIdentityAwareProxyClientRequest.pb(
+            service.GetIdentityAwareProxyClientRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.IdentityAwareProxyClient.to_json(
+            service.IdentityAwareProxyClient()
+        )
+        req.return_value.content = return_value
+
+        request = service.GetIdentityAwareProxyClientRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.IdentityAwareProxyClient()
+
+        client.get_identity_aware_proxy_client(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_reset_identity_aware_proxy_client_secret_rest_bad_request(
+    request_type=service.ResetIdentityAwareProxyClientSecretRequest,
+):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.reset_identity_aware_proxy_client_secret(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ResetIdentityAwareProxyClientSecretRequest,
+        dict,
+    ],
+)
+def test_reset_identity_aware_proxy_client_secret_rest_call_success(request_type):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.IdentityAwareProxyClient(
+            name="name_value",
+            secret="secret_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.IdentityAwareProxyClient.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.reset_identity_aware_proxy_client_secret(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, service.IdentityAwareProxyClient)
+    assert response.name == "name_value"
+    assert response.secret == "secret_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_reset_identity_aware_proxy_client_secret_rest_interceptors(null_interceptor):
+    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
+    )
+    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
+        "post_reset_identity_aware_proxy_client_secret",
+    ) as post, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
+        "pre_reset_identity_aware_proxy_client_secret",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.ResetIdentityAwareProxyClientSecretRequest.pb(
+            service.ResetIdentityAwareProxyClientSecretRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.IdentityAwareProxyClient.to_json(
+            service.IdentityAwareProxyClient()
+        )
+        req.return_value.content = return_value
+
+        request = service.ResetIdentityAwareProxyClientSecretRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.IdentityAwareProxyClient()
+
+        client.reset_identity_aware_proxy_client_secret(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_identity_aware_proxy_client_rest_bad_request(
+    request_type=service.DeleteIdentityAwareProxyClientRequest,
+):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_identity_aware_proxy_client(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.DeleteIdentityAwareProxyClientRequest,
+        dict,
+    ],
+)
+def test_delete_identity_aware_proxy_client_rest_call_success(request_type):
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/brands/sample2/identityAwareProxyClients/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_identity_aware_proxy_client(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_identity_aware_proxy_client_rest_interceptors(null_interceptor):
+    transport = transports.IdentityAwareProxyOAuthServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.IdentityAwareProxyOAuthServiceRestInterceptor(),
+    )
+    client = IdentityAwareProxyOAuthServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.IdentityAwareProxyOAuthServiceRestInterceptor,
+        "pre_delete_identity_aware_proxy_client",
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = service.DeleteIdentityAwareProxyClientRequest.pb(
+            service.DeleteIdentityAwareProxyClientRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = service.DeleteIdentityAwareProxyClientRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_identity_aware_proxy_client(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_initialize_client_w_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_brands_empty_call_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_brands), "__call__") as call:
+        client.list_brands(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListBrandsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_brand_empty_call_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_brand), "__call__") as call:
+        client.create_brand(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateBrandRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_brand_empty_call_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_brand), "__call__") as call:
+        client.get_brand(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetBrandRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_identity_aware_proxy_client_empty_call_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_identity_aware_proxy_client), "__call__"
+    ) as call:
+        client.create_identity_aware_proxy_client(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.CreateIdentityAwareProxyClientRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_identity_aware_proxy_clients_empty_call_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_identity_aware_proxy_clients), "__call__"
+    ) as call:
+        client.list_identity_aware_proxy_clients(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListIdentityAwareProxyClientsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_identity_aware_proxy_client_empty_call_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_identity_aware_proxy_client), "__call__"
+    ) as call:
+        client.get_identity_aware_proxy_client(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetIdentityAwareProxyClientRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_reset_identity_aware_proxy_client_secret_empty_call_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.reset_identity_aware_proxy_client_secret), "__call__"
+    ) as call:
+        client.reset_identity_aware_proxy_client_secret(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ResetIdentityAwareProxyClientSecretRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_identity_aware_proxy_client_empty_call_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_identity_aware_proxy_client), "__call__"
+    ) as call:
+        client.delete_identity_aware_proxy_client(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.DeleteIdentityAwareProxyClientRequest()
+
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -6780,36 +6944,41 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = IdentityAwareProxyOAuthServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+def test_transport_close_grpc():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = IdentityAwareProxyOAuthServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
         async with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = IdentityAwareProxyOAuthServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = IdentityAwareProxyOAuthServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

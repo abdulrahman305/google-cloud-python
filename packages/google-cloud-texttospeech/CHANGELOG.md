@@ -4,6 +4,90 @@
 
 [1]: https://pypi.org/project/google-cloud-texttospeech/#history
 
+## [2.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.22.0...google-cloud-texttospeech-v2.23.0) (2024-12-18)
+
+
+### Features
+
+* [google-cloud-texttospeech] StreamingSynthesize now supports opus ([#13370](https://github.com/googleapis/google-cloud-python/issues/13370)) ([4999fd8](https://github.com/googleapis/google-cloud-python/commit/4999fd82ae07e4fced8f1c43b5ac38cca2348ae0))
+
+## [2.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.21.1...google-cloud-texttospeech-v2.22.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+## [2.21.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.21.0...google-cloud-texttospeech-v2.21.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13246](https://github.com/googleapis/google-cloud-python/issues/13246)) ([bcad563](https://github.com/googleapis/google-cloud-python/commit/bcad563acea541bb51f9fbd005f18e9f32e381f0))
+
+## [2.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.20.0...google-cloud-texttospeech-v2.21.0) (2024-10-31)
+
+
+### Features
+
+* add multi-speaker markup, which allows generating dialogue between multiple speakers ([b01d99d](https://github.com/googleapis/google-cloud-python/commit/b01d99dc321be04b91dd183064bffdecfef9d5c0))
+
+## [2.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.19.0...google-cloud-texttospeech-v2.20.0) (2024-10-24)
+
+
+### Features
+
+* Add multi-speaker markup, which allows generating dialogue between multiple speakers ([7cb80ba](https://github.com/googleapis/google-cloud-python/commit/7cb80ba74f21476cea746a998d7ec218168f62cd))
+* Add support for Python 3.13 ([7cb80ba](https://github.com/googleapis/google-cloud-python/commit/7cb80ba74f21476cea746a998d7ec218168f62cd))
+
+## [2.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.18.0...google-cloud-texttospeech-v2.19.0) (2024-10-23)
+
+
+### Features
+
+* [google-cloud-texttospeech] Add brand voice lite ([#13178](https://github.com/googleapis/google-cloud-python/issues/13178)) ([3b97314](https://github.com/googleapis/google-cloud-python/commit/3b97314028f30b627f8891cea1368df20a564414))
+* [google-cloud-texttospeech] add brand voice lite, which lets you clone a voice with just 10 seconds of audio ([#13192](https://github.com/googleapis/google-cloud-python/issues/13192)) ([6d622a3](https://github.com/googleapis/google-cloud-python/commit/6d622a39d3e578e52f4591667ed14c13948c4a50))
+
+## [2.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.17.2...google-cloud-texttospeech-v2.18.0) (2024-10-10)
+
+
+### Features
+
+* Add CustomPronunciationParams for upcoming feature work ([6ba80ea](https://github.com/googleapis/google-cloud-python/commit/6ba80eaf688f974ebf93e9aa2b7af9dc86253356))
+* Add low latency journey option to proto ([6ba80ea](https://github.com/googleapis/google-cloud-python/commit/6ba80eaf688f974ebf93e9aa2b7af9dc86253356))
+
+## [2.17.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.17.1...google-cloud-texttospeech-v2.17.2) (2024-08-26)
+
+
+### Documentation
+
+* [google-cloud-texttospeech] update Long Audio capabilities to include SSML ([#13031](https://github.com/googleapis/google-cloud-python/issues/13031)) ([46ef325](https://github.com/googleapis/google-cloud-python/commit/46ef3250151c5939100ab4a1dcda6ccf68ea9e4c))
+
+## [2.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.17.0...google-cloud-texttospeech-v2.17.1) (2024-08-20)
+
+
+### Documentation
+
+* [google-cloud-texttospeech] update Long Audio capabilities to include SSML ([#13020](https://github.com/googleapis/google-cloud-python/issues/13020)) ([200a64b](https://github.com/googleapis/google-cloud-python/commit/200a64b0c9ce565103295ab0a8126353f386fbce))
+
+## [2.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.16.5...google-cloud-texttospeech-v2.17.0) (2024-08-19)
+
+
+### Features
+
+* A new method `StreamingSynthesize` is added to service `TextToSpeech` ([973e48a](https://github.com/googleapis/google-cloud-python/commit/973e48afb87cef6565535a7262e38195245018ef))
+
+
+### Documentation
+
+* A comment for field `name` in message `.google.cloud.texttospeech.v1.VoiceSelectionParams` is changed ([973e48a](https://github.com/googleapis/google-cloud-python/commit/973e48afb87cef6565535a7262e38195245018ef))
+* A comment for field `name` in message `.google.cloud.texttospeech.v1beta1.VoiceSelectionParams` is changed ([973e48a](https://github.com/googleapis/google-cloud-python/commit/973e48afb87cef6565535a7262e38195245018ef))
+
 ## [2.16.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.16.4...google-cloud-texttospeech-v2.16.5) (2024-07-30)
 
 

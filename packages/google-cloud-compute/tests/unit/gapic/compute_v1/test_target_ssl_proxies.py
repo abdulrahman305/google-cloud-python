@@ -22,25 +22,11 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import (
-    future,
-    gapic_v1,
-    grpc_helpers,
-    grpc_helpers_async,
-    path_template,
-)
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import extended_operation  # type: ignore
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
+from google.api_core import api_core_version
 from google.protobuf import json_format
 import grpc
 from grpc.experimental import aio
@@ -50,6 +36,29 @@ import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
 
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import (
+    future,
+    gapic_v1,
+    grpc_helpers,
+    grpc_helpers_async,
+    path_template,
+)
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import extended_operation  # type: ignore
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
+
 from google.cloud.compute_v1.services.target_ssl_proxies import (
     TargetSslProxiesClient,
     pagers,
@@ -58,8 +67,22 @@ from google.cloud.compute_v1.services.target_ssl_proxies import (
 from google.cloud.compute_v1.types import compute
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -295,85 +318,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         TargetSslProxiesClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (TargetSslProxiesClient, transports.TargetSslProxiesRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -978,88 +922,6 @@ def test_target_ssl_proxies_client_client_options_credentials_file(
         )
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_delete_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
-
-
 def test_delete_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -1170,6 +1032,7 @@ def test_delete_rest_required_fields(request_type=compute.DeleteTargetSslProxyRe
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete(request)
 
@@ -1193,85 +1056,6 @@ def test_delete_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_delete"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_delete"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteTargetSslProxyRequest.pb(
-            compute.DeleteTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_rest_bad_request(
-    transport: str = "rest", request_type=compute.DeleteTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete(request)
 
 
 def test_delete_rest_flattened():
@@ -1303,6 +1087,7 @@ def test_delete_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete(**mock_args)
 
@@ -1331,72 +1116,6 @@ def test_delete_rest_flattened_error(transport: str = "rest"):
             project="project_value",
             target_ssl_proxy="target_ssl_proxy_value",
         )
-
-
-def test_delete_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_delete_unary_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_delete_unary_rest_use_cached_wrapped_rpc():
@@ -1511,6 +1230,7 @@ def test_delete_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_unary(request)
 
@@ -1534,85 +1254,6 @@ def test_delete_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_unary_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_delete"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_delete"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteTargetSslProxyRequest.pb(
-            compute.DeleteTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.DeleteTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_unary(request)
 
 
 def test_delete_unary_rest_flattened():
@@ -1644,6 +1285,7 @@ def test_delete_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_unary(**mock_args)
 
@@ -1672,72 +1314,6 @@ def test_delete_unary_rest_flattened_error(transport: str = "rest"):
             project="project_value",
             target_ssl_proxy="target_ssl_proxy_value",
         )
-
-
-def test_delete_unary_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.GetTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_get_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.TargetSslProxy(
-            certificate_map="certificate_map_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            id=205,
-            kind="kind_value",
-            name="name_value",
-            proxy_header="proxy_header_value",
-            self_link="self_link_value",
-            service="service_value",
-            ssl_certificates=["ssl_certificates_value"],
-            ssl_policy="ssl_policy_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.TargetSslProxy.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.TargetSslProxy)
-    assert response.certificate_map == "certificate_map_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.id == 205
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.proxy_header == "proxy_header_value"
-    assert response.self_link == "self_link_value"
-    assert response.service == "service_value"
-    assert response.ssl_certificates == ["ssl_certificates_value"]
-    assert response.ssl_policy == "ssl_policy_value"
 
 
 def test_get_rest_use_cached_wrapped_rpc():
@@ -1844,6 +1420,7 @@ def test_get_rest_required_fields(request_type=compute.GetTargetSslProxyRequest)
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get(request)
 
@@ -1867,87 +1444,6 @@ def test_get_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_get"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_get"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.GetTargetSslProxyRequest.pb(
-            compute.GetTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.TargetSslProxy.to_json(
-            compute.TargetSslProxy()
-        )
-
-        request = compute.GetTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.TargetSslProxy()
-
-        client.get(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_rest_bad_request(
-    transport: str = "rest", request_type=compute.GetTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get(request)
 
 
 def test_get_rest_flattened():
@@ -1979,6 +1475,7 @@ def test_get_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get(**mock_args)
 
@@ -2007,180 +1504,6 @@ def test_get_rest_flattened_error(transport: str = "rest"):
             project="project_value",
             target_ssl_proxy="target_ssl_proxy_value",
         )
-
-
-def test_get_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.InsertTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_insert_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request_init["target_ssl_proxy_resource"] = {
-        "certificate_map": "certificate_map_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "description": "description_value",
-        "id": 205,
-        "kind": "kind_value",
-        "name": "name_value",
-        "proxy_header": "proxy_header_value",
-        "self_link": "self_link_value",
-        "service": "service_value",
-        "ssl_certificates": ["ssl_certificates_value1", "ssl_certificates_value2"],
-        "ssl_policy": "ssl_policy_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.InsertTargetSslProxyRequest.meta.fields[
-        "target_ssl_proxy_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "target_ssl_proxy_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["target_ssl_proxy_resource"][field])
-                ):
-                    del request_init["target_ssl_proxy_resource"][field][i][subfield]
-            else:
-                del request_init["target_ssl_proxy_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.insert(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_insert_rest_use_cached_wrapped_rpc():
@@ -2290,6 +1613,7 @@ def test_insert_rest_required_fields(request_type=compute.InsertTargetSslProxyRe
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.insert(request)
 
@@ -2313,85 +1637,6 @@ def test_insert_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_insert_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_insert"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_insert"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.InsertTargetSslProxyRequest.pb(
-            compute.InsertTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.InsertTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.insert(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_insert_rest_bad_request(
-    transport: str = "rest", request_type=compute.InsertTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.insert(request)
 
 
 def test_insert_rest_flattened():
@@ -2425,6 +1670,7 @@ def test_insert_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.insert(**mock_args)
 
@@ -2455,158 +1701,6 @@ def test_insert_rest_flattened_error(transport: str = "rest"):
                 certificate_map="certificate_map_value"
             ),
         )
-
-
-def test_insert_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.InsertTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_insert_unary_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request_init["target_ssl_proxy_resource"] = {
-        "certificate_map": "certificate_map_value",
-        "creation_timestamp": "creation_timestamp_value",
-        "description": "description_value",
-        "id": 205,
-        "kind": "kind_value",
-        "name": "name_value",
-        "proxy_header": "proxy_header_value",
-        "self_link": "self_link_value",
-        "service": "service_value",
-        "ssl_certificates": ["ssl_certificates_value1", "ssl_certificates_value2"],
-        "ssl_policy": "ssl_policy_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.InsertTargetSslProxyRequest.meta.fields[
-        "target_ssl_proxy_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "target_ssl_proxy_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["target_ssl_proxy_resource"][field])
-                ):
-                    del request_init["target_ssl_proxy_resource"][field][i][subfield]
-            else:
-                del request_init["target_ssl_proxy_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.insert_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_insert_unary_rest_use_cached_wrapped_rpc():
@@ -2718,6 +1812,7 @@ def test_insert_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.insert_unary(request)
 
@@ -2741,85 +1836,6 @@ def test_insert_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_insert_unary_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_insert"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_insert"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.InsertTargetSslProxyRequest.pb(
-            compute.InsertTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.InsertTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.insert_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_insert_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.InsertTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.insert_unary(request)
 
 
 def test_insert_unary_rest_flattened():
@@ -2853,6 +1869,7 @@ def test_insert_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.insert_unary(**mock_args)
 
@@ -2883,58 +1900,6 @@ def test_insert_unary_rest_flattened_error(transport: str = "rest"):
                 certificate_map="certificate_map_value"
             ),
         )
-
-
-def test_insert_unary_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ListTargetSslProxiesRequest,
-        dict,
-    ],
-)
-def test_list_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.TargetSslProxyList(
-            id="id_value",
-            kind="kind_value",
-            next_page_token="next_page_token_value",
-            self_link="self_link_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.TargetSslProxyList.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListPager)
-    assert response.id == "id_value"
-    assert response.kind == "kind_value"
-    assert response.next_page_token == "next_page_token_value"
-    assert response.self_link == "self_link_value"
 
 
 def test_list_rest_use_cached_wrapped_rpc():
@@ -3047,6 +2012,7 @@ def test_list_rest_required_fields(request_type=compute.ListTargetSslProxiesRequ
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list(request)
 
@@ -3073,87 +2039,6 @@ def test_list_rest_unset_required_fields():
         )
         & set(("project",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_list"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ListTargetSslProxiesRequest.pb(
-            compute.ListTargetSslProxiesRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.TargetSslProxyList.to_json(
-            compute.TargetSslProxyList()
-        )
-
-        request = compute.ListTargetSslProxiesRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.TargetSslProxyList()
-
-        client.list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_rest_bad_request(
-    transport: str = "rest", request_type=compute.ListTargetSslProxiesRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list(request)
 
 
 def test_list_rest_flattened():
@@ -3184,6 +2069,7 @@ def test_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list(**mock_args)
 
@@ -3272,173 +2158,6 @@ def test_list_rest_pager(transport: str = "rest"):
         pages = list(client.list(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetBackendServiceTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_set_backend_service_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request_init["target_ssl_proxies_set_backend_service_request_resource"] = {
-        "service": "service_value"
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetBackendServiceTargetSslProxyRequest.meta.fields[
-        "target_ssl_proxies_set_backend_service_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "target_ssl_proxies_set_backend_service_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "target_ssl_proxies_set_backend_service_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "target_ssl_proxies_set_backend_service_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "target_ssl_proxies_set_backend_service_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_backend_service(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_set_backend_service_rest_use_cached_wrapped_rpc():
@@ -3558,6 +2277,7 @@ def test_set_backend_service_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_backend_service(request)
 
@@ -3582,85 +2302,6 @@ def test_set_backend_service_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_backend_service_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_set_backend_service"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_set_backend_service"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetBackendServiceTargetSslProxyRequest.pb(
-            compute.SetBackendServiceTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.SetBackendServiceTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_backend_service(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_backend_service_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetBackendServiceTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_backend_service(request)
 
 
 def test_set_backend_service_rest_flattened():
@@ -3695,6 +2336,7 @@ def test_set_backend_service_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_backend_service(**mock_args)
 
@@ -3728,10 +2370,2665 @@ def test_set_backend_service_rest_flattened_error(transport: str = "rest"):
         )
 
 
-def test_set_backend_service_rest_error():
+def test_set_backend_service_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.set_backend_service in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_backend_service
+        ] = mock_rpc
+
+        request = {}
+        client.set_backend_service_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_backend_service_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_backend_service_unary_rest_required_fields(
+    request_type=compute.SetBackendServiceTargetSslProxyRequest,
+):
+    transport_class = transports.TargetSslProxiesRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["target_ssl_proxy"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_backend_service._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_backend_service._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "targetSslProxy" in jsonified_request
+    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
+
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_backend_service_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_backend_service_unary_rest_unset_required_fields():
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_backend_service._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "targetSslProxiesSetBackendServiceRequestResource",
+                "targetSslProxy",
+            )
+        )
+    )
+
+
+def test_set_backend_service_unary_rest_flattened():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_backend_service_request_resource=compute.TargetSslProxiesSetBackendServiceRequest(
+                service="service_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_backend_service_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setBackendService"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_backend_service_unary_rest_flattened_error(transport: str = "rest"):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_backend_service_unary(
+            compute.SetBackendServiceTargetSslProxyRequest(),
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_backend_service_request_resource=compute.TargetSslProxiesSetBackendServiceRequest(
+                service="service_value"
+            ),
+        )
+
+
+def test_set_certificate_map_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.set_certificate_map in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_certificate_map
+        ] = mock_rpc
+
+        request = {}
+        client.set_certificate_map(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_certificate_map(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_certificate_map_rest_required_fields(
+    request_type=compute.SetCertificateMapTargetSslProxyRequest,
+):
+    transport_class = transports.TargetSslProxiesRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["target_ssl_proxy"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_certificate_map._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_certificate_map._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "targetSslProxy" in jsonified_request
+    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
+
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_certificate_map(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_certificate_map_rest_unset_required_fields():
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_certificate_map._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "targetSslProxiesSetCertificateMapRequestResource",
+                "targetSslProxy",
+            )
+        )
+    )
+
+
+def test_set_certificate_map_rest_flattened():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_certificate_map_request_resource=compute.TargetSslProxiesSetCertificateMapRequest(
+                certificate_map="certificate_map_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_certificate_map(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setCertificateMap"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_certificate_map_rest_flattened_error(transport: str = "rest"):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_certificate_map(
+            compute.SetCertificateMapTargetSslProxyRequest(),
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_certificate_map_request_resource=compute.TargetSslProxiesSetCertificateMapRequest(
+                certificate_map="certificate_map_value"
+            ),
+        )
+
+
+def test_set_certificate_map_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.set_certificate_map in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_certificate_map
+        ] = mock_rpc
+
+        request = {}
+        client.set_certificate_map_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_certificate_map_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_certificate_map_unary_rest_required_fields(
+    request_type=compute.SetCertificateMapTargetSslProxyRequest,
+):
+    transport_class = transports.TargetSslProxiesRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["target_ssl_proxy"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_certificate_map._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_certificate_map._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "targetSslProxy" in jsonified_request
+    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
+
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_certificate_map_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_certificate_map_unary_rest_unset_required_fields():
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_certificate_map._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "targetSslProxiesSetCertificateMapRequestResource",
+                "targetSslProxy",
+            )
+        )
+    )
+
+
+def test_set_certificate_map_unary_rest_flattened():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_certificate_map_request_resource=compute.TargetSslProxiesSetCertificateMapRequest(
+                certificate_map="certificate_map_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_certificate_map_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setCertificateMap"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_certificate_map_unary_rest_flattened_error(transport: str = "rest"):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_certificate_map_unary(
+            compute.SetCertificateMapTargetSslProxyRequest(),
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_certificate_map_request_resource=compute.TargetSslProxiesSetCertificateMapRequest(
+                certificate_map="certificate_map_value"
+            ),
+        )
+
+
+def test_set_proxy_header_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.set_proxy_header in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_proxy_header
+        ] = mock_rpc
+
+        request = {}
+        client.set_proxy_header(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_proxy_header(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_proxy_header_rest_required_fields(
+    request_type=compute.SetProxyHeaderTargetSslProxyRequest,
+):
+    transport_class = transports.TargetSslProxiesRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["target_ssl_proxy"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_proxy_header._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_proxy_header._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "targetSslProxy" in jsonified_request
+    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
+
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_proxy_header(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_proxy_header_rest_unset_required_fields():
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_proxy_header._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "targetSslProxiesSetProxyHeaderRequestResource",
+                "targetSslProxy",
+            )
+        )
+    )
+
+
+def test_set_proxy_header_rest_flattened():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_proxy_header_request_resource=compute.TargetSslProxiesSetProxyHeaderRequest(
+                proxy_header="proxy_header_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_proxy_header(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setProxyHeader"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_proxy_header_rest_flattened_error(transport: str = "rest"):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_proxy_header(
+            compute.SetProxyHeaderTargetSslProxyRequest(),
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_proxy_header_request_resource=compute.TargetSslProxiesSetProxyHeaderRequest(
+                proxy_header="proxy_header_value"
+            ),
+        )
+
+
+def test_set_proxy_header_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.set_proxy_header in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_proxy_header
+        ] = mock_rpc
+
+        request = {}
+        client.set_proxy_header_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_proxy_header_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_proxy_header_unary_rest_required_fields(
+    request_type=compute.SetProxyHeaderTargetSslProxyRequest,
+):
+    transport_class = transports.TargetSslProxiesRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["target_ssl_proxy"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_proxy_header._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_proxy_header._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "targetSslProxy" in jsonified_request
+    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
+
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_proxy_header_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_proxy_header_unary_rest_unset_required_fields():
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_proxy_header._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "targetSslProxiesSetProxyHeaderRequestResource",
+                "targetSslProxy",
+            )
+        )
+    )
+
+
+def test_set_proxy_header_unary_rest_flattened():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_proxy_header_request_resource=compute.TargetSslProxiesSetProxyHeaderRequest(
+                proxy_header="proxy_header_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_proxy_header_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setProxyHeader"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_proxy_header_unary_rest_flattened_error(transport: str = "rest"):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_proxy_header_unary(
+            compute.SetProxyHeaderTargetSslProxyRequest(),
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_proxy_header_request_resource=compute.TargetSslProxiesSetProxyHeaderRequest(
+                proxy_header="proxy_header_value"
+            ),
+        )
+
+
+def test_set_ssl_certificates_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.set_ssl_certificates in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_ssl_certificates
+        ] = mock_rpc
+
+        request = {}
+        client.set_ssl_certificates(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_ssl_certificates(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_ssl_certificates_rest_required_fields(
+    request_type=compute.SetSslCertificatesTargetSslProxyRequest,
+):
+    transport_class = transports.TargetSslProxiesRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["target_ssl_proxy"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_ssl_certificates._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_ssl_certificates._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "targetSslProxy" in jsonified_request
+    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
+
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_ssl_certificates(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_ssl_certificates_rest_unset_required_fields():
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_ssl_certificates._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "targetSslProxiesSetSslCertificatesRequestResource",
+                "targetSslProxy",
+            )
+        )
+    )
+
+
+def test_set_ssl_certificates_rest_flattened():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_ssl_certificates_request_resource=compute.TargetSslProxiesSetSslCertificatesRequest(
+                ssl_certificates=["ssl_certificates_value"]
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_ssl_certificates(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setSslCertificates"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_ssl_certificates_rest_flattened_error(transport: str = "rest"):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_ssl_certificates(
+            compute.SetSslCertificatesTargetSslProxyRequest(),
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_ssl_certificates_request_resource=compute.TargetSslProxiesSetSslCertificatesRequest(
+                ssl_certificates=["ssl_certificates_value"]
+            ),
+        )
+
+
+def test_set_ssl_certificates_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.set_ssl_certificates in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.set_ssl_certificates
+        ] = mock_rpc
+
+        request = {}
+        client.set_ssl_certificates_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_ssl_certificates_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_ssl_certificates_unary_rest_required_fields(
+    request_type=compute.SetSslCertificatesTargetSslProxyRequest,
+):
+    transport_class = transports.TargetSslProxiesRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["target_ssl_proxy"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_ssl_certificates._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_ssl_certificates._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "targetSslProxy" in jsonified_request
+    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
+
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_ssl_certificates_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_ssl_certificates_unary_rest_unset_required_fields():
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_ssl_certificates._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "targetSslProxiesSetSslCertificatesRequestResource",
+                "targetSslProxy",
+            )
+        )
+    )
+
+
+def test_set_ssl_certificates_unary_rest_flattened():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_ssl_certificates_request_resource=compute.TargetSslProxiesSetSslCertificatesRequest(
+                ssl_certificates=["ssl_certificates_value"]
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_ssl_certificates_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setSslCertificates"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_ssl_certificates_unary_rest_flattened_error(transport: str = "rest"):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_ssl_certificates_unary(
+            compute.SetSslCertificatesTargetSslProxyRequest(),
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            target_ssl_proxies_set_ssl_certificates_request_resource=compute.TargetSslProxiesSetSslCertificatesRequest(
+                ssl_certificates=["ssl_certificates_value"]
+            ),
+        )
+
+
+def test_set_ssl_policy_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.set_ssl_policy in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.set_ssl_policy] = mock_rpc
+
+        request = {}
+        client.set_ssl_policy(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_ssl_policy(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_ssl_policy_rest_required_fields(
+    request_type=compute.SetSslPolicyTargetSslProxyRequest,
+):
+    transport_class = transports.TargetSslProxiesRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["target_ssl_proxy"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_ssl_policy._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_ssl_policy._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "targetSslProxy" in jsonified_request
+    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
+
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_ssl_policy(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_ssl_policy_rest_unset_required_fields():
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_ssl_policy._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "sslPolicyReferenceResource",
+                "targetSslProxy",
+            )
+        )
+    )
+
+
+def test_set_ssl_policy_rest_flattened():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            ssl_policy_reference_resource=compute.SslPolicyReference(
+                ssl_policy="ssl_policy_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_ssl_policy(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setSslPolicy"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_ssl_policy_rest_flattened_error(transport: str = "rest"):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_ssl_policy(
+            compute.SetSslPolicyTargetSslProxyRequest(),
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            ssl_policy_reference_resource=compute.SslPolicyReference(
+                ssl_policy="ssl_policy_value"
+            ),
+        )
+
+
+def test_set_ssl_policy_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.set_ssl_policy in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.set_ssl_policy] = mock_rpc
+
+        request = {}
+        client.set_ssl_policy_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.set_ssl_policy_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_set_ssl_policy_unary_rest_required_fields(
+    request_type=compute.SetSslPolicyTargetSslProxyRequest,
+):
+    transport_class = transports.TargetSslProxiesRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["target_ssl_proxy"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_ssl_policy._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).set_ssl_policy._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "targetSslProxy" in jsonified_request
+    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
+
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.set_ssl_policy_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_set_ssl_policy_unary_rest_unset_required_fields():
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.set_ssl_policy._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "sslPolicyReferenceResource",
+                "targetSslProxy",
+            )
+        )
+    )
+
+
+def test_set_ssl_policy_unary_rest_flattened():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            ssl_policy_reference_resource=compute.SslPolicyReference(
+                ssl_policy="ssl_policy_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.set_ssl_policy_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setSslPolicy"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_set_ssl_policy_unary_rest_flattened_error(transport: str = "rest"):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.set_ssl_policy_unary(
+            compute.SetSslPolicyTargetSslProxyRequest(),
+            project="project_value",
+            target_ssl_proxy="target_ssl_proxy_value",
+            ssl_policy_reference_resource=compute.SslPolicyReference(
+                ssl_policy="ssl_policy_value"
+            ),
+        )
+
+
+def test_credentials_transport_error():
+    # It is an error to provide credentials and a transport instance.
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = TargetSslProxiesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport=transport,
+        )
+
+    # It is an error to provide a credentials file and a transport instance.
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = TargetSslProxiesClient(
+            client_options={"credentials_file": "credentials.json"},
+            transport=transport,
+        )
+
+    # It is an error to provide an api_key and a transport instance.
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    options = client_options.ClientOptions()
+    options.api_key = "api_key"
+    with pytest.raises(ValueError):
+        client = TargetSslProxiesClient(
+            client_options=options,
+            transport=transport,
+        )
+
+    # It is an error to provide an api_key and a credential.
+    options = client_options.ClientOptions()
+    options.api_key = "api_key"
+    with pytest.raises(ValueError):
+        client = TargetSslProxiesClient(
+            client_options=options, credentials=ga_credentials.AnonymousCredentials()
+        )
+
+    # It is an error to provide scopes and a transport instance.
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = TargetSslProxiesClient(
+            client_options={"scopes": ["1", "2"]},
+            transport=transport,
+        )
+
+
+def test_transport_instance():
+    # A client may be instantiated with a custom transport instance.
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    client = TargetSslProxiesClient(transport=transport)
+    assert client.transport is transport
+
+
+@pytest.mark.parametrize(
+    "transport_class",
+    [
+        transports.TargetSslProxiesRestTransport,
+    ],
+)
+def test_transport_adc(transport_class):
+    # Test default credentials are used if not provided.
+    with mock.patch.object(google.auth, "default") as adc:
+        adc.return_value = (ga_credentials.AnonymousCredentials(), None)
+        transport_class()
+        adc.assert_called_once()
+
+
+def test_transport_kind_rest():
+    transport = TargetSslProxiesClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_delete_rest_bad_request(request_type=compute.DeleteTargetSslProxyRequest):
     client = TargetSslProxiesClient(
         credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.DeleteTargetSslProxyRequest,
+        dict,
+    ],
+)
+def test_delete_rest_call_success(request_type):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_rest_interceptors(null_interceptor):
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.TargetSslProxiesRestInterceptor(),
+    )
+    client = TargetSslProxiesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.TargetSslProxiesRestInterceptor, "post_delete"
+    ) as post, mock.patch.object(
+        transports.TargetSslProxiesRestInterceptor, "pre_delete"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.DeleteTargetSslProxyRequest.pb(
+            compute.DeleteTargetSslProxyRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.DeleteTargetSslProxyRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.delete(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_rest_bad_request(request_type=compute.GetTargetSslProxyRequest):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.GetTargetSslProxyRequest,
+        dict,
+    ],
+)
+def test_get_rest_call_success(request_type):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.TargetSslProxy(
+            certificate_map="certificate_map_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            id=205,
+            kind="kind_value",
+            name="name_value",
+            proxy_header="proxy_header_value",
+            self_link="self_link_value",
+            service="service_value",
+            ssl_certificates=["ssl_certificates_value"],
+            ssl_policy="ssl_policy_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.TargetSslProxy.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.TargetSslProxy)
+    assert response.certificate_map == "certificate_map_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.id == 205
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.proxy_header == "proxy_header_value"
+    assert response.self_link == "self_link_value"
+    assert response.service == "service_value"
+    assert response.ssl_certificates == ["ssl_certificates_value"]
+    assert response.ssl_policy == "ssl_policy_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_rest_interceptors(null_interceptor):
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.TargetSslProxiesRestInterceptor(),
+    )
+    client = TargetSslProxiesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.TargetSslProxiesRestInterceptor, "post_get"
+    ) as post, mock.patch.object(
+        transports.TargetSslProxiesRestInterceptor, "pre_get"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.GetTargetSslProxyRequest.pb(
+            compute.GetTargetSslProxyRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.TargetSslProxy.to_json(compute.TargetSslProxy())
+        req.return_value.content = return_value
+
+        request = compute.GetTargetSslProxyRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.TargetSslProxy()
+
+        client.get(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_insert_rest_bad_request(request_type=compute.InsertTargetSslProxyRequest):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.insert(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.InsertTargetSslProxyRequest,
+        dict,
+    ],
+)
+def test_insert_rest_call_success(request_type):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request_init["target_ssl_proxy_resource"] = {
+        "certificate_map": "certificate_map_value",
+        "creation_timestamp": "creation_timestamp_value",
+        "description": "description_value",
+        "id": 205,
+        "kind": "kind_value",
+        "name": "name_value",
+        "proxy_header": "proxy_header_value",
+        "self_link": "self_link_value",
+        "service": "service_value",
+        "ssl_certificates": ["ssl_certificates_value1", "ssl_certificates_value2"],
+        "ssl_policy": "ssl_policy_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.InsertTargetSslProxyRequest.meta.fields[
+        "target_ssl_proxy_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "target_ssl_proxy_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["target_ssl_proxy_resource"][field])
+                ):
+                    del request_init["target_ssl_proxy_resource"][field][i][subfield]
+            else:
+                del request_init["target_ssl_proxy_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.insert(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_insert_rest_interceptors(null_interceptor):
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.TargetSslProxiesRestInterceptor(),
+    )
+    client = TargetSslProxiesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.TargetSslProxiesRestInterceptor, "post_insert"
+    ) as post, mock.patch.object(
+        transports.TargetSslProxiesRestInterceptor, "pre_insert"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.InsertTargetSslProxyRequest.pb(
+            compute.InsertTargetSslProxyRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.InsertTargetSslProxyRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.insert(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_rest_bad_request(request_type=compute.ListTargetSslProxiesRequest):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ListTargetSslProxiesRequest,
+        dict,
+    ],
+)
+def test_list_rest_call_success(request_type):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.TargetSslProxyList(
+            id="id_value",
+            kind="kind_value",
+            next_page_token="next_page_token_value",
+            self_link="self_link_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.TargetSslProxyList.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListPager)
+    assert response.id == "id_value"
+    assert response.kind == "kind_value"
+    assert response.next_page_token == "next_page_token_value"
+    assert response.self_link == "self_link_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_rest_interceptors(null_interceptor):
+    transport = transports.TargetSslProxiesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.TargetSslProxiesRestInterceptor(),
+    )
+    client = TargetSslProxiesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.TargetSslProxiesRestInterceptor, "post_list"
+    ) as post, mock.patch.object(
+        transports.TargetSslProxiesRestInterceptor, "pre_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ListTargetSslProxiesRequest.pb(
+            compute.ListTargetSslProxiesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.TargetSslProxyList.to_json(compute.TargetSslProxyList())
+        req.return_value.content = return_value
+
+        request = compute.ListTargetSslProxiesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.TargetSslProxyList()
+
+        client.list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_backend_service_rest_bad_request(
+    request_type=compute.SetBackendServiceTargetSslProxyRequest,
+):
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_backend_service(request)
 
 
 @pytest.mark.parametrize(
@@ -3741,10 +5038,9 @@ def test_set_backend_service_rest_error():
         dict,
     ],
 )
-def test_set_backend_service_unary_rest(request_type):
+def test_set_backend_service_rest_call_success(request_type):
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -3865,165 +5161,45 @@ def test_set_backend_service_unary_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
-        response = client.set_backend_service_unary(request)
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_backend_service(request)
 
     # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
-
-
-def test_set_backend_service_unary_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.set_backend_service in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_backend_service
-        ] = mock_rpc
-
-        request = {}
-        client.set_backend_service_unary(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_backend_service_unary(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_backend_service_unary_rest_required_fields(
-    request_type=compute.SetBackendServiceTargetSslProxyRequest,
-):
-    transport_class = transports.TargetSslProxiesRestTransport
-
-    request_init = {}
-    request_init["project"] = ""
-    request_init["target_ssl_proxy"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_backend_service._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["project"] = "project_value"
-    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_backend_service._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "targetSslProxy" in jsonified_request
-    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
-
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_backend_service_unary(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_backend_service_unary_rest_unset_required_fields():
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_backend_service._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "project",
-                "targetSslProxiesSetBackendServiceRequestResource",
-                "targetSslProxy",
-            )
-        )
-    )
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_backend_service_unary_rest_interceptors(null_interceptor):
+def test_set_backend_service_rest_interceptors(null_interceptor):
     transport = transports.TargetSslProxiesRestTransport(
         credentials=ga_credentials.AnonymousCredentials(),
         interceptor=None
@@ -4031,6 +5207,7 @@ def test_set_backend_service_unary_rest_interceptors(null_interceptor):
         else transports.TargetSslProxiesRestInterceptor(),
     )
     client = TargetSslProxiesClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -4052,10 +5229,11 @@ def test_set_backend_service_unary_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
 
         request = compute.SetBackendServiceTargetSslProxyRequest()
         metadata = [
@@ -4065,7 +5243,7 @@ def test_set_backend_service_unary_rest_interceptors(null_interceptor):
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
 
-        client.set_backend_service_unary(
+        client.set_backend_service(
             request,
             metadata=[
                 ("key", "val"),
@@ -4077,14 +5255,12 @@ def test_set_backend_service_unary_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_set_backend_service_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetBackendServiceTargetSslProxyRequest
+def test_set_certificate_map_rest_bad_request(
+    request_type=compute.SetCertificateMapTargetSslProxyRequest,
 ):
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
     request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
     request = request_type(**request_init)
@@ -4094,82 +5270,14 @@ def test_set_backend_service_unary_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.set_backend_service_unary(request)
-
-
-def test_set_backend_service_unary_rest_flattened():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_backend_service_request_resource=compute.TargetSslProxiesSetBackendServiceRequest(
-                service="service_value"
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_backend_service_unary(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setBackendService"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_backend_service_unary_rest_flattened_error(transport: str = "rest"):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_backend_service_unary(
-            compute.SetBackendServiceTargetSslProxyRequest(),
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_backend_service_request_resource=compute.TargetSslProxiesSetBackendServiceRequest(
-                service="service_value"
-            ),
-        )
-
-
-def test_set_backend_service_unary_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_certificate_map(request)
 
 
 @pytest.mark.parametrize(
@@ -4179,10 +5287,9 @@ def test_set_backend_service_unary_rest_error():
         dict,
     ],
 )
-def test_set_certificate_map_rest(request_type):
+def test_set_certificate_map_rest_call_success(request_type):
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -4303,14 +5410,15 @@ def test_set_certificate_map_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.set_certificate_map(request)
 
     # Establish that the response is the type that we expect.
@@ -4339,149 +5447,6 @@ def test_set_certificate_map_rest(request_type):
     assert response.zone == "zone_value"
 
 
-def test_set_certificate_map_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.set_certificate_map in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_certificate_map
-        ] = mock_rpc
-
-        request = {}
-        client.set_certificate_map(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_certificate_map(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_certificate_map_rest_required_fields(
-    request_type=compute.SetCertificateMapTargetSslProxyRequest,
-):
-    transport_class = transports.TargetSslProxiesRestTransport
-
-    request_init = {}
-    request_init["project"] = ""
-    request_init["target_ssl_proxy"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_certificate_map._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["project"] = "project_value"
-    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_certificate_map._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "targetSslProxy" in jsonified_request
-    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
-
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_certificate_map(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_certificate_map_rest_unset_required_fields():
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_certificate_map._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "project",
-                "targetSslProxiesSetCertificateMapRequestResource",
-                "targetSslProxy",
-            )
-        )
-    )
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_set_certificate_map_rest_interceptors(null_interceptor):
     transport = transports.TargetSslProxiesRestTransport(
@@ -4491,6 +5456,7 @@ def test_set_certificate_map_rest_interceptors(null_interceptor):
         else transports.TargetSslProxiesRestInterceptor(),
     )
     client = TargetSslProxiesClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -4512,10 +5478,11 @@ def test_set_certificate_map_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
 
         request = compute.SetCertificateMapTargetSslProxyRequest()
         metadata = [
@@ -4537,14 +5504,12 @@ def test_set_certificate_map_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_set_certificate_map_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetCertificateMapTargetSslProxyRequest
+def test_set_proxy_header_rest_bad_request(
+    request_type=compute.SetProxyHeaderTargetSslProxyRequest,
 ):
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
     request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
     request = request_type(**request_init)
@@ -4554,520 +5519,14 @@ def test_set_certificate_map_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.set_certificate_map(request)
-
-
-def test_set_certificate_map_rest_flattened():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_certificate_map_request_resource=compute.TargetSslProxiesSetCertificateMapRequest(
-                certificate_map="certificate_map_value"
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_certificate_map(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setCertificateMap"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_certificate_map_rest_flattened_error(transport: str = "rest"):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_certificate_map(
-            compute.SetCertificateMapTargetSslProxyRequest(),
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_certificate_map_request_resource=compute.TargetSslProxiesSetCertificateMapRequest(
-                certificate_map="certificate_map_value"
-            ),
-        )
-
-
-def test_set_certificate_map_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetCertificateMapTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_set_certificate_map_unary_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request_init["target_ssl_proxies_set_certificate_map_request_resource"] = {
-        "certificate_map": "certificate_map_value"
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetCertificateMapTargetSslProxyRequest.meta.fields[
-        "target_ssl_proxies_set_certificate_map_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "target_ssl_proxies_set_certificate_map_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "target_ssl_proxies_set_certificate_map_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "target_ssl_proxies_set_certificate_map_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "target_ssl_proxies_set_certificate_map_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_certificate_map_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
-
-
-def test_set_certificate_map_unary_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.set_certificate_map in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_certificate_map
-        ] = mock_rpc
-
-        request = {}
-        client.set_certificate_map_unary(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_certificate_map_unary(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_certificate_map_unary_rest_required_fields(
-    request_type=compute.SetCertificateMapTargetSslProxyRequest,
-):
-    transport_class = transports.TargetSslProxiesRestTransport
-
-    request_init = {}
-    request_init["project"] = ""
-    request_init["target_ssl_proxy"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_certificate_map._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["project"] = "project_value"
-    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_certificate_map._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "targetSslProxy" in jsonified_request
-    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
-
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_certificate_map_unary(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_certificate_map_unary_rest_unset_required_fields():
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_certificate_map._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "project",
-                "targetSslProxiesSetCertificateMapRequestResource",
-                "targetSslProxy",
-            )
-        )
-    )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_certificate_map_unary_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_set_certificate_map"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_set_certificate_map"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetCertificateMapTargetSslProxyRequest.pb(
-            compute.SetCertificateMapTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.SetCertificateMapTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_certificate_map_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_certificate_map_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetCertificateMapTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_certificate_map_unary(request)
-
-
-def test_set_certificate_map_unary_rest_flattened():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_certificate_map_request_resource=compute.TargetSslProxiesSetCertificateMapRequest(
-                certificate_map="certificate_map_value"
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_certificate_map_unary(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setCertificateMap"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_certificate_map_unary_rest_flattened_error(transport: str = "rest"):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_certificate_map_unary(
-            compute.SetCertificateMapTargetSslProxyRequest(),
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_certificate_map_request_resource=compute.TargetSslProxiesSetCertificateMapRequest(
-                certificate_map="certificate_map_value"
-            ),
-        )
-
-
-def test_set_certificate_map_unary_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_proxy_header(request)
 
 
 @pytest.mark.parametrize(
@@ -5077,10 +5536,9 @@ def test_set_certificate_map_unary_rest_error():
         dict,
     ],
 )
-def test_set_proxy_header_rest(request_type):
+def test_set_proxy_header_rest_call_success(request_type):
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -5201,14 +5659,15 @@ def test_set_proxy_header_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.set_proxy_header(request)
 
     # Establish that the response is the type that we expect.
@@ -5237,147 +5696,6 @@ def test_set_proxy_header_rest(request_type):
     assert response.zone == "zone_value"
 
 
-def test_set_proxy_header_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.set_proxy_header in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_proxy_header
-        ] = mock_rpc
-
-        request = {}
-        client.set_proxy_header(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_proxy_header(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_proxy_header_rest_required_fields(
-    request_type=compute.SetProxyHeaderTargetSslProxyRequest,
-):
-    transport_class = transports.TargetSslProxiesRestTransport
-
-    request_init = {}
-    request_init["project"] = ""
-    request_init["target_ssl_proxy"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_proxy_header._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["project"] = "project_value"
-    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_proxy_header._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "targetSslProxy" in jsonified_request
-    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
-
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_proxy_header(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_proxy_header_rest_unset_required_fields():
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_proxy_header._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "project",
-                "targetSslProxiesSetProxyHeaderRequestResource",
-                "targetSslProxy",
-            )
-        )
-    )
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_set_proxy_header_rest_interceptors(null_interceptor):
     transport = transports.TargetSslProxiesRestTransport(
@@ -5387,6 +5705,7 @@ def test_set_proxy_header_rest_interceptors(null_interceptor):
         else transports.TargetSslProxiesRestInterceptor(),
     )
     client = TargetSslProxiesClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -5408,10 +5727,11 @@ def test_set_proxy_header_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
 
         request = compute.SetProxyHeaderTargetSslProxyRequest()
         metadata = [
@@ -5433,14 +5753,12 @@ def test_set_proxy_header_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_set_proxy_header_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetProxyHeaderTargetSslProxyRequest
+def test_set_ssl_certificates_rest_bad_request(
+    request_type=compute.SetSslCertificatesTargetSslProxyRequest,
 ):
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
     request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
     request = request_type(**request_init)
@@ -5450,518 +5768,14 @@ def test_set_proxy_header_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.set_proxy_header(request)
-
-
-def test_set_proxy_header_rest_flattened():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_proxy_header_request_resource=compute.TargetSslProxiesSetProxyHeaderRequest(
-                proxy_header="proxy_header_value"
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_proxy_header(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setProxyHeader"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_proxy_header_rest_flattened_error(transport: str = "rest"):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_proxy_header(
-            compute.SetProxyHeaderTargetSslProxyRequest(),
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_proxy_header_request_resource=compute.TargetSslProxiesSetProxyHeaderRequest(
-                proxy_header="proxy_header_value"
-            ),
-        )
-
-
-def test_set_proxy_header_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetProxyHeaderTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_set_proxy_header_unary_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request_init["target_ssl_proxies_set_proxy_header_request_resource"] = {
-        "proxy_header": "proxy_header_value"
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetProxyHeaderTargetSslProxyRequest.meta.fields[
-        "target_ssl_proxies_set_proxy_header_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "target_ssl_proxies_set_proxy_header_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "target_ssl_proxies_set_proxy_header_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "target_ssl_proxies_set_proxy_header_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "target_ssl_proxies_set_proxy_header_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_proxy_header_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
-
-
-def test_set_proxy_header_unary_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.set_proxy_header in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_proxy_header
-        ] = mock_rpc
-
-        request = {}
-        client.set_proxy_header_unary(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_proxy_header_unary(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_proxy_header_unary_rest_required_fields(
-    request_type=compute.SetProxyHeaderTargetSslProxyRequest,
-):
-    transport_class = transports.TargetSslProxiesRestTransport
-
-    request_init = {}
-    request_init["project"] = ""
-    request_init["target_ssl_proxy"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_proxy_header._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["project"] = "project_value"
-    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_proxy_header._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "targetSslProxy" in jsonified_request
-    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
-
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_proxy_header_unary(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_proxy_header_unary_rest_unset_required_fields():
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_proxy_header._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "project",
-                "targetSslProxiesSetProxyHeaderRequestResource",
-                "targetSslProxy",
-            )
-        )
-    )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_proxy_header_unary_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_set_proxy_header"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_set_proxy_header"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetProxyHeaderTargetSslProxyRequest.pb(
-            compute.SetProxyHeaderTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.SetProxyHeaderTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_proxy_header_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_proxy_header_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetProxyHeaderTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_proxy_header_unary(request)
-
-
-def test_set_proxy_header_unary_rest_flattened():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_proxy_header_request_resource=compute.TargetSslProxiesSetProxyHeaderRequest(
-                proxy_header="proxy_header_value"
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_proxy_header_unary(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setProxyHeader"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_proxy_header_unary_rest_flattened_error(transport: str = "rest"):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_proxy_header_unary(
-            compute.SetProxyHeaderTargetSslProxyRequest(),
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_proxy_header_request_resource=compute.TargetSslProxiesSetProxyHeaderRequest(
-                proxy_header="proxy_header_value"
-            ),
-        )
-
-
-def test_set_proxy_header_unary_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_ssl_certificates(request)
 
 
 @pytest.mark.parametrize(
@@ -5971,10 +5785,9 @@ def test_set_proxy_header_unary_rest_error():
         dict,
     ],
 )
-def test_set_ssl_certificates_rest(request_type):
+def test_set_ssl_certificates_rest_call_success(request_type):
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -6095,14 +5908,15 @@ def test_set_ssl_certificates_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.set_ssl_certificates(request)
 
     # Establish that the response is the type that we expect.
@@ -6131,149 +5945,6 @@ def test_set_ssl_certificates_rest(request_type):
     assert response.zone == "zone_value"
 
 
-def test_set_ssl_certificates_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.set_ssl_certificates in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_ssl_certificates
-        ] = mock_rpc
-
-        request = {}
-        client.set_ssl_certificates(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_ssl_certificates(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_ssl_certificates_rest_required_fields(
-    request_type=compute.SetSslCertificatesTargetSslProxyRequest,
-):
-    transport_class = transports.TargetSslProxiesRestTransport
-
-    request_init = {}
-    request_init["project"] = ""
-    request_init["target_ssl_proxy"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_ssl_certificates._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["project"] = "project_value"
-    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_ssl_certificates._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "targetSslProxy" in jsonified_request
-    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
-
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_ssl_certificates(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_ssl_certificates_rest_unset_required_fields():
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_ssl_certificates._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "project",
-                "targetSslProxiesSetSslCertificatesRequestResource",
-                "targetSslProxy",
-            )
-        )
-    )
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_set_ssl_certificates_rest_interceptors(null_interceptor):
     transport = transports.TargetSslProxiesRestTransport(
@@ -6283,6 +5954,7 @@ def test_set_ssl_certificates_rest_interceptors(null_interceptor):
         else transports.TargetSslProxiesRestInterceptor(),
     )
     client = TargetSslProxiesClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -6304,10 +5976,11 @@ def test_set_ssl_certificates_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
 
         request = compute.SetSslCertificatesTargetSslProxyRequest()
         metadata = [
@@ -6329,15 +6002,12 @@ def test_set_ssl_certificates_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_set_ssl_certificates_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.SetSslCertificatesTargetSslProxyRequest,
+def test_set_ssl_policy_rest_bad_request(
+    request_type=compute.SetSslPolicyTargetSslProxyRequest,
 ):
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
     request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
     request = request_type(**request_init)
@@ -6347,521 +6017,14 @@ def test_set_ssl_certificates_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.set_ssl_certificates(request)
-
-
-def test_set_ssl_certificates_rest_flattened():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_ssl_certificates_request_resource=compute.TargetSslProxiesSetSslCertificatesRequest(
-                ssl_certificates=["ssl_certificates_value"]
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_ssl_certificates(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setSslCertificates"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_ssl_certificates_rest_flattened_error(transport: str = "rest"):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_ssl_certificates(
-            compute.SetSslCertificatesTargetSslProxyRequest(),
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_ssl_certificates_request_resource=compute.TargetSslProxiesSetSslCertificatesRequest(
-                ssl_certificates=["ssl_certificates_value"]
-            ),
-        )
-
-
-def test_set_ssl_certificates_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetSslCertificatesTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_set_ssl_certificates_unary_rest(request_type):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request_init["target_ssl_proxies_set_ssl_certificates_request_resource"] = {
-        "ssl_certificates": ["ssl_certificates_value1", "ssl_certificates_value2"]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetSslCertificatesTargetSslProxyRequest.meta.fields[
-        "target_ssl_proxies_set_ssl_certificates_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "target_ssl_proxies_set_ssl_certificates_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0,
-                    len(
-                        request_init[
-                            "target_ssl_proxies_set_ssl_certificates_request_resource"
-                        ][field]
-                    ),
-                ):
-                    del request_init[
-                        "target_ssl_proxies_set_ssl_certificates_request_resource"
-                    ][field][i][subfield]
-            else:
-                del request_init[
-                    "target_ssl_proxies_set_ssl_certificates_request_resource"
-                ][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_ssl_certificates_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
-
-
-def test_set_ssl_certificates_unary_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.set_ssl_certificates in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.set_ssl_certificates
-        ] = mock_rpc
-
-        request = {}
-        client.set_ssl_certificates_unary(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_ssl_certificates_unary(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_ssl_certificates_unary_rest_required_fields(
-    request_type=compute.SetSslCertificatesTargetSslProxyRequest,
-):
-    transport_class = transports.TargetSslProxiesRestTransport
-
-    request_init = {}
-    request_init["project"] = ""
-    request_init["target_ssl_proxy"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_ssl_certificates._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["project"] = "project_value"
-    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_ssl_certificates._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "targetSslProxy" in jsonified_request
-    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
-
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_ssl_certificates_unary(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_ssl_certificates_unary_rest_unset_required_fields():
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_ssl_certificates._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "project",
-                "targetSslProxiesSetSslCertificatesRequestResource",
-                "targetSslProxy",
-            )
-        )
-    )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_ssl_certificates_unary_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_set_ssl_certificates"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_set_ssl_certificates"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetSslCertificatesTargetSslProxyRequest.pb(
-            compute.SetSslCertificatesTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.SetSslCertificatesTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_ssl_certificates_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_ssl_certificates_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.SetSslCertificatesTargetSslProxyRequest,
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_ssl_certificates_unary(request)
-
-
-def test_set_ssl_certificates_unary_rest_flattened():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_ssl_certificates_request_resource=compute.TargetSslProxiesSetSslCertificatesRequest(
-                ssl_certificates=["ssl_certificates_value"]
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_ssl_certificates_unary(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setSslCertificates"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_ssl_certificates_unary_rest_flattened_error(transport: str = "rest"):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_ssl_certificates_unary(
-            compute.SetSslCertificatesTargetSslProxyRequest(),
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            target_ssl_proxies_set_ssl_certificates_request_resource=compute.TargetSslProxiesSetSslCertificatesRequest(
-                ssl_certificates=["ssl_certificates_value"]
-            ),
-        )
-
-
-def test_set_ssl_certificates_unary_rest_error():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_ssl_policy(request)
 
 
 @pytest.mark.parametrize(
@@ -6871,10 +6034,9 @@ def test_set_ssl_certificates_unary_rest_error():
         dict,
     ],
 )
-def test_set_ssl_policy_rest(request_type):
+def test_set_ssl_policy_rest_call_success(request_type):
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -6986,14 +6148,15 @@ def test_set_ssl_policy_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = compute.Operation.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.set_ssl_policy(request)
 
     # Establish that the response is the type that we expect.
@@ -7022,145 +6185,6 @@ def test_set_ssl_policy_rest(request_type):
     assert response.zone == "zone_value"
 
 
-def test_set_ssl_policy_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.set_ssl_policy in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[client._transport.set_ssl_policy] = mock_rpc
-
-        request = {}
-        client.set_ssl_policy(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_ssl_policy(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_ssl_policy_rest_required_fields(
-    request_type=compute.SetSslPolicyTargetSslProxyRequest,
-):
-    transport_class = transports.TargetSslProxiesRestTransport
-
-    request_init = {}
-    request_init["project"] = ""
-    request_init["target_ssl_proxy"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_ssl_policy._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["project"] = "project_value"
-    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_ssl_policy._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "targetSslProxy" in jsonified_request
-    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
-
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request = request_type(**request_init)
-
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
-
-            response_value = Response()
-            response_value.status_code = 200
-
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_ssl_policy(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
-
-
-def test_set_ssl_policy_rest_unset_required_fields():
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_ssl_policy._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "project",
-                "sslPolicyReferenceResource",
-                "targetSslProxy",
-            )
-        )
-    )
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_set_ssl_policy_rest_interceptors(null_interceptor):
     transport = transports.TargetSslProxiesRestTransport(
@@ -7170,6 +6194,7 @@ def test_set_ssl_policy_rest_interceptors(null_interceptor):
         else transports.TargetSslProxiesRestInterceptor(),
     )
     client = TargetSslProxiesClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -7191,10 +6216,11 @@ def test_set_ssl_policy_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
 
         request = compute.SetSslPolicyTargetSslProxyRequest()
         metadata = [
@@ -7216,612 +6242,197 @@ def test_set_ssl_policy_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_set_ssl_policy_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetSslPolicyTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_ssl_policy(request)
-
-
-def test_set_ssl_policy_rest_flattened():
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            ssl_policy_reference_resource=compute.SslPolicyReference(
-                ssl_policy="ssl_policy_value"
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_ssl_policy(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setSslPolicy"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_set_ssl_policy_rest_flattened_error(transport: str = "rest"):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_ssl_policy(
-            compute.SetSslPolicyTargetSslProxyRequest(),
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            ssl_policy_reference_resource=compute.SslPolicyReference(
-                ssl_policy="ssl_policy_value"
-            ),
-        )
-
-
-def test_set_ssl_policy_rest_error():
+def test_initialize_client_w_rest():
     client = TargetSslProxiesClient(
         credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
+    assert client is not None
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetSslPolicyTargetSslProxyRequest,
-        dict,
-    ],
-)
-def test_set_ssl_policy_unary_rest(request_type):
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_unary_empty_call_rest():
     client = TargetSslProxiesClient(
         credentials=ga_credentials.AnonymousCredentials(),
         transport="rest",
     )
 
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request_init["ssl_policy_reference_resource"] = {"ssl_policy": "ssl_policy_value"}
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete), "__call__") as call:
+        client.delete_unary(request=None)
 
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetSslPolicyTargetSslProxyRequest.meta.fields[
-        "ssl_policy_reference_resource"
-    ]
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.DeleteTargetSslProxyRequest()
 
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "ssl_policy_reference_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["ssl_policy_reference_resource"][field])
-                ):
-                    del request_init["ssl_policy_reference_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["ssl_policy_reference_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_ssl_policy_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
+        assert args[0] == request_msg
 
 
-def test_set_ssl_policy_unary_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.set_ssl_policy in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[client._transport.set_ssl_policy] = mock_rpc
-
-        request = {}
-        client.set_ssl_policy_unary(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
-        wrapper_fn.reset_mock()
-
-        client.set_ssl_policy_unary(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
-def test_set_ssl_policy_unary_rest_required_fields(
-    request_type=compute.SetSslPolicyTargetSslProxyRequest,
-):
-    transport_class = transports.TargetSslProxiesRestTransport
-
-    request_init = {}
-    request_init["project"] = ""
-    request_init["target_ssl_proxy"] = ""
-    request = request_type(**request_init)
-    pb_request = request_type.pb(request)
-    jsonified_request = json.loads(
-        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
-    )
-
-    # verify fields with default values are dropped
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_ssl_policy._get_unset_required_fields(jsonified_request)
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with default values are now present
-
-    jsonified_request["project"] = "project_value"
-    jsonified_request["targetSslProxy"] = "target_ssl_proxy_value"
-
-    unset_fields = transport_class(
-        credentials=ga_credentials.AnonymousCredentials()
-    ).set_ssl_policy._get_unset_required_fields(jsonified_request)
-    # Check that path parameters and body parameters are not mixing in.
-    assert not set(unset_fields) - set(("request_id",))
-    jsonified_request.update(unset_fields)
-
-    # verify required fields with non-default values are left alone
-    assert "project" in jsonified_request
-    assert jsonified_request["project"] == "project_value"
-    assert "targetSslProxy" in jsonified_request
-    assert jsonified_request["targetSslProxy"] == "target_ssl_proxy_value"
-
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_empty_call_rest():
     client = TargetSslProxiesClient(
         credentials=ga_credentials.AnonymousCredentials(),
         transport="rest",
     )
-    request = request_type(**request_init)
 
-    # Designate an appropriate value for the returned response.
-    return_value = compute.Operation()
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # We need to mock transcode() because providing default values
-        # for required fields will fail the real version if the http_options
-        # expect actual values for those fields.
-        with mock.patch.object(path_template, "transcode") as transcode:
-            # A uri without fields and an empty body will force all the
-            # request fields to show up in the query_params.
-            pb_request = request_type.pb(request)
-            transcode_result = {
-                "uri": "v1/sample_method",
-                "method": "post",
-                "query_params": pb_request,
-            }
-            transcode_result["body"] = pb_request
-            transcode.return_value = transcode_result
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get), "__call__") as call:
+        client.get(request=None)
 
-            response_value = Response()
-            response_value.status_code = 200
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.GetTargetSslProxyRequest()
 
-            # Convert return value to protobuf type
-            return_value = compute.Operation.pb(return_value)
-            json_return_value = json_format.MessageToJson(return_value)
-
-            response_value._content = json_return_value.encode("UTF-8")
-            req.return_value = response_value
-
-            response = client.set_ssl_policy_unary(request)
-
-            expected_params = []
-            actual_params = req.call_args.kwargs["params"]
-            assert expected_params == actual_params
+        assert args[0] == request_msg
 
 
-def test_set_ssl_policy_unary_rest_unset_required_fields():
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials
-    )
-
-    unset_fields = transport.set_ssl_policy._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(("requestId",))
-        & set(
-            (
-                "project",
-                "sslPolicyReferenceResource",
-                "targetSslProxy",
-            )
-        )
-    )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_ssl_policy_unary_rest_interceptors(null_interceptor):
-    transport = transports.TargetSslProxiesRestTransport(
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_insert_unary_empty_call_rest():
+    client = TargetSslProxiesClient(
         credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TargetSslProxiesRestInterceptor(),
+        transport="rest",
     )
-    client = TargetSslProxiesClient(transport=transport)
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.insert), "__call__") as call:
+        client.insert_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.InsertTargetSslProxyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_empty_call_rest():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list), "__call__") as call:
+        client.list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ListTargetSslProxiesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_backend_service_unary_empty_call_rest():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
     with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "post_set_ssl_policy"
-    ) as post, mock.patch.object(
-        transports.TargetSslProxiesRestInterceptor, "pre_set_ssl_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetSslPolicyTargetSslProxyRequest.pb(
-            compute.SetSslPolicyTargetSslProxyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
+        type(client.transport.set_backend_service), "__call__"
+    ) as call:
+        client.set_backend_service_unary(request=None)
 
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetBackendServiceTargetSslProxyRequest()
 
-        request = compute.SetSslPolicyTargetSslProxyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_ssl_policy_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
+        assert args[0] == request_msg
 
 
-def test_set_ssl_policy_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetSslPolicyTargetSslProxyRequest
-):
-    client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "target_ssl_proxy": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_ssl_policy_unary(request)
-
-
-def test_set_ssl_policy_unary_rest_flattened():
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_certificate_map_unary_empty_call_rest():
     client = TargetSslProxiesClient(
         credentials=ga_credentials.AnonymousCredentials(),
         transport="rest",
     )
 
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation()
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_certificate_map), "__call__"
+    ) as call:
+        client.set_certificate_map_unary(request=None)
 
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"project": "sample1", "target_ssl_proxy": "sample2"}
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetCertificateMapTargetSslProxyRequest()
 
-        # get truthy value for each flattened field
-        mock_args = dict(
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            ssl_policy_reference_resource=compute.SslPolicyReference(
-                ssl_policy="ssl_policy_value"
-            ),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.set_ssl_policy_unary(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/compute/v1/projects/{project}/global/targetSslProxies/{target_ssl_proxy}/setSslPolicy"
-            % client.transport._host,
-            args[1],
-        )
+        assert args[0] == request_msg
 
 
-def test_set_ssl_policy_unary_rest_flattened_error(transport: str = "rest"):
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_proxy_header_unary_empty_call_rest():
     client = TargetSslProxiesClient(
         credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        transport="rest",
     )
 
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.set_ssl_policy_unary(
-            compute.SetSslPolicyTargetSslProxyRequest(),
-            project="project_value",
-            target_ssl_proxy="target_ssl_proxy_value",
-            ssl_policy_reference_resource=compute.SslPolicyReference(
-                ssl_policy="ssl_policy_value"
-            ),
-        )
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_proxy_header), "__call__") as call:
+        client.set_proxy_header_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetProxyHeaderTargetSslProxyRequest()
+
+        assert args[0] == request_msg
 
 
-def test_set_ssl_policy_unary_rest_error():
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_ssl_certificates_unary_empty_call_rest():
     client = TargetSslProxiesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-def test_credentials_transport_error():
-    # It is an error to provide credentials and a transport instance.
-    transport = transports.TargetSslProxiesRestTransport(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport=transport,
-        )
 
-    # It is an error to provide a credentials file and a transport instance.
-    transport = transports.TargetSslProxiesRestTransport(
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_ssl_certificates), "__call__"
+    ) as call:
+        client.set_ssl_certificates_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetSslCertificatesTargetSslProxyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_ssl_policy_unary_empty_call_rest():
+    client = TargetSslProxiesClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = TargetSslProxiesClient(
-            client_options={"credentials_file": "credentials.json"},
-            transport=transport,
-        )
 
-    # It is an error to provide an api_key and a transport instance.
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-    )
-    options = client_options.ClientOptions()
-    options.api_key = "api_key"
-    with pytest.raises(ValueError):
-        client = TargetSslProxiesClient(
-            client_options=options,
-            transport=transport,
-        )
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_ssl_policy), "__call__") as call:
+        client.set_ssl_policy_unary(request=None)
 
-    # It is an error to provide an api_key and a credential.
-    options = client_options.ClientOptions()
-    options.api_key = "api_key"
-    with pytest.raises(ValueError):
-        client = TargetSslProxiesClient(
-            client_options=options, credentials=ga_credentials.AnonymousCredentials()
-        )
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetSslPolicyTargetSslProxyRequest()
 
-    # It is an error to provide scopes and a transport instance.
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-    )
-    with pytest.raises(ValueError):
-        client = TargetSslProxiesClient(
-            client_options={"scopes": ["1", "2"]},
-            transport=transport,
-        )
-
-
-def test_transport_instance():
-    # A client may be instantiated with a custom transport instance.
-    transport = transports.TargetSslProxiesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-    )
-    client = TargetSslProxiesClient(transport=transport)
-    assert client.transport is transport
-
-
-@pytest.mark.parametrize(
-    "transport_class",
-    [
-        transports.TargetSslProxiesRestTransport,
-    ],
-)
-def test_transport_adc(transport_class):
-    # Test default credentials are used if not provided.
-    with mock.patch.object(google.auth, "default") as adc:
-        adc.return_value = (ga_credentials.AnonymousCredentials(), None)
-        transport_class()
-        adc.assert_called_once()
-
-
-@pytest.mark.parametrize(
-    "transport_name",
-    [
-        "rest",
-    ],
-)
-def test_transport_kind(transport_name):
-    transport = TargetSslProxiesClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
-    )
-    assert transport.kind == transport_name
+        assert args[0] == request_msg
 
 
 def test_target_ssl_proxies_base_transport_error():
@@ -8147,21 +6758,16 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-    }
-
-    for transport, close_name in transports.items():
-        client = TargetSslProxiesClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = TargetSslProxiesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

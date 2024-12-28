@@ -1,5 +1,79 @@
 # Changelog
 
+## [1.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contact-center-insights-v1.21.0...google-cloud-contact-center-insights-v1.22.0) (2024-12-18)
+
+
+### Features
+
+* [google-cloud-contact-center-insights] A new resource pattern value `projects/{project}/locations/{location}/authorizedViewSets/{authorized_view_set}/authorizedViews/{authorized_view}/conversations/{conversation}` added to the resource definition `contactcenterinsights.googleapis.com/Conversation` ([8963da7](https://github.com/googleapis/google-cloud-python/commit/8963da77bf07fd2d2b4058c236b769ac4df63f18))
+* A new field `agent_type` is added to message `.google.cloud.contactcenterinsights.v1.Conversation` ([8963da7](https://github.com/googleapis/google-cloud-python/commit/8963da77bf07fd2d2b4058c236b769ac4df63f18))
+* A new resource pattern value `projects/{project}/locations/{location}/authorizedViewSets/{authorized_view_set}/authorizedViews/{authorized_view}/conversations/{conversation}/analyses/{analysis}` added to the resource definition `contactcenterinsights.googleapis.com/Analysis` ([8963da7](https://github.com/googleapis/google-cloud-python/commit/8963da77bf07fd2d2b4058c236b769ac4df63f18))
+* A new resource pattern value `projects/{project}/locations/{location}/authorizedViewSets/{authorized_view_set}/authorizedViews/{authorized_view}/conversations/{conversation}/feedbackLabels/{feedback_label}` added to the resource definition `contactcenterinsights.googleapis.com/FeedbackLabel` ([8963da7](https://github.com/googleapis/google-cloud-python/commit/8963da77bf07fd2d2b4058c236b769ac4df63f18))
+
+## [1.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contact-center-insights-v1.20.0...google-cloud-contact-center-insights-v1.21.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [1.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contact-center-insights-v1.19.1...google-cloud-contact-center-insights-v1.20.0) (2024-11-15)
+
+
+### Features
+
+* Add AnalysisRules resource and APIs ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* Add FeedbackLabel resource and APIs ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* Add Quality AI resources and APIs ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* Add QueryMetrics API ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+
+
+### Documentation
+
+* A comment for field `custom_metadata_keys` in message `.google.cloud.contactcenterinsights.v1.IngestConversationsRequest` is changed ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* A comment for field `encryption_spec` in message `.google.cloud.contactcenterinsights.v1.InitializeEncryptionSpecRequest` is changed ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* A comment for field `kms_key` in message `.google.cloud.contactcenterinsights.v1.EncryptionSpec` is changed ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* A comment for field `labels` in message `.google.cloud.contactcenterinsights.v1.Conversation` is changed ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* A comment for field `metadata_json` in message `.google.cloud.contactcenterinsights.v1.Conversation` is changed ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* A comment for field `partial_errors` in message `.google.cloud.contactcenterinsights.v1.InitializeEncryptionSpecMetadata` is changed ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* A comment for message `EncryptionSpec` is changed ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+* A comment for method `InitializeEncryptionSpec` in service `ContactCenterInsights` is changed ([cfb62c9](https://github.com/googleapis/google-cloud-python/commit/cfb62c9e959df32d30f6e66561164951f3d5c1ad))
+
+## [1.19.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contact-center-insights-v1.19.0...google-cloud-contact-center-insights-v1.19.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [1.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contact-center-insights-v1.18.0...google-cloud-contact-center-insights-v1.19.0) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
+## [1.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contact-center-insights-v1.17.5...google-cloud-contact-center-insights-v1.18.0) (2024-10-08)
+
+
+### Features
+
+* Add CMEK InitializeLroSpec ([e4ac435](https://github.com/googleapis/google-cloud-python/commit/e4ac435aaa9508e33090091232ff35df860bfd37))
+* Add import / export IssueModel ([e4ac435](https://github.com/googleapis/google-cloud-python/commit/e4ac435aaa9508e33090091232ff35df860bfd37))
+* Add metadata import to IngestConversations ([e4ac435](https://github.com/googleapis/google-cloud-python/commit/e4ac435aaa9508e33090091232ff35df860bfd37))
+* Add sampling to IngestConversations ([e4ac435](https://github.com/googleapis/google-cloud-python/commit/e4ac435aaa9508e33090091232ff35df860bfd37))
+
+
+### Documentation
+
+* Add a comment for valid `order_by` values in ListConversations ([e4ac435](https://github.com/googleapis/google-cloud-python/commit/e4ac435aaa9508e33090091232ff35df860bfd37))
+* Add a comment for valid `update_mask` values in UpdateConversation ([e4ac435](https://github.com/googleapis/google-cloud-python/commit/e4ac435aaa9508e33090091232ff35df860bfd37))
+
 ## [1.17.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contact-center-insights-v1.17.4...google-cloud-contact-center-insights-v1.17.5) (2024-07-30)
 
 

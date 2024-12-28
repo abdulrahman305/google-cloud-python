@@ -4,6 +4,66 @@
 
 [1]: https://pypi.org/project/google-cloud-kms/#history
 
+## [3.2.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.2.0...google-cloud-kms-v3.2.1) (2024-12-18)
+
+
+### Documentation
+
+* [google-cloud-kms] code documentation improvements ([#13366](https://github.com/googleapis/google-cloud-python/issues/13366)) ([0c0f37d](https://github.com/googleapis/google-cloud-python/commit/0c0f37d415a844d29d97a5dba59258d181c8bcc3))
+
+## [3.2.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.1.1...google-cloud-kms-v3.2.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+
+
+### Documentation
+
+* [google-cloud-kms] A comment for enum `CryptoKeyVersionAlgorithm` is changed ([#13305](https://github.com/googleapis/google-cloud-python/issues/13305)) ([028a334](https://github.com/googleapis/google-cloud-python/commit/028a334c383892e50003a8735a050dbabfabdcfc))
+
+## [3.1.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.1.0...google-cloud-kms-v3.1.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13243](https://github.com/googleapis/google-cloud-python/issues/13243)) ([d794dec](https://github.com/googleapis/google-cloud-python/commit/d794dec5eff5f23a1ff926012bf9e6cad719e020))
+
+## [3.1.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.0.0...google-cloud-kms-v3.1.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13207](https://github.com/googleapis/google-cloud-python/issues/13207)) ([ceb9be8](https://github.com/googleapis/google-cloud-python/commit/ceb9be8f89ac7355d842bac1d77b2926eb0b649c))
+
+## [3.0.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v2.24.2...google-cloud-kms-v3.0.0) (2024-09-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* Pagination feature is introduced for method ListKeyHandles in service Autokey
+
+### Features
+
+* Adding a state field for AutokeyConfig ([b4c9770](https://github.com/googleapis/google-cloud-python/commit/b4c977059e075c73781c179b26fdf915548e65c4))
+
+
+### Bug Fixes
+
+* Pagination feature is introduced for method ListKeyHandles in service Autokey ([b4c9770](https://github.com/googleapis/google-cloud-python/commit/b4c977059e075c73781c179b26fdf915548e65c4))
+
+
+### Documentation
+
+* A comment for field destroy_scheduled_duration in message .google.cloud.kms.v1.CryptoKey is updated for the default duration ([b4c9770](https://github.com/googleapis/google-cloud-python/commit/b4c977059e075c73781c179b26fdf915548e65c4))
+* Field service_resolvers in message .google.cloud.kms.v1.EkmConnection is Explicitly is marked as to have field behavior of Optional ([b4c9770](https://github.com/googleapis/google-cloud-python/commit/b4c977059e075c73781c179b26fdf915548e65c4))
+
 ## [2.24.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v2.24.1...google-cloud-kms-v2.24.2) (2024-07-30)
 
 

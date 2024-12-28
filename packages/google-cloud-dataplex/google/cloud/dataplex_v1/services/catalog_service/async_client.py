@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -60,13 +60,22 @@ from .client import CatalogServiceClient
 from .transports.base import DEFAULT_CLIENT_INFO, CatalogServiceTransport
 from .transports.grpc_asyncio import CatalogServiceGrpcAsyncIOTransport
 
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
 
 class CatalogServiceAsyncClient:
     """The primary resources offered by this service are
-    EntryGroups, EntryTypes, AspectTypes, Entry and Aspect which
-    collectively allow a data administrator to organize, manage,
-    secure and catalog data across their organization located across
-    cloud projects in a variety of storage systems including Cloud
+    EntryGroups, EntryTypes, AspectTypes, and Entries. They
+    collectively let data administrators organize, manage, secure,
+    and catalog data located across cloud projects in their
+    organization in a variety of storage systems, including Cloud
     Storage and BigQuery.
     """
 
@@ -87,6 +96,8 @@ class CatalogServiceAsyncClient:
     parse_entry_group_path = staticmethod(CatalogServiceClient.parse_entry_group_path)
     entry_type_path = staticmethod(CatalogServiceClient.entry_type_path)
     parse_entry_type_path = staticmethod(CatalogServiceClient.parse_entry_type_path)
+    metadata_job_path = staticmethod(CatalogServiceClient.metadata_job_path)
+    parse_metadata_job_path = staticmethod(CatalogServiceClient.parse_metadata_job_path)
     common_billing_account_path = staticmethod(
         CatalogServiceClient.common_billing_account_path
     )
@@ -209,9 +220,7 @@ class CatalogServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(CatalogServiceClient).get_transport_class, type(CatalogServiceClient)
-    )
+    get_transport_class = CatalogServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -279,6 +288,28 @@ class CatalogServiceAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.cloud.dataplex_v1.CatalogServiceAsyncClient`.",
+                extra={
+                    "serviceName": "google.cloud.dataplex.v1.CatalogService",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.cloud.dataplex.v1.CatalogService",
+                    "credentialsType": None,
+                },
+            )
+
     async def create_entry_type(
         self,
         request: Optional[Union[catalog.CreateEntryTypeRequest, dict]] = None,
@@ -288,9 +319,9 @@ class CatalogServiceAsyncClient:
         entry_type_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Creates an EntryType
+        r"""Creates an EntryType.
 
         .. code-block:: python
 
@@ -325,17 +356,17 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.CreateEntryTypeRequest, dict]]):
-                The request object. Create EntryType Request
+                The request object. Create EntryType Request.
             parent (:class:`str`):
                 Required. The resource name of the EntryType, of the
                 form: projects/{project_number}/locations/{location_id}
-                where ``location_id`` refers to a GCP region.
+                where ``location_id`` refers to a Google Cloud region.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             entry_type (:class:`google.cloud.dataplex_v1.types.EntryType`):
-                Required. EntryType Resource
+                Required. EntryType Resource.
                 This corresponds to the ``entry_type`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -347,8 +378,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -425,9 +458,9 @@ class CatalogServiceAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Updates a EntryType resource.
+        r"""Updates an EntryType.
 
         .. code-block:: python
 
@@ -460,9 +493,9 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.UpdateEntryTypeRequest, dict]]):
-                The request object. Update EntryType Request
+                The request object. Update EntryType Request.
             entry_type (:class:`google.cloud.dataplex_v1.types.EntryType`):
-                Required. EntryType Resource
+                Required. EntryType Resource.
                 This corresponds to the ``entry_type`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -474,8 +507,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -551,9 +586,9 @@ class CatalogServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Deletes a EntryType resource.
+        r"""Deletes an EntryType.
 
         .. code-block:: python
 
@@ -587,7 +622,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.DeleteEntryTypeRequest, dict]]):
-                The request object. Delele EntryType Request
+                The request object. Delele EntryType Request.
             name (:class:`str`):
                 Required. The resource name of the EntryType:
                 ``projects/{project_number}/locations/{location_id}/entryTypes/{entry_type_id}``.
@@ -598,8 +633,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -678,7 +715,7 @@ class CatalogServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListEntryTypesAsyncPager:
         r"""Lists EntryType resources in a project and location.
 
@@ -716,7 +753,7 @@ class CatalogServiceAsyncClient:
                 Required. The resource name of the EntryType location,
                 of the form:
                 ``projects/{project_number}/locations/{location_id}``
-                where ``location_id`` refers to a GCP region.
+                where ``location_id`` refers to a Google Cloud region.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -724,12 +761,14 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.services.catalog_service.pagers.ListEntryTypesAsyncPager:
-                List EntryTypes response
+                List EntryTypes response.
 
                 Iterating over this object will yield
                 results and resolve additional pages
@@ -800,9 +839,9 @@ class CatalogServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> catalog.EntryType:
-        r"""Retrieves a EntryType resource.
+        r"""Gets an EntryType.
 
         .. code-block:: python
 
@@ -832,7 +871,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.GetEntryTypeRequest, dict]]):
-                The request object. Get EntryType request
+                The request object. Get EntryType request.
             name (:class:`str`):
                 Required. The resource name of the EntryType:
                 ``projects/{project_number}/locations/{location_id}/entryTypes/{entry_type_id}``.
@@ -843,8 +882,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.types.EntryType:
@@ -907,9 +948,9 @@ class CatalogServiceAsyncClient:
         aspect_type_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Creates an AspectType
+        r"""Creates an AspectType.
 
         .. code-block:: python
 
@@ -949,17 +990,17 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.CreateAspectTypeRequest, dict]]):
-                The request object. Create AspectType Request
+                The request object. Create AspectType Request.
             parent (:class:`str`):
                 Required. The resource name of the AspectType, of the
                 form: projects/{project_number}/locations/{location_id}
-                where ``location_id`` refers to a GCP region.
+                where ``location_id`` refers to a Google Cloud region.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             aspect_type (:class:`google.cloud.dataplex_v1.types.AspectType`):
-                Required. AspectType Resource
+                Required. AspectType Resource.
                 This corresponds to the ``aspect_type`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -971,16 +1012,18 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
                 An object representing a long-running operation.
 
-                The result type for the operation will be :class:`google.cloud.dataplex_v1.types.AspectType` Aspect Type is a template for creating Aspects, and represents the
-                   JSON-schema for a given Entry, e.g., BigQuery Table
-                   Schema.
+                The result type for the operation will be :class:`google.cloud.dataplex_v1.types.AspectType` AspectType is a template for creating Aspects, and represents the
+                   JSON-schema for a given Entry, for example, BigQuery
+                   Table Schema.
 
         """
         # Create or coerce a protobuf request object.
@@ -1049,9 +1092,9 @@ class CatalogServiceAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Updates a AspectType resource.
+        r"""Updates an AspectType.
 
         .. code-block:: python
 
@@ -1103,16 +1146,18 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
                 An object representing a long-running operation.
 
-                The result type for the operation will be :class:`google.cloud.dataplex_v1.types.AspectType` Aspect Type is a template for creating Aspects, and represents the
-                   JSON-schema for a given Entry, e.g., BigQuery Table
-                   Schema.
+                The result type for the operation will be :class:`google.cloud.dataplex_v1.types.AspectType` AspectType is a template for creating Aspects, and represents the
+                   JSON-schema for a given Entry, for example, BigQuery
+                   Table Schema.
 
         """
         # Create or coerce a protobuf request object.
@@ -1180,9 +1225,9 @@ class CatalogServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Deletes a AspectType resource.
+        r"""Deletes an AspectType.
 
         .. code-block:: python
 
@@ -1216,7 +1261,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.DeleteAspectTypeRequest, dict]]):
-                The request object. Delele AspectType Request
+                The request object. Delele AspectType Request.
             name (:class:`str`):
                 Required. The resource name of the AspectType:
                 ``projects/{project_number}/locations/{location_id}/aspectTypes/{aspect_type_id}``.
@@ -1227,8 +1272,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -1307,7 +1354,7 @@ class CatalogServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListAspectTypesAsyncPager:
         r"""Lists AspectType resources in a project and location.
 
@@ -1340,12 +1387,12 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.ListAspectTypesRequest, dict]]):
-                The request object. List AspectTypes request
+                The request object. List AspectTypes request.
             parent (:class:`str`):
                 Required. The resource name of the AspectType location,
                 of the form:
                 ``projects/{project_number}/locations/{location_id}``
-                where ``location_id`` refers to a GCP region.
+                where ``location_id`` refers to a Google Cloud region.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1353,12 +1400,14 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.services.catalog_service.pagers.ListAspectTypesAsyncPager:
-                List AspectTypes response
+                List AspectTypes response.
 
                 Iterating over this object will yield
                 results and resolve additional pages
@@ -1429,9 +1478,9 @@ class CatalogServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> catalog.AspectType:
-        r"""Retrieves a AspectType resource.
+        r"""Gets an AspectType.
 
         .. code-block:: python
 
@@ -1461,7 +1510,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.GetAspectTypeRequest, dict]]):
-                The request object. Get AspectType request
+                The request object. Get AspectType request.
             name (:class:`str`):
                 Required. The resource name of the AspectType:
                 ``projects/{project_number}/locations/{location_id}/aspectTypes/{aspect_type_id}``.
@@ -1472,15 +1521,17 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.types.AspectType:
-                Aspect Type is a template for
-                creating Aspects, and represents the
-                JSON-schema for a given Entry, e.g.,
-                BigQuery Table Schema.
+                AspectType is a template for creating
+                Aspects, and represents the JSON-schema
+                for a given Entry, for example, BigQuery
+                Table Schema.
 
         """
         # Create or coerce a protobuf request object.
@@ -1538,9 +1589,9 @@ class CatalogServiceAsyncClient:
         entry_group_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Creates an EntryGroup
+        r"""Creates an EntryGroup.
 
         .. code-block:: python
 
@@ -1575,7 +1626,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.CreateEntryGroupRequest, dict]]):
-                The request object. Create EntryGroup Request
+                The request object. Create EntryGroup Request.
             parent (:class:`str`):
                 Required. The resource name of the entryGroup, of the
                 form: projects/{project_number}/locations/{location_id}
@@ -1585,7 +1636,7 @@ class CatalogServiceAsyncClient:
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             entry_group (:class:`google.cloud.dataplex_v1.types.EntryGroup`):
-                Required. EntryGroup Resource
+                Required. EntryGroup Resource.
                 This corresponds to the ``entry_group`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -1597,8 +1648,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -1676,9 +1729,9 @@ class CatalogServiceAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Updates a EntryGroup resource.
+        r"""Updates an EntryGroup.
 
         .. code-block:: python
 
@@ -1711,9 +1764,9 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.UpdateEntryGroupRequest, dict]]):
-                The request object. Update EntryGroup Request
+                The request object. Update EntryGroup Request.
             entry_group (:class:`google.cloud.dataplex_v1.types.EntryGroup`):
-                Required. EntryGroup Resource
+                Required. EntryGroup Resource.
                 This corresponds to the ``entry_group`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -1725,8 +1778,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -1803,9 +1858,9 @@ class CatalogServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Deletes a EntryGroup resource.
+        r"""Deletes an EntryGroup.
 
         .. code-block:: python
 
@@ -1839,7 +1894,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.DeleteEntryGroupRequest, dict]]):
-                The request object. Delele EntryGroup Request
+                The request object. Delete EntryGroup Request.
             name (:class:`str`):
                 Required. The resource name of the EntryGroup:
                 ``projects/{project_number}/locations/{location_id}/entryGroups/{entry_group_id}``.
@@ -1850,8 +1905,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -1930,7 +1987,7 @@ class CatalogServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListEntryGroupsAsyncPager:
         r"""Lists EntryGroup resources in a project and location.
 
@@ -1968,7 +2025,7 @@ class CatalogServiceAsyncClient:
                 Required. The resource name of the entryGroup location,
                 of the form:
                 ``projects/{project_number}/locations/{location_id}``
-                where ``location_id`` refers to a GCP region.
+                where ``location_id`` refers to a Google Cloud region.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1976,12 +2033,14 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.services.catalog_service.pagers.ListEntryGroupsAsyncPager:
-                List ListEntryGroups response.
+                List entry groups response.
 
                 Iterating over this object will yield
                 results and resolve additional pages
@@ -2052,9 +2111,9 @@ class CatalogServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> catalog.EntryGroup:
-        r"""Retrieves a EntryGroup resource.
+        r"""Gets an EntryGroup.
 
         .. code-block:: python
 
@@ -2095,8 +2154,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.types.EntryGroup:
@@ -2159,7 +2220,7 @@ class CatalogServiceAsyncClient:
         entry_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> catalog.Entry:
         r"""Creates an Entry.
 
@@ -2196,7 +2257,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.CreateEntryRequest, dict]]):
-                The request object.
+                The request object. Create Entry request.
             parent (:class:`str`):
                 Required. The resource name of the parent Entry Group:
                 ``projects/{project}/locations/{location}/entryGroups/{entry_group}``.
@@ -2213,22 +2274,23 @@ class CatalogServiceAsyncClient:
                 Required. Entry identifier. It has to be unique within
                 an Entry Group.
 
-                Entries corresponding to Google Cloud resources use
-                Entry ID format based on Full Resource Names
-                (https://cloud.google.com/apis/design/resource_names#full_resource_name).
-                The format is a Full Resource Name of the resource
-                without the prefix double slashes in the API Service
-                Name part of Full Resource Name. This allows retrieval
-                of entries using their associated resource name.
+                Entries corresponding to Google Cloud resources use an
+                Entry ID format based on `full resource
+                names <https://cloud.google.com/apis/design/resource_names#full_resource_name>`__.
+                The format is a full resource name of the resource
+                without the prefix double slashes in the API service
+                name part of the full resource name. This allows
+                retrieval of entries using their associated resource
+                name.
 
-                For example if the Full Resource Name of a resource is
+                For example, if the full resource name of a resource is
                 ``//library.googleapis.com/shelves/shelf1/books/book2``,
                 then the suggested entry_id is
                 ``library.googleapis.com/shelves/shelf1/books/book2``.
 
                 It is also suggested to follow the same convention for
-                entries corresponding to resources from other providers
-                or systems than Google Cloud.
+                entries corresponding to resources from providers or
+                systems other than Google Cloud.
 
                 The maximum size of the field is 4000 characters.
 
@@ -2238,13 +2300,15 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.types.Entry:
                 An entry is a representation of a
-                data asset which can be described by
+                data resource that can be described by
                 various metadata.
 
         """
@@ -2306,7 +2370,7 @@ class CatalogServiceAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> catalog.Entry:
         r"""Updates an Entry.
 
@@ -2341,7 +2405,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.UpdateEntryRequest, dict]]):
-                The request object.
+                The request object. Update Entry request.
             entry (:class:`google.cloud.dataplex_v1.types.Entry`):
                 Required. Entry resource.
                 This corresponds to the ``entry`` field
@@ -2351,8 +2415,8 @@ class CatalogServiceAsyncClient:
                 Optional. Mask of fields to update. To update Aspects,
                 the update_mask must contain the value "aspects".
 
-                If the update_mask is empty, all modifiable fields
-                present in the request will be updated.
+                If the update_mask is empty, the service will update all
+                modifiable fields present in the request.
 
                 This corresponds to the ``update_mask`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2360,13 +2424,15 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.types.Entry:
                 An entry is a representation of a
-                data asset which can be described by
+                data resource that can be described by
                 various metadata.
 
         """
@@ -2427,7 +2493,7 @@ class CatalogServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> catalog.Entry:
         r"""Deletes an Entry.
 
@@ -2459,7 +2525,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.DeleteEntryRequest, dict]]):
-                The request object.
+                The request object. Delete Entry request.
             name (:class:`str`):
                 Required. The resource name of the Entry:
                 ``projects/{project}/locations/{location}/entryGroups/{entry_group}/entries/{entry}``.
@@ -2470,13 +2536,15 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.types.Entry:
                 An entry is a representation of a
-                data asset which can be described by
+                data resource that can be described by
                 various metadata.
 
         """
@@ -2533,9 +2601,9 @@ class CatalogServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListEntriesAsyncPager:
-        r"""Lists entries within an entry group.
+        r"""Lists Entries within an EntryGroup.
 
         .. code-block:: python
 
@@ -2566,7 +2634,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.ListEntriesRequest, dict]]):
-                The request object.
+                The request object. List Entries request.
             parent (:class:`str`):
                 Required. The resource name of the parent Entry Group:
                 ``projects/{project}/locations/{location}/entryGroups/{entry_group}``.
@@ -2577,11 +2645,15 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.services.catalog_service.pagers.ListEntriesAsyncPager:
+                List Entries response.
+
                 Iterating over this object will yield
                 results and resolve additional pages
                 automatically.
@@ -2651,9 +2723,14 @@ class CatalogServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> catalog.Entry:
-        r"""Gets a single entry.
+        r"""Gets an Entry.
+
+        **Caution**: The BigQuery metadata that is stored in Dataplex
+        Catalog is changing. For more information, see `Changes to
+        BigQuery metadata stored in Dataplex
+        Catalog <https://cloud.google.com/dataplex/docs/biqquery-metadata-changes>`__.
 
         .. code-block:: python
 
@@ -2683,7 +2760,7 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.GetEntryRequest, dict]]):
-                The request object.
+                The request object. Get Entry request.
             name (:class:`str`):
                 Required. The resource name of the Entry:
                 ``projects/{project}/locations/{location}/entryGroups/{entry_group}/entries/{entry}``.
@@ -2694,13 +2771,15 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.types.Entry:
                 An entry is a representation of a
-                data asset which can be described by
+                data resource that can be described by
                 various metadata.
 
         """
@@ -2756,9 +2835,15 @@ class CatalogServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> catalog.Entry:
-        r"""Looks up a single entry.
+        r"""Looks up a single Entry by name using the permission on the
+        source system.
+
+        **Caution**: The BigQuery metadata that is stored in Dataplex
+        Catalog is changing. For more information, see `Changes to
+        BigQuery metadata stored in Dataplex
+        Catalog <https://cloud.google.com/dataplex/docs/biqquery-metadata-changes>`__.
 
         .. code-block:: python
 
@@ -2789,17 +2874,20 @@ class CatalogServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.dataplex_v1.types.LookupEntryRequest, dict]]):
-                The request object.
+                The request object. Lookup Entry request using
+                permissions in the source system.
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.types.Entry:
                 An entry is a representation of a
-                data asset which can be described by
+                data resource that can be described by
                 various metadata.
 
         """
@@ -2843,9 +2931,10 @@ class CatalogServiceAsyncClient:
         query: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.SearchEntriesAsyncPager:
-        r"""Searches for entries matching given query and scope.
+        r"""Searches for Entries matching the given query and
+        scope.
 
         .. code-block:: python
 
@@ -2887,8 +2976,10 @@ class CatalogServiceAsyncClient:
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             query (:class:`str`):
-                Required. The query against which
-                entries in scope should be matched.
+                Required. The query against which entries in scope
+                should be matched. The query syntax is defined in
+                `Search syntax for Dataplex
+                Catalog <https://cloud.google.com/dataplex/docs/search-syntax>`__.
 
                 This corresponds to the ``query`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2896,8 +2987,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.dataplex_v1.services.catalog_service.pagers.SearchEntriesAsyncPager:
@@ -2965,13 +3058,494 @@ class CatalogServiceAsyncClient:
         # Done; return the response.
         return response
 
+    async def create_metadata_job(
+        self,
+        request: Optional[Union[catalog.CreateMetadataJobRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        metadata_job: Optional[catalog.MetadataJob] = None,
+        metadata_job_id: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation_async.AsyncOperation:
+        r"""Creates a metadata job. For example, use a metadata
+        job to import Dataplex Catalog entries and aspects from
+        a third-party system into Dataplex.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import dataplex_v1
+
+            async def sample_create_metadata_job():
+                # Create a client
+                client = dataplex_v1.CatalogServiceAsyncClient()
+
+                # Initialize request argument(s)
+                metadata_job = dataplex_v1.MetadataJob()
+                metadata_job.import_spec.scope.entry_groups = ['entry_groups_value1', 'entry_groups_value2']
+                metadata_job.import_spec.scope.entry_types = ['entry_types_value1', 'entry_types_value2']
+                metadata_job.import_spec.entry_sync_mode = "INCREMENTAL"
+                metadata_job.import_spec.aspect_sync_mode = "INCREMENTAL"
+                metadata_job.type_ = "IMPORT"
+
+                request = dataplex_v1.CreateMetadataJobRequest(
+                    parent="parent_value",
+                    metadata_job=metadata_job,
+                )
+
+                # Make the request
+                operation = client.create_metadata_job(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = (await operation).result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.dataplex_v1.types.CreateMetadataJobRequest, dict]]):
+                The request object. Create metadata job request.
+            parent (:class:`str`):
+                Required. The resource name of the parent location, in
+                the format
+                ``projects/{project_id_or_number}/locations/{location_id}``
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            metadata_job (:class:`google.cloud.dataplex_v1.types.MetadataJob`):
+                Required. The metadata job resource.
+                This corresponds to the ``metadata_job`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            metadata_job_id (:class:`str`):
+                Optional. The metadata job ID. If not provided, a unique
+                ID is generated with the prefix ``metadata-job-``.
+
+                This corresponds to the ``metadata_job_id`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation_async.AsyncOperation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be
+                :class:`google.cloud.dataplex_v1.types.MetadataJob` A
+                metadata job resource.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent, metadata_job, metadata_job_id])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, catalog.CreateMetadataJobRequest):
+            request = catalog.CreateMetadataJobRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if parent is not None:
+            request.parent = parent
+        if metadata_job is not None:
+            request.metadata_job = metadata_job
+        if metadata_job_id is not None:
+            request.metadata_job_id = metadata_job_id
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.create_metadata_job
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation_async.from_gapic(
+            response,
+            self._client._transport.operations_client,
+            catalog.MetadataJob,
+            metadata_type=service.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def get_metadata_job(
+        self,
+        request: Optional[Union[catalog.GetMetadataJobRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> catalog.MetadataJob:
+        r"""Gets a metadata job.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import dataplex_v1
+
+            async def sample_get_metadata_job():
+                # Create a client
+                client = dataplex_v1.CatalogServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = dataplex_v1.GetMetadataJobRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = await client.get_metadata_job(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.dataplex_v1.types.GetMetadataJobRequest, dict]]):
+                The request object. Get metadata job request.
+            name (:class:`str`):
+                Required. The resource name of the metadata job, in the
+                format
+                ``projects/{project_id_or_number}/locations/{location_id}/metadataJobs/{metadata_job_id}``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.dataplex_v1.types.MetadataJob:
+                A metadata job resource.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, catalog.GetMetadataJobRequest):
+            request = catalog.GetMetadataJobRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if name is not None:
+            request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.get_metadata_job
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def list_metadata_jobs(
+        self,
+        request: Optional[Union[catalog.ListMetadataJobsRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListMetadataJobsAsyncPager:
+        r"""Lists metadata jobs.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import dataplex_v1
+
+            async def sample_list_metadata_jobs():
+                # Create a client
+                client = dataplex_v1.CatalogServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = dataplex_v1.ListMetadataJobsRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_metadata_jobs(request=request)
+
+                # Handle the response
+                async for response in page_result:
+                    print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.dataplex_v1.types.ListMetadataJobsRequest, dict]]):
+                The request object. List metadata jobs request.
+            parent (:class:`str`):
+                Required. The resource name of the parent location, in
+                the format
+                ``projects/{project_id_or_number}/locations/{location_id}``
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.dataplex_v1.services.catalog_service.pagers.ListMetadataJobsAsyncPager:
+                List metadata jobs response.
+
+                Iterating over this object will yield
+                results and resolve additional pages
+                automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, catalog.ListMetadataJobsRequest):
+            request = catalog.ListMetadataJobsRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if parent is not None:
+            request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.list_metadata_jobs
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__aiter__` convenience method.
+        response = pagers.ListMetadataJobsAsyncPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def cancel_metadata_job(
+        self,
+        request: Optional[Union[catalog.CancelMetadataJobRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> None:
+        r"""Cancels a metadata job.
+
+        If you cancel a metadata import job that is in progress,
+        the changes in the job might be partially applied. We
+        recommend that you reset the state of the entry groups
+        in your project by running another metadata job that
+        reverts the changes from the canceled job.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import dataplex_v1
+
+            async def sample_cancel_metadata_job():
+                # Create a client
+                client = dataplex_v1.CatalogServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = dataplex_v1.CancelMetadataJobRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                await client.cancel_metadata_job(request=request)
+
+        Args:
+            request (Optional[Union[google.cloud.dataplex_v1.types.CancelMetadataJobRequest, dict]]):
+                The request object. Cancel metadata job request.
+            name (:class:`str`):
+                Required. The resource name of the job, in the format
+                ``projects/{project_id_or_number}/locations/{location_id}/metadataJobs/{metadata_job_id}``
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, catalog.CancelMetadataJobRequest):
+            request = catalog.CancelMetadataJobRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if name is not None:
+            request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.cancel_metadata_job
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
     async def list_operations(
         self,
         request: Optional[operations_pb2.ListOperationsRequest] = None,
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.ListOperationsResponse:
         r"""Lists operations that match the specified filter in the request.
 
@@ -2982,8 +3556,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.ListOperationsResponse:
                 Response message for ``ListOperations`` method.
@@ -2996,11 +3572,7 @@ class CatalogServiceAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.list_operations,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.list_operations]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3028,7 +3600,7 @@ class CatalogServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.Operation:
         r"""Gets the latest state of a long-running operation.
 
@@ -3039,8 +3611,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.Operation:
                 An ``Operation`` object.
@@ -3053,11 +3627,7 @@ class CatalogServiceAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.get_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.get_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3085,7 +3655,7 @@ class CatalogServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Deletes a long-running operation.
 
@@ -3101,8 +3671,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             None
         """
@@ -3114,11 +3686,7 @@ class CatalogServiceAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.delete_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.delete_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3143,7 +3711,7 @@ class CatalogServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Starts asynchronous cancellation on a long-running operation.
 
@@ -3158,8 +3726,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             None
         """
@@ -3171,11 +3741,7 @@ class CatalogServiceAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.cancel_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.cancel_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3200,7 +3766,7 @@ class CatalogServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.Location:
         r"""Gets information about a location.
 
@@ -3211,8 +3777,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.Location:
                 Location object.
@@ -3225,11 +3793,7 @@ class CatalogServiceAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.get_location,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.get_location]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3257,7 +3821,7 @@ class CatalogServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.ListLocationsResponse:
         r"""Lists information about the supported locations for this service.
 
@@ -3268,8 +3832,10 @@ class CatalogServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.ListLocationsResponse:
                 Response message for ``ListLocations`` method.
@@ -3282,11 +3848,7 @@ class CatalogServiceAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.list_locations,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.list_locations]
 
         # Certain fields should be provided within the metadata header;
         # add these here.

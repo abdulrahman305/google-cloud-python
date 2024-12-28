@@ -22,20 +22,12 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
+from google.api_core import api_core_version
 from google.protobuf import json_format
-from google.protobuf import timestamp_pb2  # type: ignore
 import grpc
 from grpc.experimental import aio
 from proto.marshal.rules import wrappers
@@ -43,6 +35,23 @@ from proto.marshal.rules.dates import DurationRule, TimestampRule
 import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
+from google.protobuf import timestamp_pb2  # type: ignore
 
 from google.apps.meet_v2.services.conference_records_service import (
     ConferenceRecordsServiceAsyncClient,
@@ -53,8 +62,22 @@ from google.apps.meet_v2.services.conference_records_service import (
 from google.apps.meet_v2.types import resource, service
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -311,94 +334,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         ConferenceRecordsServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            ConferenceRecordsServiceClient,
-            transports.ConferenceRecordsServiceGrpcTransport,
-            "grpc",
-        ),
-        (
-            ConferenceRecordsServiceClient,
-            transports.ConferenceRecordsServiceRestTransport,
-            "rest",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1239,27 +1174,6 @@ def test_get_conference_record(request_type, transport: str = "grpc"):
     assert response.space == "space_value"
 
 
-def test_get_conference_record_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_conference_record), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_conference_record()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetConferenceRecordRequest()
-
-
 def test_get_conference_record_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1331,32 +1245,6 @@ def test_get_conference_record_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_conference_record_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_conference_record), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            resource.ConferenceRecord(
-                name="name_value",
-                space="space_value",
-            )
-        )
-        response = await client.get_conference_record()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetConferenceRecordRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_conference_record_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1364,7 +1252,7 @@ async def test_get_conference_record_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1379,22 +1267,23 @@ async def test_get_conference_record_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_conference_record
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_conference_record(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_conference_record(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1402,7 +1291,7 @@ async def test_get_conference_record_async(
     transport: str = "grpc_asyncio", request_type=service.GetConferenceRecordRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1474,7 +1363,7 @@ def test_get_conference_record_field_headers():
 @pytest.mark.asyncio
 async def test_get_conference_record_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1548,7 +1437,7 @@ def test_get_conference_record_flattened_error():
 @pytest.mark.asyncio
 async def test_get_conference_record_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1579,7 +1468,7 @@ async def test_get_conference_record_flattened_async():
 @pytest.mark.asyncio
 async def test_get_conference_record_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1627,27 +1516,6 @@ def test_list_conference_records(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListConferenceRecordsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_conference_records_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_conference_records), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_conference_records()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListConferenceRecordsRequest()
 
 
 def test_list_conference_records_non_empty_request_with_auto_populated_field():
@@ -1723,31 +1591,6 @@ def test_list_conference_records_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_conference_records_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_conference_records), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListConferenceRecordsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_conference_records()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListConferenceRecordsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_conference_records_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1755,7 +1598,7 @@ async def test_list_conference_records_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1770,22 +1613,23 @@ async def test_list_conference_records_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_conference_records
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_conference_records(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_conference_records(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1793,7 +1637,7 @@ async def test_list_conference_records_async(
     transport: str = "grpc_asyncio", request_type=service.ListConferenceRecordsRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1928,7 +1772,7 @@ def test_list_conference_records_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_conference_records_async_pager():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1980,7 +1824,7 @@ async def test_list_conference_records_async_pager():
 @pytest.mark.asyncio
 async def test_list_conference_records_async_pages():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2064,25 +1908,6 @@ def test_get_participant(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
 
 
-def test_get_participant_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_participant), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_participant()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetParticipantRequest()
-
-
 def test_get_participant_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2147,29 +1972,6 @@ def test_get_participant_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_participant_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_participant), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            resource.Participant(
-                name="name_value",
-            )
-        )
-        response = await client.get_participant()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetParticipantRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_participant_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2177,7 +1979,7 @@ async def test_get_participant_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2192,22 +1994,23 @@ async def test_get_participant_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_participant
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_participant(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_participant(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2215,7 +2018,7 @@ async def test_get_participant_async(
     transport: str = "grpc_asyncio", request_type=service.GetParticipantRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2281,7 +2084,7 @@ def test_get_participant_field_headers():
 @pytest.mark.asyncio
 async def test_get_participant_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2351,7 +2154,7 @@ def test_get_participant_flattened_error():
 @pytest.mark.asyncio
 async def test_get_participant_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2380,7 +2183,7 @@ async def test_get_participant_flattened_async():
 @pytest.mark.asyncio
 async def test_get_participant_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2430,27 +2233,6 @@ def test_list_participants(request_type, transport: str = "grpc"):
     assert isinstance(response, pagers.ListParticipantsPager)
     assert response.next_page_token == "next_page_token_value"
     assert response.total_size == 1086
-
-
-def test_list_participants_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_participants), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_participants()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListParticipantsRequest()
 
 
 def test_list_participants_non_empty_request_with_auto_populated_field():
@@ -2525,32 +2307,6 @@ def test_list_participants_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_participants_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_participants), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListParticipantsResponse(
-                next_page_token="next_page_token_value",
-                total_size=1086,
-            )
-        )
-        response = await client.list_participants()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListParticipantsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_participants_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2558,7 +2314,7 @@ async def test_list_participants_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2573,22 +2329,23 @@ async def test_list_participants_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_participants
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_participants(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_participants(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2596,7 +2353,7 @@ async def test_list_participants_async(
     transport: str = "grpc_asyncio", request_type=service.ListParticipantsRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2668,7 +2425,7 @@ def test_list_participants_field_headers():
 @pytest.mark.asyncio
 async def test_list_participants_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2742,7 +2499,7 @@ def test_list_participants_flattened_error():
 @pytest.mark.asyncio
 async def test_list_participants_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2773,7 +2530,7 @@ async def test_list_participants_flattened_async():
 @pytest.mark.asyncio
 async def test_list_participants_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2887,7 +2644,7 @@ def test_list_participants_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_participants_async_pager():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2939,7 +2696,7 @@ async def test_list_participants_async_pager():
 @pytest.mark.asyncio
 async def test_list_participants_async_pages():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3025,27 +2782,6 @@ def test_get_participant_session(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
 
 
-def test_get_participant_session_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_participant_session), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_participant_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetParticipantSessionRequest()
-
-
 def test_get_participant_session_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3117,31 +2853,6 @@ def test_get_participant_session_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_participant_session_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_participant_session), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            resource.ParticipantSession(
-                name="name_value",
-            )
-        )
-        response = await client.get_participant_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetParticipantSessionRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_participant_session_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3149,7 +2860,7 @@ async def test_get_participant_session_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3164,22 +2875,23 @@ async def test_get_participant_session_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_participant_session
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_participant_session(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_participant_session(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3187,7 +2899,7 @@ async def test_get_participant_session_async(
     transport: str = "grpc_asyncio", request_type=service.GetParticipantSessionRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3257,7 +2969,7 @@ def test_get_participant_session_field_headers():
 @pytest.mark.asyncio
 async def test_get_participant_session_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3331,7 +3043,7 @@ def test_get_participant_session_flattened_error():
 @pytest.mark.asyncio
 async def test_get_participant_session_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3362,7 +3074,7 @@ async def test_get_participant_session_flattened_async():
 @pytest.mark.asyncio
 async def test_get_participant_session_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3410,27 +3122,6 @@ def test_list_participant_sessions(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListParticipantSessionsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_participant_sessions_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_participant_sessions), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_participant_sessions()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListParticipantSessionsRequest()
 
 
 def test_list_participant_sessions_non_empty_request_with_auto_populated_field():
@@ -3508,31 +3199,6 @@ def test_list_participant_sessions_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_participant_sessions_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_participant_sessions), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListParticipantSessionsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_participant_sessions()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListParticipantSessionsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_participant_sessions_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3540,7 +3206,7 @@ async def test_list_participant_sessions_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3555,22 +3221,23 @@ async def test_list_participant_sessions_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_participant_sessions
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_participant_sessions(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_participant_sessions(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3578,7 +3245,7 @@ async def test_list_participant_sessions_async(
     transport: str = "grpc_asyncio", request_type=service.ListParticipantSessionsRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3648,7 +3315,7 @@ def test_list_participant_sessions_field_headers():
 @pytest.mark.asyncio
 async def test_list_participant_sessions_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3722,7 +3389,7 @@ def test_list_participant_sessions_flattened_error():
 @pytest.mark.asyncio
 async def test_list_participant_sessions_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3753,7 +3420,7 @@ async def test_list_participant_sessions_flattened_async():
 @pytest.mark.asyncio
 async def test_list_participant_sessions_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3869,7 +3536,7 @@ def test_list_participant_sessions_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_participant_sessions_async_pager():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3921,7 +3588,7 @@ async def test_list_participant_sessions_async_pager():
 @pytest.mark.asyncio
 async def test_list_participant_sessions_async_pages():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4007,25 +3674,6 @@ def test_get_recording(request_type, transport: str = "grpc"):
     assert response.state == resource.Recording.State.STARTED
 
 
-def test_get_recording_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_recording), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_recording()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetRecordingRequest()
-
-
 def test_get_recording_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -4090,30 +3738,6 @@ def test_get_recording_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_recording_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_recording), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            resource.Recording(
-                name="name_value",
-                state=resource.Recording.State.STARTED,
-            )
-        )
-        response = await client.get_recording()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetRecordingRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_recording_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4121,7 +3745,7 @@ async def test_get_recording_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4136,22 +3760,23 @@ async def test_get_recording_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_recording
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_recording(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_recording(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4159,7 +3784,7 @@ async def test_get_recording_async(
     transport: str = "grpc_asyncio", request_type=service.GetRecordingRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4227,7 +3852,7 @@ def test_get_recording_field_headers():
 @pytest.mark.asyncio
 async def test_get_recording_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4295,7 +3920,7 @@ def test_get_recording_flattened_error():
 @pytest.mark.asyncio
 async def test_get_recording_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4322,7 +3947,7 @@ async def test_get_recording_flattened_async():
 @pytest.mark.asyncio
 async def test_get_recording_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4368,25 +3993,6 @@ def test_list_recordings(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListRecordingsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_recordings_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_recordings), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_recordings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListRecordingsRequest()
 
 
 def test_list_recordings_non_empty_request_with_auto_populated_field():
@@ -4455,29 +4061,6 @@ def test_list_recordings_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_recordings_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_recordings), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListRecordingsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_recordings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListRecordingsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_recordings_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4485,7 +4068,7 @@ async def test_list_recordings_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4500,22 +4083,23 @@ async def test_list_recordings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_recordings
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_recordings(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_recordings(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4523,7 +4107,7 @@ async def test_list_recordings_async(
     transport: str = "grpc_asyncio", request_type=service.ListRecordingsRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4589,7 +4173,7 @@ def test_list_recordings_field_headers():
 @pytest.mark.asyncio
 async def test_list_recordings_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4659,7 +4243,7 @@ def test_list_recordings_flattened_error():
 @pytest.mark.asyncio
 async def test_list_recordings_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4688,7 +4272,7 @@ async def test_list_recordings_flattened_async():
 @pytest.mark.asyncio
 async def test_list_recordings_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4798,7 +4382,7 @@ def test_list_recordings_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_recordings_async_pager():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4848,7 +4432,7 @@ async def test_list_recordings_async_pager():
 @pytest.mark.asyncio
 async def test_list_recordings_async_pages():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4932,25 +4516,6 @@ def test_get_transcript(request_type, transport: str = "grpc"):
     assert response.state == resource.Transcript.State.STARTED
 
 
-def test_get_transcript_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_transcript), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_transcript()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetTranscriptRequest()
-
-
 def test_get_transcript_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5015,30 +4580,6 @@ def test_get_transcript_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_transcript_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_transcript), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            resource.Transcript(
-                name="name_value",
-                state=resource.Transcript.State.STARTED,
-            )
-        )
-        response = await client.get_transcript()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetTranscriptRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_transcript_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5046,7 +4587,7 @@ async def test_get_transcript_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5061,22 +4602,23 @@ async def test_get_transcript_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_transcript
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_transcript(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_transcript(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5084,7 +4626,7 @@ async def test_get_transcript_async(
     transport: str = "grpc_asyncio", request_type=service.GetTranscriptRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5152,7 +4694,7 @@ def test_get_transcript_field_headers():
 @pytest.mark.asyncio
 async def test_get_transcript_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5220,7 +4762,7 @@ def test_get_transcript_flattened_error():
 @pytest.mark.asyncio
 async def test_get_transcript_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5247,7 +4789,7 @@ async def test_get_transcript_flattened_async():
 @pytest.mark.asyncio
 async def test_get_transcript_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5293,25 +4835,6 @@ def test_list_transcripts(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListTranscriptsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_transcripts_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_transcripts), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_transcripts()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListTranscriptsRequest()
 
 
 def test_list_transcripts_non_empty_request_with_auto_populated_field():
@@ -5382,29 +4905,6 @@ def test_list_transcripts_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_transcripts_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_transcripts), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListTranscriptsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_transcripts()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListTranscriptsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_transcripts_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5412,7 +4912,7 @@ async def test_list_transcripts_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5427,22 +4927,23 @@ async def test_list_transcripts_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_transcripts
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_transcripts(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_transcripts(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5450,7 +4951,7 @@ async def test_list_transcripts_async(
     transport: str = "grpc_asyncio", request_type=service.ListTranscriptsRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5516,7 +5017,7 @@ def test_list_transcripts_field_headers():
 @pytest.mark.asyncio
 async def test_list_transcripts_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5586,7 +5087,7 @@ def test_list_transcripts_flattened_error():
 @pytest.mark.asyncio
 async def test_list_transcripts_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5615,7 +5116,7 @@ async def test_list_transcripts_flattened_async():
 @pytest.mark.asyncio
 async def test_list_transcripts_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5725,7 +5226,7 @@ def test_list_transcripts_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_transcripts_async_pager():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5775,7 +5276,7 @@ async def test_list_transcripts_async_pager():
 @pytest.mark.asyncio
 async def test_list_transcripts_async_pages():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5865,27 +5366,6 @@ def test_get_transcript_entry(request_type, transport: str = "grpc"):
     assert response.language_code == "language_code_value"
 
 
-def test_get_transcript_entry_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_transcript_entry), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_transcript_entry()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetTranscriptEntryRequest()
-
-
 def test_get_transcript_entry_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5956,34 +5436,6 @@ def test_get_transcript_entry_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_transcript_entry_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_transcript_entry), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            resource.TranscriptEntry(
-                name="name_value",
-                participant="participant_value",
-                text="text_value",
-                language_code="language_code_value",
-            )
-        )
-        response = await client.get_transcript_entry()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.GetTranscriptEntryRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_transcript_entry_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5991,7 +5443,7 @@ async def test_get_transcript_entry_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6006,22 +5458,23 @@ async def test_get_transcript_entry_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_transcript_entry
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_transcript_entry(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_transcript_entry(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6029,7 +5482,7 @@ async def test_get_transcript_entry_async(
     transport: str = "grpc_asyncio", request_type=service.GetTranscriptEntryRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6105,7 +5558,7 @@ def test_get_transcript_entry_field_headers():
 @pytest.mark.asyncio
 async def test_get_transcript_entry_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6179,7 +5632,7 @@ def test_get_transcript_entry_flattened_error():
 @pytest.mark.asyncio
 async def test_get_transcript_entry_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6210,7 +5663,7 @@ async def test_get_transcript_entry_flattened_async():
 @pytest.mark.asyncio
 async def test_get_transcript_entry_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6258,27 +5711,6 @@ def test_list_transcript_entries(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListTranscriptEntriesPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_transcript_entries_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_transcript_entries), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_transcript_entries()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListTranscriptEntriesRequest()
 
 
 def test_list_transcript_entries_non_empty_request_with_auto_populated_field():
@@ -6354,31 +5786,6 @@ def test_list_transcript_entries_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_transcript_entries_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_transcript_entries), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            service.ListTranscriptEntriesResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_transcript_entries()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == service.ListTranscriptEntriesRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_transcript_entries_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6386,7 +5793,7 @@ async def test_list_transcript_entries_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ConferenceRecordsServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6401,22 +5808,23 @@ async def test_list_transcript_entries_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_transcript_entries
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_transcript_entries(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_transcript_entries(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6424,7 +5832,7 @@ async def test_list_transcript_entries_async(
     transport: str = "grpc_asyncio", request_type=service.ListTranscriptEntriesRequest
 ):
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6494,7 +5902,7 @@ def test_list_transcript_entries_field_headers():
 @pytest.mark.asyncio
 async def test_list_transcript_entries_field_headers_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6568,7 +5976,7 @@ def test_list_transcript_entries_flattened_error():
 @pytest.mark.asyncio
 async def test_list_transcript_entries_flattened_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6599,7 +6007,7 @@ async def test_list_transcript_entries_flattened_async():
 @pytest.mark.asyncio
 async def test_list_transcript_entries_flattened_error_async():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6713,7 +6121,7 @@ def test_list_transcript_entries_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_transcript_entries_async_pager():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6765,7 +6173,7 @@ async def test_list_transcript_entries_async_pager():
 @pytest.mark.asyncio
 async def test_list_transcript_entries_async_pages():
     client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6811,48 +6219,6 @@ async def test_list_transcript_entries_async_pages():
             pages.append(page_)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.GetConferenceRecordRequest,
-        dict,
-    ],
-)
-def test_get_conference_record_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "conferenceRecords/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = resource.ConferenceRecord(
-            name="name_value",
-            space="space_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = resource.ConferenceRecord.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_conference_record(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, resource.ConferenceRecord)
-    assert response.name == "name_value"
-    assert response.space == "space_value"
 
 
 def test_get_conference_record_rest_use_cached_wrapped_rpc():
@@ -6962,6 +6328,7 @@ def test_get_conference_record_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_conference_record(request)
 
@@ -6977,87 +6344,6 @@ def test_get_conference_record_rest_unset_required_fields():
 
     unset_fields = transport.get_conference_record._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_conference_record_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "post_get_conference_record"
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_conference_record"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.GetConferenceRecordRequest.pb(
-            service.GetConferenceRecordRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = resource.ConferenceRecord.to_json(
-            resource.ConferenceRecord()
-        )
-
-        request = service.GetConferenceRecordRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = resource.ConferenceRecord()
-
-        client.get_conference_record(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_conference_record_rest_bad_request(
-    transport: str = "rest", request_type=service.GetConferenceRecordRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "conferenceRecords/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_conference_record(request)
 
 
 def test_get_conference_record_rest_flattened():
@@ -7088,6 +6374,7 @@ def test_get_conference_record_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_conference_record(**mock_args)
 
@@ -7113,52 +6400,6 @@ def test_get_conference_record_rest_flattened_error(transport: str = "rest"):
             service.GetConferenceRecordRequest(),
             name="name_value",
         )
-
-
-def test_get_conference_record_rest_error():
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.ListConferenceRecordsRequest,
-        dict,
-    ],
-)
-def test_list_conference_records_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.ListConferenceRecordsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.ListConferenceRecordsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_conference_records(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListConferenceRecordsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_conference_records_rest_use_cached_wrapped_rpc():
@@ -7200,89 +6441,6 @@ def test_list_conference_records_rest_use_cached_wrapped_rpc():
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
         assert mock_rpc.call_count == 2
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_conference_records_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor,
-        "post_list_conference_records",
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor,
-        "pre_list_conference_records",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.ListConferenceRecordsRequest.pb(
-            service.ListConferenceRecordsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.ListConferenceRecordsResponse.to_json(
-            service.ListConferenceRecordsResponse()
-        )
-
-        request = service.ListConferenceRecordsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.ListConferenceRecordsResponse()
-
-        client.list_conference_records(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_conference_records_rest_bad_request(
-    transport: str = "rest", request_type=service.ListConferenceRecordsRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_conference_records(request)
 
 
 def test_list_conference_records_rest_pager(transport: str = "rest"):
@@ -7346,46 +6504,6 @@ def test_list_conference_records_rest_pager(transport: str = "rest"):
         pages = list(client.list_conference_records(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.GetParticipantRequest,
-        dict,
-    ],
-)
-def test_get_participant_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "conferenceRecords/sample1/participants/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = resource.Participant(
-            name="name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = resource.Participant.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_participant(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, resource.Participant)
-    assert response.name == "name_value"
 
 
 def test_get_participant_rest_use_cached_wrapped_rpc():
@@ -7490,6 +6608,7 @@ def test_get_participant_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_participant(request)
 
@@ -7505,83 +6624,6 @@ def test_get_participant_rest_unset_required_fields():
 
     unset_fields = transport.get_participant._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_participant_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "post_get_participant"
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_participant"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.GetParticipantRequest.pb(service.GetParticipantRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = resource.Participant.to_json(resource.Participant())
-
-        request = service.GetParticipantRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = resource.Participant()
-
-        client.get_participant(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_participant_rest_bad_request(
-    transport: str = "rest", request_type=service.GetParticipantRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "conferenceRecords/sample1/participants/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_participant(request)
 
 
 def test_get_participant_rest_flattened():
@@ -7612,6 +6654,7 @@ def test_get_participant_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_participant(**mock_args)
 
@@ -7638,54 +6681,6 @@ def test_get_participant_rest_flattened_error(transport: str = "rest"):
             service.GetParticipantRequest(),
             name="name_value",
         )
-
-
-def test_get_participant_rest_error():
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.ListParticipantsRequest,
-        dict,
-    ],
-)
-def test_list_participants_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.ListParticipantsResponse(
-            next_page_token="next_page_token_value",
-            total_size=1086,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.ListParticipantsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_participants(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListParticipantsPager)
-    assert response.next_page_token == "next_page_token_value"
-    assert response.total_size == 1086
 
 
 def test_list_participants_rest_use_cached_wrapped_rpc():
@@ -7800,6 +6795,7 @@ def test_list_participants_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_participants(request)
 
@@ -7824,87 +6820,6 @@ def test_list_participants_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_participants_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "post_list_participants"
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "pre_list_participants"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.ListParticipantsRequest.pb(
-            service.ListParticipantsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.ListParticipantsResponse.to_json(
-            service.ListParticipantsResponse()
-        )
-
-        request = service.ListParticipantsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.ListParticipantsResponse()
-
-        client.list_participants(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_participants_rest_bad_request(
-    transport: str = "rest", request_type=service.ListParticipantsRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_participants(request)
 
 
 def test_list_participants_rest_flattened():
@@ -7935,6 +6850,7 @@ def test_list_participants_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_participants(**mock_args)
 
@@ -8022,48 +6938,6 @@ def test_list_participants_rest_pager(transport: str = "rest"):
         pages = list(client.list_participants(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.GetParticipantSessionRequest,
-        dict,
-    ],
-)
-def test_get_participant_session_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "conferenceRecords/sample1/participants/sample2/participantSessions/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = resource.ParticipantSession(
-            name="name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = resource.ParticipantSession.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_participant_session(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, resource.ParticipantSession)
-    assert response.name == "name_value"
 
 
 def test_get_participant_session_rest_use_cached_wrapped_rpc():
@@ -8173,6 +7047,7 @@ def test_get_participant_session_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_participant_session(request)
 
@@ -8188,91 +7063,6 @@ def test_get_participant_session_rest_unset_required_fields():
 
     unset_fields = transport.get_participant_session._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_participant_session_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor,
-        "post_get_participant_session",
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor,
-        "pre_get_participant_session",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.GetParticipantSessionRequest.pb(
-            service.GetParticipantSessionRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = resource.ParticipantSession.to_json(
-            resource.ParticipantSession()
-        )
-
-        request = service.GetParticipantSessionRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = resource.ParticipantSession()
-
-        client.get_participant_session(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_participant_session_rest_bad_request(
-    transport: str = "rest", request_type=service.GetParticipantSessionRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "conferenceRecords/sample1/participants/sample2/participantSessions/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_participant_session(request)
 
 
 def test_get_participant_session_rest_flattened():
@@ -8305,6 +7095,7 @@ def test_get_participant_session_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_participant_session(**mock_args)
 
@@ -8332,52 +7123,6 @@ def test_get_participant_session_rest_flattened_error(transport: str = "rest"):
             service.GetParticipantSessionRequest(),
             name="name_value",
         )
-
-
-def test_get_participant_session_rest_error():
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.ListParticipantSessionsRequest,
-        dict,
-    ],
-)
-def test_list_participant_sessions_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1/participants/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.ListParticipantSessionsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.ListParticipantSessionsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_participant_sessions(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListParticipantSessionsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_participant_sessions_rest_use_cached_wrapped_rpc():
@@ -8495,6 +7240,7 @@ def test_list_participant_sessions_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_participant_sessions(request)
 
@@ -8519,89 +7265,6 @@ def test_list_participant_sessions_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_participant_sessions_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor,
-        "post_list_participant_sessions",
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor,
-        "pre_list_participant_sessions",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.ListParticipantSessionsRequest.pb(
-            service.ListParticipantSessionsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.ListParticipantSessionsResponse.to_json(
-            service.ListParticipantSessionsResponse()
-        )
-
-        request = service.ListParticipantSessionsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.ListParticipantSessionsResponse()
-
-        client.list_participant_sessions(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_participant_sessions_rest_bad_request(
-    transport: str = "rest", request_type=service.ListParticipantSessionsRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1/participants/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_participant_sessions(request)
 
 
 def test_list_participant_sessions_rest_flattened():
@@ -8632,6 +7295,7 @@ def test_list_participant_sessions_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_participant_sessions(**mock_args)
 
@@ -8722,48 +7386,6 @@ def test_list_participant_sessions_rest_pager(transport: str = "rest"):
         pages = list(client.list_participant_sessions(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.GetRecordingRequest,
-        dict,
-    ],
-)
-def test_get_recording_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "conferenceRecords/sample1/recordings/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = resource.Recording(
-            name="name_value",
-            state=resource.Recording.State.STARTED,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = resource.Recording.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_recording(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, resource.Recording)
-    assert response.name == "name_value"
-    assert response.state == resource.Recording.State.STARTED
 
 
 def test_get_recording_rest_use_cached_wrapped_rpc():
@@ -8866,6 +7488,7 @@ def test_get_recording_rest_required_fields(request_type=service.GetRecordingReq
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_recording(request)
 
@@ -8881,83 +7504,6 @@ def test_get_recording_rest_unset_required_fields():
 
     unset_fields = transport.get_recording._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_recording_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "post_get_recording"
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_recording"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.GetRecordingRequest.pb(service.GetRecordingRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = resource.Recording.to_json(resource.Recording())
-
-        request = service.GetRecordingRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = resource.Recording()
-
-        client.get_recording(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_recording_rest_bad_request(
-    transport: str = "rest", request_type=service.GetRecordingRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "conferenceRecords/sample1/recordings/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_recording(request)
 
 
 def test_get_recording_rest_flattened():
@@ -8988,6 +7534,7 @@ def test_get_recording_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_recording(**mock_args)
 
@@ -9014,52 +7561,6 @@ def test_get_recording_rest_flattened_error(transport: str = "rest"):
             service.GetRecordingRequest(),
             name="name_value",
         )
-
-
-def test_get_recording_rest_error():
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.ListRecordingsRequest,
-        dict,
-    ],
-)
-def test_list_recordings_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.ListRecordingsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.ListRecordingsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_recordings(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListRecordingsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_recordings_rest_use_cached_wrapped_rpc():
@@ -9171,6 +7672,7 @@ def test_list_recordings_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_recordings(request)
 
@@ -9194,85 +7696,6 @@ def test_list_recordings_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_recordings_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "post_list_recordings"
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "pre_list_recordings"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.ListRecordingsRequest.pb(service.ListRecordingsRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.ListRecordingsResponse.to_json(
-            service.ListRecordingsResponse()
-        )
-
-        request = service.ListRecordingsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.ListRecordingsResponse()
-
-        client.list_recordings(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_recordings_rest_bad_request(
-    transport: str = "rest", request_type=service.ListRecordingsRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_recordings(request)
 
 
 def test_list_recordings_rest_flattened():
@@ -9303,6 +7726,7 @@ def test_list_recordings_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_recordings(**mock_args)
 
@@ -9390,48 +7814,6 @@ def test_list_recordings_rest_pager(transport: str = "rest"):
         pages = list(client.list_recordings(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.GetTranscriptRequest,
-        dict,
-    ],
-)
-def test_get_transcript_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "conferenceRecords/sample1/transcripts/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = resource.Transcript(
-            name="name_value",
-            state=resource.Transcript.State.STARTED,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = resource.Transcript.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_transcript(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, resource.Transcript)
-    assert response.name == "name_value"
-    assert response.state == resource.Transcript.State.STARTED
 
 
 def test_get_transcript_rest_use_cached_wrapped_rpc():
@@ -9534,6 +7916,7 @@ def test_get_transcript_rest_required_fields(request_type=service.GetTranscriptR
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_transcript(request)
 
@@ -9549,83 +7932,6 @@ def test_get_transcript_rest_unset_required_fields():
 
     unset_fields = transport.get_transcript._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_transcript_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "post_get_transcript"
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_transcript"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.GetTranscriptRequest.pb(service.GetTranscriptRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = resource.Transcript.to_json(resource.Transcript())
-
-        request = service.GetTranscriptRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = resource.Transcript()
-
-        client.get_transcript(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_transcript_rest_bad_request(
-    transport: str = "rest", request_type=service.GetTranscriptRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "conferenceRecords/sample1/transcripts/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_transcript(request)
 
 
 def test_get_transcript_rest_flattened():
@@ -9656,6 +7962,7 @@ def test_get_transcript_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_transcript(**mock_args)
 
@@ -9682,52 +7989,6 @@ def test_get_transcript_rest_flattened_error(transport: str = "rest"):
             service.GetTranscriptRequest(),
             name="name_value",
         )
-
-
-def test_get_transcript_rest_error():
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.ListTranscriptsRequest,
-        dict,
-    ],
-)
-def test_list_transcripts_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.ListTranscriptsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.ListTranscriptsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_transcripts(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListTranscriptsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_transcripts_rest_use_cached_wrapped_rpc():
@@ -9841,6 +8102,7 @@ def test_list_transcripts_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_transcripts(request)
 
@@ -9864,85 +8126,6 @@ def test_list_transcripts_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_transcripts_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "post_list_transcripts"
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "pre_list_transcripts"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.ListTranscriptsRequest.pb(service.ListTranscriptsRequest())
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.ListTranscriptsResponse.to_json(
-            service.ListTranscriptsResponse()
-        )
-
-        request = service.ListTranscriptsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.ListTranscriptsResponse()
-
-        client.list_transcripts(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_transcripts_rest_bad_request(
-    transport: str = "rest", request_type=service.ListTranscriptsRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_transcripts(request)
 
 
 def test_list_transcripts_rest_flattened():
@@ -9973,6 +8156,7 @@ def test_list_transcripts_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_transcripts(**mock_args)
 
@@ -10060,54 +8244,6 @@ def test_list_transcripts_rest_pager(transport: str = "rest"):
         pages = list(client.list_transcripts(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.GetTranscriptEntryRequest,
-        dict,
-    ],
-)
-def test_get_transcript_entry_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "conferenceRecords/sample1/transcripts/sample2/entries/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = resource.TranscriptEntry(
-            name="name_value",
-            participant="participant_value",
-            text="text_value",
-            language_code="language_code_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = resource.TranscriptEntry.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_transcript_entry(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, resource.TranscriptEntry)
-    assert response.name == "name_value"
-    assert response.participant == "participant_value"
-    assert response.text == "text_value"
-    assert response.language_code == "language_code_value"
 
 
 def test_get_transcript_entry_rest_use_cached_wrapped_rpc():
@@ -10216,6 +8352,7 @@ def test_get_transcript_entry_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_transcript_entry(request)
 
@@ -10231,89 +8368,6 @@ def test_get_transcript_entry_rest_unset_required_fields():
 
     unset_fields = transport.get_transcript_entry._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_transcript_entry_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "post_get_transcript_entry"
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_transcript_entry"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.GetTranscriptEntryRequest.pb(
-            service.GetTranscriptEntryRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = resource.TranscriptEntry.to_json(
-            resource.TranscriptEntry()
-        )
-
-        request = service.GetTranscriptEntryRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = resource.TranscriptEntry()
-
-        client.get_transcript_entry(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_transcript_entry_rest_bad_request(
-    transport: str = "rest", request_type=service.GetTranscriptEntryRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "conferenceRecords/sample1/transcripts/sample2/entries/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_transcript_entry(request)
 
 
 def test_get_transcript_entry_rest_flattened():
@@ -10346,6 +8400,7 @@ def test_get_transcript_entry_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_transcript_entry(**mock_args)
 
@@ -10373,52 +8428,6 @@ def test_get_transcript_entry_rest_flattened_error(transport: str = "rest"):
             service.GetTranscriptEntryRequest(),
             name="name_value",
         )
-
-
-def test_get_transcript_entry_rest_error():
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        service.ListTranscriptEntriesRequest,
-        dict,
-    ],
-)
-def test_list_transcript_entries_rest(request_type):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1/transcripts/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = service.ListTranscriptEntriesResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = service.ListTranscriptEntriesResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_transcript_entries(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListTranscriptEntriesPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_transcript_entries_rest_use_cached_wrapped_rpc():
@@ -10535,6 +8544,7 @@ def test_list_transcript_entries_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_transcript_entries(request)
 
@@ -10558,89 +8568,6 @@ def test_list_transcript_entries_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_transcript_entries_rest_interceptors(null_interceptor):
-    transport = transports.ConferenceRecordsServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ConferenceRecordsServiceRestInterceptor(),
-    )
-    client = ConferenceRecordsServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor,
-        "post_list_transcript_entries",
-    ) as post, mock.patch.object(
-        transports.ConferenceRecordsServiceRestInterceptor,
-        "pre_list_transcript_entries",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = service.ListTranscriptEntriesRequest.pb(
-            service.ListTranscriptEntriesRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = service.ListTranscriptEntriesResponse.to_json(
-            service.ListTranscriptEntriesResponse()
-        )
-
-        request = service.ListTranscriptEntriesRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = service.ListTranscriptEntriesResponse()
-
-        client.list_transcript_entries(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_transcript_entries_rest_bad_request(
-    transport: str = "rest", request_type=service.ListTranscriptEntriesRequest
-):
-    client = ConferenceRecordsServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "conferenceRecords/sample1/transcripts/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_transcript_entries(request)
 
 
 def test_list_transcript_entries_rest_flattened():
@@ -10671,6 +8598,7 @@ def test_list_transcript_entries_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_transcript_entries(**mock_args)
 
@@ -10855,18 +8783,2399 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_grpc():
+    transport = ConferenceRecordsServiceClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_conference_record_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_conference_record), "__call__"
+    ) as call:
+        call.return_value = resource.ConferenceRecord()
+        client.get_conference_record(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetConferenceRecordRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_conference_records_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_conference_records), "__call__"
+    ) as call:
+        call.return_value = service.ListConferenceRecordsResponse()
+        client.list_conference_records(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListConferenceRecordsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_participant_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_participant), "__call__") as call:
+        call.return_value = resource.Participant()
+        client.get_participant(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetParticipantRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_participants_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_participants), "__call__"
+    ) as call:
+        call.return_value = service.ListParticipantsResponse()
+        client.list_participants(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListParticipantsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_participant_session_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_participant_session), "__call__"
+    ) as call:
+        call.return_value = resource.ParticipantSession()
+        client.get_participant_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetParticipantSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_participant_sessions_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_participant_sessions), "__call__"
+    ) as call:
+        call.return_value = service.ListParticipantSessionsResponse()
+        client.list_participant_sessions(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListParticipantSessionsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_recording_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_recording), "__call__") as call:
+        call.return_value = resource.Recording()
+        client.get_recording(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetRecordingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_recordings_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_recordings), "__call__") as call:
+        call.return_value = service.ListRecordingsResponse()
+        client.list_recordings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListRecordingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_transcript_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_transcript), "__call__") as call:
+        call.return_value = resource.Transcript()
+        client.get_transcript(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetTranscriptRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_transcripts_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_transcripts), "__call__") as call:
+        call.return_value = service.ListTranscriptsResponse()
+        client.list_transcripts(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTranscriptsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_transcript_entry_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_transcript_entry), "__call__"
+    ) as call:
+        call.return_value = resource.TranscriptEntry()
+        client.get_transcript_entry(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetTranscriptEntryRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_transcript_entries_empty_call_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transcript_entries), "__call__"
+    ) as call:
+        call.return_value = service.ListTranscriptEntriesResponse()
+        client.list_transcript_entries(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTranscriptEntriesRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = ConferenceRecordsServiceAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_conference_record_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_conference_record), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            resource.ConferenceRecord(
+                name="name_value",
+                space="space_value",
+            )
+        )
+        await client.get_conference_record(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetConferenceRecordRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_conference_records_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_conference_records), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListConferenceRecordsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_conference_records(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListConferenceRecordsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_participant_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_participant), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            resource.Participant(
+                name="name_value",
+            )
+        )
+        await client.get_participant(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetParticipantRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_participants_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_participants), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListParticipantsResponse(
+                next_page_token="next_page_token_value",
+                total_size=1086,
+            )
+        )
+        await client.list_participants(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListParticipantsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_participant_session_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_participant_session), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            resource.ParticipantSession(
+                name="name_value",
+            )
+        )
+        await client.get_participant_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetParticipantSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_participant_sessions_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_participant_sessions), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListParticipantSessionsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_participant_sessions(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListParticipantSessionsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_recording_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_recording), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            resource.Recording(
+                name="name_value",
+                state=resource.Recording.State.STARTED,
+            )
+        )
+        await client.get_recording(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetRecordingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_recordings_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_recordings), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListRecordingsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_recordings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListRecordingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_transcript_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_transcript), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            resource.Transcript(
+                name="name_value",
+                state=resource.Transcript.State.STARTED,
+            )
+        )
+        await client.get_transcript(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetTranscriptRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_transcripts_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_transcripts), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListTranscriptsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_transcripts(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTranscriptsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_transcript_entry_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_transcript_entry), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            resource.TranscriptEntry(
+                name="name_value",
+                participant="participant_value",
+                text="text_value",
+                language_code="language_code_value",
+            )
+        )
+        await client.get_transcript_entry(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetTranscriptEntryRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_transcript_entries_empty_call_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transcript_entries), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            service.ListTranscriptEntriesResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_transcript_entries(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTranscriptEntriesRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = ConferenceRecordsServiceClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_get_conference_record_rest_bad_request(
+    request_type=service.GetConferenceRecordRequest,
+):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "conferenceRecords/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_conference_record(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "grpc",
-        "rest",
+        service.GetConferenceRecordRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = ConferenceRecordsServiceClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_get_conference_record_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "conferenceRecords/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = resource.ConferenceRecord(
+            name="name_value",
+            space="space_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = resource.ConferenceRecord.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_conference_record(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, resource.ConferenceRecord)
+    assert response.name == "name_value"
+    assert response.space == "space_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_conference_record_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "post_get_conference_record"
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_conference_record"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.GetConferenceRecordRequest.pb(
+            service.GetConferenceRecordRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = resource.ConferenceRecord.to_json(resource.ConferenceRecord())
+        req.return_value.content = return_value
+
+        request = service.GetConferenceRecordRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = resource.ConferenceRecord()
+
+        client.get_conference_record(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_conference_records_rest_bad_request(
+    request_type=service.ListConferenceRecordsRequest,
+):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_conference_records(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ListConferenceRecordsRequest,
+        dict,
+    ],
+)
+def test_list_conference_records_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.ListConferenceRecordsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.ListConferenceRecordsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_conference_records(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListConferenceRecordsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_conference_records_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor,
+        "post_list_conference_records",
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor,
+        "pre_list_conference_records",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.ListConferenceRecordsRequest.pb(
+            service.ListConferenceRecordsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.ListConferenceRecordsResponse.to_json(
+            service.ListConferenceRecordsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = service.ListConferenceRecordsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.ListConferenceRecordsResponse()
+
+        client.list_conference_records(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_participant_rest_bad_request(request_type=service.GetParticipantRequest):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "conferenceRecords/sample1/participants/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_participant(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.GetParticipantRequest,
+        dict,
+    ],
+)
+def test_get_participant_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "conferenceRecords/sample1/participants/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = resource.Participant(
+            name="name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = resource.Participant.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_participant(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, resource.Participant)
+    assert response.name == "name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_participant_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "post_get_participant"
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_participant"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.GetParticipantRequest.pb(service.GetParticipantRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = resource.Participant.to_json(resource.Participant())
+        req.return_value.content = return_value
+
+        request = service.GetParticipantRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = resource.Participant()
+
+        client.get_participant(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_participants_rest_bad_request(
+    request_type=service.ListParticipantsRequest,
+):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_participants(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ListParticipantsRequest,
+        dict,
+    ],
+)
+def test_list_participants_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.ListParticipantsResponse(
+            next_page_token="next_page_token_value",
+            total_size=1086,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.ListParticipantsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_participants(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListParticipantsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.total_size == 1086
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_participants_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "post_list_participants"
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "pre_list_participants"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.ListParticipantsRequest.pb(
+            service.ListParticipantsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.ListParticipantsResponse.to_json(
+            service.ListParticipantsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = service.ListParticipantsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.ListParticipantsResponse()
+
+        client.list_participants(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_participant_session_rest_bad_request(
+    request_type=service.GetParticipantSessionRequest,
+):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "conferenceRecords/sample1/participants/sample2/participantSessions/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_participant_session(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.GetParticipantSessionRequest,
+        dict,
+    ],
+)
+def test_get_participant_session_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "conferenceRecords/sample1/participants/sample2/participantSessions/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = resource.ParticipantSession(
+            name="name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = resource.ParticipantSession.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_participant_session(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, resource.ParticipantSession)
+    assert response.name == "name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_participant_session_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor,
+        "post_get_participant_session",
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor,
+        "pre_get_participant_session",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.GetParticipantSessionRequest.pb(
+            service.GetParticipantSessionRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = resource.ParticipantSession.to_json(
+            resource.ParticipantSession()
+        )
+        req.return_value.content = return_value
+
+        request = service.GetParticipantSessionRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = resource.ParticipantSession()
+
+        client.get_participant_session(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_participant_sessions_rest_bad_request(
+    request_type=service.ListParticipantSessionsRequest,
+):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1/participants/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_participant_sessions(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ListParticipantSessionsRequest,
+        dict,
+    ],
+)
+def test_list_participant_sessions_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1/participants/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.ListParticipantSessionsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.ListParticipantSessionsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_participant_sessions(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListParticipantSessionsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_participant_sessions_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor,
+        "post_list_participant_sessions",
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor,
+        "pre_list_participant_sessions",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.ListParticipantSessionsRequest.pb(
+            service.ListParticipantSessionsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.ListParticipantSessionsResponse.to_json(
+            service.ListParticipantSessionsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = service.ListParticipantSessionsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.ListParticipantSessionsResponse()
+
+        client.list_participant_sessions(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_recording_rest_bad_request(request_type=service.GetRecordingRequest):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "conferenceRecords/sample1/recordings/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_recording(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.GetRecordingRequest,
+        dict,
+    ],
+)
+def test_get_recording_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "conferenceRecords/sample1/recordings/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = resource.Recording(
+            name="name_value",
+            state=resource.Recording.State.STARTED,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = resource.Recording.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_recording(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, resource.Recording)
+    assert response.name == "name_value"
+    assert response.state == resource.Recording.State.STARTED
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_recording_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "post_get_recording"
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_recording"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.GetRecordingRequest.pb(service.GetRecordingRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = resource.Recording.to_json(resource.Recording())
+        req.return_value.content = return_value
+
+        request = service.GetRecordingRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = resource.Recording()
+
+        client.get_recording(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_recordings_rest_bad_request(request_type=service.ListRecordingsRequest):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_recordings(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ListRecordingsRequest,
+        dict,
+    ],
+)
+def test_list_recordings_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.ListRecordingsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.ListRecordingsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_recordings(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListRecordingsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_recordings_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "post_list_recordings"
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "pre_list_recordings"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.ListRecordingsRequest.pb(service.ListRecordingsRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.ListRecordingsResponse.to_json(
+            service.ListRecordingsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = service.ListRecordingsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.ListRecordingsResponse()
+
+        client.list_recordings(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_transcript_rest_bad_request(request_type=service.GetTranscriptRequest):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "conferenceRecords/sample1/transcripts/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_transcript(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.GetTranscriptRequest,
+        dict,
+    ],
+)
+def test_get_transcript_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "conferenceRecords/sample1/transcripts/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = resource.Transcript(
+            name="name_value",
+            state=resource.Transcript.State.STARTED,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = resource.Transcript.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_transcript(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, resource.Transcript)
+    assert response.name == "name_value"
+    assert response.state == resource.Transcript.State.STARTED
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_transcript_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "post_get_transcript"
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_transcript"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.GetTranscriptRequest.pb(service.GetTranscriptRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = resource.Transcript.to_json(resource.Transcript())
+        req.return_value.content = return_value
+
+        request = service.GetTranscriptRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = resource.Transcript()
+
+        client.get_transcript(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_transcripts_rest_bad_request(request_type=service.ListTranscriptsRequest):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_transcripts(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ListTranscriptsRequest,
+        dict,
+    ],
+)
+def test_list_transcripts_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.ListTranscriptsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.ListTranscriptsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_transcripts(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListTranscriptsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_transcripts_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "post_list_transcripts"
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "pre_list_transcripts"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.ListTranscriptsRequest.pb(service.ListTranscriptsRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.ListTranscriptsResponse.to_json(
+            service.ListTranscriptsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = service.ListTranscriptsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.ListTranscriptsResponse()
+
+        client.list_transcripts(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_transcript_entry_rest_bad_request(
+    request_type=service.GetTranscriptEntryRequest,
+):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "conferenceRecords/sample1/transcripts/sample2/entries/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_transcript_entry(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.GetTranscriptEntryRequest,
+        dict,
+    ],
+)
+def test_get_transcript_entry_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "conferenceRecords/sample1/transcripts/sample2/entries/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = resource.TranscriptEntry(
+            name="name_value",
+            participant="participant_value",
+            text="text_value",
+            language_code="language_code_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = resource.TranscriptEntry.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_transcript_entry(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, resource.TranscriptEntry)
+    assert response.name == "name_value"
+    assert response.participant == "participant_value"
+    assert response.text == "text_value"
+    assert response.language_code == "language_code_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_transcript_entry_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "post_get_transcript_entry"
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor, "pre_get_transcript_entry"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.GetTranscriptEntryRequest.pb(
+            service.GetTranscriptEntryRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = resource.TranscriptEntry.to_json(resource.TranscriptEntry())
+        req.return_value.content = return_value
+
+        request = service.GetTranscriptEntryRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = resource.TranscriptEntry()
+
+        client.get_transcript_entry(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_transcript_entries_rest_bad_request(
+    request_type=service.ListTranscriptEntriesRequest,
+):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1/transcripts/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_transcript_entries(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ListTranscriptEntriesRequest,
+        dict,
+    ],
+)
+def test_list_transcript_entries_rest_call_success(request_type):
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "conferenceRecords/sample1/transcripts/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = service.ListTranscriptEntriesResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = service.ListTranscriptEntriesResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_transcript_entries(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListTranscriptEntriesPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_transcript_entries_rest_interceptors(null_interceptor):
+    transport = transports.ConferenceRecordsServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ConferenceRecordsServiceRestInterceptor(),
+    )
+    client = ConferenceRecordsServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor,
+        "post_list_transcript_entries",
+    ) as post, mock.patch.object(
+        transports.ConferenceRecordsServiceRestInterceptor,
+        "pre_list_transcript_entries",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = service.ListTranscriptEntriesRequest.pb(
+            service.ListTranscriptEntriesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = service.ListTranscriptEntriesResponse.to_json(
+            service.ListTranscriptEntriesResponse()
+        )
+        req.return_value.content = return_value
+
+        request = service.ListTranscriptEntriesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = service.ListTranscriptEntriesResponse()
+
+        client.list_transcript_entries(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_initialize_client_w_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_conference_record_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_conference_record), "__call__"
+    ) as call:
+        client.get_conference_record(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetConferenceRecordRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_conference_records_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_conference_records), "__call__"
+    ) as call:
+        client.list_conference_records(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListConferenceRecordsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_participant_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_participant), "__call__") as call:
+        client.get_participant(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetParticipantRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_participants_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_participants), "__call__"
+    ) as call:
+        client.list_participants(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListParticipantsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_participant_session_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_participant_session), "__call__"
+    ) as call:
+        client.get_participant_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetParticipantSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_participant_sessions_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_participant_sessions), "__call__"
+    ) as call:
+        client.list_participant_sessions(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListParticipantSessionsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_recording_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_recording), "__call__") as call:
+        client.get_recording(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetRecordingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_recordings_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_recordings), "__call__") as call:
+        client.list_recordings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListRecordingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_transcript_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_transcript), "__call__") as call:
+        client.get_transcript(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetTranscriptRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_transcripts_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_transcripts), "__call__") as call:
+        client.list_transcripts(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTranscriptsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_transcript_entry_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_transcript_entry), "__call__"
+    ) as call:
+        client.get_transcript_entry(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.GetTranscriptEntryRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_transcript_entries_empty_call_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_transcript_entries), "__call__"
+    ) as call:
+        client.list_transcript_entries(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ListTranscriptEntriesRequest()
+
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -11647,36 +11956,41 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = ConferenceRecordsServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+def test_transport_close_grpc():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = ConferenceRecordsServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
         async with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = ConferenceRecordsServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = ConferenceRecordsServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

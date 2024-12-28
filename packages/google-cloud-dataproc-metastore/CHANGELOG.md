@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-metastore-v1.16.1...google-cloud-dataproc-metastore-v1.17.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [1.16.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-metastore-v1.16.0...google-cloud-dataproc-metastore-v1.16.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-metastore-v1.15.5...google-cloud-dataproc-metastore-v1.16.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
 ## [1.15.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-metastore-v1.15.4...google-cloud-dataproc-metastore-v1.15.5) (2024-07-30)
 
 

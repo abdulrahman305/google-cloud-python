@@ -4,6 +4,32 @@
 
 [1]: https://pypi.org/project/grafeas/#history
 
+## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/grafeas-v1.12.1...grafeas-v1.13.0) (2024-12-12)
+
+
+### Features
+
+* [Many APIs] Add support for opt-in debug logging ([#13349](https://github.com/googleapis/google-cloud-python/issues/13349)) ([8b9c7bf](https://github.com/googleapis/google-cloud-python/commit/8b9c7bf3bb1c4f0beabd71a45c469fcedb19a2c8))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([8b9c7bf](https://github.com/googleapis/google-cloud-python/commit/8b9c7bf3bb1c4f0beabd71a45c469fcedb19a2c8))
+
+## [1.12.1](https://github.com/googleapis/google-cloud-python/compare/grafeas-v1.12.0...grafeas-v1.12.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13248](https://github.com/googleapis/google-cloud-python/issues/13248)) ([634f3e7](https://github.com/googleapis/google-cloud-python/commit/634f3e740926506654efa82a4f7a8d5f7e3cf6ba))
+
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/grafeas-v1.11.0...grafeas-v1.12.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13212](https://github.com/googleapis/google-cloud-python/issues/13212)) ([94d00a1](https://github.com/googleapis/google-cloud-python/commit/94d00a126aa436513d23b25993b7fdc106809441))
+
 ## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/grafeas-v1.10.1...grafeas-v1.11.0) (2024-07-30)
 
 

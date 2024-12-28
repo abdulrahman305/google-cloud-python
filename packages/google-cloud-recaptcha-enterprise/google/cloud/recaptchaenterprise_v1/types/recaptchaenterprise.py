@@ -68,6 +68,7 @@ __protobuf__ = proto.module(
         "WebKeySettings",
         "AndroidKeySettings",
         "IOSKeySettings",
+        "ExpressKeySettings",
         "AppleDeveloperId",
         "ScoreDistribution",
         "ScoreMetrics",
@@ -81,9 +82,17 @@ __protobuf__ = proto.module(
         "ListRelatedAccountGroupsResponse",
         "SearchRelatedAccountGroupMembershipsRequest",
         "SearchRelatedAccountGroupMembershipsResponse",
+        "AddIpOverrideRequest",
+        "AddIpOverrideResponse",
+        "RemoveIpOverrideRequest",
+        "RemoveIpOverrideResponse",
+        "ListIpOverridesRequest",
+        "ListIpOverridesResponse",
         "RelatedAccountGroupMembership",
         "RelatedAccountGroup",
         "WafSettings",
+        "AssessmentEnvironment",
+        "IpOverrideData",
     },
 )
 
@@ -93,8 +102,8 @@ class CreateAssessmentRequest(proto.Message):
 
     Attributes:
         parent (str):
-            Required. The name of the project in which the assessment
-            will be created, in the format ``projects/{project}``.
+            Required. The name of the project in which the assessment is
+            created, in the format ``projects/{project}``.
         assessment (google.cloud.recaptchaenterprise_v1.types.Assessment):
             Required. The assessment details.
     """
@@ -277,11 +286,11 @@ class AnnotateAssessmentRequest(proto.Message):
             Required. The resource name of the Assessment, in the format
             ``projects/{project}/assessments/{assessment}``.
         annotation (google.cloud.recaptchaenterprise_v1.types.AnnotateAssessmentRequest.Annotation):
-            Optional. The annotation that will be
-            assigned to the Event. This field can be left
-            empty to provide reasons that apply to an event
-            without concluding whether the event is
-            legitimate or fraudulent.
+            Optional. The annotation that is assigned to
+            the Event. This field can be left empty to
+            provide reasons that apply to an event without
+            concluding whether the event is legitimate or
+            fraudulent.
         reasons (MutableSequence[google.cloud.recaptchaenterprise_v1.types.AnnotateAssessmentRequest.Reason]):
             Optional. Reasons for the annotation that are
             assigned to the event.
@@ -680,6 +689,11 @@ class Assessment(proto.Message):
             Output only. Assessment returned when a site key, a token,
             and a phone number as ``user_id`` are provided. Account
             defender and SMS toll fraud protection need to be enabled.
+        assessment_environment (google.cloud.recaptchaenterprise_v1.types.AssessmentEnvironment):
+            Optional. The environment creating the
+            assessment. This describes your environment (the
+            system invoking CreateAssessment), NOT the
+            environment of your user.
     """
 
     name: str = proto.Field(
@@ -736,6 +750,11 @@ class Assessment(proto.Message):
         number=12,
         message="PhoneFraudAssessment",
     )
+    assessment_environment: "AssessmentEnvironment" = proto.Field(
+        proto.MESSAGE,
+        number=14,
+        message="AssessmentEnvironment",
+    )
 
 
 class Event(proto.Message):
@@ -771,7 +790,7 @@ class Event(proto.Message):
         express (bool):
             Optional. Flag for a reCAPTCHA express request for an
             assessment without a token. If enabled, ``site_key`` must
-            reference a SCORE key with WAF feature set to EXPRESS.
+            reference an Express site key.
         requested_uri (str):
             Optional. The URI resource the user requested
             that triggered an assessment.
@@ -788,9 +807,8 @@ class Event(proto.Message):
         firewall_policy_evaluation (bool):
             Optional. Flag for enabling firewall policy
             config assessment. If this flag is enabled, the
-            firewall policy will be evaluated and a
-            suggested firewall action will be returned in
-            the response.
+            firewall policy is evaluated and a suggested
+            firewall action is returned in the response.
         transaction_data (google.cloud.recaptchaenterprise_v1.types.TransactionData):
             Optional. Data describing a payment
             transaction to be assessed. Sending this data
@@ -1297,6 +1315,9 @@ class RiskAnalysis(proto.Message):
             Output only. Extended verdict reasons to be
             used for experimentation only. The set of
             possible reasons is subject to change.
+        challenge (google.cloud.recaptchaenterprise_v1.types.RiskAnalysis.Challenge):
+            Output only. Challenge information for SCORE_AND_CHALLENGE
+            and INVISIBLE keys
     """
 
     class ClassificationReason(proto.Enum):
@@ -1337,6 +1358,25 @@ class RiskAnalysis(proto.Message):
         SUSPECTED_CARDING = 6
         SUSPECTED_CHARGEBACK = 7
 
+    class Challenge(proto.Enum):
+        r"""Challenge information for SCORE_AND_CHALLENGE and INVISIBLE keys
+
+        Values:
+            CHALLENGE_UNSPECIFIED (0):
+                Default unspecified type.
+            NOCAPTCHA (1):
+                No challenge was presented for solving.
+            PASSED (2):
+                A solution was submitted that was correct.
+            FAILED (3):
+                A solution was submitted that was incorrect
+                or otherwise deemed suspicious.
+        """
+        CHALLENGE_UNSPECIFIED = 0
+        NOCAPTCHA = 1
+        PASSED = 2
+        FAILED = 3
+
     score: float = proto.Field(
         proto.FLOAT,
         number=1,
@@ -1349,6 +1389,11 @@ class RiskAnalysis(proto.Message):
     extended_verdict_reasons: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=3,
+    )
+    challenge: Challenge = proto.Field(
+        proto.ENUM,
+        number=4,
+        enum=Challenge,
     )
 
 
@@ -1728,7 +1773,7 @@ class CreateKeyRequest(proto.Message):
 
     Attributes:
         parent (str):
-            Required. The name of the project in which the key will be
+            Required. The name of the project in which the key is
             created, in the format ``projects/{project}``.
         key (google.cloud.recaptchaenterprise_v1.types.Key):
             Required. Information to create a reCAPTCHA
@@ -1752,7 +1797,7 @@ class ListKeysRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The name of the project that contains the keys
-            that will be listed, in the format ``projects/{project}``.
+            that is listed, in the format ``projects/{project}``.
         page_size (int):
             Optional. The maximum number of keys to
             return. Default is 10. Max limit is 1000.
@@ -1840,7 +1885,7 @@ class UpdateKeyRequest(proto.Message):
         update_mask (google.protobuf.field_mask_pb2.FieldMask):
             Optional. The mask to control which fields of
             the key get updated. If the mask is not present,
-            all fields will be updated.
+            all fields are updated.
     """
 
     key: "Key" = proto.Field(
@@ -1875,8 +1920,8 @@ class CreateFirewallPolicyRequest(proto.Message):
 
     Attributes:
         parent (str):
-            Required. The name of the project this policy will apply to,
-            in the format ``projects/{project}``.
+            Required. The name of the project this policy applies to, in
+            the format ``projects/{project}``.
         firewall_policy (google.cloud.recaptchaenterprise_v1.types.FirewallPolicy):
             Required. Information to create the policy.
     """
@@ -1973,7 +2018,7 @@ class UpdateFirewallPolicyRequest(proto.Message):
         update_mask (google.protobuf.field_mask_pb2.FieldMask):
             Optional. The mask to control which fields of
             the policy get updated. If the mask is not
-            present, all fields will be updated.
+            present, all fields are updated.
     """
 
     firewall_policy: "FirewallPolicy" = proto.Field(
@@ -2043,12 +2088,12 @@ class MigrateKeyRequest(proto.Message):
             Enterprise key or migrated key behaves differently than a
             reCAPTCHA (non-Enterprise version) key when you reach a
             quota limit (see
-            https://cloud.google.com/recaptcha-enterprise/quotas#quota_limit).
-            To avoid any disruption of your usage, we check that a
-            billing account is present. If your usage of reCAPTCHA is
-            under the free quota, you can safely skip the billing check
-            and proceed with the migration. See
-            https://cloud.google.com/recaptcha-enterprise/docs/billing-information.
+            https://cloud.google.com/recaptcha/quotas#quota_limit). To
+            avoid any disruption of your usage, we check that a billing
+            account is present. If your usage of reCAPTCHA is under the
+            free quota, you can safely skip the billing check and
+            proceed with the migration. See
+            https://cloud.google.com/recaptcha/docs/billing-information.
     """
 
     name: str = proto.Field(
@@ -2086,14 +2131,14 @@ class Metrics(proto.Message):
         start_time (google.protobuf.timestamp_pb2.Timestamp):
             Inclusive start time aligned to a day (UTC).
         score_metrics (MutableSequence[google.cloud.recaptchaenterprise_v1.types.ScoreMetrics]):
-            Metrics will be continuous and in order by
-            dates, and in the granularity of day. All Key
-            types should have score-based data.
+            Metrics are continuous and in order by dates,
+            and in the granularity of day. All Key types
+            should have score-based data.
         challenge_metrics (MutableSequence[google.cloud.recaptchaenterprise_v1.types.ChallengeMetrics]):
-            Metrics will be continuous and in order by
-            dates, and in the granularity of day. Only
-            challenge-based keys (CHECKBOX, INVISIBLE), will
-            have challenge-based data.
+            Metrics are continuous and in order by dates,
+            and in the granularity of day. Only
+            challenge-based keys (CHECKBOX, INVISIBLE) have
+            challenge-based data.
     """
 
     name: str = proto.Field(
@@ -2170,9 +2215,14 @@ class Key(proto.Message):
             apps.
 
             This field is a member of `oneof`_ ``platform_settings``.
+        express_settings (google.cloud.recaptchaenterprise_v1.types.ExpressKeySettings):
+            Settings for keys that can be used by
+            reCAPTCHA Express.
+
+            This field is a member of `oneof`_ ``platform_settings``.
         labels (MutableMapping[str, str]):
             Optional. See [Creating and managing labels]
-            (https://cloud.google.com/recaptcha-enterprise/docs/labels).
+            (https://cloud.google.com/recaptcha/docs/labels).
         create_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. The timestamp corresponding to
             the creation of this key.
@@ -2209,6 +2259,12 @@ class Key(proto.Message):
         oneof="platform_settings",
         message="IOSKeySettings",
     )
+    express_settings: "ExpressKeySettings" = proto.Field(
+        proto.MESSAGE,
+        number=11,
+        oneof="platform_settings",
+        message="ExpressKeySettings",
+    )
     labels: MutableMapping[str, str] = proto.MapField(
         proto.STRING,
         proto.STRING,
@@ -2236,15 +2292,14 @@ class TestingOptions(proto.Message):
 
     Attributes:
         testing_score (float):
-            Optional. All assessments for this Key will
-            return this score. Must be between 0 (likely not
+            Optional. All assessments for this Key return
+            this score. Must be between 0 (likely not
             legitimate) and 1 (likely legitimate) inclusive.
         testing_challenge (google.cloud.recaptchaenterprise_v1.types.TestingOptions.TestingChallenge):
             Optional. For challenge-based keys only
             (CHECKBOX, INVISIBLE), all challenge requests
-            for this site will return nocaptcha if
-            NOCAPTCHA, or an unsolvable challenge if
-            CHALLENGE.
+            for this site return nocaptcha if NOCAPTCHA, or
+            an unsolvable challenge if CHALLENGE.
     """
 
     class TestingChallenge(proto.Enum):
@@ -2283,8 +2338,8 @@ class WebKeySettings(proto.Message):
 
     Attributes:
         allow_all_domains (bool):
-            Optional. If set to true, it means allowed_domains will not
-            be enforced.
+            Optional. If set to true, it means allowed_domains are not
+            enforced.
         allowed_domains (MutableSequence[str]):
             Optional. Domains or subdomains of websites
             allowed to use the key. All subdomains of an
@@ -2302,10 +2357,10 @@ class WebKeySettings(proto.Message):
             Required. Describes how this key is
             integrated with the website.
         challenge_security_preference (google.cloud.recaptchaenterprise_v1.types.WebKeySettings.ChallengeSecurityPreference):
-            Optional. Settings for the frequency and
-            difficulty at which this key triggers captcha
-            challenges. This should only be specified for
-            IntegrationTypes CHECKBOX and INVISIBLE.
+            Optional. Settings for the frequency and difficulty at which
+            this key triggers captcha challenges. This should only be
+            specified for IntegrationTypes CHECKBOX and INVISIBLE and
+            SCORE_AND_CHALLENGE.
     """
 
     class IntegrationType(proto.Enum):
@@ -2426,12 +2481,11 @@ class IOSKeySettings(proto.Message):
         apple_developer_id (google.cloud.recaptchaenterprise_v1.types.AppleDeveloperId):
             Optional. Apple Developer account details for
             the app that is protected by the reCAPTCHA Key.
-            reCAPTCHA Enterprise leverages platform-specific
-            checks like Apple App Attest and Apple
-            DeviceCheck to protect your app from abuse.
-            Providing these fields allows reCAPTCHA
-            Enterprise to get a better assessment of the
-            integrity of your app.
+            reCAPTCHA leverages platform-specific checks
+            like Apple App Attest and Apple DeviceCheck to
+            protect your app from abuse. Providing these
+            fields allows reCAPTCHA to get a better
+            assessment of the integrity of your app.
     """
 
     allow_all_bundle_ids: bool = proto.Field(
@@ -2447,6 +2501,13 @@ class IOSKeySettings(proto.Message):
         number=3,
         message="AppleDeveloperId",
     )
+
+
+class ExpressKeySettings(proto.Message):
+    r"""Settings specific to keys that can be used for reCAPTCHA
+    Express.
+
+    """
 
 
 class AppleDeveloperId(proto.Message):
@@ -2572,13 +2633,12 @@ class FirewallPolicyAssessment(proto.Message):
     Attributes:
         error (google.rpc.status_pb2.Status):
             Output only. If the processing of a policy config fails, an
-            error will be populated and the firewall_policy will be left
-            empty.
+            error is populated and the firewall_policy is left empty.
         firewall_policy (google.cloud.recaptchaenterprise_v1.types.FirewallPolicy):
             Output only. The policy that matched the
             request. If more than one policy may match, this
             is the first match. If no policy matches the
-            incoming request, the policy field will be left
+            incoming request, the policy field is left
             empty.
     """
 
@@ -2613,30 +2673,28 @@ class FirewallAction(proto.Message):
 
             This field is a member of `oneof`_ ``firewall_action_oneof``.
         block (google.cloud.recaptchaenterprise_v1.types.FirewallAction.BlockAction):
-            This action will deny access to a given page.
-            The user will get an HTTP error code.
+            This action denies access to a given page.
+            The user gets an HTTP error code.
 
             This field is a member of `oneof`_ ``firewall_action_oneof``.
         include_recaptcha_script (google.cloud.recaptchaenterprise_v1.types.FirewallAction.IncludeRecaptchaScriptAction):
-            This action will inject reCAPTCHA JavaScript
-            code into the HTML page returned by the site
-            backend.
+            This action injects reCAPTCHA JavaScript code
+            into the HTML page returned by the site backend.
 
             This field is a member of `oneof`_ ``firewall_action_oneof``.
         redirect (google.cloud.recaptchaenterprise_v1.types.FirewallAction.RedirectAction):
-            This action will redirect the request to a
-            ReCaptcha interstitial to attach a token.
+            This action redirects the request to a
+            reCAPTCHA interstitial to attach a token.
 
             This field is a member of `oneof`_ ``firewall_action_oneof``.
         substitute (google.cloud.recaptchaenterprise_v1.types.FirewallAction.SubstituteAction):
-            This action will transparently serve a
-            different page to an offending user.
+            This action transparently serves a different
+            page to an offending user.
 
             This field is a member of `oneof`_ ``firewall_action_oneof``.
         set_header (google.cloud.recaptchaenterprise_v1.types.FirewallAction.SetHeaderAction):
-            This action will set a custom header but
-            allow the request to continue to the customer
-            backend.
+            This action sets a custom header but allow
+            the request to continue to the customer backend.
 
             This field is a member of `oneof`_ ``firewall_action_oneof``.
     """
@@ -2662,7 +2720,7 @@ class FirewallAction(proto.Message):
 
     class RedirectAction(proto.Message):
         r"""A redirect action returns a 307 (temporary redirect)
-        response, pointing the user to a ReCaptcha interstitial page to
+        response, pointing the user to a reCAPTCHA interstitial page to
         attach a token.
 
         """
@@ -3032,6 +3090,117 @@ class SearchRelatedAccountGroupMembershipsResponse(proto.Message):
     )
 
 
+class AddIpOverrideRequest(proto.Message):
+    r"""The AddIpOverride request message.
+
+    Attributes:
+        name (str):
+            Required. The name of the key to which the IP override is
+            added, in the format ``projects/{project}/keys/{key}``.
+        ip_override_data (google.cloud.recaptchaenterprise_v1.types.IpOverrideData):
+            Required. IP override added to the key.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    ip_override_data: "IpOverrideData" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message="IpOverrideData",
+    )
+
+
+class AddIpOverrideResponse(proto.Message):
+    r"""Response for AddIpOverride."""
+
+
+class RemoveIpOverrideRequest(proto.Message):
+    r"""The RemoveIpOverride request message.
+
+    Attributes:
+        name (str):
+            Required. The name of the key from which the IP override is
+            removed, in the format ``projects/{project}/keys/{key}``.
+        ip_override_data (google.cloud.recaptchaenterprise_v1.types.IpOverrideData):
+            Required. IP override to be removed from the
+            key.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    ip_override_data: "IpOverrideData" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message="IpOverrideData",
+    )
+
+
+class RemoveIpOverrideResponse(proto.Message):
+    r"""Response for RemoveIpOverride."""
+
+
+class ListIpOverridesRequest(proto.Message):
+    r"""The ListIpOverrides request message.
+
+    Attributes:
+        parent (str):
+            Required. The parent key for which the IP overrides are
+            listed, in the format ``projects/{project}/keys/{key}``.
+        page_size (int):
+            Optional. The maximum number of overrides to return. Default
+            is 10. Max limit is 100. If the number of overrides is less
+            than the page_size, all overrides are returned. If the page
+            size is more than 100, it is coerced to 100.
+        page_token (str):
+            Optional. The next_page_token value returned from a previous
+            ListIpOverridesRequest, if any.
+    """
+
+    parent: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    page_size: int = proto.Field(
+        proto.INT32,
+        number=2,
+    )
+    page_token: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+
+
+class ListIpOverridesResponse(proto.Message):
+    r"""Response for ListIpOverrides.
+
+    Attributes:
+        ip_overrides (MutableSequence[google.cloud.recaptchaenterprise_v1.types.IpOverrideData]):
+            IP Overrides details.
+        next_page_token (str):
+            Token to retrieve the next page of results.
+            If this field is empty, no keys remain in the
+            results.
+    """
+
+    @property
+    def raw_page(self):
+        return self
+
+    ip_overrides: MutableSequence["IpOverrideData"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message="IpOverrideData",
+    )
+    next_page_token: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+
+
 class RelatedAccountGroupMembership(proto.Message):
     r"""A membership in a group of related accounts.
 
@@ -3097,7 +3266,7 @@ class WafSettings(proto.Message):
 
     class WafFeature(proto.Enum):
         r"""Supported WAF features. For more information, see
-        https://cloud.google.com/recaptcha-enterprise/docs/usecase#comparison_of_features.
+        https://cloud.google.com/recaptcha/docs/usecase#comparison_of_features.
 
         Values:
             WAF_FEATURE_UNSPECIFIED (0):
@@ -3122,7 +3291,7 @@ class WafSettings(proto.Message):
         EXPRESS = 5
 
     class WafService(proto.Enum):
-        r"""Web Application Firewalls supported by reCAPTCHA Enterprise.
+        r"""Web Application Firewalls supported by reCAPTCHA.
 
         Values:
             WAF_SERVICE_UNSPECIFIED (0):
@@ -3133,11 +3302,14 @@ class WafSettings(proto.Message):
                 Fastly
             CLOUDFLARE (4):
                 Cloudflare
+            AKAMAI (5):
+                Akamai
         """
         WAF_SERVICE_UNSPECIFIED = 0
         CA = 1
         FASTLY = 3
         CLOUDFLARE = 4
+        AKAMAI = 5
 
     waf_service: WafService = proto.Field(
         proto.ENUM,
@@ -3148,6 +3320,83 @@ class WafSettings(proto.Message):
         proto.ENUM,
         number=2,
         enum=WafFeature,
+    )
+
+
+class AssessmentEnvironment(proto.Message):
+    r"""The environment creating the assessment. This describes your
+    environment (the system invoking CreateAssessment), NOT the
+    environment of your user.
+
+    Attributes:
+        client (str):
+            Optional. Identifies the client module
+            initiating the CreateAssessment request. This
+            can be the link to the client module's project.
+            Examples include:
+
+            -
+              "github.com/GoogleCloudPlatform/recaptcha-enterprise-google-tag-manager"
+            -
+              "cloud.google.com/recaptcha/docs/implement-waf-akamai"
+            -
+              "cloud.google.com/recaptcha/docs/implement-waf-cloudflare"
+            - "wordpress.org/plugins/recaptcha-something".
+        version (str):
+            Optional. The version of the client module.
+            For example, "1.0.0".
+    """
+
+    client: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    version: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+
+
+class IpOverrideData(proto.Message):
+    r"""Information about the IP or IP range override.
+
+    Attributes:
+        ip (str):
+            Required. The IP address to override (can be
+            IPv4, IPv6 or CIDR). The IP override must be a
+            valid IPv4 or IPv6 address, or a CIDR range. The
+            IP override must be a public IP address.
+            Example of IPv4: 168.192.5.6
+            Example of IPv6:
+            2001:0000:130F:0000:0000:09C0:876A:130B Example
+            of IPv4 with CIDR: 168.192.5.0/24
+            Example of IPv6 with CIDR: 2001:0DB8:1234::/48
+        override_type (google.cloud.recaptchaenterprise_v1.types.IpOverrideData.OverrideType):
+            Required. Describes the type of IP override.
+    """
+
+    class OverrideType(proto.Enum):
+        r"""Enum that represents the type of IP override.
+
+        Values:
+            OVERRIDE_TYPE_UNSPECIFIED (0):
+                Default override type that indicates this
+                enum hasn't been specified.
+            ALLOW (1):
+                Allowlist the IP address; i.e. give a
+                ``risk_analysis.score`` of 0.9 for all valid assessments.
+        """
+        OVERRIDE_TYPE_UNSPECIFIED = 0
+        ALLOW = 1
+
+    ip: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    override_type: OverrideType = proto.Field(
+        proto.ENUM,
+        number=3,
+        enum=OverrideType,
     )
 
 

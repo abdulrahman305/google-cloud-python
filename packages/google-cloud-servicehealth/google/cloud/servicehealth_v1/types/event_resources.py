@@ -628,11 +628,17 @@ class Product(proto.Message):
         product_name (str):
             Google Cloud product impacted by the event. Example:
             ``"Google Cloud SQL"``
+        id (str):
+            Unique identifier for the product.
     """
 
     product_name: str = proto.Field(
         proto.STRING,
         number=1,
+    )
+    id: str = proto.Field(
+        proto.STRING,
+        number=2,
     )
 
 
@@ -731,7 +737,7 @@ class Asset(proto.Message):
 
 
 class ListEventsRequest(proto.Message):
-    r"""
+    r"""Requests list of events.
 
     Attributes:
         parent (str):
@@ -765,7 +771,8 @@ class ListEventsRequest(proto.Message):
             -  field=value for ``category`` and ``state``\
             -  field <, >, <=, or >= value for ``update_time`` Examples:
                ``category=INCIDENT``,
-               ``update_time>=2000-01-01T11:30:00-04:00``
+               ``update_time>="2000-01-01T11:30:00-04:00"``,
+               ``event_impacts.product.product_name:"Eventarc"``
 
             .. raw:: html
 
@@ -778,7 +785,8 @@ class ListEventsRequest(proto.Message):
             you can include AND and OR expressions explicitly.
 
             Filter is supported for the following fields: ``category``,
-            ``state``, ``update_time``
+            ``state``, ``update_time``,
+            ``event_impacts.product.product_name``
         view (google.cloud.servicehealth_v1.types.EventView):
             Optional. Event fields to include in
             response.
@@ -808,7 +816,7 @@ class ListEventsRequest(proto.Message):
 
 
 class ListEventsResponse(proto.Message):
-    r"""
+    r"""Response to request for listing events.
 
     Attributes:
         events (MutableSequence[google.cloud.servicehealth_v1.types.Event]):
@@ -845,7 +853,7 @@ class ListEventsResponse(proto.Message):
 
 
 class GetEventRequest(proto.Message):
-    r"""Message for getting an event
+    r"""Gets information about a specific event.
 
     Attributes:
         name (str):
@@ -865,7 +873,7 @@ class GetEventRequest(proto.Message):
 
 
 class ListOrganizationEventsRequest(proto.Message):
-    r"""
+    r"""Requests list of events that affect an organization.
 
     Attributes:
         parent (str):
@@ -906,7 +914,7 @@ class ListOrganizationEventsRequest(proto.Message):
             -  field <, >, <=, or >= value for ``update_time``
 
             Examples: ``category=INCIDENT``,
-            ``update_time>=2000-01-01T11:30:00-04:00``
+            ``update_time>="2000-01-01T11:30:00-04:00"``
 
             Multiple filter queries are space-separated. Example:
             ``category=INCIDENT state=ACTIVE``.
@@ -945,7 +953,7 @@ class ListOrganizationEventsRequest(proto.Message):
 
 
 class ListOrganizationEventsResponse(proto.Message):
-    r"""
+    r"""Response to request for listing organization events.
 
     Attributes:
         organization_events (MutableSequence[google.cloud.servicehealth_v1.types.OrganizationEvent]):
@@ -983,7 +991,8 @@ class ListOrganizationEventsResponse(proto.Message):
 
 
 class GetOrganizationEventRequest(proto.Message):
-    r"""
+    r"""Gets information about a specific event affecting an
+    organization.
 
     Attributes:
         name (str):
@@ -1005,7 +1014,8 @@ class GetOrganizationEventRequest(proto.Message):
 
 
 class ListOrganizationImpactsRequest(proto.Message):
-    r"""Message for requesting list of OrganizationImpacts
+    r"""Requests list of projects under an organization affected by
+    an event.
 
     Attributes:
         parent (str):
@@ -1077,7 +1087,8 @@ class ListOrganizationImpactsRequest(proto.Message):
 
 
 class ListOrganizationImpactsResponse(proto.Message):
-    r"""
+    r"""Response to request for listing projects under an
+    organization affected by an event.
 
     Attributes:
         organization_impacts (MutableSequence[google.cloud.servicehealth_v1.types.OrganizationImpact]):
@@ -1116,7 +1127,8 @@ class ListOrganizationImpactsResponse(proto.Message):
 
 
 class GetOrganizationImpactRequest(proto.Message):
-    r"""
+    r"""Gets information about an event that affects a project under
+    an organization.
 
     Attributes:
         name (str):

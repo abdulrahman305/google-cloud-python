@@ -156,6 +156,7 @@ from .types.azure_service import (
 )
 from .types.common_resources import (
     BinaryAuthorization,
+    CloudMonitoringConfig,
     Fleet,
     Jwk,
     LoggingComponentConfig,
@@ -163,8 +164,10 @@ from .types.common_resources import (
     ManagedPrometheusConfig,
     MaxPodsConstraint,
     MonitoringConfig,
+    NodeKubeletConfig,
     NodeTaint,
     OperationMetadata,
+    SecurityPostureConfig,
     WorkloadIdentityConfig,
 )
 
@@ -233,6 +236,7 @@ __all__ = (
     "AzureServicesAuthentication",
     "AzureSshConfig",
     "BinaryAuthorization",
+    "CloudMonitoringConfig",
     "CreateAttachedClusterRequest",
     "CreateAwsClusterRequest",
     "CreateAwsNodePoolRequest",
@@ -291,10 +295,12 @@ __all__ = (
     "ManagedPrometheusConfig",
     "MaxPodsConstraint",
     "MonitoringConfig",
+    "NodeKubeletConfig",
     "NodeTaint",
     "OperationMetadata",
     "ReplicaPlacement",
     "RollbackAwsNodePoolUpdateRequest",
+    "SecurityPostureConfig",
     "SpotConfig",
     "SurgeSettings",
     "UpdateAttachedClusterRequest",

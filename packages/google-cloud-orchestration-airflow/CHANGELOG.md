@@ -1,5 +1,63 @@
 # Changelog
 
+## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.15.1...google-cloud-orchestration-airflow-v1.16.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+
+
+### Documentation
+
+* A comment for field `config` in message `.google.cloud.orchestration.airflow.service.v1beta1.Environment` is changed ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+* A comment for field `data` in message `.google.cloud.orchestration.airflow.service.v1beta1.UserWorkloadsConfigMap` is changed ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+* A comment for field `data` in message `.google.cloud.orchestration.airflow.service.v1beta1.UserWorkloadsSecret` is changed ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+* A comment for field `image_version` in message `.google.cloud.orchestration.airflow.service.v1beta1.SoftwareConfig` is changed ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+* A comment for field `name` in message `.google.cloud.orchestration.airflow.service.v1beta1.Environment` is changed ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+* A comment for field `node_config` in message `.google.cloud.orchestration.airflow.service.v1beta1.EnvironmentConfig` is changed ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+* A comment for field `private_environment_config` in message `.google.cloud.orchestration.airflow.service.v1beta1.EnvironmentConfig` is changed ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+* A comment for field `software_config` in message `.google.cloud.orchestration.airflow.service.v1beta1.EnvironmentConfig` is changed ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+* add examples for kubernetes secret ([f05eae5](https://github.com/googleapis/google-cloud-python/commit/f05eae5180b45ed8d4eab0a7655e8f330f2136af))
+
+## [1.15.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.15.0...google-cloud-orchestration-airflow-v1.15.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13244](https://github.com/googleapis/google-cloud-python/issues/13244)) ([ae1f471](https://github.com/googleapis/google-cloud-python/commit/ae1f47175bf3354f78cb558a844a9cab00317b95))
+
+## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.14.0...google-cloud-orchestration-airflow-v1.15.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13208](https://github.com/googleapis/google-cloud-python/issues/13208)) ([a019409](https://github.com/googleapis/google-cloud-python/commit/a019409a5b5a983402301f1ac175d8b7e45c3818))
+
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.13.1...google-cloud-orchestration-airflow-v1.14.0) (2024-09-16)
+
+
+### Features
+
+* [google-cloud-orchestration-airflow] A new method `CheckUpgrade` is added to service `Environments` ([b624f04](https://github.com/googleapis/google-cloud-python/commit/b624f04da8a9b6461d4714f0f0bcf13f1f35fa31))
+* [google-cloud-orchestration-airflow] add `satisfies_pzi` to `Environment` ([b624f04](https://github.com/googleapis/google-cloud-python/commit/b624f04da8a9b6461d4714f0f0bcf13f1f35fa31))
+* A new field `airflow_metadata_retention_config` is added to message `.google.cloud.orchestration.airflow.service.v1.DataRetentionConfig` ([b624f04](https://github.com/googleapis/google-cloud-python/commit/b624f04da8a9b6461d4714f0f0bcf13f1f35fa31))
+* A new field `satisfies_pzi` is added to message `.google.cloud.orchestration.airflow.service.v1.Environment` ([b624f04](https://github.com/googleapis/google-cloud-python/commit/b624f04da8a9b6461d4714f0f0bcf13f1f35fa31))
+* A new message `AirflowMetadataRetentionPolicyConfig` is added ([b624f04](https://github.com/googleapis/google-cloud-python/commit/b624f04da8a9b6461d4714f0f0bcf13f1f35fa31))
+* A new message `CheckUpgradeRequest` is added ([b624f04](https://github.com/googleapis/google-cloud-python/commit/b624f04da8a9b6461d4714f0f0bcf13f1f35fa31))
+
+
+### Documentation
+
+* A comment for field `maintenance_window` in message `.google.cloud.orchestration.airflow.service.v1.EnvironmentConfig` is changed ([b624f04](https://github.com/googleapis/google-cloud-python/commit/b624f04da8a9b6461d4714f0f0bcf13f1f35fa31))
+* A comment for field `storage_mode` in message `.google.cloud.orchestration.airflow.service.v1.TaskLogsRetentionConfig` is changed ([b624f04](https://github.com/googleapis/google-cloud-python/commit/b624f04da8a9b6461d4714f0f0bcf13f1f35fa31))
+* A comment for message `WorkloadsConfig` is changed ([b624f04](https://github.com/googleapis/google-cloud-python/commit/b624f04da8a9b6461d4714f0f0bcf13f1f35fa31))
+
 ## [1.13.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.13.0...google-cloud-orchestration-airflow-v1.13.1) (2024-07-30)
 
 

@@ -13,40 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.shopping.css_v1.types import css_product_inputs
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseCssProductInputsServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.protobuf import empty_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.shopping.css_v1.types import css_product_inputs
-
-from .base import CssProductInputsServiceTransport
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -77,6 +81,14 @@ class CssProductInputsServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_update_css_product_input(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_css_product_input(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
         transport = CssProductInputsServiceRestTransport(interceptor=MyCustomCssProductInputsServiceInterceptor())
         client = CssProductInputsServiceClient(transport=transport)
 
@@ -86,9 +98,10 @@ class CssProductInputsServiceRestInterceptor:
     def pre_delete_css_product_input(
         self,
         request: css_product_inputs.DeleteCssProductInputRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        css_product_inputs.DeleteCssProductInputRequest, Sequence[Tuple[str, str]]
+        css_product_inputs.DeleteCssProductInputRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for delete_css_product_input
 
@@ -100,9 +113,10 @@ class CssProductInputsServiceRestInterceptor:
     def pre_insert_css_product_input(
         self,
         request: css_product_inputs.InsertCssProductInputRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        css_product_inputs.InsertCssProductInputRequest, Sequence[Tuple[str, str]]
+        css_product_inputs.InsertCssProductInputRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for insert_css_product_input
 
@@ -122,6 +136,32 @@ class CssProductInputsServiceRestInterceptor:
         """
         return response
 
+    def pre_update_css_product_input(
+        self,
+        request: css_product_inputs.UpdateCssProductInputRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        css_product_inputs.UpdateCssProductInputRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for update_css_product_input
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the CssProductInputsService server.
+        """
+        return request, metadata
+
+    def post_update_css_product_input(
+        self, response: css_product_inputs.CssProductInput
+    ) -> css_product_inputs.CssProductInput:
+        """Post-rpc interceptor for update_css_product_input
+
+        Override in a subclass to manipulate the response
+        after it is returned by the CssProductInputsService server but before
+        it is returned to user code.
+        """
+        return response
+
 
 @dataclasses.dataclass
 class CssProductInputsServiceRestStub:
@@ -130,8 +170,8 @@ class CssProductInputsServiceRestStub:
     _interceptor: CssProductInputsServiceRestInterceptor
 
 
-class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
-    """REST backend transport for CssProductInputsService.
+class CssProductInputsServiceRestTransport(_BaseCssProductInputsServiceRestTransport):
+    """REST backend synchronous transport for CssProductInputsService.
 
     Service to use CssProductInput resource.
     This service helps to insert/update/delete CSS Products.
@@ -141,7 +181,6 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -195,21 +234,12 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -220,19 +250,34 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
         self._interceptor = interceptor or CssProductInputsServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _DeleteCssProductInput(CssProductInputsServiceRestStub):
+    class _DeleteCssProductInput(
+        _BaseCssProductInputsServiceRestTransport._BaseDeleteCssProductInput,
+        CssProductInputsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("DeleteCssProductInput")
+            return hash("CssProductInputsServiceRestTransport.DeleteCssProductInput")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -240,7 +285,7 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete css product input method over HTTP.
 
@@ -251,44 +296,63 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=accounts/*/cssProductInputs/*}",
-                },
-            ]
+            http_options = (
+                _BaseCssProductInputsServiceRestTransport._BaseDeleteCssProductInput._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_css_product_input(
                 request, metadata
             )
-            pb_request = css_product_inputs.DeleteCssProductInputRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseCssProductInputsServiceRestTransport._BaseDeleteCssProductInput._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseCssProductInputsServiceRestTransport._BaseDeleteCssProductInput._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.css_v1.CssProductInputsServiceClient.DeleteCssProductInput",
+                    extra={
+                        "serviceName": "google.shopping.css.v1.CssProductInputsService",
+                        "rpcName": "DeleteCssProductInput",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = CssProductInputsServiceRestTransport._DeleteCssProductInput._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -296,21 +360,35 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _InsertCssProductInput(CssProductInputsServiceRestStub):
+    class _InsertCssProductInput(
+        _BaseCssProductInputsServiceRestTransport._BaseInsertCssProductInput,
+        CssProductInputsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("InsertCssProductInput")
+            return hash("CssProductInputsServiceRestTransport.InsertCssProductInput")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "feedId": 0,
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -318,7 +396,7 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> css_product_inputs.CssProductInput:
             r"""Call the insert css product input method over HTTP.
 
@@ -329,8 +407,10 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.css_product_inputs.CssProductInput:
@@ -342,47 +422,62 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=accounts/*}/cssProductInputs:insert",
-                    "body": "css_product_input",
-                },
-            ]
+            http_options = (
+                _BaseCssProductInputsServiceRestTransport._BaseInsertCssProductInput._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_insert_css_product_input(
                 request, metadata
             )
-            pb_request = css_product_inputs.InsertCssProductInputRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseCssProductInputsServiceRestTransport._BaseInsertCssProductInput._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseCssProductInputsServiceRestTransport._BaseInsertCssProductInput._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseCssProductInputsServiceRestTransport._BaseInsertCssProductInput._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.css_v1.CssProductInputsServiceClient.InsertCssProductInput",
+                    extra={
+                        "serviceName": "google.shopping.css.v1.CssProductInputsService",
+                        "rpcName": "InsertCssProductInput",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = CssProductInputsServiceRestTransport._InsertCssProductInput._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -395,7 +490,188 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
             pb_resp = css_product_inputs.CssProductInput.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_insert_css_product_input(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = css_product_inputs.CssProductInput.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.css_v1.CssProductInputsServiceClient.insert_css_product_input",
+                    extra={
+                        "serviceName": "google.shopping.css.v1.CssProductInputsService",
+                        "rpcName": "InsertCssProductInput",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateCssProductInput(
+        _BaseCssProductInputsServiceRestTransport._BaseUpdateCssProductInput,
+        CssProductInputsServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("CssProductInputsServiceRestTransport.UpdateCssProductInput")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: css_product_inputs.UpdateCssProductInputRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> css_product_inputs.CssProductInput:
+            r"""Call the update css product input method over HTTP.
+
+            Args:
+                request (~.css_product_inputs.UpdateCssProductInputRequest):
+                    The request object. Request message for the
+                UpdateCssProductInput method.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.css_product_inputs.CssProductInput:
+                    This resource represents input data
+                you submit for a CSS Product, not the
+                processed CSS Product that you see in
+                CSS Center, in Shopping Ads, or across
+                Google surfaces.
+
+            """
+
+            http_options = (
+                _BaseCssProductInputsServiceRestTransport._BaseUpdateCssProductInput._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_css_product_input(
+                request, metadata
+            )
+            transcoded_request = _BaseCssProductInputsServiceRestTransport._BaseUpdateCssProductInput._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseCssProductInputsServiceRestTransport._BaseUpdateCssProductInput._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseCssProductInputsServiceRestTransport._BaseUpdateCssProductInput._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.css_v1.CssProductInputsServiceClient.UpdateCssProductInput",
+                    extra={
+                        "serviceName": "google.shopping.css.v1.CssProductInputsService",
+                        "rpcName": "UpdateCssProductInput",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = CssProductInputsServiceRestTransport._UpdateCssProductInput._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = css_product_inputs.CssProductInput()
+            pb_resp = css_product_inputs.CssProductInput.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_css_product_input(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = css_product_inputs.CssProductInput.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.css_v1.CssProductInputsServiceClient.update_css_product_input",
+                    extra={
+                        "serviceName": "google.shopping.css.v1.CssProductInputsService",
+                        "rpcName": "UpdateCssProductInput",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property
@@ -416,6 +692,17 @@ class CssProductInputsServiceRestTransport(CssProductInputsServiceTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._InsertCssProductInput(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def update_css_product_input(
+        self,
+    ) -> Callable[
+        [css_product_inputs.UpdateCssProductInputRequest],
+        css_product_inputs.CssProductInput,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateCssProductInput(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def kind(self) -> str:

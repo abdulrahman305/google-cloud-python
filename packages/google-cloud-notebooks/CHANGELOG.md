@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-notebooks-v1.11.1...google-cloud-notebooks-v1.12.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+
+## [1.11.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-notebooks-v1.11.0...google-cloud-notebooks-v1.11.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13244](https://github.com/googleapis/google-cloud-python/issues/13244)) ([ae1f471](https://github.com/googleapis/google-cloud-python/commit/ae1f47175bf3354f78cb558a844a9cab00317b95))
+
+## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-notebooks-v1.10.5...google-cloud-notebooks-v1.11.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13208](https://github.com/googleapis/google-cloud-python/issues/13208)) ([a019409](https://github.com/googleapis/google-cloud-python/commit/a019409a5b5a983402301f1ac175d8b7e45c3818))
+
 ## [1.10.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-notebooks-v1.10.4...google-cloud-notebooks-v1.10.5) (2024-07-30)
 
 

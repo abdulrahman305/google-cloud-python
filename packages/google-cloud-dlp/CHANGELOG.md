@@ -4,6 +4,71 @@
 
 [1]: https://pypi.org/project/google-cloud-dlp/#history
 
+## [3.26.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.25.1...google-cloud-dlp-v3.26.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [3.25.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.25.0...google-cloud-dlp-v3.25.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [3.25.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.24.0...google-cloud-dlp-v3.25.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
+## [3.24.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.23.0...google-cloud-dlp-v3.24.0) (2024-10-23)
+
+
+### Features
+
+* [google-cloud-dlp] discovery of BigQuery snapshots ([#13172](https://github.com/googleapis/google-cloud-python/issues/13172)) ([76e529c](https://github.com/googleapis/google-cloud-python/commit/76e529c958e3fb39679baf50e76b331df7474d0d))
+
+
+### Documentation
+
+* documentation revisions for data profiles ([76e529c](https://github.com/googleapis/google-cloud-python/commit/76e529c958e3fb39679baf50e76b331df7474d0d))
+
+## [3.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.22.0...google-cloud-dlp-v3.23.0) (2024-09-23)
+
+
+### Features
+
+* action for publishing data profiles to SecOps (formelly known as Chronicle) ([afcf7cb](https://github.com/googleapis/google-cloud-python/commit/afcf7cbe57d6e0f183a113ba03bba9c288052969))
+* action for publishing data profiles to Security Command Center ([afcf7cb](https://github.com/googleapis/google-cloud-python/commit/afcf7cbe57d6e0f183a113ba03bba9c288052969))
+* discovery configs for AWS S3 buckets ([afcf7cb](https://github.com/googleapis/google-cloud-python/commit/afcf7cbe57d6e0f183a113ba03bba9c288052969))
+
+
+### Documentation
+
+* small improvements and clarifications ([afcf7cb](https://github.com/googleapis/google-cloud-python/commit/afcf7cbe57d6e0f183a113ba03bba9c288052969))
+
+## [3.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.21.0...google-cloud-dlp-v3.22.0) (2024-08-19)
+
+
+### Features
+
+* file store data profiles can now be filtered by type and storage location ([5dc35c8](https://github.com/googleapis/google-cloud-python/commit/5dc35c8b35091a0ed7f69a0f4f4652a48523efaa))
+* inspect template modified cadence discovery config for Cloud SQL ([5dc35c8](https://github.com/googleapis/google-cloud-python/commit/5dc35c8b35091a0ed7f69a0f4f4652a48523efaa))
+
+
+### Documentation
+
+* small improvements ([5dc35c8](https://github.com/googleapis/google-cloud-python/commit/5dc35c8b35091a0ed7f69a0f4f4652a48523efaa))
+
 ## [3.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.20.0...google-cloud-dlp-v3.21.0) (2024-08-08)
 
 

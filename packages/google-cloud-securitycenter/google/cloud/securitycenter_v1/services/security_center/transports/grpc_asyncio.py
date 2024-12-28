@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -25,8 +29,11 @@ from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.securitycenter_v1.types import (
     bigquery_export,
@@ -66,6 +73,82 @@ from google.cloud.securitycenter_v1.types import valued_resource
 
 from .base import DEFAULT_CLIENT_INFO, SecurityCenterTransport
 from .grpc import SecurityCenterGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.securitycenter.v1.SecurityCenter",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.securitycenter.v1.SecurityCenter",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
@@ -264,7 +347,13 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -287,7 +376,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -318,7 +407,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "bulk_mute_findings" not in self._stubs:
-            self._stubs["bulk_mute_findings"] = self.grpc_channel.unary_unary(
+            self._stubs["bulk_mute_findings"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/BulkMuteFindings",
                 request_serializer=securitycenter_service.BulkMuteFindingsRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -357,7 +446,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "create_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "create_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/CreateSecurityHealthAnalyticsCustomModule",
                 request_serializer=securitycenter_service.CreateSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=gcs_security_health_analytics_custom_module.SecurityHealthAnalyticsCustomModule.deserialize,
@@ -385,7 +474,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_source" not in self._stubs:
-            self._stubs["create_source"] = self.grpc_channel.unary_unary(
+            self._stubs["create_source"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/CreateSource",
                 request_serializer=securitycenter_service.CreateSourceRequest.serialize,
                 response_deserializer=gcs_source.Source.deserialize,
@@ -414,7 +503,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_finding" not in self._stubs:
-            self._stubs["create_finding"] = self.grpc_channel.unary_unary(
+            self._stubs["create_finding"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/CreateFinding",
                 request_serializer=securitycenter_service.CreateFindingRequest.serialize,
                 response_deserializer=gcs_finding.Finding.deserialize,
@@ -443,7 +532,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_mute_config" not in self._stubs:
-            self._stubs["create_mute_config"] = self.grpc_channel.unary_unary(
+            self._stubs["create_mute_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/CreateMuteConfig",
                 request_serializer=securitycenter_service.CreateMuteConfigRequest.serialize,
                 response_deserializer=gcs_mute_config.MuteConfig.deserialize,
@@ -472,7 +561,9 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_notification_config" not in self._stubs:
-            self._stubs["create_notification_config"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "create_notification_config"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/CreateNotificationConfig",
                 request_serializer=securitycenter_service.CreateNotificationConfigRequest.serialize,
                 response_deserializer=gcs_notification_config.NotificationConfig.deserialize,
@@ -500,7 +591,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_mute_config" not in self._stubs:
-            self._stubs["delete_mute_config"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_mute_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/DeleteMuteConfig",
                 request_serializer=securitycenter_service.DeleteMuteConfigRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -529,7 +620,9 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_notification_config" not in self._stubs:
-            self._stubs["delete_notification_config"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "delete_notification_config"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/DeleteNotificationConfig",
                 request_serializer=securitycenter_service.DeleteNotificationConfigRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -564,7 +657,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "delete_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "delete_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/DeleteSecurityHealthAnalyticsCustomModule",
                 request_serializer=securitycenter_service.DeleteSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -593,7 +686,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_simulation" not in self._stubs:
-            self._stubs["get_simulation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_simulation"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetSimulation",
                 request_serializer=securitycenter_service.GetSimulationRequest.serialize,
                 response_deserializer=simulation.Simulation.deserialize,
@@ -622,7 +715,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_valued_resource" not in self._stubs:
-            self._stubs["get_valued_resource"] = self.grpc_channel.unary_unary(
+            self._stubs["get_valued_resource"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetValuedResource",
                 request_serializer=securitycenter_service.GetValuedResourceRequest.serialize,
                 response_deserializer=valued_resource.ValuedResource.deserialize,
@@ -651,7 +744,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_big_query_export" not in self._stubs:
-            self._stubs["get_big_query_export"] = self.grpc_channel.unary_unary(
+            self._stubs["get_big_query_export"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetBigQueryExport",
                 request_serializer=securitycenter_service.GetBigQueryExportRequest.serialize,
                 response_deserializer=bigquery_export.BigQueryExport.deserialize,
@@ -678,7 +771,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_iam_policy" not in self._stubs:
-            self._stubs["get_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["get_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetIamPolicy",
                 request_serializer=iam_policy_pb2.GetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -706,7 +799,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_mute_config" not in self._stubs:
-            self._stubs["get_mute_config"] = self.grpc_channel.unary_unary(
+            self._stubs["get_mute_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetMuteConfig",
                 request_serializer=securitycenter_service.GetMuteConfigRequest.serialize,
                 response_deserializer=mute_config.MuteConfig.deserialize,
@@ -735,7 +828,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_notification_config" not in self._stubs:
-            self._stubs["get_notification_config"] = self.grpc_channel.unary_unary(
+            self._stubs["get_notification_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetNotificationConfig",
                 request_serializer=securitycenter_service.GetNotificationConfigRequest.serialize,
                 response_deserializer=notification_config.NotificationConfig.deserialize,
@@ -764,7 +857,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_organization_settings" not in self._stubs:
-            self._stubs["get_organization_settings"] = self.grpc_channel.unary_unary(
+            self._stubs["get_organization_settings"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetOrganizationSettings",
                 request_serializer=securitycenter_service.GetOrganizationSettingsRequest.serialize,
                 response_deserializer=organization_settings.OrganizationSettings.deserialize,
@@ -799,7 +892,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "get_effective_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "get_effective_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetEffectiveSecurityHealthAnalyticsCustomModule",
                 request_serializer=securitycenter_service.GetEffectiveSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=effective_security_health_analytics_custom_module.EffectiveSecurityHealthAnalyticsCustomModule.deserialize,
@@ -833,7 +926,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "get_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "get_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetSecurityHealthAnalyticsCustomModule",
                 request_serializer=securitycenter_service.GetSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=security_health_analytics_custom_module.SecurityHealthAnalyticsCustomModule.deserialize,
@@ -859,7 +952,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_source" not in self._stubs:
-            self._stubs["get_source"] = self.grpc_channel.unary_unary(
+            self._stubs["get_source"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetSource",
                 request_serializer=securitycenter_service.GetSourceRequest.serialize,
                 response_deserializer=source.Source.deserialize,
@@ -889,7 +982,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "group_assets" not in self._stubs:
-            self._stubs["group_assets"] = self.grpc_channel.unary_unary(
+            self._stubs["group_assets"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GroupAssets",
                 request_serializer=securitycenter_service.GroupAssetsRequest.serialize,
                 response_deserializer=securitycenter_service.GroupAssetsResponse.deserialize,
@@ -924,7 +1017,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "group_findings" not in self._stubs:
-            self._stubs["group_findings"] = self.grpc_channel.unary_unary(
+            self._stubs["group_findings"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GroupFindings",
                 request_serializer=securitycenter_service.GroupFindingsRequest.serialize,
                 response_deserializer=securitycenter_service.GroupFindingsResponse.deserialize,
@@ -953,7 +1046,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_assets" not in self._stubs:
-            self._stubs["list_assets"] = self.grpc_channel.unary_unary(
+            self._stubs["list_assets"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListAssets",
                 request_serializer=securitycenter_service.ListAssetsRequest.serialize,
                 response_deserializer=securitycenter_service.ListAssetsResponse.deserialize,
@@ -994,7 +1087,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         ):
             self._stubs[
                 "list_descendant_security_health_analytics_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListDescendantSecurityHealthAnalyticsCustomModules",
                 request_serializer=securitycenter_service.ListDescendantSecurityHealthAnalyticsCustomModulesRequest.serialize,
                 response_deserializer=securitycenter_service.ListDescendantSecurityHealthAnalyticsCustomModulesResponse.deserialize,
@@ -1026,7 +1119,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_findings" not in self._stubs:
-            self._stubs["list_findings"] = self.grpc_channel.unary_unary(
+            self._stubs["list_findings"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListFindings",
                 request_serializer=securitycenter_service.ListFindingsRequest.serialize,
                 response_deserializer=securitycenter_service.ListFindingsResponse.deserialize,
@@ -1055,7 +1148,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_mute_configs" not in self._stubs:
-            self._stubs["list_mute_configs"] = self.grpc_channel.unary_unary(
+            self._stubs["list_mute_configs"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListMuteConfigs",
                 request_serializer=securitycenter_service.ListMuteConfigsRequest.serialize,
                 response_deserializer=securitycenter_service.ListMuteConfigsResponse.deserialize,
@@ -1084,7 +1177,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_notification_configs" not in self._stubs:
-            self._stubs["list_notification_configs"] = self.grpc_channel.unary_unary(
+            self._stubs["list_notification_configs"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListNotificationConfigs",
                 request_serializer=securitycenter_service.ListNotificationConfigsRequest.serialize,
                 response_deserializer=securitycenter_service.ListNotificationConfigsResponse.deserialize,
@@ -1124,7 +1217,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "list_effective_security_health_analytics_custom_modules" not in self._stubs:
             self._stubs[
                 "list_effective_security_health_analytics_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListEffectiveSecurityHealthAnalyticsCustomModules",
                 request_serializer=securitycenter_service.ListEffectiveSecurityHealthAnalyticsCustomModulesRequest.serialize,
                 response_deserializer=securitycenter_service.ListEffectiveSecurityHealthAnalyticsCustomModulesResponse.deserialize,
@@ -1162,7 +1255,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "list_security_health_analytics_custom_modules" not in self._stubs:
             self._stubs[
                 "list_security_health_analytics_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListSecurityHealthAnalyticsCustomModules",
                 request_serializer=securitycenter_service.ListSecurityHealthAnalyticsCustomModulesRequest.serialize,
                 response_deserializer=securitycenter_service.ListSecurityHealthAnalyticsCustomModulesResponse.deserialize,
@@ -1191,7 +1284,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_sources" not in self._stubs:
-            self._stubs["list_sources"] = self.grpc_channel.unary_unary(
+            self._stubs["list_sources"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListSources",
                 request_serializer=securitycenter_service.ListSourcesRequest.serialize,
                 response_deserializer=securitycenter_service.ListSourcesResponse.deserialize,
@@ -1225,7 +1318,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "run_asset_discovery" not in self._stubs:
-            self._stubs["run_asset_discovery"] = self.grpc_channel.unary_unary(
+            self._stubs["run_asset_discovery"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/RunAssetDiscovery",
                 request_serializer=securitycenter_service.RunAssetDiscoveryRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1253,7 +1346,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "set_finding_state" not in self._stubs:
-            self._stubs["set_finding_state"] = self.grpc_channel.unary_unary(
+            self._stubs["set_finding_state"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/SetFindingState",
                 request_serializer=securitycenter_service.SetFindingStateRequest.serialize,
                 response_deserializer=finding.Finding.deserialize,
@@ -1279,7 +1372,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "set_mute" not in self._stubs:
-            self._stubs["set_mute"] = self.grpc_channel.unary_unary(
+            self._stubs["set_mute"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/SetMute",
                 request_serializer=securitycenter_service.SetMuteRequest.serialize,
                 response_deserializer=finding.Finding.deserialize,
@@ -1306,7 +1399,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "set_iam_policy" not in self._stubs:
-            self._stubs["set_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["set_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/SetIamPolicy",
                 request_serializer=iam_policy_pb2.SetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -1336,7 +1429,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "test_iam_permissions" not in self._stubs:
-            self._stubs["test_iam_permissions"] = self.grpc_channel.unary_unary(
+            self._stubs["test_iam_permissions"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/TestIamPermissions",
                 request_serializer=iam_policy_pb2.TestIamPermissionsRequest.SerializeToString,
                 response_deserializer=iam_policy_pb2.TestIamPermissionsResponse.FromString,
@@ -1371,7 +1464,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "simulate_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "simulate_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/SimulateSecurityHealthAnalyticsCustomModule",
                 request_serializer=securitycenter_service.SimulateSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=securitycenter_service.SimulateSecurityHealthAnalyticsCustomModuleResponse.deserialize,
@@ -1400,7 +1493,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_external_system" not in self._stubs:
-            self._stubs["update_external_system"] = self.grpc_channel.unary_unary(
+            self._stubs["update_external_system"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateExternalSystem",
                 request_serializer=securitycenter_service.UpdateExternalSystemRequest.serialize,
                 response_deserializer=gcs_external_system.ExternalSystem.deserialize,
@@ -1429,7 +1522,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_finding" not in self._stubs:
-            self._stubs["update_finding"] = self.grpc_channel.unary_unary(
+            self._stubs["update_finding"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateFinding",
                 request_serializer=securitycenter_service.UpdateFindingRequest.serialize,
                 response_deserializer=gcs_finding.Finding.deserialize,
@@ -1458,7 +1551,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_mute_config" not in self._stubs:
-            self._stubs["update_mute_config"] = self.grpc_channel.unary_unary(
+            self._stubs["update_mute_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateMuteConfig",
                 request_serializer=securitycenter_service.UpdateMuteConfigRequest.serialize,
                 response_deserializer=gcs_mute_config.MuteConfig.deserialize,
@@ -1488,7 +1581,9 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_notification_config" not in self._stubs:
-            self._stubs["update_notification_config"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "update_notification_config"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateNotificationConfig",
                 request_serializer=securitycenter_service.UpdateNotificationConfigRequest.serialize,
                 response_deserializer=gcs_notification_config.NotificationConfig.deserialize,
@@ -1517,7 +1612,9 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_organization_settings" not in self._stubs:
-            self._stubs["update_organization_settings"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "update_organization_settings"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateOrganizationSettings",
                 request_serializer=securitycenter_service.UpdateOrganizationSettingsRequest.serialize,
                 response_deserializer=gcs_organization_settings.OrganizationSettings.deserialize,
@@ -1557,7 +1654,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "update_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "update_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateSecurityHealthAnalyticsCustomModule",
                 request_serializer=securitycenter_service.UpdateSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=gcs_security_health_analytics_custom_module.SecurityHealthAnalyticsCustomModule.deserialize,
@@ -1585,7 +1682,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_source" not in self._stubs:
-            self._stubs["update_source"] = self.grpc_channel.unary_unary(
+            self._stubs["update_source"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateSource",
                 request_serializer=securitycenter_service.UpdateSourceRequest.serialize,
                 response_deserializer=gcs_source.Source.deserialize,
@@ -1614,7 +1711,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_security_marks" not in self._stubs:
-            self._stubs["update_security_marks"] = self.grpc_channel.unary_unary(
+            self._stubs["update_security_marks"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateSecurityMarks",
                 request_serializer=securitycenter_service.UpdateSecurityMarksRequest.serialize,
                 response_deserializer=gcs_security_marks.SecurityMarks.deserialize,
@@ -1643,7 +1740,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_big_query_export" not in self._stubs:
-            self._stubs["create_big_query_export"] = self.grpc_channel.unary_unary(
+            self._stubs["create_big_query_export"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/CreateBigQueryExport",
                 request_serializer=securitycenter_service.CreateBigQueryExportRequest.serialize,
                 response_deserializer=bigquery_export.BigQueryExport.deserialize,
@@ -1671,7 +1768,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_big_query_export" not in self._stubs:
-            self._stubs["delete_big_query_export"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_big_query_export"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/DeleteBigQueryExport",
                 request_serializer=securitycenter_service.DeleteBigQueryExportRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -1700,7 +1797,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_big_query_export" not in self._stubs:
-            self._stubs["update_big_query_export"] = self.grpc_channel.unary_unary(
+            self._stubs["update_big_query_export"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateBigQueryExport",
                 request_serializer=securitycenter_service.UpdateBigQueryExportRequest.serialize,
                 response_deserializer=bigquery_export.BigQueryExport.deserialize,
@@ -1734,7 +1831,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_big_query_exports" not in self._stubs:
-            self._stubs["list_big_query_exports"] = self.grpc_channel.unary_unary(
+            self._stubs["list_big_query_exports"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListBigQueryExports",
                 request_serializer=securitycenter_service.ListBigQueryExportsRequest.serialize,
                 response_deserializer=securitycenter_service.ListBigQueryExportsResponse.deserialize,
@@ -1772,7 +1869,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "create_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "create_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/CreateEventThreatDetectionCustomModule",
                 request_serializer=securitycenter_service.CreateEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=gcs_event_threat_detection_custom_module.EventThreatDetectionCustomModule.deserialize,
@@ -1807,7 +1904,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "delete_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "delete_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/DeleteEventThreatDetectionCustomModule",
                 request_serializer=securitycenter_service.DeleteEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -1841,7 +1938,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "get_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "get_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetEventThreatDetectionCustomModule",
                 request_serializer=securitycenter_service.GetEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=event_threat_detection_custom_module.EventThreatDetectionCustomModule.deserialize,
@@ -1877,7 +1974,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "list_descendant_event_threat_detection_custom_modules" not in self._stubs:
             self._stubs[
                 "list_descendant_event_threat_detection_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListDescendantEventThreatDetectionCustomModules",
                 request_serializer=securitycenter_service.ListDescendantEventThreatDetectionCustomModulesRequest.serialize,
                 response_deserializer=securitycenter_service.ListDescendantEventThreatDetectionCustomModulesResponse.deserialize,
@@ -1912,7 +2009,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "list_event_threat_detection_custom_modules" not in self._stubs:
             self._stubs[
                 "list_event_threat_detection_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListEventThreatDetectionCustomModules",
                 request_serializer=securitycenter_service.ListEventThreatDetectionCustomModulesRequest.serialize,
                 response_deserializer=securitycenter_service.ListEventThreatDetectionCustomModulesResponse.deserialize,
@@ -1953,7 +2050,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "update_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "update_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateEventThreatDetectionCustomModule",
                 request_serializer=securitycenter_service.UpdateEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=gcs_event_threat_detection_custom_module.EventThreatDetectionCustomModule.deserialize,
@@ -1988,7 +2085,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "validate_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "validate_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ValidateEventThreatDetectionCustomModule",
                 request_serializer=securitycenter_service.ValidateEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=securitycenter_service.ValidateEventThreatDetectionCustomModuleResponse.deserialize,
@@ -2023,7 +2120,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "get_effective_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "get_effective_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetEffectiveEventThreatDetectionCustomModule",
                 request_serializer=securitycenter_service.GetEffectiveEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=effective_event_threat_detection_custom_module.EffectiveEventThreatDetectionCustomModule.deserialize,
@@ -2060,7 +2157,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "list_effective_event_threat_detection_custom_modules" not in self._stubs:
             self._stubs[
                 "list_effective_event_threat_detection_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListEffectiveEventThreatDetectionCustomModules",
                 request_serializer=securitycenter_service.ListEffectiveEventThreatDetectionCustomModulesRequest.serialize,
                 response_deserializer=securitycenter_service.ListEffectiveEventThreatDetectionCustomModulesResponse.deserialize,
@@ -2094,7 +2191,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         if "batch_create_resource_value_configs" not in self._stubs:
             self._stubs[
                 "batch_create_resource_value_configs"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/BatchCreateResourceValueConfigs",
                 request_serializer=securitycenter_service.BatchCreateResourceValueConfigsRequest.serialize,
                 response_deserializer=securitycenter_service.BatchCreateResourceValueConfigsResponse.deserialize,
@@ -2123,7 +2220,9 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_resource_value_config" not in self._stubs:
-            self._stubs["delete_resource_value_config"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "delete_resource_value_config"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/DeleteResourceValueConfig",
                 request_serializer=securitycenter_service.DeleteResourceValueConfigRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -2152,7 +2251,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_resource_value_config" not in self._stubs:
-            self._stubs["get_resource_value_config"] = self.grpc_channel.unary_unary(
+            self._stubs["get_resource_value_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/GetResourceValueConfig",
                 request_serializer=securitycenter_service.GetResourceValueConfigRequest.serialize,
                 response_deserializer=resource_value_config.ResourceValueConfig.deserialize,
@@ -2181,7 +2280,9 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_resource_value_configs" not in self._stubs:
-            self._stubs["list_resource_value_configs"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "list_resource_value_configs"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListResourceValueConfigs",
                 request_serializer=securitycenter_service.ListResourceValueConfigsRequest.serialize,
                 response_deserializer=securitycenter_service.ListResourceValueConfigsResponse.deserialize,
@@ -2211,7 +2312,9 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_resource_value_config" not in self._stubs:
-            self._stubs["update_resource_value_config"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "update_resource_value_config"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/UpdateResourceValueConfig",
                 request_serializer=securitycenter_service.UpdateResourceValueConfigRequest.serialize,
                 response_deserializer=gcs_resource_value_config.ResourceValueConfig.deserialize,
@@ -2241,7 +2344,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_valued_resources" not in self._stubs:
-            self._stubs["list_valued_resources"] = self.grpc_channel.unary_unary(
+            self._stubs["list_valued_resources"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListValuedResources",
                 request_serializer=securitycenter_service.ListValuedResourcesRequest.serialize,
                 response_deserializer=securitycenter_service.ListValuedResourcesResponse.deserialize,
@@ -2271,7 +2374,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_attack_paths" not in self._stubs:
-            self._stubs["list_attack_paths"] = self.grpc_channel.unary_unary(
+            self._stubs["list_attack_paths"] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycenter.v1.SecurityCenter/ListAttackPaths",
                 request_serializer=securitycenter_service.ListAttackPathsRequest.serialize,
                 response_deserializer=securitycenter_service.ListAttackPathsResponse.deserialize,
@@ -2281,67 +2384,67 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.bulk_mute_findings: gapic_v1.method_async.wrap_method(
+            self.bulk_mute_findings: self._wrap_method(
                 self.bulk_mute_findings,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.create_security_health_analytics_custom_module: self._wrap_method(
                 self.create_security_health_analytics_custom_module,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_source: gapic_v1.method_async.wrap_method(
+            self.create_source: self._wrap_method(
                 self.create_source,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_finding: gapic_v1.method_async.wrap_method(
+            self.create_finding: self._wrap_method(
                 self.create_finding,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_mute_config: gapic_v1.method_async.wrap_method(
+            self.create_mute_config: self._wrap_method(
                 self.create_mute_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_notification_config: gapic_v1.method_async.wrap_method(
+            self.create_notification_config: self._wrap_method(
                 self.create_notification_config,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_mute_config: gapic_v1.method_async.wrap_method(
+            self.delete_mute_config: self._wrap_method(
                 self.delete_mute_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_notification_config: gapic_v1.method_async.wrap_method(
+            self.delete_notification_config: self._wrap_method(
                 self.delete_notification_config,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.delete_security_health_analytics_custom_module: self._wrap_method(
                 self.delete_security_health_analytics_custom_module,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_simulation: gapic_v1.method_async.wrap_method(
+            self.get_simulation: self._wrap_method(
                 self.get_simulation,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_valued_resource: gapic_v1.method_async.wrap_method(
+            self.get_valued_resource: self._wrap_method(
                 self.get_valued_resource,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_big_query_export: gapic_v1.method_async.wrap_method(
+            self.get_big_query_export: self._wrap_method(
                 self.get_big_query_export,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_iam_policy: gapic_v1.method_async.wrap_method(
+            self.get_iam_policy: self._wrap_method(
                 self.get_iam_policy,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2356,12 +2459,12 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_mute_config: gapic_v1.method_async.wrap_method(
+            self.get_mute_config: self._wrap_method(
                 self.get_mute_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_notification_config: gapic_v1.method_async.wrap_method(
+            self.get_notification_config: self._wrap_method(
                 self.get_notification_config,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2376,7 +2479,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_organization_settings: gapic_v1.method_async.wrap_method(
+            self.get_organization_settings: self._wrap_method(
                 self.get_organization_settings,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2391,7 +2494,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_effective_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.get_effective_security_health_analytics_custom_module: self._wrap_method(
                 self.get_effective_security_health_analytics_custom_module,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2406,7 +2509,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.get_security_health_analytics_custom_module: self._wrap_method(
                 self.get_security_health_analytics_custom_module,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2421,7 +2524,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_source: gapic_v1.method_async.wrap_method(
+            self.get_source: self._wrap_method(
                 self.get_source,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2436,7 +2539,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.group_assets: gapic_v1.method_async.wrap_method(
+            self.group_assets: self._wrap_method(
                 self.group_assets,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2451,7 +2554,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=480.0,
                 client_info=client_info,
             ),
-            self.group_findings: gapic_v1.method_async.wrap_method(
+            self.group_findings: self._wrap_method(
                 self.group_findings,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2466,7 +2569,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=480.0,
                 client_info=client_info,
             ),
-            self.list_assets: gapic_v1.method_async.wrap_method(
+            self.list_assets: self._wrap_method(
                 self.list_assets,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2481,7 +2584,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=480.0,
                 client_info=client_info,
             ),
-            self.list_descendant_security_health_analytics_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_descendant_security_health_analytics_custom_modules: self._wrap_method(
                 self.list_descendant_security_health_analytics_custom_modules,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2496,7 +2599,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_findings: gapic_v1.method_async.wrap_method(
+            self.list_findings: self._wrap_method(
                 self.list_findings,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2511,12 +2614,12 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=480.0,
                 client_info=client_info,
             ),
-            self.list_mute_configs: gapic_v1.method_async.wrap_method(
+            self.list_mute_configs: self._wrap_method(
                 self.list_mute_configs,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_notification_configs: gapic_v1.method_async.wrap_method(
+            self.list_notification_configs: self._wrap_method(
                 self.list_notification_configs,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2531,7 +2634,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_effective_security_health_analytics_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_effective_security_health_analytics_custom_modules: self._wrap_method(
                 self.list_effective_security_health_analytics_custom_modules,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2546,7 +2649,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_security_health_analytics_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_security_health_analytics_custom_modules: self._wrap_method(
                 self.list_security_health_analytics_custom_modules,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2561,7 +2664,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_sources: gapic_v1.method_async.wrap_method(
+            self.list_sources: self._wrap_method(
                 self.list_sources,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2576,27 +2679,27 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.run_asset_discovery: gapic_v1.method_async.wrap_method(
+            self.run_asset_discovery: self._wrap_method(
                 self.run_asset_discovery,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.set_finding_state: gapic_v1.method_async.wrap_method(
+            self.set_finding_state: self._wrap_method(
                 self.set_finding_state,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.set_mute: gapic_v1.method_async.wrap_method(
+            self.set_mute: self._wrap_method(
                 self.set_mute,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.set_iam_policy: gapic_v1.method_async.wrap_method(
+            self.set_iam_policy: self._wrap_method(
                 self.set_iam_policy,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.test_iam_permissions: gapic_v1.method_async.wrap_method(
+            self.test_iam_permissions: self._wrap_method(
                 self.test_iam_permissions,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -2611,155 +2714,184 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.simulate_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.simulate_security_health_analytics_custom_module: self._wrap_method(
                 self.simulate_security_health_analytics_custom_module,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_external_system: gapic_v1.method_async.wrap_method(
+            self.update_external_system: self._wrap_method(
                 self.update_external_system,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_finding: gapic_v1.method_async.wrap_method(
+            self.update_finding: self._wrap_method(
                 self.update_finding,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_mute_config: gapic_v1.method_async.wrap_method(
+            self.update_mute_config: self._wrap_method(
                 self.update_mute_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_notification_config: gapic_v1.method_async.wrap_method(
+            self.update_notification_config: self._wrap_method(
                 self.update_notification_config,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_organization_settings: gapic_v1.method_async.wrap_method(
+            self.update_organization_settings: self._wrap_method(
                 self.update_organization_settings,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.update_security_health_analytics_custom_module: self._wrap_method(
                 self.update_security_health_analytics_custom_module,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_source: gapic_v1.method_async.wrap_method(
+            self.update_source: self._wrap_method(
                 self.update_source,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_security_marks: gapic_v1.method_async.wrap_method(
+            self.update_security_marks: self._wrap_method(
                 self.update_security_marks,
                 default_timeout=480.0,
                 client_info=client_info,
             ),
-            self.create_big_query_export: gapic_v1.method_async.wrap_method(
+            self.create_big_query_export: self._wrap_method(
                 self.create_big_query_export,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_big_query_export: gapic_v1.method_async.wrap_method(
+            self.delete_big_query_export: self._wrap_method(
                 self.delete_big_query_export,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_big_query_export: gapic_v1.method_async.wrap_method(
+            self.update_big_query_export: self._wrap_method(
                 self.update_big_query_export,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_big_query_exports: gapic_v1.method_async.wrap_method(
+            self.list_big_query_exports: self._wrap_method(
                 self.list_big_query_exports,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.create_event_threat_detection_custom_module: self._wrap_method(
                 self.create_event_threat_detection_custom_module,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.delete_event_threat_detection_custom_module: self._wrap_method(
                 self.delete_event_threat_detection_custom_module,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.get_event_threat_detection_custom_module: self._wrap_method(
                 self.get_event_threat_detection_custom_module,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_descendant_event_threat_detection_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_descendant_event_threat_detection_custom_modules: self._wrap_method(
                 self.list_descendant_event_threat_detection_custom_modules,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_event_threat_detection_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_event_threat_detection_custom_modules: self._wrap_method(
                 self.list_event_threat_detection_custom_modules,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.update_event_threat_detection_custom_module: self._wrap_method(
                 self.update_event_threat_detection_custom_module,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.validate_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.validate_event_threat_detection_custom_module: self._wrap_method(
                 self.validate_event_threat_detection_custom_module,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_effective_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.get_effective_event_threat_detection_custom_module: self._wrap_method(
                 self.get_effective_event_threat_detection_custom_module,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_effective_event_threat_detection_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_effective_event_threat_detection_custom_modules: self._wrap_method(
                 self.list_effective_event_threat_detection_custom_modules,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.batch_create_resource_value_configs: gapic_v1.method_async.wrap_method(
+            self.batch_create_resource_value_configs: self._wrap_method(
                 self.batch_create_resource_value_configs,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_resource_value_config: gapic_v1.method_async.wrap_method(
+            self.delete_resource_value_config: self._wrap_method(
                 self.delete_resource_value_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_resource_value_config: gapic_v1.method_async.wrap_method(
+            self.get_resource_value_config: self._wrap_method(
                 self.get_resource_value_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_resource_value_configs: gapic_v1.method_async.wrap_method(
+            self.list_resource_value_configs: self._wrap_method(
                 self.list_resource_value_configs,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_resource_value_config: gapic_v1.method_async.wrap_method(
+            self.update_resource_value_config: self._wrap_method(
                 self.update_resource_value_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_valued_resources: gapic_v1.method_async.wrap_method(
+            self.list_valued_resources: self._wrap_method(
                 self.list_valued_resources,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_attack_paths: gapic_v1.method_async.wrap_method(
+            self.list_attack_paths: self._wrap_method(
                 self.list_attack_paths,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -2771,7 +2903,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -2788,7 +2920,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -2805,7 +2937,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -2824,7 +2956,7 @@ class SecurityCenterGrpcAsyncIOTransport(SecurityCenterTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,

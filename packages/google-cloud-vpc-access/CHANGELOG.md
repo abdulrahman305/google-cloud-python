@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vpc-access-v1.11.1...google-cloud-vpc-access-v1.12.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([cf4d0e0](https://github.com/googleapis/google-cloud-python/commit/cf4d0e0ddd6d9d8808bde59d8b62acb4ff7f1750))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([cf4d0e0](https://github.com/googleapis/google-cloud-python/commit/cf4d0e0ddd6d9d8808bde59d8b62acb4ff7f1750))
+
+## [1.11.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vpc-access-v1.11.0...google-cloud-vpc-access-v1.11.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13247](https://github.com/googleapis/google-cloud-python/issues/13247)) ([5adc8b7](https://github.com/googleapis/google-cloud-python/commit/5adc8b7d2cc8ab9707ab5a65f15270c125cee051))
+
+## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vpc-access-v1.10.5...google-cloud-vpc-access-v1.11.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13210](https://github.com/googleapis/google-cloud-python/issues/13210)) ([0b62ac6](https://github.com/googleapis/google-cloud-python/commit/0b62ac6aa99bd3259a088097630f2bd1f06825e6))
+
 ## [1.10.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vpc-access-v1.10.4...google-cloud-vpc-access-v1.10.5) (2024-07-30)
 
 

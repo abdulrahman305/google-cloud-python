@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.10.1...google-cloud-dms-v1.11.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [1.10.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.10.0...google-cloud-dms-v1.10.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([59c4287](https://github.com/googleapis/google-cloud-python/commit/59c42878386ee08d1717b73e47d33d76cfb38ba0))
+
+## [1.10.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.9.5...google-cloud-dms-v1.10.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13202](https://github.com/googleapis/google-cloud-python/issues/13202)) ([5b1f2f3](https://github.com/googleapis/google-cloud-python/commit/5b1f2f3a81ed171b643812e67a7ed179b9b703ea))
+
 ## [1.9.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.9.4...google-cloud-dms-v1.9.5) (2024-07-30)
 
 

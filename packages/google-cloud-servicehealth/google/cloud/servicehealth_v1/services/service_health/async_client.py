@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -52,6 +52,15 @@ from google.cloud.servicehealth_v1.types import event_resources
 from .client import ServiceHealthClient
 from .transports.base import DEFAULT_CLIENT_INFO, ServiceHealthTransport
 from .transports.grpc_asyncio import ServiceHealthGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class ServiceHealthAsyncClient:
@@ -202,9 +211,7 @@ class ServiceHealthAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(ServiceHealthClient).get_transport_class, type(ServiceHealthClient)
-    )
+    get_transport_class = ServiceHealthClient.get_transport_class
 
     def __init__(
         self,
@@ -272,6 +279,28 @@ class ServiceHealthAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.cloud.servicehealth_v1.ServiceHealthAsyncClient`.",
+                extra={
+                    "serviceName": "google.cloud.servicehealth.v1.ServiceHealth",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.cloud.servicehealth.v1.ServiceHealth",
+                    "credentialsType": None,
+                },
+            )
+
     async def list_events(
         self,
         request: Optional[Union[event_resources.ListEventsRequest, dict]] = None,
@@ -279,7 +308,7 @@ class ServiceHealthAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListEventsAsyncPager:
         r"""Lists events under a given project and location.
 
@@ -312,7 +341,7 @@ class ServiceHealthAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.servicehealth_v1.types.ListEventsRequest, dict]]):
-                The request object.
+                The request object. Requests list of events.
             parent (:class:`str`):
                 Required. Parent value using the form
                 ``projects/{project_id}/locations/{location}/events``.
@@ -329,11 +358,15 @@ class ServiceHealthAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.servicehealth_v1.services.service_health.pagers.ListEventsAsyncPager:
+                Response to request for listing
+                events.
                 Iterating over this object will yield
                 results and resolve additional pages
                 automatically.
@@ -403,7 +436,7 @@ class ServiceHealthAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> event_resources.Event:
         r"""Retrieves a resource containing information about an
         event.
@@ -436,7 +469,8 @@ class ServiceHealthAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.servicehealth_v1.types.GetEventRequest, dict]]):
-                The request object. Message for getting an event
+                The request object. Gets information about a specific
+                event.
             name (:class:`str`):
                 Required. Unique name of the event in this scope
                 including project and location using the form
@@ -453,8 +487,10 @@ class ServiceHealthAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.servicehealth_v1.types.Event:
@@ -520,7 +556,7 @@ class ServiceHealthAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListOrganizationEventsAsyncPager:
         r"""Lists organization events under a given organization
         and location.
@@ -554,7 +590,8 @@ class ServiceHealthAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.servicehealth_v1.types.ListOrganizationEventsRequest, dict]]):
-                The request object.
+                The request object. Requests list of events that affect
+                an organization.
             parent (:class:`str`):
                 Required. Parent value using the form
                 ``organizations/{organization_id}/locations/{location}/organizationEvents``.
@@ -573,11 +610,15 @@ class ServiceHealthAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.servicehealth_v1.services.service_health.pagers.ListOrganizationEventsAsyncPager:
+                Response to request for listing
+                organization events.
                 Iterating over this object will yield
                 results and resolve additional pages
                 automatically.
@@ -649,7 +690,7 @@ class ServiceHealthAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> event_resources.OrganizationEvent:
         r"""Retrieves a resource containing information about an
         event affecting an organization .
@@ -682,7 +723,8 @@ class ServiceHealthAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.servicehealth_v1.types.GetOrganizationEventRequest, dict]]):
-                The request object.
+                The request object. Gets information about a specific
+                event affecting an organization.
             name (:class:`str`):
                 Required. Unique name of the event in this scope
                 including organization and event ID using the form
@@ -700,8 +742,10 @@ class ServiceHealthAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.servicehealth_v1.types.OrganizationEvent:
@@ -767,7 +811,7 @@ class ServiceHealthAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListOrganizationImpactsAsyncPager:
         r"""Lists assets impacted by organization events under a
         given organization and location.
@@ -801,8 +845,8 @@ class ServiceHealthAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.servicehealth_v1.types.ListOrganizationImpactsRequest, dict]]):
-                The request object. Message for requesting list of
-                OrganizationImpacts
+                The request object. Requests list of projects under an
+                organization affected by an event.
             parent (:class:`str`):
                 Required. Parent value using the form
                 ``organizations/{organization_id}/locations/{location}/organizationImpacts``.
@@ -818,11 +862,17 @@ class ServiceHealthAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.servicehealth_v1.services.service_health.pagers.ListOrganizationImpactsAsyncPager:
+                Response to request for listing
+                projects under an organization affected
+                by an event.
+
                 Iterating over this object will yield
                 results and resolve additional pages
                 automatically.
@@ -894,7 +944,7 @@ class ServiceHealthAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> event_resources.OrganizationImpact:
         r"""Retrieves a resource containing information about
         impact to an asset under an organization affected by a
@@ -928,7 +978,8 @@ class ServiceHealthAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.servicehealth_v1.types.GetOrganizationImpactRequest, dict]]):
-                The request object.
+                The request object. Gets information about an event that
+                affects a project under an organization.
             name (:class:`str`):
                 Required. Name of the resource using the form
                 ``organizations/{organization_id}/locations/global/organizationImpacts/{organization_impact_id}``.
@@ -948,8 +999,10 @@ class ServiceHealthAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.servicehealth_v1.types.OrganizationImpact:
@@ -1011,7 +1064,7 @@ class ServiceHealthAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.Location:
         r"""Gets information about a location.
 
@@ -1022,8 +1075,10 @@ class ServiceHealthAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.Location:
                 Location object.
@@ -1036,11 +1091,7 @@ class ServiceHealthAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.get_location,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.get_location]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -1068,7 +1119,7 @@ class ServiceHealthAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.ListLocationsResponse:
         r"""Lists information about the supported locations for this service.
 
@@ -1079,8 +1130,10 @@ class ServiceHealthAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.ListLocationsResponse:
                 Response message for ``ListLocations`` method.
@@ -1093,11 +1146,7 @@ class ServiceHealthAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.list_locations,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.list_locations]
 
         # Certain fields should be provided within the metadata header;
         # add these here.

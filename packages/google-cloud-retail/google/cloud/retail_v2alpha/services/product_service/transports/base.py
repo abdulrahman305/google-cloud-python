@@ -28,7 +28,7 @@ from google.oauth2 import service_account  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.cloud.retail_v2alpha import gapic_version as package_version
-from google.cloud.retail_v2alpha.types import import_config
+from google.cloud.retail_v2alpha.types import export_config, import_config
 from google.cloud.retail_v2alpha.types import product
 from google.cloud.retail_v2alpha.types import product as gcr_product
 from google.cloud.retail_v2alpha.types import product_service, purge_config
@@ -179,6 +179,11 @@ class ProductServiceTransport(abc.ABC):
                 default_timeout=300.0,
                 client_info=client_info,
             ),
+            self.export_products: gapic_v1.method.wrap_method(
+                self.export_products,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.set_inventory: gapic_v1.method.wrap_method(
                 self.set_inventory,
                 default_timeout=None,
@@ -201,6 +206,16 @@ class ProductServiceTransport(abc.ABC):
             ),
             self.remove_local_inventories: gapic_v1.method.wrap_method(
                 self.remove_local_inventories,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: gapic_v1.method.wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: gapic_v1.method.wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -282,6 +297,15 @@ class ProductServiceTransport(abc.ABC):
         self,
     ) -> Callable[
         [import_config.ImportProductsRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def export_products(
+        self,
+    ) -> Callable[
+        [export_config.ExportProductsRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()

@@ -22,19 +22,11 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.longrunning import operations_pb2  # type: ignore
-from google.oauth2 import service_account
+from google.api_core import api_core_version
 from google.protobuf import json_format
 import grpc
 from grpc.experimental import aio
@@ -44,6 +36,23 @@ import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
 
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.longrunning import operations_pb2  # type: ignore
+from google.oauth2 import service_account
+
 from google.ads.admanager_v1.services.custom_targeting_key_service import (
     CustomTargetingKeyServiceClient,
     pagers,
@@ -51,12 +60,27 @@ from google.ads.admanager_v1.services.custom_targeting_key_service import (
 )
 from google.ads.admanager_v1.types import (
     custom_targeting_key_enums,
+    custom_targeting_key_messages,
     custom_targeting_key_service,
 )
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -312,89 +336,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         CustomTargetingKeyServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            CustomTargetingKeyServiceClient,
-            transports.CustomTargetingKeyServiceRestTransport,
-            "rest",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1015,67 +956,6 @@ def test_custom_targeting_key_service_client_client_options_credentials_file(
         )
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        custom_targeting_key_service.GetCustomTargetingKeyRequest,
-        dict,
-    ],
-)
-def test_get_custom_targeting_key_rest(request_type):
-    client = CustomTargetingKeyServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "networks/sample1/customTargetingKeys/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = custom_targeting_key_service.CustomTargetingKey(
-            name="name_value",
-            custom_targeting_key_id=2451,
-            ad_tag_name="ad_tag_name_value",
-            display_name="display_name_value",
-            type_=custom_targeting_key_enums.CustomTargetingKeyTypeEnum.CustomTargetingKeyType.PREDEFINED,
-            status=custom_targeting_key_enums.CustomTargetingKeyStatusEnum.CustomTargetingKeyStatus.ACTIVE,
-            reportable_type=custom_targeting_key_enums.CustomTargetingKeyReportableTypeEnum.CustomTargetingKeyReportableType.OFF,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = custom_targeting_key_service.CustomTargetingKey.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_custom_targeting_key(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, custom_targeting_key_service.CustomTargetingKey)
-    assert response.name == "name_value"
-    assert response.custom_targeting_key_id == 2451
-    assert response.ad_tag_name == "ad_tag_name_value"
-    assert response.display_name == "display_name_value"
-    assert (
-        response.type_
-        == custom_targeting_key_enums.CustomTargetingKeyTypeEnum.CustomTargetingKeyType.PREDEFINED
-    )
-    assert (
-        response.status
-        == custom_targeting_key_enums.CustomTargetingKeyStatusEnum.CustomTargetingKeyStatus.ACTIVE
-    )
-    assert (
-        response.reportable_type
-        == custom_targeting_key_enums.CustomTargetingKeyReportableTypeEnum.CustomTargetingKeyReportableType.OFF
-    )
-
-
 def test_get_custom_targeting_key_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -1157,7 +1037,7 @@ def test_get_custom_targeting_key_rest_required_fields(
     request = request_type(**request_init)
 
     # Designate an appropriate value for the returned response.
-    return_value = custom_targeting_key_service.CustomTargetingKey()
+    return_value = custom_targeting_key_messages.CustomTargetingKey()
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(Session, "request") as req:
         # We need to mock transcode() because providing default values
@@ -1178,13 +1058,14 @@ def test_get_custom_targeting_key_rest_required_fields(
             response_value.status_code = 200
 
             # Convert return value to protobuf type
-            return_value = custom_targeting_key_service.CustomTargetingKey.pb(
+            return_value = custom_targeting_key_messages.CustomTargetingKey.pb(
                 return_value
             )
             json_return_value = json_format.MessageToJson(return_value)
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_custom_targeting_key(request)
 
@@ -1202,92 +1083,6 @@ def test_get_custom_targeting_key_rest_unset_required_fields():
     assert set(unset_fields) == (set(()) & set(("name",)))
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_custom_targeting_key_rest_interceptors(null_interceptor):
-    transport = transports.CustomTargetingKeyServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.CustomTargetingKeyServiceRestInterceptor(),
-    )
-    client = CustomTargetingKeyServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.CustomTargetingKeyServiceRestInterceptor,
-        "post_get_custom_targeting_key",
-    ) as post, mock.patch.object(
-        transports.CustomTargetingKeyServiceRestInterceptor,
-        "pre_get_custom_targeting_key",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = custom_targeting_key_service.GetCustomTargetingKeyRequest.pb(
-            custom_targeting_key_service.GetCustomTargetingKeyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            custom_targeting_key_service.CustomTargetingKey.to_json(
-                custom_targeting_key_service.CustomTargetingKey()
-            )
-        )
-
-        request = custom_targeting_key_service.GetCustomTargetingKeyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = custom_targeting_key_service.CustomTargetingKey()
-
-        client.get_custom_targeting_key(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_custom_targeting_key_rest_bad_request(
-    transport: str = "rest",
-    request_type=custom_targeting_key_service.GetCustomTargetingKeyRequest,
-):
-    client = CustomTargetingKeyServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "networks/sample1/customTargetingKeys/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_custom_targeting_key(request)
-
-
 def test_get_custom_targeting_key_rest_flattened():
     client = CustomTargetingKeyServiceClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -1297,7 +1092,7 @@ def test_get_custom_targeting_key_rest_flattened():
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = custom_targeting_key_service.CustomTargetingKey()
+        return_value = custom_targeting_key_messages.CustomTargetingKey()
 
         # get arguments that satisfy an http rule for this method
         sample_request = {"name": "networks/sample1/customTargetingKeys/sample2"}
@@ -1312,10 +1107,11 @@ def test_get_custom_targeting_key_rest_flattened():
         response_value = Response()
         response_value.status_code = 200
         # Convert return value to protobuf type
-        return_value = custom_targeting_key_service.CustomTargetingKey.pb(return_value)
+        return_value = custom_targeting_key_messages.CustomTargetingKey.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_custom_targeting_key(**mock_args)
 
@@ -1342,56 +1138,6 @@ def test_get_custom_targeting_key_rest_flattened_error(transport: str = "rest"):
             custom_targeting_key_service.GetCustomTargetingKeyRequest(),
             name="name_value",
         )
-
-
-def test_get_custom_targeting_key_rest_error():
-    client = CustomTargetingKeyServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        custom_targeting_key_service.ListCustomTargetingKeysRequest,
-        dict,
-    ],
-)
-def test_list_custom_targeting_keys_rest(request_type):
-    client = CustomTargetingKeyServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "networks/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = custom_targeting_key_service.ListCustomTargetingKeysResponse(
-            next_page_token="next_page_token_value",
-            total_size=1086,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = custom_targeting_key_service.ListCustomTargetingKeysResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_custom_targeting_keys(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListCustomTargetingKeysPager)
-    assert response.next_page_token == "next_page_token_value"
-    assert response.total_size == 1086
 
 
 def test_list_custom_targeting_keys_rest_use_cached_wrapped_rpc():
@@ -1515,6 +1261,7 @@ def test_list_custom_targeting_keys_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_custom_targeting_keys(request)
 
@@ -1541,94 +1288,6 @@ def test_list_custom_targeting_keys_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_custom_targeting_keys_rest_interceptors(null_interceptor):
-    transport = transports.CustomTargetingKeyServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.CustomTargetingKeyServiceRestInterceptor(),
-    )
-    client = CustomTargetingKeyServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.CustomTargetingKeyServiceRestInterceptor,
-        "post_list_custom_targeting_keys",
-    ) as post, mock.patch.object(
-        transports.CustomTargetingKeyServiceRestInterceptor,
-        "pre_list_custom_targeting_keys",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = custom_targeting_key_service.ListCustomTargetingKeysRequest.pb(
-            custom_targeting_key_service.ListCustomTargetingKeysRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            custom_targeting_key_service.ListCustomTargetingKeysResponse.to_json(
-                custom_targeting_key_service.ListCustomTargetingKeysResponse()
-            )
-        )
-
-        request = custom_targeting_key_service.ListCustomTargetingKeysRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = (
-            custom_targeting_key_service.ListCustomTargetingKeysResponse()
-        )
-
-        client.list_custom_targeting_keys(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_custom_targeting_keys_rest_bad_request(
-    transport: str = "rest",
-    request_type=custom_targeting_key_service.ListCustomTargetingKeysRequest,
-):
-    client = CustomTargetingKeyServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "networks/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_custom_targeting_keys(request)
 
 
 def test_list_custom_targeting_keys_rest_flattened():
@@ -1661,6 +1320,7 @@ def test_list_custom_targeting_keys_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_custom_targeting_keys(**mock_args)
 
@@ -1703,9 +1363,9 @@ def test_list_custom_targeting_keys_rest_pager(transport: str = "rest"):
         response = (
             custom_targeting_key_service.ListCustomTargetingKeysResponse(
                 custom_targeting_keys=[
-                    custom_targeting_key_service.CustomTargetingKey(),
-                    custom_targeting_key_service.CustomTargetingKey(),
-                    custom_targeting_key_service.CustomTargetingKey(),
+                    custom_targeting_key_messages.CustomTargetingKey(),
+                    custom_targeting_key_messages.CustomTargetingKey(),
+                    custom_targeting_key_messages.CustomTargetingKey(),
                 ],
                 next_page_token="abc",
             ),
@@ -1715,14 +1375,14 @@ def test_list_custom_targeting_keys_rest_pager(transport: str = "rest"):
             ),
             custom_targeting_key_service.ListCustomTargetingKeysResponse(
                 custom_targeting_keys=[
-                    custom_targeting_key_service.CustomTargetingKey(),
+                    custom_targeting_key_messages.CustomTargetingKey(),
                 ],
                 next_page_token="ghi",
             ),
             custom_targeting_key_service.ListCustomTargetingKeysResponse(
                 custom_targeting_keys=[
-                    custom_targeting_key_service.CustomTargetingKey(),
-                    custom_targeting_key_service.CustomTargetingKey(),
+                    custom_targeting_key_messages.CustomTargetingKey(),
+                    custom_targeting_key_messages.CustomTargetingKey(),
                 ],
             ),
         )
@@ -1747,7 +1407,7 @@ def test_list_custom_targeting_keys_rest_pager(transport: str = "rest"):
         results = list(pager)
         assert len(results) == 6
         assert all(
-            isinstance(i, custom_targeting_key_service.CustomTargetingKey)
+            isinstance(i, custom_targeting_key_messages.CustomTargetingKey)
             for i in results
         )
 
@@ -1831,17 +1491,405 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_rest():
+    transport = CustomTargetingKeyServiceClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_get_custom_targeting_key_rest_bad_request(
+    request_type=custom_targeting_key_service.GetCustomTargetingKeyRequest,
+):
+    client = CustomTargetingKeyServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "networks/sample1/customTargetingKeys/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_custom_targeting_key(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "rest",
+        custom_targeting_key_service.GetCustomTargetingKeyRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = CustomTargetingKeyServiceClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_get_custom_targeting_key_rest_call_success(request_type):
+    client = CustomTargetingKeyServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "networks/sample1/customTargetingKeys/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = custom_targeting_key_messages.CustomTargetingKey(
+            name="name_value",
+            custom_targeting_key_id=2451,
+            ad_tag_name="ad_tag_name_value",
+            display_name="display_name_value",
+            type_=custom_targeting_key_enums.CustomTargetingKeyTypeEnum.CustomTargetingKeyType.PREDEFINED,
+            status=custom_targeting_key_enums.CustomTargetingKeyStatusEnum.CustomTargetingKeyStatus.ACTIVE,
+            reportable_type=custom_targeting_key_enums.CustomTargetingKeyReportableTypeEnum.CustomTargetingKeyReportableType.OFF,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = custom_targeting_key_messages.CustomTargetingKey.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_custom_targeting_key(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, custom_targeting_key_messages.CustomTargetingKey)
+    assert response.name == "name_value"
+    assert response.custom_targeting_key_id == 2451
+    assert response.ad_tag_name == "ad_tag_name_value"
+    assert response.display_name == "display_name_value"
+    assert (
+        response.type_
+        == custom_targeting_key_enums.CustomTargetingKeyTypeEnum.CustomTargetingKeyType.PREDEFINED
+    )
+    assert (
+        response.status
+        == custom_targeting_key_enums.CustomTargetingKeyStatusEnum.CustomTargetingKeyStatus.ACTIVE
+    )
+    assert (
+        response.reportable_type
+        == custom_targeting_key_enums.CustomTargetingKeyReportableTypeEnum.CustomTargetingKeyReportableType.OFF
+    )
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_custom_targeting_key_rest_interceptors(null_interceptor):
+    transport = transports.CustomTargetingKeyServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.CustomTargetingKeyServiceRestInterceptor(),
+    )
+    client = CustomTargetingKeyServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.CustomTargetingKeyServiceRestInterceptor,
+        "post_get_custom_targeting_key",
+    ) as post, mock.patch.object(
+        transports.CustomTargetingKeyServiceRestInterceptor,
+        "pre_get_custom_targeting_key",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = custom_targeting_key_service.GetCustomTargetingKeyRequest.pb(
+            custom_targeting_key_service.GetCustomTargetingKeyRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = custom_targeting_key_messages.CustomTargetingKey.to_json(
+            custom_targeting_key_messages.CustomTargetingKey()
+        )
+        req.return_value.content = return_value
+
+        request = custom_targeting_key_service.GetCustomTargetingKeyRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = custom_targeting_key_messages.CustomTargetingKey()
+
+        client.get_custom_targeting_key(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_custom_targeting_keys_rest_bad_request(
+    request_type=custom_targeting_key_service.ListCustomTargetingKeysRequest,
+):
+    client = CustomTargetingKeyServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "networks/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_custom_targeting_keys(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        custom_targeting_key_service.ListCustomTargetingKeysRequest,
+        dict,
+    ],
+)
+def test_list_custom_targeting_keys_rest_call_success(request_type):
+    client = CustomTargetingKeyServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "networks/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = custom_targeting_key_service.ListCustomTargetingKeysResponse(
+            next_page_token="next_page_token_value",
+            total_size=1086,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = custom_targeting_key_service.ListCustomTargetingKeysResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_custom_targeting_keys(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListCustomTargetingKeysPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.total_size == 1086
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_custom_targeting_keys_rest_interceptors(null_interceptor):
+    transport = transports.CustomTargetingKeyServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.CustomTargetingKeyServiceRestInterceptor(),
+    )
+    client = CustomTargetingKeyServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.CustomTargetingKeyServiceRestInterceptor,
+        "post_list_custom_targeting_keys",
+    ) as post, mock.patch.object(
+        transports.CustomTargetingKeyServiceRestInterceptor,
+        "pre_list_custom_targeting_keys",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = custom_targeting_key_service.ListCustomTargetingKeysRequest.pb(
+            custom_targeting_key_service.ListCustomTargetingKeysRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = (
+            custom_targeting_key_service.ListCustomTargetingKeysResponse.to_json(
+                custom_targeting_key_service.ListCustomTargetingKeysResponse()
+            )
+        )
+        req.return_value.content = return_value
+
+        request = custom_targeting_key_service.ListCustomTargetingKeysRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = (
+            custom_targeting_key_service.ListCustomTargetingKeysResponse()
+        )
+
+        client.list_custom_targeting_keys(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_operation_rest_bad_request(
+    request_type=operations_pb2.GetOperationRequest,
+):
+    client = CustomTargetingKeyServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict(
+        {"name": "networks/sample1/operations/reports/runs/sample2"}, request
+    )
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.GetOperationRequest,
+        dict,
+    ],
+)
+def test_get_operation_rest(request_type):
+    client = CustomTargetingKeyServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "networks/sample1/operations/reports/runs/sample2"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.get_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.Operation)
+
+
+def test_initialize_client_w_rest():
+    client = CustomTargetingKeyServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_custom_targeting_key_empty_call_rest():
+    client = CustomTargetingKeyServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_custom_targeting_key), "__call__"
+    ) as call:
+        client.get_custom_targeting_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = custom_targeting_key_service.GetCustomTargetingKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_custom_targeting_keys_empty_call_rest():
+    client = CustomTargetingKeyServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_custom_targeting_keys), "__call__"
+    ) as call:
+        client.list_custom_targeting_keys(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = custom_targeting_key_service.ListCustomTargetingKeysRequest()
+
+        assert args[0] == request_msg
 
 
 def test_custom_targeting_key_service_base_transport_error():
@@ -2185,79 +2233,16 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-def test_get_operation_rest_bad_request(
-    transport: str = "rest", request_type=operations_pb2.GetOperationRequest
-):
+def test_transport_close_rest():
     client = CustomTargetingKeyServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
-    request = request_type()
-    request = json_format.ParseDict(
-        {"name": "networks/sample1/operations/reports/exports/sample2"}, request
-    )
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_operation(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        operations_pb2.GetOperationRequest,
-        dict,
-    ],
-)
-def test_get_operation_rest(request_type):
-    client = CustomTargetingKeyServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "networks/sample1/operations/reports/exports/sample2"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.get_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, operations_pb2.Operation)
-
-
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-    }
-
-    for transport, close_name in transports.items():
-        client = CustomTargetingKeyServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

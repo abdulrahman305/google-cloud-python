@@ -646,7 +646,7 @@ class DocumentInfo(proto.Message):
         name (str):
             The [Document][google.cloud.discoveryengine.v1.Document]
             resource full name, of the form:
-            ``projects/{project_id}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}``
+            ``projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}``
 
             This field is a member of `oneof`_ ``document_descriptor``.
         uri (str):
@@ -671,6 +671,9 @@ class DocumentInfo(proto.Message):
             The promotion IDs associated with this
             Document. Currently, this field is restricted to
             at most one ID.
+        joined (bool):
+            Output only. Whether the referenced Document
+            can be found in the data store.
     """
 
     id: str = proto.Field(
@@ -696,6 +699,10 @@ class DocumentInfo(proto.Message):
     promotion_ids: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=4,
+    )
+    joined: bool = proto.Field(
+        proto.BOOL,
+        number=5,
     )
 
 

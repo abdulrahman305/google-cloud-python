@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.3.16](https://github.com/googleapis/google-cloud-python/compare/google-maps-addressvalidation-v0.3.15...google-maps-addressvalidation-v0.3.16) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([cf4d0e0](https://github.com/googleapis/google-cloud-python/commit/cf4d0e0ddd6d9d8808bde59d8b62acb4ff7f1750))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([cf4d0e0](https://github.com/googleapis/google-cloud-python/commit/cf4d0e0ddd6d9d8808bde59d8b62acb4ff7f1750))
+
+## [0.3.15](https://github.com/googleapis/google-cloud-python/compare/google-maps-addressvalidation-v0.3.14...google-maps-addressvalidation-v0.3.15) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13247](https://github.com/googleapis/google-cloud-python/issues/13247)) ([5adc8b7](https://github.com/googleapis/google-cloud-python/commit/5adc8b7d2cc8ab9707ab5a65f15270c125cee051))
+
+## [0.3.14](https://github.com/googleapis/google-cloud-python/compare/google-maps-addressvalidation-v0.3.13...google-maps-addressvalidation-v0.3.14) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13211](https://github.com/googleapis/google-cloud-python/issues/13211)) ([f712162](https://github.com/googleapis/google-cloud-python/commit/f712162c01f065da29fffbbed1e856a1f3876b1b))
+
 ## [0.3.13](https://github.com/googleapis/google-cloud-python/compare/google-maps-addressvalidation-v0.3.12...google-maps-addressvalidation-v0.3.13) (2024-07-30)
 
 

@@ -265,16 +265,26 @@ class Runnable(proto.Message):
             to understand the logs. If not provided the
             index of the runnable will be used for outputs.
         ignore_exit_status (bool):
-            Normally, a non-zero exit status causes the
-            Task to fail. This flag allows execution of
-            other Runnables to continue instead.
+            Normally, a runnable that returns a non-zero exit status
+            fails and causes the task to fail. However, you can set this
+            field to ``true`` to allow the task to continue executing
+            its other runnables even if this runnable fails.
         background (bool):
-            This flag allows a Runnable to continue
-            running in the background while the Task
-            executes subsequent Runnables. This is useful to
-            provide services to other Runnables (or to
-            provide debugging support tools like SSH
-            servers).
+            Normally, a runnable that doesn't exit causes its task to
+            fail. However, you can set this field to ``true`` to
+            configure a background runnable. Background runnables are
+            allowed continue running in the background while the task
+            executes subsequent runnables. For example, background
+            runnables are useful for providing services to other
+            runnables or providing debugging-support tools like SSH
+            servers.
+
+            Specifically, background runnables are killed automatically
+            (if they have not already exited) a short time after all
+            foreground runnables have completed. Even though this is
+            likely to result in a non-zero exit status for the
+            background runnable, these automatic kills are not treated
+            as task failures.
         always_run (bool):
             By default, after a Runnable fails, no further Runnable are
             executed. This flag indicates that this Runnable must be run
@@ -301,32 +311,38 @@ class Runnable(proto.Message):
 
         Attributes:
             image_uri (str):
-                The URI to pull the container image from.
+                Required. The URI to pull the container image
+                from.
             commands (MutableSequence[str]):
-                Overrides the ``CMD`` specified in the container. If there
-                is an ENTRYPOINT (either in the container image or with the
-                entrypoint field below) then commands are appended as
-                arguments to the ENTRYPOINT.
+                Required for some container images. Overrides the ``CMD``
+                specified in the container. If there is an ``ENTRYPOINT``
+                (either in the container image or with the ``entrypoint``
+                field below) then these commands are appended as arguments
+                to the ``ENTRYPOINT``.
             entrypoint (str):
-                Overrides the ``ENTRYPOINT`` specified in the container.
+                Required for some container images. Overrides the
+                ``ENTRYPOINT`` specified in the container.
             volumes (MutableSequence[str]):
                 Volumes to mount (bind mount) from the host machine files or
-                directories into the container, formatted to match docker
-                run's --volume option, e.g. /foo:/bar, or /foo:/bar:ro
+                directories into the container, formatted to match
+                ``--volume`` option for the ``docker run`` command—for
+                example, ``/foo:/bar`` or ``/foo:/bar:ro``.
 
                 If the ``TaskSpec.Volumes`` field is specified but this
                 field is not, Batch will mount each volume from the host
                 machine to the container with the same mount path by
                 default. In this case, the default mount option for
-                containers will be read-only (ro) for existing persistent
-                disks and read-write (rw) for other volume types, regardless
-                of the original mount options specified in
+                containers will be read-only (``ro``) for existing
+                persistent disks and read-write (``rw``) for other volume
+                types, regardless of the original mount options specified in
                 ``TaskSpec.Volumes``. If you need different mount settings,
                 you can explicitly configure them in this field.
             options (str):
-                Arbitrary additional options to include in
-                the "docker run" command when running this
-                container, e.g. "--network host".
+                Required for some container images. Arbitrary additional
+                options to include in the ``docker run`` command when
+                running this container—for example, ``--network host``. For
+                the ``--volume`` option, use the ``volumes`` field for the
+                container.
             block_external_network (bool):
                 If set to true, external network access to and from
                 container will be blocked, containers that are with
@@ -443,28 +459,32 @@ class Runnable(proto.Message):
 
         Attributes:
             path (str):
-                Script file path on the host VM.
+                The path to a script file that is accessible from the host
+                VM(s).
 
-                To specify an interpreter, please add a
-                ``#!<interpreter>``\ (also known as `shebang
-                line <https://en.wikipedia.org/wiki/Shebang_(Unix)>`__) as
-                the first line of the file.(For example, to execute the
-                script using bash, ``#!/bin/bash`` should be the first line
-                of the file. To execute the script using\ ``Python3``,
-                ``#!/usr/bin/env python3`` should be the first line of the
-                file.) Otherwise, the file will by default be executed by
-                ``/bin/sh``.
+                Unless the script file supports the default ``#!/bin/sh``
+                shell interpreter, you must specify an interpreter by
+                including a [shebang
+                line](https://en.wikipedia.org/wiki/Shebang_(Unix) as the
+                first line of the file. For example, to execute the script
+                using bash, include ``#!/bin/bash`` as the first line of the
+                file. Alternatively, to execute the script using Python3,
+                include ``#!/usr/bin/env python3`` as the first line of the
+                file.
 
                 This field is a member of `oneof`_ ``command``.
             text (str):
-                Shell script text.
+                The text for a script.
 
-                To specify an interpreter, please add a
-                ``#!<interpreter>\n`` at the beginning of the text.(For
-                example, to execute the script using bash, ``#!/bin/bash\n``
-                should be added. To execute the script using\ ``Python3``,
-                ``#!/usr/bin/env python3\n`` should be added.) Otherwise,
-                the script will by default be executed by ``/bin/sh``.
+                Unless the script text supports the default ``#!/bin/sh``
+                shell interpreter, you must specify an interpreter by
+                including a [shebang
+                line](https://en.wikipedia.org/wiki/Shebang_(Unix) at the
+                beginning of the text. For example, to execute the script
+                using bash, include ``#!/bin/bash\n`` at the beginning of
+                the text. Alternatively, to execute the script using
+                Python3, include ``#!/usr/bin/env python3\n`` at the
+                beginning of the text.
 
                 This field is a member of `oneof`_ ``command``.
         """
@@ -481,8 +501,9 @@ class Runnable(proto.Message):
         )
 
     class Barrier(proto.Message):
-        r"""Barrier runnable blocks until all tasks in a taskgroup reach
-        it.
+        r"""A barrier runnable automatically blocks the execution of
+        subsequent runnables until all the tasks in the task group reach
+        the barrier.
 
         Attributes:
             name (str):
@@ -552,18 +573,18 @@ class TaskSpec(proto.Message):
 
     Attributes:
         runnables (MutableSequence[google.cloud.batch_v1.types.Runnable]):
-            The sequence of scripts or containers to run for this Task.
-            Each Task using this TaskSpec executes its list of runnables
-            in order. The Task succeeds if all of its runnables either
-            exit with a zero status or any that exit with a non-zero
-            status have the ignore_exit_status flag.
+            Required. The sequence of one or more runnables (executable
+            scripts, executable containers, and/or barriers) for each
+            task in this task group to run. Each task runs this list of
+            runnables in order. For a task to succeed, all of its script
+            and container runnables each must meet at least one of the
+            following conditions:
 
-            Background runnables are killed automatically (if they have
-            not already exited) a short time after all foreground
-            runnables have completed. Even though this is likely to
-            result in a non-zero exit status for the background
-            runnable, these automatic kills are not treated as Task
-            failures.
+            -  The runnable exited with a zero status.
+            -  The runnable didn't finish, but you enabled its
+               ``background`` subfield.
+            -  The runnable exited with a non-zero status, but you
+               enabled its ``ignore_exit_status`` subfield.
         compute_resource (google.cloud.batch_v1.types.ComputeResource):
             ComputeResource requirements.
         max_run_duration (google.protobuf.duration_pb2.Duration):

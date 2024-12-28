@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.6.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-multicloud-v0.6.15...google-cloud-gke-multicloud-v0.6.16) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [0.6.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-multicloud-v0.6.14...google-cloud-gke-multicloud-v0.6.15) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13243](https://github.com/googleapis/google-cloud-python/issues/13243)) ([d794dec](https://github.com/googleapis/google-cloud-python/commit/d794dec5eff5f23a1ff926012bf9e6cad719e020))
+
+## [0.6.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-multicloud-v0.6.13...google-cloud-gke-multicloud-v0.6.14) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13207](https://github.com/googleapis/google-cloud-python/issues/13207)) ([ceb9be8](https://github.com/googleapis/google-cloud-python/commit/ceb9be8f89ac7355d842bac1d77b2926eb0b649c))
+
+## [0.6.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-multicloud-v0.6.12...google-cloud-gke-multicloud-v0.6.13) (2024-09-16)
+
+
+### Features
+
+* An optional field `kubelet_config` in message `.google.cloud.gkemulticloud.v1.AwsNodePool` is added ([33834de](https://github.com/googleapis/google-cloud-python/commit/33834de6d9eeced6da30f3fcbeb4e1029e07cf18))
+* An optional field `security_posture_config` in message `.google.cloud.gkemulticloud.v1.AttachedCluster` is added ([33834de](https://github.com/googleapis/google-cloud-python/commit/33834de6d9eeced6da30f3fcbeb4e1029e07cf18))
+
 ## [0.6.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-multicloud-v0.6.11...google-cloud-gke-multicloud-v0.6.12) (2024-07-30)
 
 

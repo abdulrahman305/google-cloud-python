@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.10...google-shopping-css-v0.1.11) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([74833d3](https://github.com/googleapis/google-cloud-python/commit/74833d3e77bb5869bd9f2290c23be7ccaa20193f))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([74833d3](https://github.com/googleapis/google-cloud-python/commit/74833d3e77bb5869bd9f2290c23be7ccaa20193f))
+
+
+### Documentation
+
+* fix comment on list account labels ([74833d3](https://github.com/googleapis/google-cloud-python/commit/74833d3e77bb5869bd9f2290c23be7ccaa20193f))
+
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.9...google-shopping-css-v0.1.10) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13247](https://github.com/googleapis/google-cloud-python/issues/13247)) ([5adc8b7](https://github.com/googleapis/google-cloud-python/commit/5adc8b7d2cc8ab9707ab5a65f15270c125cee051))
+
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.8...google-shopping-css-v0.1.9) (2024-10-24)
+
+
+### Features
+
+* [google-shopping-css] A new field `headline_offer_installment` is added to message `.google.shopping.css.v1.Attributes` ([a58483b](https://github.com/googleapis/google-cloud-python/commit/a58483bb35af03727b6c7dec0dbb27dba4b62c1d))
+* A new enum `SubscriptionPeriod` is added ([a58483b](https://github.com/googleapis/google-cloud-python/commit/a58483bb35af03727b6c7dec0dbb27dba4b62c1d))
+* A new field `headline_offer_subscription_cost` is added to message `.google.shopping.css.v1.Attributes` ([a58483b](https://github.com/googleapis/google-cloud-python/commit/a58483bb35af03727b6c7dec0dbb27dba4b62c1d))
+* A new message `HeadlineOfferInstallment` is added ([a58483b](https://github.com/googleapis/google-cloud-python/commit/a58483bb35af03727b6c7dec0dbb27dba4b62c1d))
+* A new message `HeadlineOfferSubscriptionCost` is added ([a58483b](https://github.com/googleapis/google-cloud-python/commit/a58483bb35af03727b6c7dec0dbb27dba4b62c1d))
+* Add support for Python 3.13 ([a58483b](https://github.com/googleapis/google-cloud-python/commit/a58483bb35af03727b6c7dec0dbb27dba4b62c1d))
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.7...google-shopping-css-v0.1.8) (2024-08-22)
+
+
+### Documentation
+
+* [google-shopping-css] update `Certification` field descriptions ([#13027](https://github.com/googleapis/google-cloud-python/issues/13027)) ([70e2dd5](https://github.com/googleapis/google-cloud-python/commit/70e2dd5f024dd5c94a5e02b442bbab7e6e5f38fe))
+
 ## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.6...google-shopping-css-v0.1.7) (2024-07-30)
 
 

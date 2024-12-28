@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -21,13 +25,92 @@ from google.api_core import gapic_v1, grpc_helpers_async
 from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.language_v1.types import language_service
 
 from .base import DEFAULT_CLIENT_INFO, LanguageServiceTransport
 from .grpc import LanguageServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.language.v1.LanguageService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.language.v1.LanguageService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
@@ -226,7 +309,13 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -261,7 +350,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "analyze_sentiment" not in self._stubs:
-            self._stubs["analyze_sentiment"] = self.grpc_channel.unary_unary(
+            self._stubs["analyze_sentiment"] = self._logged_channel.unary_unary(
                 "/google.cloud.language.v1.LanguageService/AnalyzeSentiment",
                 request_serializer=language_service.AnalyzeSentimentRequest.serialize,
                 response_deserializer=language_service.AnalyzeSentimentResponse.deserialize,
@@ -293,7 +382,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "analyze_entities" not in self._stubs:
-            self._stubs["analyze_entities"] = self.grpc_channel.unary_unary(
+            self._stubs["analyze_entities"] = self._logged_channel.unary_unary(
                 "/google.cloud.language.v1.LanguageService/AnalyzeEntities",
                 request_serializer=language_service.AnalyzeEntitiesRequest.serialize,
                 response_deserializer=language_service.AnalyzeEntitiesResponse.deserialize,
@@ -325,7 +414,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "analyze_entity_sentiment" not in self._stubs:
-            self._stubs["analyze_entity_sentiment"] = self.grpc_channel.unary_unary(
+            self._stubs["analyze_entity_sentiment"] = self._logged_channel.unary_unary(
                 "/google.cloud.language.v1.LanguageService/AnalyzeEntitySentiment",
                 request_serializer=language_service.AnalyzeEntitySentimentRequest.serialize,
                 response_deserializer=language_service.AnalyzeEntitySentimentResponse.deserialize,
@@ -356,7 +445,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "analyze_syntax" not in self._stubs:
-            self._stubs["analyze_syntax"] = self.grpc_channel.unary_unary(
+            self._stubs["analyze_syntax"] = self._logged_channel.unary_unary(
                 "/google.cloud.language.v1.LanguageService/AnalyzeSyntax",
                 request_serializer=language_service.AnalyzeSyntaxRequest.serialize,
                 response_deserializer=language_service.AnalyzeSyntaxResponse.deserialize,
@@ -385,7 +474,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "classify_text" not in self._stubs:
-            self._stubs["classify_text"] = self.grpc_channel.unary_unary(
+            self._stubs["classify_text"] = self._logged_channel.unary_unary(
                 "/google.cloud.language.v1.LanguageService/ClassifyText",
                 request_serializer=language_service.ClassifyTextRequest.serialize,
                 response_deserializer=language_service.ClassifyTextResponse.deserialize,
@@ -415,7 +504,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "moderate_text" not in self._stubs:
-            self._stubs["moderate_text"] = self.grpc_channel.unary_unary(
+            self._stubs["moderate_text"] = self._logged_channel.unary_unary(
                 "/google.cloud.language.v1.LanguageService/ModerateText",
                 request_serializer=language_service.ModerateTextRequest.serialize,
                 response_deserializer=language_service.ModerateTextResponse.deserialize,
@@ -446,7 +535,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "annotate_text" not in self._stubs:
-            self._stubs["annotate_text"] = self.grpc_channel.unary_unary(
+            self._stubs["annotate_text"] = self._logged_channel.unary_unary(
                 "/google.cloud.language.v1.LanguageService/AnnotateText",
                 request_serializer=language_service.AnnotateTextRequest.serialize,
                 response_deserializer=language_service.AnnotateTextResponse.deserialize,
@@ -456,7 +545,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.analyze_sentiment: gapic_v1.method_async.wrap_method(
+            self.analyze_sentiment: self._wrap_method(
                 self.analyze_sentiment,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -471,7 +560,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.analyze_entities: gapic_v1.method_async.wrap_method(
+            self.analyze_entities: self._wrap_method(
                 self.analyze_entities,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -486,7 +575,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.analyze_entity_sentiment: gapic_v1.method_async.wrap_method(
+            self.analyze_entity_sentiment: self._wrap_method(
                 self.analyze_entity_sentiment,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -501,7 +590,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.analyze_syntax: gapic_v1.method_async.wrap_method(
+            self.analyze_syntax: self._wrap_method(
                 self.analyze_syntax,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -516,7 +605,7 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.classify_text: gapic_v1.method_async.wrap_method(
+            self.classify_text: self._wrap_method(
                 self.classify_text,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -531,12 +620,12 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.moderate_text: gapic_v1.method_async.wrap_method(
+            self.moderate_text: self._wrap_method(
                 self.moderate_text,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.annotate_text: gapic_v1.method_async.wrap_method(
+            self.annotate_text: self._wrap_method(
                 self.annotate_text,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -553,8 +642,17 @@ class LanguageServiceGrpcAsyncIOTransport(LanguageServiceTransport):
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("LanguageServiceGrpcAsyncIOTransport",)

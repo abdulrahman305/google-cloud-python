@@ -13,46 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import (
-    gapic_v1,
-    operations_v1,
-    path_template,
-    rest_helpers,
-    rest_streaming,
-)
+from google.api_core import gapic_v1, operations_v1, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.analytics.data_v1beta.types import analytics_data_api
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseBetaAnalyticsDataRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.longrunning import operations_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.analytics.data_v1beta.types import analytics_data_api
-
-from .base import BetaAnalyticsDataTransport
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -168,9 +166,10 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_batch_run_pivot_reports(
         self,
         request: analytics_data_api.BatchRunPivotReportsRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        analytics_data_api.BatchRunPivotReportsRequest, Sequence[Tuple[str, str]]
+        analytics_data_api.BatchRunPivotReportsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for batch_run_pivot_reports
 
@@ -193,8 +192,11 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_batch_run_reports(
         self,
         request: analytics_data_api.BatchRunReportsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.BatchRunReportsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.BatchRunReportsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for batch_run_reports
 
         Override in a subclass to manipulate the request or metadata
@@ -216,8 +218,11 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_check_compatibility(
         self,
         request: analytics_data_api.CheckCompatibilityRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.CheckCompatibilityRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.CheckCompatibilityRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for check_compatibility
 
         Override in a subclass to manipulate the request or metadata
@@ -239,9 +244,10 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_create_audience_export(
         self,
         request: analytics_data_api.CreateAudienceExportRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        analytics_data_api.CreateAudienceExportRequest, Sequence[Tuple[str, str]]
+        analytics_data_api.CreateAudienceExportRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for create_audience_export
 
@@ -264,8 +270,11 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_get_audience_export(
         self,
         request: analytics_data_api.GetAudienceExportRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.GetAudienceExportRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.GetAudienceExportRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for get_audience_export
 
         Override in a subclass to manipulate the request or metadata
@@ -287,8 +296,10 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_get_metadata(
         self,
         request: analytics_data_api.GetMetadataRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.GetMetadataRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.GetMetadataRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_metadata
 
         Override in a subclass to manipulate the request or metadata
@@ -310,9 +321,10 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_list_audience_exports(
         self,
         request: analytics_data_api.ListAudienceExportsRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        analytics_data_api.ListAudienceExportsRequest, Sequence[Tuple[str, str]]
+        analytics_data_api.ListAudienceExportsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_audience_exports
 
@@ -335,9 +347,10 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_query_audience_export(
         self,
         request: analytics_data_api.QueryAudienceExportRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        analytics_data_api.QueryAudienceExportRequest, Sequence[Tuple[str, str]]
+        analytics_data_api.QueryAudienceExportRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for query_audience_export
 
@@ -360,8 +373,11 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_run_pivot_report(
         self,
         request: analytics_data_api.RunPivotReportRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.RunPivotReportRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RunPivotReportRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for run_pivot_report
 
         Override in a subclass to manipulate the request or metadata
@@ -383,8 +399,11 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_run_realtime_report(
         self,
         request: analytics_data_api.RunRealtimeReportRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.RunRealtimeReportRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RunRealtimeReportRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for run_realtime_report
 
         Override in a subclass to manipulate the request or metadata
@@ -406,8 +425,10 @@ class BetaAnalyticsDataRestInterceptor:
     def pre_run_report(
         self,
         request: analytics_data_api.RunReportRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[analytics_data_api.RunReportRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RunReportRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for run_report
 
         Override in a subclass to manipulate the request or metadata
@@ -434,8 +455,8 @@ class BetaAnalyticsDataRestStub:
     _interceptor: BetaAnalyticsDataRestInterceptor
 
 
-class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
-    """REST backend transport for BetaAnalyticsData.
+class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
+    """REST backend synchronous transport for BetaAnalyticsData.
 
     Google Analytics reporting data service.
 
@@ -444,7 +465,6 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -498,21 +518,12 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -551,9 +562,35 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
         # Return the client from cache.
         return self._operations_client
 
-    class _BatchRunPivotReports(BetaAnalyticsDataRestStub):
+    class _BatchRunPivotReports(
+        _BaseBetaAnalyticsDataRestTransport._BaseBatchRunPivotReports,
+        BetaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("BatchRunPivotReports")
+            return hash("BetaAnalyticsDataRestTransport.BatchRunPivotReports")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -561,7 +598,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.BatchRunPivotReportsResponse:
             r"""Call the batch run pivot reports method over HTTP.
 
@@ -572,8 +609,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.BatchRunPivotReportsResponse:
@@ -582,46 +621,64 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1beta/{property=properties/*}:batchRunPivotReports",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseBatchRunPivotReports._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_batch_run_pivot_reports(
                 request, metadata
             )
-            pb_request = analytics_data_api.BatchRunPivotReportsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseBatchRunPivotReports._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseBetaAnalyticsDataRestTransport._BaseBatchRunPivotReports._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseBatchRunPivotReports._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.BatchRunPivotReports",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "BatchRunPivotReports",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                BetaAnalyticsDataRestTransport._BatchRunPivotReports._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -634,12 +691,64 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.BatchRunPivotReportsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_batch_run_pivot_reports(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.BatchRunPivotReportsResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.batch_run_pivot_reports",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "BatchRunPivotReports",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _BatchRunReports(BetaAnalyticsDataRestStub):
+    class _BatchRunReports(
+        _BaseBetaAnalyticsDataRestTransport._BaseBatchRunReports,
+        BetaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("BatchRunReports")
+            return hash("BetaAnalyticsDataRestTransport.BatchRunReports")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -647,7 +756,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.BatchRunReportsResponse:
             r"""Call the batch run reports method over HTTP.
 
@@ -658,8 +767,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.BatchRunReportsResponse:
@@ -668,46 +779,62 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1beta/{property=properties/*}:batchRunReports",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseBatchRunReports._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_batch_run_reports(
                 request, metadata
             )
-            pb_request = analytics_data_api.BatchRunReportsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseBatchRunReports._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseBetaAnalyticsDataRestTransport._BaseBatchRunReports._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseBatchRunReports._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.BatchRunReports",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "BatchRunReports",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = BetaAnalyticsDataRestTransport._BatchRunReports._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -720,12 +847,62 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.BatchRunReportsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_batch_run_reports(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.BatchRunReportsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.batch_run_reports",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "BatchRunReports",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CheckCompatibility(BetaAnalyticsDataRestStub):
+    class _CheckCompatibility(
+        _BaseBetaAnalyticsDataRestTransport._BaseCheckCompatibility,
+        BetaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("CheckCompatibility")
+            return hash("BetaAnalyticsDataRestTransport.CheckCompatibility")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -733,7 +910,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.CheckCompatibilityResponse:
             r"""Call the check compatibility method over HTTP.
 
@@ -747,8 +924,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.CheckCompatibilityResponse:
@@ -758,46 +937,62 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1beta/{property=properties/*}:checkCompatibility",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseCheckCompatibility._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_check_compatibility(
                 request, metadata
             )
-            pb_request = analytics_data_api.CheckCompatibilityRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseCheckCompatibility._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseBetaAnalyticsDataRestTransport._BaseCheckCompatibility._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseCheckCompatibility._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.CheckCompatibility",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "CheckCompatibility",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = BetaAnalyticsDataRestTransport._CheckCompatibility._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -810,22 +1005,62 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.CheckCompatibilityResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_check_compatibility(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.CheckCompatibilityResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.check_compatibility",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "CheckCompatibility",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CreateAudienceExport(BetaAnalyticsDataRestStub):
+    class _CreateAudienceExport(
+        _BaseBetaAnalyticsDataRestTransport._BaseCreateAudienceExport,
+        BetaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateAudienceExport")
+            return hash("BetaAnalyticsDataRestTransport.CreateAudienceExport")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -833,7 +1068,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the create audience export method over HTTP.
 
@@ -844,8 +1079,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.operations_pb2.Operation:
@@ -855,47 +1092,64 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1beta/{parent=properties/*}/audienceExports",
-                    "body": "audience_export",
-                },
-            ]
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseCreateAudienceExport._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_audience_export(
                 request, metadata
             )
-            pb_request = analytics_data_api.CreateAudienceExportRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseCreateAudienceExport._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseBetaAnalyticsDataRestTransport._BaseCreateAudienceExport._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseCreateAudienceExport._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.CreateAudienceExport",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "CreateAudienceExport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                BetaAnalyticsDataRestTransport._CreateAudienceExport._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -906,22 +1160,59 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             # Return the response
             resp = operations_pb2.Operation()
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_audience_export(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.create_audience_export",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "CreateAudienceExport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetAudienceExport(BetaAnalyticsDataRestStub):
+    class _GetAudienceExport(
+        _BaseBetaAnalyticsDataRestTransport._BaseGetAudienceExport,
+        BetaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("GetAudienceExport")
+            return hash("BetaAnalyticsDataRestTransport.GetAudienceExport")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -929,7 +1220,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.AudienceExport:
             r"""Call the get audience export method over HTTP.
 
@@ -941,8 +1232,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.AudienceExport:
@@ -954,40 +1247,57 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1beta/{name=properties/*/audienceExports/*}",
-                },
-            ]
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseGetAudienceExport._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_audience_export(
                 request, metadata
             )
-            pb_request = analytics_data_api.GetAudienceExportRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseGetAudienceExport._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseGetAudienceExport._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.GetAudienceExport",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "GetAudienceExport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = BetaAnalyticsDataRestTransport._GetAudienceExport._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1000,22 +1310,60 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.AudienceExport.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_audience_export(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = analytics_data_api.AudienceExport.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.get_audience_export",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "GetAudienceExport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetMetadata(BetaAnalyticsDataRestStub):
+    class _GetMetadata(
+        _BaseBetaAnalyticsDataRestTransport._BaseGetMetadata, BetaAnalyticsDataRestStub
+    ):
         def __hash__(self):
-            return hash("GetMetadata")
+            return hash("BetaAnalyticsDataRestTransport.GetMetadata")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1023,7 +1371,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.Metadata:
             r"""Call the get metadata method over HTTP.
 
@@ -1034,8 +1382,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.Metadata:
@@ -1045,38 +1395,55 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1beta/{name=properties/*/metadata}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_metadata(request, metadata)
-            pb_request = analytics_data_api.GetMetadataRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseGetMetadata._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_metadata(request, metadata)
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseGetMetadata._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseGetMetadata._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.GetMetadata",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "GetMetadata",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = BetaAnalyticsDataRestTransport._GetMetadata._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1089,22 +1456,59 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.Metadata.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_metadata(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = analytics_data_api.Metadata.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.get_metadata",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "GetMetadata",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListAudienceExports(BetaAnalyticsDataRestStub):
+    class _ListAudienceExports(
+        _BaseBetaAnalyticsDataRestTransport._BaseListAudienceExports,
+        BetaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("ListAudienceExports")
+            return hash("BetaAnalyticsDataRestTransport.ListAudienceExports")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1112,7 +1516,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.ListAudienceExportsResponse:
             r"""Call the list audience exports method over HTTP.
 
@@ -1123,8 +1527,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.ListAudienceExportsResponse:
@@ -1133,40 +1539,59 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1beta/{parent=properties/*}/audienceExports",
-                },
-            ]
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseListAudienceExports._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_audience_exports(
                 request, metadata
             )
-            pb_request = analytics_data_api.ListAudienceExportsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseListAudienceExports._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseListAudienceExports._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.ListAudienceExports",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "ListAudienceExports",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                BetaAnalyticsDataRestTransport._ListAudienceExports._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1179,22 +1604,62 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.ListAudienceExportsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_audience_exports(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.ListAudienceExportsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.list_audience_exports",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "ListAudienceExports",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _QueryAudienceExport(BetaAnalyticsDataRestStub):
+    class _QueryAudienceExport(
+        _BaseBetaAnalyticsDataRestTransport._BaseQueryAudienceExport,
+        BetaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("QueryAudienceExport")
+            return hash("BetaAnalyticsDataRestTransport.QueryAudienceExport")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1202,7 +1667,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.QueryAudienceExportResponse:
             r"""Call the query audience export method over HTTP.
 
@@ -1213,8 +1678,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.QueryAudienceExportResponse:
@@ -1223,47 +1690,64 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1beta/{name=properties/*/audienceExports/*}:query",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseQueryAudienceExport._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_query_audience_export(
                 request, metadata
             )
-            pb_request = analytics_data_api.QueryAudienceExportRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseQueryAudienceExport._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseBetaAnalyticsDataRestTransport._BaseQueryAudienceExport._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseQueryAudienceExport._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.QueryAudienceExport",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "QueryAudienceExport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                BetaAnalyticsDataRestTransport._QueryAudienceExport._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1276,12 +1760,62 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.QueryAudienceExportResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_query_audience_export(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.QueryAudienceExportResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.query_audience_export",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "QueryAudienceExport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _RunPivotReport(BetaAnalyticsDataRestStub):
+    class _RunPivotReport(
+        _BaseBetaAnalyticsDataRestTransport._BaseRunPivotReport,
+        BetaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("RunPivotReport")
+            return hash("BetaAnalyticsDataRestTransport.RunPivotReport")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1289,7 +1823,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.RunPivotReportResponse:
             r"""Call the run pivot report method over HTTP.
 
@@ -1300,8 +1834,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.RunPivotReportResponse:
@@ -1310,46 +1846,62 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1beta/{property=properties/*}:runPivotReport",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseRunPivotReport._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_run_pivot_report(
                 request, metadata
             )
-            pb_request = analytics_data_api.RunPivotReportRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseRunPivotReport._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseBetaAnalyticsDataRestTransport._BaseRunPivotReport._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseRunPivotReport._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.RunPivotReport",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "RunPivotReport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = BetaAnalyticsDataRestTransport._RunPivotReport._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1362,12 +1914,62 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.RunPivotReportResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_run_pivot_report(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.RunPivotReportResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.run_pivot_report",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "RunPivotReport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _RunRealtimeReport(BetaAnalyticsDataRestStub):
+    class _RunRealtimeReport(
+        _BaseBetaAnalyticsDataRestTransport._BaseRunRealtimeReport,
+        BetaAnalyticsDataRestStub,
+    ):
         def __hash__(self):
-            return hash("RunRealtimeReport")
+            return hash("BetaAnalyticsDataRestTransport.RunRealtimeReport")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1375,7 +1977,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.RunRealtimeReportResponse:
             r"""Call the run realtime report method over HTTP.
 
@@ -1386,8 +1988,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.RunRealtimeReportResponse:
@@ -1396,46 +2000,62 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1beta/{property=properties/*}:runRealtimeReport",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseRunRealtimeReport._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_run_realtime_report(
                 request, metadata
             )
-            pb_request = analytics_data_api.RunRealtimeReportRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseRunRealtimeReport._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseBetaAnalyticsDataRestTransport._BaseRunRealtimeReport._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseRunRealtimeReport._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.RunRealtimeReport",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "RunRealtimeReport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = BetaAnalyticsDataRestTransport._RunRealtimeReport._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1448,12 +2068,61 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.RunRealtimeReportResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_run_realtime_report(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_data_api.RunRealtimeReportResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.run_realtime_report",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "RunRealtimeReport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _RunReport(BetaAnalyticsDataRestStub):
+    class _RunReport(
+        _BaseBetaAnalyticsDataRestTransport._BaseRunReport, BetaAnalyticsDataRestStub
+    ):
         def __hash__(self):
-            return hash("RunReport")
+            return hash("BetaAnalyticsDataRestTransport.RunReport")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1461,7 +2130,7 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> analytics_data_api.RunReportResponse:
             r"""Call the run report method over HTTP.
 
@@ -1471,8 +2140,10 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.analytics_data_api.RunReportResponse:
@@ -1481,44 +2152,60 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1beta/{property=properties/*}:runReport",
-                    "body": "*",
-                },
-            ]
-            request, metadata = self._interceptor.pre_run_report(request, metadata)
-            pb_request = analytics_data_api.RunReportRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            http_options = (
+                _BaseBetaAnalyticsDataRestTransport._BaseRunReport._get_http_options()
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            request, metadata = self._interceptor.pre_run_report(request, metadata)
+            transcoded_request = _BaseBetaAnalyticsDataRestTransport._BaseRunReport._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseBetaAnalyticsDataRestTransport._BaseRunReport._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseBetaAnalyticsDataRestTransport._BaseRunReport._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.data_v1beta.BetaAnalyticsDataClient.RunReport",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "RunReport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = BetaAnalyticsDataRestTransport._RunReport._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1531,7 +2218,31 @@ class BetaAnalyticsDataRestTransport(BetaAnalyticsDataTransport):
             pb_resp = analytics_data_api.RunReportResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_run_report(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = analytics_data_api.RunReportResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.data_v1beta.BetaAnalyticsDataClient.run_report",
+                    extra={
+                        "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                        "rpcName": "RunReport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property

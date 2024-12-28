@@ -32,6 +32,7 @@ __protobuf__ = proto.module(
         "CreateStoragePoolRequest",
         "UpdateStoragePoolRequest",
         "DeleteStoragePoolRequest",
+        "SwitchActiveReplicaZoneRequest",
         "StoragePool",
     },
 )
@@ -134,10 +135,9 @@ class CreateStoragePoolRequest(proto.Message):
         storage_pool_id (str):
             Required. Id of the requesting storage pool.
             Must be unique within the parent resource. Must
-            contain only letters, numbers, underscore and
-            hyphen, with the first character a letter or
-            underscore, the last a letter or underscore or a
-            number, and a 63 character maximum.
+            contain only letters, numbers and hyphen, with
+            the first character a letter, the last a letter
+            or a number, and a 63 character maximum.
         storage_pool (google.cloud.netapp_v1.types.StoragePool):
             Required. The required parameters to create a
             new storage pool.
@@ -187,6 +187,21 @@ class UpdateStoragePoolRequest(proto.Message):
 
 class DeleteStoragePoolRequest(proto.Message):
     r"""DeleteStoragePoolRequest deletes a Storage Pool.
+
+    Attributes:
+        name (str):
+            Required. Name of the storage pool
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
+class SwitchActiveReplicaZoneRequest(proto.Message):
+    r"""SwitchActiveReplicaZoneRequest switch the active/replica zone
+    for a regional storagePool.
 
     Attributes:
         name (str):
@@ -255,6 +270,11 @@ class StoragePool(proto.Message):
             AD or DNS server from other regions.
 
             This field is a member of `oneof`_ ``_global_access_allowed``.
+        allow_auto_tiering (bool):
+            Optional. True if the storage pool supports
+            Auto Tiering enabled volumes. Default is false.
+            Auto-tiering can be enabled after storage pool
+            creation but it can't be disabled once enabled.
         replica_zone (str):
             Optional. Specifies the replica zone for
             regional storagePool.
@@ -366,6 +386,10 @@ class StoragePool(proto.Message):
         proto.BOOL,
         number=17,
         optional=True,
+    )
+    allow_auto_tiering: bool = proto.Field(
+        proto.BOOL,
+        number=18,
     )
     replica_zone: str = proto.Field(
         proto.STRING,

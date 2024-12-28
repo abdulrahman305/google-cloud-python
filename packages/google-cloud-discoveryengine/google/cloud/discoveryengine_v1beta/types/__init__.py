@@ -28,7 +28,12 @@ from .common import (
     UserInfo,
 )
 from .completion import CompletionSuggestion, SuggestionDenyListEntry
-from .completion_service import CompleteQueryRequest, CompleteQueryResponse
+from .completion_service import (
+    AdvancedCompleteQueryRequest,
+    AdvancedCompleteQueryResponse,
+    CompleteQueryRequest,
+    CompleteQueryResponse,
+)
 from .control import Condition, Control
 from .control_service import (
     CreateControlRequest,
@@ -65,7 +70,12 @@ from .conversational_search_service import (
     UpdateSessionRequest,
 )
 from .custom_tuning_model import CustomTuningModel
-from .data_store import DataStore, LanguageInfo
+from .data_store import (
+    DataStore,
+    LanguageInfo,
+    NaturalLanguageQueryUnderstandingConfig,
+    WorkspaceConfig,
+)
 from .data_store_service import (
     CreateDataStoreMetadata,
     CreateDataStoreRequest,
@@ -79,6 +89,8 @@ from .data_store_service import (
 from .document import Document
 from .document_processing_config import DocumentProcessingConfig
 from .document_service import (
+    BatchGetDocumentsMetadataRequest,
+    BatchGetDocumentsMetadataResponse,
     CreateDocumentRequest,
     DeleteDocumentRequest,
     GetDocumentRequest,
@@ -116,8 +128,11 @@ from .grounded_generation_service import (
     CheckGroundingRequest,
     CheckGroundingResponse,
     CheckGroundingSpec,
+    GenerateGroundedContentRequest,
+    GenerateGroundedContentResponse,
+    GroundedGenerationContent,
 )
-from .grounding import FactChunk, GroundingFact
+from .grounding import FactChunk, GroundingConfig, GroundingFact
 from .import_config import (
     AlloyDbSource,
     BigQuerySource,
@@ -154,6 +169,7 @@ from .purge_config import (
     PurgeDocumentsMetadata,
     PurgeDocumentsRequest,
     PurgeDocumentsResponse,
+    PurgeErrorConfig,
     PurgeSuggestionDenyListEntriesMetadata,
     PurgeSuggestionDenyListEntriesRequest,
     PurgeSuggestionDenyListEntriesResponse,
@@ -209,7 +225,12 @@ from .serving_config_service import (
     UpdateServingConfigRequest,
 )
 from .session import Query, Session
-from .site_search_engine import SiteSearchEngine, SiteVerificationInfo, TargetSite
+from .site_search_engine import (
+    Sitemap,
+    SiteSearchEngine,
+    SiteVerificationInfo,
+    TargetSite,
+)
 from .site_search_engine_service import (
     BatchCreateTargetSiteMetadata,
     BatchCreateTargetSitesRequest,
@@ -217,8 +238,12 @@ from .site_search_engine_service import (
     BatchVerifyTargetSitesMetadata,
     BatchVerifyTargetSitesRequest,
     BatchVerifyTargetSitesResponse,
+    CreateSitemapMetadata,
+    CreateSitemapRequest,
     CreateTargetSiteMetadata,
     CreateTargetSiteRequest,
+    DeleteSitemapMetadata,
+    DeleteSitemapRequest,
     DeleteTargetSiteMetadata,
     DeleteTargetSiteRequest,
     DisableAdvancedSiteSearchMetadata,
@@ -229,6 +254,8 @@ from .site_search_engine_service import (
     EnableAdvancedSiteSearchResponse,
     FetchDomainVerificationStatusRequest,
     FetchDomainVerificationStatusResponse,
+    FetchSitemapsRequest,
+    FetchSitemapsResponse,
     GetSiteSearchEngineRequest,
     GetTargetSiteRequest,
     ListTargetSitesRequest,
@@ -266,6 +293,8 @@ __all__ = (
     "SolutionType",
     "CompletionSuggestion",
     "SuggestionDenyListEntry",
+    "AdvancedCompleteQueryRequest",
+    "AdvancedCompleteQueryResponse",
     "CompleteQueryRequest",
     "CompleteQueryResponse",
     "Condition",
@@ -301,6 +330,8 @@ __all__ = (
     "CustomTuningModel",
     "DataStore",
     "LanguageInfo",
+    "NaturalLanguageQueryUnderstandingConfig",
+    "WorkspaceConfig",
     "CreateDataStoreMetadata",
     "CreateDataStoreRequest",
     "DeleteDataStoreMetadata",
@@ -311,6 +342,8 @@ __all__ = (
     "UpdateDataStoreRequest",
     "Document",
     "DocumentProcessingConfig",
+    "BatchGetDocumentsMetadataRequest",
+    "BatchGetDocumentsMetadataResponse",
     "CreateDocumentRequest",
     "DeleteDocumentRequest",
     "GetDocumentRequest",
@@ -343,7 +376,11 @@ __all__ = (
     "CheckGroundingRequest",
     "CheckGroundingResponse",
     "CheckGroundingSpec",
+    "GenerateGroundedContentRequest",
+    "GenerateGroundedContentResponse",
+    "GroundedGenerationContent",
     "FactChunk",
+    "GroundingConfig",
     "GroundingFact",
     "AlloyDbSource",
     "BigQuerySource",
@@ -379,6 +416,7 @@ __all__ = (
     "PurgeDocumentsMetadata",
     "PurgeDocumentsRequest",
     "PurgeDocumentsResponse",
+    "PurgeErrorConfig",
     "PurgeSuggestionDenyListEntriesMetadata",
     "PurgeSuggestionDenyListEntriesRequest",
     "PurgeSuggestionDenyListEntriesResponse",
@@ -428,6 +466,7 @@ __all__ = (
     "UpdateServingConfigRequest",
     "Query",
     "Session",
+    "Sitemap",
     "SiteSearchEngine",
     "SiteVerificationInfo",
     "TargetSite",
@@ -437,8 +476,12 @@ __all__ = (
     "BatchVerifyTargetSitesMetadata",
     "BatchVerifyTargetSitesRequest",
     "BatchVerifyTargetSitesResponse",
+    "CreateSitemapMetadata",
+    "CreateSitemapRequest",
     "CreateTargetSiteMetadata",
     "CreateTargetSiteRequest",
+    "DeleteSitemapMetadata",
+    "DeleteSitemapRequest",
     "DeleteTargetSiteMetadata",
     "DeleteTargetSiteRequest",
     "DisableAdvancedSiteSearchMetadata",
@@ -449,6 +492,8 @@ __all__ = (
     "EnableAdvancedSiteSearchResponse",
     "FetchDomainVerificationStatusRequest",
     "FetchDomainVerificationStatusResponse",
+    "FetchSitemapsRequest",
+    "FetchSitemapsResponse",
     "GetSiteSearchEngineRequest",
     "GetTargetSiteRequest",
     "ListTargetSitesRequest",

@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.2.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-parallelstore-v0.2.6...google-cloud-parallelstore-v0.2.7) (2024-12-12)
+
+
+### Features
+
+* A new enum `DeploymentType` is added ([d406707](https://github.com/googleapis/google-cloud-python/commit/d406707a668e2dcbc80bda91cbe08ef9bf06b5b7))
+* A new field `deployment_type` is added to message `.google.cloud.parallelstore.v1beta.Instance` ([d406707](https://github.com/googleapis/google-cloud-python/commit/d406707a668e2dcbc80bda91cbe08ef9bf06b5b7))
+* Add support for opt-in debug logging ([d406707](https://github.com/googleapis/google-cloud-python/commit/d406707a668e2dcbc80bda91cbe08ef9bf06b5b7))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([d406707](https://github.com/googleapis/google-cloud-python/commit/d406707a668e2dcbc80bda91cbe08ef9bf06b5b7))
+
+## [0.2.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-parallelstore-v0.2.5...google-cloud-parallelstore-v0.2.6) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([170e8f2](https://github.com/googleapis/google-cloud-python/commit/170e8f2dda4d42842728797f24436a98f79a7bbc))
+
+## [0.2.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-parallelstore-v0.2.4...google-cloud-parallelstore-v0.2.5) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13208](https://github.com/googleapis/google-cloud-python/issues/13208)) ([a019409](https://github.com/googleapis/google-cloud-python/commit/a019409a5b5a983402301f1ac175d8b7e45c3818))
+
+## [0.2.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-parallelstore-v0.2.3...google-cloud-parallelstore-v0.2.4) (2024-10-08)
+
+
+### Features
+
+* [google-cloud-parallelstore] adding v1 version of our api ([7f9bc3a](https://github.com/googleapis/google-cloud-python/commit/7f9bc3a7a504956eaf6eff5b80d77a15eda9e0b6))
+* add UPGRADING state to Parallelstore state ([7f9bc3a](https://github.com/googleapis/google-cloud-python/commit/7f9bc3a7a504956eaf6eff5b80d77a15eda9e0b6))
+
+
+### Documentation
+
+* [google-cloud-parallelstore] cleanup of Parallelstore API descriptions ([7f9bc3a](https://github.com/googleapis/google-cloud-python/commit/7f9bc3a7a504956eaf6eff5b80d77a15eda9e0b6))
+* [google-cloud-parallelstore] minor documentation formatting fix for Parallelstore ([7f9bc3a](https://github.com/googleapis/google-cloud-python/commit/7f9bc3a7a504956eaf6eff5b80d77a15eda9e0b6))
+* minor documentation formatting fix for Parallelstore ([7f9bc3a](https://github.com/googleapis/google-cloud-python/commit/7f9bc3a7a504956eaf6eff5b80d77a15eda9e0b6))
+
 ## [0.2.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-parallelstore-v0.2.2...google-cloud-parallelstore-v0.2.3) (2024-08-01)
 
 

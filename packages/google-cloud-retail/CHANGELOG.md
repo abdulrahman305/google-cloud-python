@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.24.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v1.23.1...google-cloud-retail-v1.24.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+## [1.23.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v1.23.0...google-cloud-retail-v1.23.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13245](https://github.com/googleapis/google-cloud-python/issues/13245)) ([875f712](https://github.com/googleapis/google-cloud-python/commit/875f712265a36919409964f5ade218330f1d0147))
+
+## [1.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v1.22.0...google-cloud-retail-v1.23.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13209](https://github.com/googleapis/google-cloud-python/issues/13209)) ([5f2e30d](https://github.com/googleapis/google-cloud-python/commit/5f2e30d62eea6080f5707ee18755f2bb812ad00b))
+
+## [1.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v1.21.2...google-cloud-retail-v1.22.0) (2024-10-09)
+
+
+### Features
+
+* add conversational search ([b704404](https://github.com/googleapis/google-cloud-python/commit/b7044041774ad03f0488a830cdb871be3d106f73))
+* add tile navigation ([b704404](https://github.com/googleapis/google-cloud-python/commit/b7044041774ad03f0488a830cdb871be3d106f73))
+
+
+### Documentation
+
+* keep the API doc up-to-date with recent changes ([b704404](https://github.com/googleapis/google-cloud-python/commit/b7044041774ad03f0488a830cdb871be3d106f73))
+
 ## [1.21.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v1.21.1...google-cloud-retail-v1.21.2) (2024-07-30)
 
 

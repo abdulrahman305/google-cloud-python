@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -48,6 +48,15 @@ from google.cloud.eventarc_publishing_v1.types import publisher
 from .client import PublisherClient
 from .transports.base import DEFAULT_CLIENT_INFO, PublisherTransport
 from .transports.grpc_asyncio import PublisherGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class PublisherAsyncClient:
@@ -206,9 +215,7 @@ class PublisherAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(PublisherClient).get_transport_class, type(PublisherClient)
-    )
+    get_transport_class = PublisherClient.get_transport_class
 
     def __init__(
         self,
@@ -276,6 +283,28 @@ class PublisherAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.cloud.eventarc.publishing_v1.PublisherAsyncClient`.",
+                extra={
+                    "serviceName": "google.cloud.eventarc.publishing.v1.Publisher",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.cloud.eventarc.publishing.v1.Publisher",
+                    "credentialsType": None,
+                },
+            )
+
     async def publish_channel_connection_events(
         self,
         request: Optional[
@@ -284,7 +313,7 @@ class PublisherAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> publisher.PublishChannelConnectionEventsResponse:
         r"""Publish events to a ChannelConnection in a partner's
         project.
@@ -321,8 +350,10 @@ class PublisherAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_publishing_v1.types.PublishChannelConnectionEventsResponse:
@@ -370,7 +401,7 @@ class PublisherAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> publisher.PublishEventsResponse:
         r"""Publish events to a subscriber's channel.
 
@@ -406,8 +437,10 @@ class PublisherAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.eventarc_publishing_v1.types.PublishEventsResponse:
@@ -431,6 +464,100 @@ class PublisherAsyncClient:
         # add these here.
         metadata = tuple(metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("channel", request.channel),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def publish(
+        self,
+        request: Optional[Union[publisher.PublishRequest, dict]] = None,
+        *,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> publisher.PublishResponse:
+        r"""Publish events to a message bus.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import eventarc_publishing_v1
+
+            async def sample_publish():
+                # Create a client
+                client = eventarc_publishing_v1.PublisherAsyncClient()
+
+                # Initialize request argument(s)
+                proto_message = eventarc_publishing_v1.CloudEvent()
+                proto_message.binary_data = b'binary_data_blob'
+                proto_message.id = "id_value"
+                proto_message.source = "source_value"
+                proto_message.spec_version = "spec_version_value"
+                proto_message.type_ = "type__value"
+
+                request = eventarc_publishing_v1.PublishRequest(
+                    proto_message=proto_message,
+                    message_bus="message_bus_value",
+                )
+
+                # Make the request
+                response = await client.publish(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.eventarc_publishing_v1.types.PublishRequest, dict]]):
+                The request object. The request message for the Publish
+                method.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.eventarc_publishing_v1.types.PublishResponse:
+                The response message for the Publish
+                method.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, publisher.PublishRequest):
+            request = publisher.PublishRequest(request)
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[self._client._transport.publish]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("message_bus", request.message_bus),)
+            ),
         )
 
         # Validate the universe domain.

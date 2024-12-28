@@ -41,7 +41,7 @@ class ConnectivityTest(proto.Message):
 
     Attributes:
         name (str):
-            Required. Unique name of the resource using the form:
+            Identifier. Unique name of the resource using the form:
             ``projects/{project_id}/locations/global/connectivityTests/{test_id}``
         description (str):
             The user-supplied description of the
@@ -132,6 +132,15 @@ class ConnectivityTest(proto.Message):
             creating a new test, updating an existing test,
             or triggering a one-time rerun of an existing
             test.
+        round_trip (bool):
+            Whether run analysis for the return path from
+            destination to source. Default value is false.
+        return_reachability_details (google.cloud.network_management_v1.types.ReachabilityDetails):
+            Output only. The reachability details of this
+            test from the latest run for the return path.
+            The details are updated when creating a new
+            test, updating an existing test, or triggering a
+            one-time rerun of an existing test.
         bypass_firewall_checks (bool):
             Whether the test should skip firewall
             checking. If not provided, we assume false.
@@ -192,6 +201,15 @@ class ConnectivityTest(proto.Message):
         number=14,
         message="ProbingDetails",
     )
+    round_trip: bool = proto.Field(
+        proto.BOOL,
+        number=15,
+    )
+    return_reachability_details: "ReachabilityDetails" = proto.Field(
+        proto.MESSAGE,
+        number=16,
+        message="ReachabilityDetails",
+    )
     bypass_firewall_checks: bool = proto.Field(
         proto.BOOL,
         number=17,
@@ -241,10 +259,24 @@ class Endpoint(proto.Message):
 
             This field is a member of `oneof`_ ``_load_balancer_type``.
         gke_master_cluster (str):
-            A cluster URI for `Google Kubernetes Engine
-            master <https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-architecture>`__.
+            A cluster URI for `Google Kubernetes Engine cluster control
+            plane <https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-architecture>`__.
+        fqdn (str):
+            DNS endpoint of `Google Kubernetes Engine cluster control
+            plane <https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-architecture>`__.
+            Requires gke_master_cluster to be set, can't be used
+            simultaneoulsly with ip_address or network. Applicable only
+            to destination endpoint.
         cloud_sql_instance (str):
             A `Cloud SQL <https://cloud.google.com/sql>`__ instance URI.
+        redis_instance (str):
+            A `Redis
+            Instance <https://cloud.google.com/memorystore/docs/redis>`__
+            URI.
+        redis_cluster (str):
+            A `Redis
+            Cluster <https://cloud.google.com/memorystore/docs/cluster>`__
+            URI.
         cloud_function (google.cloud.network_management_v1.types.Endpoint.CloudFunctionEndpoint):
             A `Cloud Function <https://cloud.google.com/functions>`__.
         app_engine_version (google.cloud.network_management_v1.types.Endpoint.AppEngineVersionEndpoint):
@@ -405,9 +437,21 @@ class Endpoint(proto.Message):
         proto.STRING,
         number=7,
     )
+    fqdn: str = proto.Field(
+        proto.STRING,
+        number=19,
+    )
     cloud_sql_instance: str = proto.Field(
         proto.STRING,
         number=8,
+    )
+    redis_instance: str = proto.Field(
+        proto.STRING,
+        number=17,
+    )
+    redis_cluster: str = proto.Field(
+        proto.STRING,
+        number=18,
     )
     cloud_function: CloudFunctionEndpoint = proto.Field(
         proto.MESSAGE,

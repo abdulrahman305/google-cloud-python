@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -24,14 +28,93 @@ from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.dialogflowcx_v3beta1.types import playbook
 from google.cloud.dialogflowcx_v3beta1.types import playbook as gcdc_playbook
 
 from .base import DEFAULT_CLIENT_INFO, PlaybooksTransport
 from .grpc import PlaybooksGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.dialogflow.cx.v3beta1.Playbooks",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.dialogflow.cx.v3beta1.Playbooks",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
@@ -173,7 +256,8 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
 
         if isinstance(channel, aio.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -229,7 +313,13 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -263,7 +353,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_playbook" not in self._stubs:
-            self._stubs["create_playbook"] = self.grpc_channel.unary_unary(
+            self._stubs["create_playbook"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Playbooks/CreatePlaybook",
                 request_serializer=gcdc_playbook.CreatePlaybookRequest.serialize,
                 response_deserializer=gcdc_playbook.Playbook.deserialize,
@@ -289,7 +379,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_playbook" not in self._stubs:
-            self._stubs["delete_playbook"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_playbook"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Playbooks/DeletePlaybook",
                 request_serializer=playbook.DeletePlaybookRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -317,7 +407,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_playbooks" not in self._stubs:
-            self._stubs["list_playbooks"] = self.grpc_channel.unary_unary(
+            self._stubs["list_playbooks"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Playbooks/ListPlaybooks",
                 request_serializer=playbook.ListPlaybooksRequest.serialize,
                 response_deserializer=playbook.ListPlaybooksResponse.deserialize,
@@ -343,7 +433,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_playbook" not in self._stubs:
-            self._stubs["get_playbook"] = self.grpc_channel.unary_unary(
+            self._stubs["get_playbook"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Playbooks/GetPlaybook",
                 request_serializer=playbook.GetPlaybookRequest.serialize,
                 response_deserializer=playbook.Playbook.deserialize,
@@ -371,7 +461,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_playbook" not in self._stubs:
-            self._stubs["update_playbook"] = self.grpc_channel.unary_unary(
+            self._stubs["update_playbook"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Playbooks/UpdatePlaybook",
                 request_serializer=gcdc_playbook.UpdatePlaybookRequest.serialize,
                 response_deserializer=gcdc_playbook.Playbook.deserialize,
@@ -399,7 +489,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_playbook_version" not in self._stubs:
-            self._stubs["create_playbook_version"] = self.grpc_channel.unary_unary(
+            self._stubs["create_playbook_version"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Playbooks/CreatePlaybookVersion",
                 request_serializer=playbook.CreatePlaybookVersionRequest.serialize,
                 response_deserializer=playbook.PlaybookVersion.deserialize,
@@ -427,7 +517,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_playbook_version" not in self._stubs:
-            self._stubs["get_playbook_version"] = self.grpc_channel.unary_unary(
+            self._stubs["get_playbook_version"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Playbooks/GetPlaybookVersion",
                 request_serializer=playbook.GetPlaybookVersionRequest.serialize,
                 response_deserializer=playbook.PlaybookVersion.deserialize,
@@ -456,7 +546,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_playbook_versions" not in self._stubs:
-            self._stubs["list_playbook_versions"] = self.grpc_channel.unary_unary(
+            self._stubs["list_playbook_versions"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Playbooks/ListPlaybookVersions",
                 request_serializer=playbook.ListPlaybookVersionsRequest.serialize,
                 response_deserializer=playbook.ListPlaybookVersionsResponse.deserialize,
@@ -482,7 +572,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_playbook_version" not in self._stubs:
-            self._stubs["delete_playbook_version"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_playbook_version"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Playbooks/DeletePlaybookVersion",
                 request_serializer=playbook.DeletePlaybookVersionRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -492,55 +582,89 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_playbook: gapic_v1.method_async.wrap_method(
+            self.create_playbook: self._wrap_method(
                 self.create_playbook,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_playbook: gapic_v1.method_async.wrap_method(
+            self.delete_playbook: self._wrap_method(
                 self.delete_playbook,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_playbooks: gapic_v1.method_async.wrap_method(
+            self.list_playbooks: self._wrap_method(
                 self.list_playbooks,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_playbook: gapic_v1.method_async.wrap_method(
+            self.get_playbook: self._wrap_method(
                 self.get_playbook,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_playbook: gapic_v1.method_async.wrap_method(
+            self.update_playbook: self._wrap_method(
                 self.update_playbook,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_playbook_version: gapic_v1.method_async.wrap_method(
+            self.create_playbook_version: self._wrap_method(
                 self.create_playbook_version,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_playbook_version: gapic_v1.method_async.wrap_method(
+            self.get_playbook_version: self._wrap_method(
                 self.get_playbook_version,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_playbook_versions: gapic_v1.method_async.wrap_method(
+            self.list_playbook_versions: self._wrap_method(
                 self.list_playbook_versions,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_playbook_version: gapic_v1.method_async.wrap_method(
+            self.delete_playbook_version: self._wrap_method(
                 self.delete_playbook_version,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def cancel_operation(
@@ -552,7 +676,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -569,7 +693,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -588,7 +712,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,
@@ -607,7 +731,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -624,7 +748,7 @@ class PlaybooksGrpcAsyncIOTransport(PlaybooksTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,

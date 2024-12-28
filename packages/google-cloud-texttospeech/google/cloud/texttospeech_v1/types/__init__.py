@@ -14,16 +14,25 @@
 # limitations under the License.
 #
 from .cloud_tts import (
+    AdvancedVoiceOptions,
     AudioConfig,
     AudioEncoding,
+    CustomPronunciationParams,
+    CustomPronunciations,
     CustomVoiceParams,
     ListVoicesRequest,
     ListVoicesResponse,
+    MultiSpeakerMarkup,
     SsmlVoiceGender,
+    StreamingSynthesisInput,
+    StreamingSynthesizeConfig,
+    StreamingSynthesizeRequest,
+    StreamingSynthesizeResponse,
     SynthesisInput,
     SynthesizeSpeechRequest,
     SynthesizeSpeechResponse,
     Voice,
+    VoiceCloneParams,
     VoiceSelectionParams,
 )
 from .cloud_tts_lrs import (
@@ -33,14 +42,23 @@ from .cloud_tts_lrs import (
 )
 
 __all__ = (
+    "AdvancedVoiceOptions",
     "AudioConfig",
+    "CustomPronunciationParams",
+    "CustomPronunciations",
     "CustomVoiceParams",
     "ListVoicesRequest",
     "ListVoicesResponse",
+    "MultiSpeakerMarkup",
+    "StreamingSynthesisInput",
+    "StreamingSynthesizeConfig",
+    "StreamingSynthesizeRequest",
+    "StreamingSynthesizeResponse",
     "SynthesisInput",
     "SynthesizeSpeechRequest",
     "SynthesizeSpeechResponse",
     "Voice",
+    "VoiceCloneParams",
     "VoiceSelectionParams",
     "AudioEncoding",
     "SsmlVoiceGender",

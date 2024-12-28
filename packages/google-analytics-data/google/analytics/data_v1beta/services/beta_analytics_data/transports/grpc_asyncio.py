@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -22,13 +26,92 @@ from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.analytics.data_v1beta.types import analytics_data_api
 
 from .base import DEFAULT_CLIENT_INFO, BetaAnalyticsDataTransport
 from .grpc import BetaAnalyticsDataGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
@@ -227,7 +310,13 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -250,7 +339,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -289,7 +378,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "run_report" not in self._stubs:
-            self._stubs["run_report"] = self.grpc_channel.unary_unary(
+            self._stubs["run_report"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/RunReport",
                 request_serializer=analytics_data_api.RunReportRequest.serialize,
                 response_deserializer=analytics_data_api.RunReportResponse.deserialize,
@@ -323,7 +412,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "run_pivot_report" not in self._stubs:
-            self._stubs["run_pivot_report"] = self.grpc_channel.unary_unary(
+            self._stubs["run_pivot_report"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/RunPivotReport",
                 request_serializer=analytics_data_api.RunPivotReportRequest.serialize,
                 response_deserializer=analytics_data_api.RunPivotReportResponse.deserialize,
@@ -340,7 +429,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         r"""Return a callable for the batch run reports method over gRPC.
 
         Returns multiple reports in a batch. All reports must
-        be for the same GA4 Property.
+        be for the same Google Analytics property.
 
         Returns:
             Callable[[~.BatchRunReportsRequest],
@@ -353,7 +442,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "batch_run_reports" not in self._stubs:
-            self._stubs["batch_run_reports"] = self.grpc_channel.unary_unary(
+            self._stubs["batch_run_reports"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/BatchRunReports",
                 request_serializer=analytics_data_api.BatchRunReportsRequest.serialize,
                 response_deserializer=analytics_data_api.BatchRunReportsResponse.deserialize,
@@ -370,7 +459,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         r"""Return a callable for the batch run pivot reports method over gRPC.
 
         Returns multiple pivot reports in a batch. All
-        reports must be for the same GA4 Property.
+        reports must be for the same Google Analytics property.
 
         Returns:
             Callable[[~.BatchRunPivotReportsRequest],
@@ -383,7 +472,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "batch_run_pivot_reports" not in self._stubs:
-            self._stubs["batch_run_pivot_reports"] = self.grpc_channel.unary_unary(
+            self._stubs["batch_run_pivot_reports"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/BatchRunPivotReports",
                 request_serializer=analytics_data_api.BatchRunPivotReportsRequest.serialize,
                 response_deserializer=analytics_data_api.BatchRunPivotReportsResponse.deserialize,
@@ -400,7 +489,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
 
         Returns metadata for dimensions and metrics available in
         reporting methods. Used to explore the dimensions and metrics.
-        In this method, a Google Analytics GA4 Property Identifier is
+        In this method, a Google Analytics property identifier is
         specified in the request, and the metadata response includes
         Custom dimensions and metrics as well as Universal metadata.
 
@@ -421,7 +510,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_metadata" not in self._stubs:
-            self._stubs["get_metadata"] = self.grpc_channel.unary_unary(
+            self._stubs["get_metadata"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/GetMetadata",
                 request_serializer=analytics_data_api.GetMetadataRequest.serialize,
                 response_deserializer=analytics_data_api.Metadata.deserialize,
@@ -459,7 +548,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "run_realtime_report" not in self._stubs:
-            self._stubs["run_realtime_report"] = self.grpc_channel.unary_unary(
+            self._stubs["run_realtime_report"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/RunRealtimeReport",
                 request_serializer=analytics_data_api.RunRealtimeReportRequest.serialize,
                 response_deserializer=analytics_data_api.RunRealtimeReportResponse.deserialize,
@@ -500,7 +589,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "check_compatibility" not in self._stubs:
-            self._stubs["check_compatibility"] = self.grpc_channel.unary_unary(
+            self._stubs["check_compatibility"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/CheckCompatibility",
                 request_serializer=analytics_data_api.CheckCompatibilityRequest.serialize,
                 response_deserializer=analytics_data_api.CheckCompatibilityResponse.deserialize,
@@ -556,7 +645,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_audience_export" not in self._stubs:
-            self._stubs["create_audience_export"] = self.grpc_channel.unary_unary(
+            self._stubs["create_audience_export"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/CreateAudienceExport",
                 request_serializer=analytics_data_api.CreateAudienceExportRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -604,7 +693,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "query_audience_export" not in self._stubs:
-            self._stubs["query_audience_export"] = self.grpc_channel.unary_unary(
+            self._stubs["query_audience_export"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/QueryAudienceExport",
                 request_serializer=analytics_data_api.QueryAudienceExportRequest.serialize,
                 response_deserializer=analytics_data_api.QueryAudienceExportResponse.deserialize,
@@ -646,7 +735,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_audience_export" not in self._stubs:
-            self._stubs["get_audience_export"] = self.grpc_channel.unary_unary(
+            self._stubs["get_audience_export"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/GetAudienceExport",
                 request_serializer=analytics_data_api.GetAudienceExportRequest.serialize,
                 response_deserializer=analytics_data_api.AudienceExport.deserialize,
@@ -690,7 +779,7 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_audience_exports" not in self._stubs:
-            self._stubs["list_audience_exports"] = self.grpc_channel.unary_unary(
+            self._stubs["list_audience_exports"] = self._logged_channel.unary_unary(
                 "/google.analytics.data.v1beta.BetaAnalyticsData/ListAudienceExports",
                 request_serializer=analytics_data_api.ListAudienceExportsRequest.serialize,
                 response_deserializer=analytics_data_api.ListAudienceExportsResponse.deserialize,
@@ -700,65 +789,74 @@ class BetaAnalyticsDataGrpcAsyncIOTransport(BetaAnalyticsDataTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.run_report: gapic_v1.method_async.wrap_method(
+            self.run_report: self._wrap_method(
                 self.run_report,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.run_pivot_report: gapic_v1.method_async.wrap_method(
+            self.run_pivot_report: self._wrap_method(
                 self.run_pivot_report,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.batch_run_reports: gapic_v1.method_async.wrap_method(
+            self.batch_run_reports: self._wrap_method(
                 self.batch_run_reports,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.batch_run_pivot_reports: gapic_v1.method_async.wrap_method(
+            self.batch_run_pivot_reports: self._wrap_method(
                 self.batch_run_pivot_reports,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_metadata: gapic_v1.method_async.wrap_method(
+            self.get_metadata: self._wrap_method(
                 self.get_metadata,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.run_realtime_report: gapic_v1.method_async.wrap_method(
+            self.run_realtime_report: self._wrap_method(
                 self.run_realtime_report,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.check_compatibility: gapic_v1.method_async.wrap_method(
+            self.check_compatibility: self._wrap_method(
                 self.check_compatibility,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_audience_export: gapic_v1.method_async.wrap_method(
+            self.create_audience_export: self._wrap_method(
                 self.create_audience_export,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.query_audience_export: gapic_v1.method_async.wrap_method(
+            self.query_audience_export: self._wrap_method(
                 self.query_audience_export,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_audience_export: gapic_v1.method_async.wrap_method(
+            self.get_audience_export: self._wrap_method(
                 self.get_audience_export,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_audience_exports: gapic_v1.method_async.wrap_method(
+            self.list_audience_exports: self._wrap_method(
                 self.list_audience_exports,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("BetaAnalyticsDataGrpcAsyncIOTransport",)

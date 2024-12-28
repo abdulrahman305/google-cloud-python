@@ -22,7 +22,6 @@ API Reference
     workflows_v1beta/services_
     workflows_v1beta/types_
 
-
 API Reference
 -------------
 .. toctree::
@@ -38,7 +37,6 @@ API Reference
 
     executions_v1beta/services_
     executions_v1beta/types_
-
 
 Changelog
 ---------

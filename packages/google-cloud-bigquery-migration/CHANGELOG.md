@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.11.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-migration-v0.11.11...google-cloud-bigquery-migration-v0.11.12) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+## [0.11.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-migration-v0.11.10...google-cloud-bigquery-migration-v0.11.11) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([4ed4108](https://github.com/googleapis/google-cloud-python/commit/4ed41088ab3cbadfe4de7fa170f172666015ed24))
+
+## [0.11.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-migration-v0.11.9...google-cloud-bigquery-migration-v0.11.10) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
 ## [0.11.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-migration-v0.11.8...google-cloud-bigquery-migration-v0.11.9) (2024-07-30)
 
 

@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -25,13 +29,92 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.visionai_v1.types import platform
 
 from .base import DEFAULT_CLIENT_INFO, AppPlatformTransport
 from .grpc import AppPlatformGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.visionai.v1.AppPlatform",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.visionai.v1.AppPlatform",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
@@ -230,7 +313,13 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -253,7 +342,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -280,7 +369,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_applications" not in self._stubs:
-            self._stubs["list_applications"] = self.grpc_channel.unary_unary(
+            self._stubs["list_applications"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/ListApplications",
                 request_serializer=platform.ListApplicationsRequest.serialize,
                 response_deserializer=platform.ListApplicationsResponse.deserialize,
@@ -306,7 +395,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_application" not in self._stubs:
-            self._stubs["get_application"] = self.grpc_channel.unary_unary(
+            self._stubs["get_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/GetApplication",
                 request_serializer=platform.GetApplicationRequest.serialize,
                 response_deserializer=platform.Application.deserialize,
@@ -335,7 +424,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_application" not in self._stubs:
-            self._stubs["create_application"] = self.grpc_channel.unary_unary(
+            self._stubs["create_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/CreateApplication",
                 request_serializer=platform.CreateApplicationRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -363,7 +452,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_application" not in self._stubs:
-            self._stubs["update_application"] = self.grpc_channel.unary_unary(
+            self._stubs["update_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/UpdateApplication",
                 request_serializer=platform.UpdateApplicationRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -391,7 +480,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_application" not in self._stubs:
-            self._stubs["delete_application"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/DeleteApplication",
                 request_serializer=platform.DeleteApplicationRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -419,7 +508,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "deploy_application" not in self._stubs:
-            self._stubs["deploy_application"] = self.grpc_channel.unary_unary(
+            self._stubs["deploy_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/DeployApplication",
                 request_serializer=platform.DeployApplicationRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -447,7 +536,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "undeploy_application" not in self._stubs:
-            self._stubs["undeploy_application"] = self.grpc_channel.unary_unary(
+            self._stubs["undeploy_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/UndeployApplication",
                 request_serializer=platform.UndeployApplicationRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -478,7 +567,9 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "add_application_stream_input" not in self._stubs:
-            self._stubs["add_application_stream_input"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "add_application_stream_input"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/AddApplicationStreamInput",
                 request_serializer=platform.AddApplicationStreamInputRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -513,7 +604,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         if "remove_application_stream_input" not in self._stubs:
             self._stubs[
                 "remove_application_stream_input"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/RemoveApplicationStreamInput",
                 request_serializer=platform.RemoveApplicationStreamInputRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -548,7 +639,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         if "update_application_stream_input" not in self._stubs:
             self._stubs[
                 "update_application_stream_input"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/UpdateApplicationStreamInput",
                 request_serializer=platform.UpdateApplicationStreamInputRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -576,7 +667,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_instances" not in self._stubs:
-            self._stubs["list_instances"] = self.grpc_channel.unary_unary(
+            self._stubs["list_instances"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/ListInstances",
                 request_serializer=platform.ListInstancesRequest.serialize,
                 response_deserializer=platform.ListInstancesResponse.deserialize,
@@ -602,7 +693,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_instance" not in self._stubs:
-            self._stubs["get_instance"] = self.grpc_channel.unary_unary(
+            self._stubs["get_instance"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/GetInstance",
                 request_serializer=platform.GetInstanceRequest.serialize,
                 response_deserializer=platform.Instance.deserialize,
@@ -634,7 +725,9 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_application_instances" not in self._stubs:
-            self._stubs["create_application_instances"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "create_application_instances"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/CreateApplicationInstances",
                 request_serializer=platform.CreateApplicationInstancesRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -666,7 +759,9 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_application_instances" not in self._stubs:
-            self._stubs["delete_application_instances"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "delete_application_instances"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/DeleteApplicationInstances",
                 request_serializer=platform.DeleteApplicationInstancesRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -698,7 +793,9 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_application_instances" not in self._stubs:
-            self._stubs["update_application_instances"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "update_application_instances"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/UpdateApplicationInstances",
                 request_serializer=platform.UpdateApplicationInstancesRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -724,7 +821,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_drafts" not in self._stubs:
-            self._stubs["list_drafts"] = self.grpc_channel.unary_unary(
+            self._stubs["list_drafts"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/ListDrafts",
                 request_serializer=platform.ListDraftsRequest.serialize,
                 response_deserializer=platform.ListDraftsResponse.deserialize,
@@ -750,7 +847,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_draft" not in self._stubs:
-            self._stubs["get_draft"] = self.grpc_channel.unary_unary(
+            self._stubs["get_draft"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/GetDraft",
                 request_serializer=platform.GetDraftRequest.serialize,
                 response_deserializer=platform.Draft.deserialize,
@@ -776,7 +873,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_draft" not in self._stubs:
-            self._stubs["create_draft"] = self.grpc_channel.unary_unary(
+            self._stubs["create_draft"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/CreateDraft",
                 request_serializer=platform.CreateDraftRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -802,7 +899,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_draft" not in self._stubs:
-            self._stubs["update_draft"] = self.grpc_channel.unary_unary(
+            self._stubs["update_draft"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/UpdateDraft",
                 request_serializer=platform.UpdateDraftRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -828,7 +925,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_draft" not in self._stubs:
-            self._stubs["delete_draft"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_draft"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/DeleteDraft",
                 request_serializer=platform.DeleteDraftRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -856,7 +953,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_processors" not in self._stubs:
-            self._stubs["list_processors"] = self.grpc_channel.unary_unary(
+            self._stubs["list_processors"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/ListProcessors",
                 request_serializer=platform.ListProcessorsRequest.serialize,
                 response_deserializer=platform.ListProcessorsResponse.deserialize,
@@ -886,7 +983,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_prebuilt_processors" not in self._stubs:
-            self._stubs["list_prebuilt_processors"] = self.grpc_channel.unary_unary(
+            self._stubs["list_prebuilt_processors"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/ListPrebuiltProcessors",
                 request_serializer=platform.ListPrebuiltProcessorsRequest.serialize,
                 response_deserializer=platform.ListPrebuiltProcessorsResponse.deserialize,
@@ -912,7 +1009,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_processor" not in self._stubs:
-            self._stubs["get_processor"] = self.grpc_channel.unary_unary(
+            self._stubs["get_processor"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/GetProcessor",
                 request_serializer=platform.GetProcessorRequest.serialize,
                 response_deserializer=platform.Processor.deserialize,
@@ -941,7 +1038,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_processor" not in self._stubs:
-            self._stubs["create_processor"] = self.grpc_channel.unary_unary(
+            self._stubs["create_processor"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/CreateProcessor",
                 request_serializer=platform.CreateProcessorRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -969,7 +1066,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_processor" not in self._stubs:
-            self._stubs["update_processor"] = self.grpc_channel.unary_unary(
+            self._stubs["update_processor"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/UpdateProcessor",
                 request_serializer=platform.UpdateProcessorRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -997,7 +1094,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_processor" not in self._stubs:
-            self._stubs["delete_processor"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_processor"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.AppPlatform/DeleteProcessor",
                 request_serializer=platform.DeleteProcessorRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1007,140 +1104,169 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.list_applications: gapic_v1.method_async.wrap_method(
+            self.list_applications: self._wrap_method(
                 self.list_applications,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_application: gapic_v1.method_async.wrap_method(
+            self.get_application: self._wrap_method(
                 self.get_application,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_application: gapic_v1.method_async.wrap_method(
+            self.create_application: self._wrap_method(
                 self.create_application,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_application: gapic_v1.method_async.wrap_method(
+            self.update_application: self._wrap_method(
                 self.update_application,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_application: gapic_v1.method_async.wrap_method(
+            self.delete_application: self._wrap_method(
                 self.delete_application,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.deploy_application: gapic_v1.method_async.wrap_method(
+            self.deploy_application: self._wrap_method(
                 self.deploy_application,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.undeploy_application: gapic_v1.method_async.wrap_method(
+            self.undeploy_application: self._wrap_method(
                 self.undeploy_application,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.add_application_stream_input: gapic_v1.method_async.wrap_method(
+            self.add_application_stream_input: self._wrap_method(
                 self.add_application_stream_input,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.remove_application_stream_input: gapic_v1.method_async.wrap_method(
+            self.remove_application_stream_input: self._wrap_method(
                 self.remove_application_stream_input,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_application_stream_input: gapic_v1.method_async.wrap_method(
+            self.update_application_stream_input: self._wrap_method(
                 self.update_application_stream_input,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_instances: gapic_v1.method_async.wrap_method(
+            self.list_instances: self._wrap_method(
                 self.list_instances,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_instance: gapic_v1.method_async.wrap_method(
+            self.get_instance: self._wrap_method(
                 self.get_instance,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_application_instances: gapic_v1.method_async.wrap_method(
+            self.create_application_instances: self._wrap_method(
                 self.create_application_instances,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_application_instances: gapic_v1.method_async.wrap_method(
+            self.delete_application_instances: self._wrap_method(
                 self.delete_application_instances,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_application_instances: gapic_v1.method_async.wrap_method(
+            self.update_application_instances: self._wrap_method(
                 self.update_application_instances,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_drafts: gapic_v1.method_async.wrap_method(
+            self.list_drafts: self._wrap_method(
                 self.list_drafts,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_draft: gapic_v1.method_async.wrap_method(
+            self.get_draft: self._wrap_method(
                 self.get_draft,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_draft: gapic_v1.method_async.wrap_method(
+            self.create_draft: self._wrap_method(
                 self.create_draft,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_draft: gapic_v1.method_async.wrap_method(
+            self.update_draft: self._wrap_method(
                 self.update_draft,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_draft: gapic_v1.method_async.wrap_method(
+            self.delete_draft: self._wrap_method(
                 self.delete_draft,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_processors: gapic_v1.method_async.wrap_method(
+            self.list_processors: self._wrap_method(
                 self.list_processors,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_prebuilt_processors: gapic_v1.method_async.wrap_method(
+            self.list_prebuilt_processors: self._wrap_method(
                 self.list_prebuilt_processors,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_processor: gapic_v1.method_async.wrap_method(
+            self.get_processor: self._wrap_method(
                 self.get_processor,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_processor: gapic_v1.method_async.wrap_method(
+            self.create_processor: self._wrap_method(
                 self.create_processor,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_processor: gapic_v1.method_async.wrap_method(
+            self.update_processor: self._wrap_method(
                 self.update_processor,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_processor: gapic_v1.method_async.wrap_method(
+            self.delete_processor: self._wrap_method(
                 self.delete_processor,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -1152,7 +1278,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1169,7 +1295,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1186,7 +1312,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1205,7 +1331,7 @@ class AppPlatformGrpcAsyncIOTransport(AppPlatformTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,

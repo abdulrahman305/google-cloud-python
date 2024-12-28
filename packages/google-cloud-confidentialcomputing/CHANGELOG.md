@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.4.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.13...google-cloud-confidentialcomputing-v0.4.14) (2024-12-12)
+
+
+### Features
+
+* Add a token_type options proto to allow for customization of specific token types ([f8900f4](https://github.com/googleapis/google-cloud-python/commit/f8900f40bb825b25a0cf5727f6992397662bb6a2))
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+* Added the first token type option to hold principal tag token options ([f8900f4](https://github.com/googleapis/google-cloud-python/commit/f8900f40bb825b25a0cf5727f6992397662bb6a2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [0.4.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.12...google-cloud-confidentialcomputing-v0.4.13) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [0.4.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.11...google-cloud-confidentialcomputing-v0.4.12) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
 ## [0.4.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.10...google-cloud-confidentialcomputing-v0.4.11) (2024-07-30)
 
 

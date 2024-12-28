@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -22,13 +26,92 @@ from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.gke_multicloud_v1.types import azure_resources, azure_service
 
 from .base import DEFAULT_CLIENT_INFO, AzureClustersTransport
 from .grpc import AzureClustersGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.gkemulticloud.v1.AzureClusters",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.gkemulticloud.v1.AzureClusters",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
@@ -229,7 +312,13 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -252,7 +341,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -289,7 +378,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_azure_client" not in self._stubs:
-            self._stubs["create_azure_client"] = self.grpc_channel.unary_unary(
+            self._stubs["create_azure_client"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/CreateAzureClient",
                 request_serializer=azure_service.CreateAzureClientRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -319,7 +408,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_azure_client" not in self._stubs:
-            self._stubs["get_azure_client"] = self.grpc_channel.unary_unary(
+            self._stubs["get_azure_client"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/GetAzureClient",
                 request_serializer=azure_service.GetAzureClientRequest.serialize,
                 response_deserializer=azure_resources.AzureClient.deserialize,
@@ -350,7 +439,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_azure_clients" not in self._stubs:
-            self._stubs["list_azure_clients"] = self.grpc_channel.unary_unary(
+            self._stubs["list_azure_clients"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/ListAzureClients",
                 request_serializer=azure_service.ListAzureClientsRequest.serialize,
                 response_deserializer=azure_service.ListAzureClientsResponse.deserialize,
@@ -387,7 +476,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_azure_client" not in self._stubs:
-            self._stubs["delete_azure_client"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_azure_client"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/DeleteAzureClient",
                 request_serializer=azure_service.DeleteAzureClientRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -421,7 +510,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_azure_cluster" not in self._stubs:
-            self._stubs["create_azure_cluster"] = self.grpc_channel.unary_unary(
+            self._stubs["create_azure_cluster"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/CreateAzureCluster",
                 request_serializer=azure_service.CreateAzureClusterRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -450,7 +539,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_azure_cluster" not in self._stubs:
-            self._stubs["update_azure_cluster"] = self.grpc_channel.unary_unary(
+            self._stubs["update_azure_cluster"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/UpdateAzureCluster",
                 request_serializer=azure_service.UpdateAzureClusterRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -480,7 +569,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_azure_cluster" not in self._stubs:
-            self._stubs["get_azure_cluster"] = self.grpc_channel.unary_unary(
+            self._stubs["get_azure_cluster"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/GetAzureCluster",
                 request_serializer=azure_service.GetAzureClusterRequest.serialize,
                 response_deserializer=azure_resources.AzureCluster.deserialize,
@@ -511,7 +600,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_azure_clusters" not in self._stubs:
-            self._stubs["list_azure_clusters"] = self.grpc_channel.unary_unary(
+            self._stubs["list_azure_clusters"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/ListAzureClusters",
                 request_serializer=azure_service.ListAzureClustersRequest.serialize,
                 response_deserializer=azure_service.ListAzureClustersResponse.deserialize,
@@ -549,7 +638,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_azure_cluster" not in self._stubs:
-            self._stubs["delete_azure_cluster"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_azure_cluster"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/DeleteAzureCluster",
                 request_serializer=azure_service.DeleteAzureClusterRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -581,7 +670,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         if "generate_azure_cluster_agent_token" not in self._stubs:
             self._stubs[
                 "generate_azure_cluster_agent_token"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/GenerateAzureClusterAgentToken",
                 request_serializer=azure_service.GenerateAzureClusterAgentTokenRequest.serialize,
                 response_deserializer=azure_service.GenerateAzureClusterAgentTokenResponse.deserialize,
@@ -612,7 +701,9 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "generate_azure_access_token" not in self._stubs:
-            self._stubs["generate_azure_access_token"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "generate_azure_access_token"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/GenerateAzureAccessToken",
                 request_serializer=azure_service.GenerateAzureAccessTokenRequest.serialize,
                 response_deserializer=azure_service.GenerateAzureAccessTokenResponse.deserialize,
@@ -647,7 +738,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_azure_node_pool" not in self._stubs:
-            self._stubs["create_azure_node_pool"] = self.grpc_channel.unary_unary(
+            self._stubs["create_azure_node_pool"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/CreateAzureNodePool",
                 request_serializer=azure_service.CreateAzureNodePoolRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -676,7 +767,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_azure_node_pool" not in self._stubs:
-            self._stubs["update_azure_node_pool"] = self.grpc_channel.unary_unary(
+            self._stubs["update_azure_node_pool"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/UpdateAzureNodePool",
                 request_serializer=azure_service.UpdateAzureNodePoolRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -707,7 +798,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_azure_node_pool" not in self._stubs:
-            self._stubs["get_azure_node_pool"] = self.grpc_channel.unary_unary(
+            self._stubs["get_azure_node_pool"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/GetAzureNodePool",
                 request_serializer=azure_service.GetAzureNodePoolRequest.serialize,
                 response_deserializer=azure_resources.AzureNodePool.deserialize,
@@ -739,7 +830,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_azure_node_pools" not in self._stubs:
-            self._stubs["list_azure_node_pools"] = self.grpc_channel.unary_unary(
+            self._stubs["list_azure_node_pools"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/ListAzureNodePools",
                 request_serializer=azure_service.ListAzureNodePoolsRequest.serialize,
                 response_deserializer=azure_service.ListAzureNodePoolsResponse.deserialize,
@@ -773,7 +864,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_azure_node_pool" not in self._stubs:
-            self._stubs["delete_azure_node_pool"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_azure_node_pool"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/DeleteAzureNodePool",
                 request_serializer=azure_service.DeleteAzureNodePoolRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -805,7 +896,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_azure_open_id_config" not in self._stubs:
-            self._stubs["get_azure_open_id_config"] = self.grpc_channel.unary_unary(
+            self._stubs["get_azure_open_id_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/GetAzureOpenIdConfig",
                 request_serializer=azure_service.GetAzureOpenIdConfigRequest.serialize,
                 response_deserializer=azure_resources.AzureOpenIdConfig.deserialize,
@@ -835,7 +926,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_azure_json_web_keys" not in self._stubs:
-            self._stubs["get_azure_json_web_keys"] = self.grpc_channel.unary_unary(
+            self._stubs["get_azure_json_web_keys"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/GetAzureJsonWebKeys",
                 request_serializer=azure_service.GetAzureJsonWebKeysRequest.serialize,
                 response_deserializer=azure_resources.AzureJsonWebKeys.deserialize,
@@ -866,7 +957,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_azure_server_config" not in self._stubs:
-            self._stubs["get_azure_server_config"] = self.grpc_channel.unary_unary(
+            self._stubs["get_azure_server_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkemulticloud.v1.AzureClusters/GetAzureServerConfig",
                 request_serializer=azure_service.GetAzureServerConfigRequest.serialize,
                 response_deserializer=azure_resources.AzureServerConfig.deserialize,
@@ -876,12 +967,12 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_azure_client: gapic_v1.method_async.wrap_method(
+            self.create_azure_client: self._wrap_method(
                 self.create_azure_client,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_azure_client: gapic_v1.method_async.wrap_method(
+            self.get_azure_client: self._wrap_method(
                 self.get_azure_client,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -895,7 +986,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_azure_clients: gapic_v1.method_async.wrap_method(
+            self.list_azure_clients: self._wrap_method(
                 self.list_azure_clients,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -909,22 +1000,22 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_azure_client: gapic_v1.method_async.wrap_method(
+            self.delete_azure_client: self._wrap_method(
                 self.delete_azure_client,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_azure_cluster: gapic_v1.method_async.wrap_method(
+            self.create_azure_cluster: self._wrap_method(
                 self.create_azure_cluster,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_azure_cluster: gapic_v1.method_async.wrap_method(
+            self.update_azure_cluster: self._wrap_method(
                 self.update_azure_cluster,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_azure_cluster: gapic_v1.method_async.wrap_method(
+            self.get_azure_cluster: self._wrap_method(
                 self.get_azure_cluster,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -938,7 +1029,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_azure_clusters: gapic_v1.method_async.wrap_method(
+            self.list_azure_clusters: self._wrap_method(
                 self.list_azure_clusters,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -952,12 +1043,12 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_azure_cluster: gapic_v1.method_async.wrap_method(
+            self.delete_azure_cluster: self._wrap_method(
                 self.delete_azure_cluster,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.generate_azure_cluster_agent_token: gapic_v1.method_async.wrap_method(
+            self.generate_azure_cluster_agent_token: self._wrap_method(
                 self.generate_azure_cluster_agent_token,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -971,7 +1062,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.generate_azure_access_token: gapic_v1.method_async.wrap_method(
+            self.generate_azure_access_token: self._wrap_method(
                 self.generate_azure_access_token,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -985,17 +1076,17 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_azure_node_pool: gapic_v1.method_async.wrap_method(
+            self.create_azure_node_pool: self._wrap_method(
                 self.create_azure_node_pool,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_azure_node_pool: gapic_v1.method_async.wrap_method(
+            self.update_azure_node_pool: self._wrap_method(
                 self.update_azure_node_pool,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_azure_node_pool: gapic_v1.method_async.wrap_method(
+            self.get_azure_node_pool: self._wrap_method(
                 self.get_azure_node_pool,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1009,7 +1100,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_azure_node_pools: gapic_v1.method_async.wrap_method(
+            self.list_azure_node_pools: self._wrap_method(
                 self.list_azure_node_pools,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1023,12 +1114,12 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_azure_node_pool: gapic_v1.method_async.wrap_method(
+            self.delete_azure_node_pool: self._wrap_method(
                 self.delete_azure_node_pool,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_azure_open_id_config: gapic_v1.method_async.wrap_method(
+            self.get_azure_open_id_config: self._wrap_method(
                 self.get_azure_open_id_config,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1042,7 +1133,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_azure_json_web_keys: gapic_v1.method_async.wrap_method(
+            self.get_azure_json_web_keys: self._wrap_method(
                 self.get_azure_json_web_keys,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1056,7 +1147,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_azure_server_config: gapic_v1.method_async.wrap_method(
+            self.get_azure_server_config: self._wrap_method(
                 self.get_azure_server_config,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1070,10 +1161,39 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -1085,7 +1205,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1102,7 +1222,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1119,7 +1239,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1138,7 +1258,7 @@ class AzureClustersGrpcAsyncIOTransport(AzureClustersTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,

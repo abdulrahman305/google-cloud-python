@@ -39,6 +39,7 @@ def partition(
 class recaptchaenterpriseCallTransformer(cst.CSTTransformer):
     CTRL_PARAMS: Tuple[str] = ('retry', 'timeout', 'metadata')
     METHOD_TO_PARAMS: Dict[str, Tuple[str]] = {
+        'add_ip_override': ('name', 'ip_override_data', ),
         'annotate_assessment': ('name', 'annotation', 'reasons', 'account_id', 'hashed_account_id', 'transaction_event', ),
         'create_assessment': ('parent', 'assessment', ),
         'create_firewall_policy': ('parent', 'firewall_policy', ),
@@ -49,10 +50,12 @@ class recaptchaenterpriseCallTransformer(cst.CSTTransformer):
         'get_key': ('name', ),
         'get_metrics': ('name', ),
         'list_firewall_policies': ('parent', 'page_size', 'page_token', ),
+        'list_ip_overrides': ('parent', 'page_size', 'page_token', ),
         'list_keys': ('parent', 'page_size', 'page_token', ),
         'list_related_account_group_memberships': ('parent', 'page_size', 'page_token', ),
         'list_related_account_groups': ('parent', 'page_size', 'page_token', ),
         'migrate_key': ('name', 'skip_billing_check', ),
+        'remove_ip_override': ('name', 'ip_override_data', ),
         'reorder_firewall_policies': ('parent', 'names', ),
         'retrieve_legacy_secret_key': ('key', ),
         'search_related_account_group_memberships': ('project', 'account_id', 'hashed_account_id', 'page_size', 'page_token', ),

@@ -32,6 +32,7 @@ __protobuf__ = proto.module(
         "MetricAggregation",
         "MetricType",
         "RestrictedMetricType",
+        "SamplingLevel",
         "DateRange",
         "Dimension",
         "DimensionExpression",
@@ -44,6 +45,7 @@ __protobuf__ = proto.module(
         "NumericFilter",
         "OrderBy",
         "BetweenFilter",
+        "EmptyFilter",
         "NumericValue",
         "CohortSpec",
         "Cohort",
@@ -293,7 +295,7 @@ class MetricType(proto.Enum):
 
 class RestrictedMetricType(proto.Enum):
     r"""Categories of data that you may be restricted from viewing on
-    certain GA4 properties.
+    certain Google Analytics properties.
 
     Values:
         RESTRICTED_METRIC_TYPE_UNSPECIFIED (0):
@@ -306,6 +308,32 @@ class RestrictedMetricType(proto.Enum):
     RESTRICTED_METRIC_TYPE_UNSPECIFIED = 0
     COST_DATA = 1
     REVENUE_DATA = 2
+
+
+class SamplingLevel(proto.Enum):
+    r"""Categories of sampling levels for the requests.
+
+    Values:
+        SAMPLING_LEVEL_UNSPECIFIED (0):
+            Unspecified type.
+        LOW (1):
+            Applies a sampling level of 10 million to
+            standard properties and 100 million to Google
+            Analytics 360 properties.
+        MEDIUM (2):
+            Exclusive to Google Analytics 360 properties
+            with a sampling level of 1 billion.
+        UNSAMPLED (3):
+            Exclusive to Google Analytics 360 properties.
+            Unsampled explorations are more accurate and can
+            reveal insights that aren't visible in standard
+            explorations. To learn more, see
+            https://support.google.com/analytics/answer/10896953.
+    """
+    SAMPLING_LEVEL_UNSPECIFIED = 0
+    LOW = 1
+    MEDIUM = 2
+    UNSAMPLED = 3
 
 
 class DateRange(proto.Message):
@@ -648,6 +676,11 @@ class Filter(proto.Message):
             A filter for between two values.
 
             This field is a member of `oneof`_ ``one_filter``.
+        empty_filter (google.analytics.data_v1alpha.types.EmptyFilter):
+            A filter for empty values such as "(not set)"
+            and "" values.
+
+            This field is a member of `oneof`_ ``one_filter``.
     """
 
     field_name: str = proto.Field(
@@ -677,6 +710,12 @@ class Filter(proto.Message):
         number=5,
         oneof="one_filter",
         message="BetweenFilter",
+    )
+    empty_filter: "EmptyFilter" = proto.Field(
+        proto.MESSAGE,
+        number=6,
+        oneof="one_filter",
+        message="EmptyFilter",
     )
 
 
@@ -927,6 +966,10 @@ class BetweenFilter(proto.Message):
         number=2,
         message="NumericValue",
     )
+
+
+class EmptyFilter(proto.Message):
+    r"""Filter for empty values."""
 
 
 class NumericValue(proto.Message):
@@ -1245,6 +1288,16 @@ class ResponseMetaData(proto.Message):
             Interests <https://support.google.com/analytics/answer/2799357>`__.
 
             This field is a member of `oneof`_ ``_subject_to_thresholding``.
+        sampling_metadatas (MutableSequence[google.analytics.data_v1alpha.types.SamplingMetadata]):
+            If this report's results are
+            `sampled <https://support.google.com/analytics/answer/13331292>`__,
+            this describes the percentage of events used in this report.
+            One ``samplingMetadatas`` is populated for each date range.
+            Each ``samplingMetadatas`` corresponds to a date range in
+            the order that date ranges were specified in the request.
+
+            However if the results are not sampled, this field will not
+            be defined.
     """
 
     class SchemaRestrictionResponse(proto.Message):
@@ -1325,6 +1378,11 @@ class ResponseMetaData(proto.Message):
         proto.BOOL,
         number=8,
         optional=True,
+    )
+    sampling_metadatas: MutableSequence["SamplingMetadata"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=9,
+        message="SamplingMetadata",
     )
 
 
@@ -2231,7 +2289,7 @@ class Segment(proto.Message):
     particular line of products or who visit a specific part of your
     site or trigger certain events in your app.
 
-    To learn more, see `GA4 Segment
+    To learn more, see `Segment
     Builder <https://support.google.com/analytics/answer/9304353>`__.
 
     This message has `oneof`_ fields (mutually exclusive fields).
@@ -3118,8 +3176,8 @@ class FunnelResponseMetadata(proto.Message):
             this describes what percentage of events were used in this
             funnel report. One ``samplingMetadatas`` is populated for
             each date range. Each ``samplingMetadatas`` corresponds to a
-            date range in order that date ranges were specified in the
-            request.
+            date range in the order that date ranges were specified in
+            the request.
 
             However if the results are not sampled, this field will not
             be defined.

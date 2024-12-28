@@ -139,6 +139,11 @@ class CompletionServiceTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.advanced_complete_query: gapic_v1.method.wrap_method(
+                self.advanced_complete_query,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.import_suggestion_deny_list_entries: gapic_v1.method.wrap_method(
                 self.import_suggestion_deny_list_entries,
                 default_timeout=None,
@@ -156,6 +161,21 @@ class CompletionServiceTransport(abc.ABC):
             ),
             self.purge_completion_suggestions: gapic_v1.method.wrap_method(
                 self.purge_completion_suggestions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: gapic_v1.method.wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: gapic_v1.method.wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: gapic_v1.method.wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -183,6 +203,18 @@ class CompletionServiceTransport(abc.ABC):
         Union[
             completion_service.CompleteQueryResponse,
             Awaitable[completion_service.CompleteQueryResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def advanced_complete_query(
+        self,
+    ) -> Callable[
+        [completion_service.AdvancedCompleteQueryRequest],
+        Union[
+            completion_service.AdvancedCompleteQueryResponse,
+            Awaitable[completion_service.AdvancedCompleteQueryResponse],
         ],
     ]:
         raise NotImplementedError()

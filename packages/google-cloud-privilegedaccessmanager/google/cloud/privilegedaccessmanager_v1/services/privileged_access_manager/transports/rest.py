@@ -13,47 +13,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import (
-    gapic_v1,
-    operations_v1,
-    path_template,
-    rest_helpers,
-    rest_streaming,
-)
+from google.api_core import gapic_v1, operations_v1, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
+from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.cloud.privilegedaccessmanager_v1.types import privilegedaccessmanager
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BasePrivilegedAccessManagerRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.longrunning import operations_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.cloud.privilegedaccessmanager_v1.types import privilegedaccessmanager
-
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import PrivilegedAccessManagerTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -193,8 +191,11 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_approve_grant(
         self,
         request: privilegedaccessmanager.ApproveGrantRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[privilegedaccessmanager.ApproveGrantRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        privilegedaccessmanager.ApproveGrantRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for approve_grant
 
         Override in a subclass to manipulate the request or metadata
@@ -216,9 +217,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_check_onboarding_status(
         self,
         request: privilegedaccessmanager.CheckOnboardingStatusRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        privilegedaccessmanager.CheckOnboardingStatusRequest, Sequence[Tuple[str, str]]
+        privilegedaccessmanager.CheckOnboardingStatusRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for check_onboarding_status
 
@@ -241,9 +243,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_create_entitlement(
         self,
         request: privilegedaccessmanager.CreateEntitlementRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        privilegedaccessmanager.CreateEntitlementRequest, Sequence[Tuple[str, str]]
+        privilegedaccessmanager.CreateEntitlementRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for create_entitlement
 
@@ -266,8 +269,11 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_create_grant(
         self,
         request: privilegedaccessmanager.CreateGrantRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[privilegedaccessmanager.CreateGrantRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        privilegedaccessmanager.CreateGrantRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for create_grant
 
         Override in a subclass to manipulate the request or metadata
@@ -289,9 +295,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_delete_entitlement(
         self,
         request: privilegedaccessmanager.DeleteEntitlementRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        privilegedaccessmanager.DeleteEntitlementRequest, Sequence[Tuple[str, str]]
+        privilegedaccessmanager.DeleteEntitlementRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for delete_entitlement
 
@@ -314,8 +321,11 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_deny_grant(
         self,
         request: privilegedaccessmanager.DenyGrantRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[privilegedaccessmanager.DenyGrantRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        privilegedaccessmanager.DenyGrantRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for deny_grant
 
         Override in a subclass to manipulate the request or metadata
@@ -337,9 +347,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_get_entitlement(
         self,
         request: privilegedaccessmanager.GetEntitlementRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        privilegedaccessmanager.GetEntitlementRequest, Sequence[Tuple[str, str]]
+        privilegedaccessmanager.GetEntitlementRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for get_entitlement
 
@@ -362,8 +373,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_get_grant(
         self,
         request: privilegedaccessmanager.GetGrantRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[privilegedaccessmanager.GetGrantRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        privilegedaccessmanager.GetGrantRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_grant
 
         Override in a subclass to manipulate the request or metadata
@@ -385,9 +398,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_list_entitlements(
         self,
         request: privilegedaccessmanager.ListEntitlementsRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        privilegedaccessmanager.ListEntitlementsRequest, Sequence[Tuple[str, str]]
+        privilegedaccessmanager.ListEntitlementsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_entitlements
 
@@ -410,8 +424,11 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_list_grants(
         self,
         request: privilegedaccessmanager.ListGrantsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[privilegedaccessmanager.ListGrantsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        privilegedaccessmanager.ListGrantsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for list_grants
 
         Override in a subclass to manipulate the request or metadata
@@ -433,8 +450,11 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_revoke_grant(
         self,
         request: privilegedaccessmanager.RevokeGrantRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[privilegedaccessmanager.RevokeGrantRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        privilegedaccessmanager.RevokeGrantRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for revoke_grant
 
         Override in a subclass to manipulate the request or metadata
@@ -456,9 +476,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_search_entitlements(
         self,
         request: privilegedaccessmanager.SearchEntitlementsRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        privilegedaccessmanager.SearchEntitlementsRequest, Sequence[Tuple[str, str]]
+        privilegedaccessmanager.SearchEntitlementsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for search_entitlements
 
@@ -481,8 +502,11 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_search_grants(
         self,
         request: privilegedaccessmanager.SearchGrantsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[privilegedaccessmanager.SearchGrantsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        privilegedaccessmanager.SearchGrantsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for search_grants
 
         Override in a subclass to manipulate the request or metadata
@@ -504,9 +528,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_update_entitlement(
         self,
         request: privilegedaccessmanager.UpdateEntitlementRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        privilegedaccessmanager.UpdateEntitlementRequest, Sequence[Tuple[str, str]]
+        privilegedaccessmanager.UpdateEntitlementRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for update_entitlement
 
@@ -529,8 +554,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_get_location(
         self,
         request: locations_pb2.GetLocationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[locations_pb2.GetLocationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        locations_pb2.GetLocationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_location
 
         Override in a subclass to manipulate the request or metadata
@@ -552,8 +579,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_list_locations(
         self,
         request: locations_pb2.ListLocationsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[locations_pb2.ListLocationsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        locations_pb2.ListLocationsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_locations
 
         Override in a subclass to manipulate the request or metadata
@@ -575,8 +604,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_delete_operation(
         self,
         request: operations_pb2.DeleteOperationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[operations_pb2.DeleteOperationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        operations_pb2.DeleteOperationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for delete_operation
 
         Override in a subclass to manipulate the request or metadata
@@ -596,8 +627,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_get_operation(
         self,
         request: operations_pb2.GetOperationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[operations_pb2.GetOperationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        operations_pb2.GetOperationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_operation
 
         Override in a subclass to manipulate the request or metadata
@@ -619,8 +652,10 @@ class PrivilegedAccessManagerRestInterceptor:
     def pre_list_operations(
         self,
         request: operations_pb2.ListOperationsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[operations_pb2.ListOperationsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        operations_pb2.ListOperationsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_operations
 
         Override in a subclass to manipulate the request or metadata
@@ -647,8 +682,8 @@ class PrivilegedAccessManagerRestStub:
     _interceptor: PrivilegedAccessManagerRestInterceptor
 
 
-class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
-    """REST backend transport for PrivilegedAccessManager.
+class PrivilegedAccessManagerRestTransport(_BasePrivilegedAccessManagerRestTransport):
+    """REST backend synchronous transport for PrivilegedAccessManager.
 
     This API allows customers to manage temporary, request based
     privileged access to their resources.
@@ -679,7 +714,6 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -733,21 +767,12 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -829,19 +854,35 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
         # Return the client from cache.
         return self._operations_client
 
-    class _ApproveGrant(PrivilegedAccessManagerRestStub):
+    class _ApproveGrant(
+        _BasePrivilegedAccessManagerRestTransport._BaseApproveGrant,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("ApproveGrant")
+            return hash("PrivilegedAccessManagerRestTransport.ApproveGrant")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -849,7 +890,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.Grant:
             r"""Call the approve grant method over HTTP.
 
@@ -859,68 +900,73 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.Grant:
-                    This is to ensure that the ``Grants`` and
-                ``ProducerGrants`` proto are byte compatible. A grant
-                represents a request from a user for obtaining the
-                access specified in an entitlement they are eligible
-                for.
+                    A grant represents a request from a
+                user for obtaining the access specified
+                in an entitlement they are eligible for.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=projects/*/locations/*/entitlements/*/grants/*}:approve",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=organizations/*/locations/*/entitlements/*/grants/*}:approve",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=folders/*/locations/*/entitlements/*/grants/*}:approve",
-                    "body": "*",
-                },
-            ]
-            request, metadata = self._interceptor.pre_approve_grant(request, metadata)
-            pb_request = privilegedaccessmanager.ApproveGrantRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseApproveGrant._get_http_options()
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            request, metadata = self._interceptor.pre_approve_grant(request, metadata)
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseApproveGrant._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BasePrivilegedAccessManagerRestTransport._BaseApproveGrant._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseApproveGrant._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.ApproveGrant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ApproveGrant",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = PrivilegedAccessManagerRestTransport._ApproveGrant._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -933,22 +979,59 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.Grant.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_approve_grant(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = privilegedaccessmanager.Grant.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.approve_grant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ApproveGrant",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CheckOnboardingStatus(PrivilegedAccessManagerRestStub):
+    class _CheckOnboardingStatus(
+        _BasePrivilegedAccessManagerRestTransport._BaseCheckOnboardingStatus,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("CheckOnboardingStatus")
+            return hash("PrivilegedAccessManagerRestTransport.CheckOnboardingStatus")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -956,7 +1039,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.CheckOnboardingStatusResponse:
             r"""Call the check onboarding status method over HTTP.
 
@@ -966,58 +1049,67 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.CheckOnboardingStatusResponse:
                     Response message for ``CheckOnboardingStatus`` method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}:checkOnboardingStatus",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}:checkOnboardingStatus",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}:checkOnboardingStatus",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseCheckOnboardingStatus._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_check_onboarding_status(
                 request, metadata
             )
-            pb_request = privilegedaccessmanager.CheckOnboardingStatusRequest.pb(
-                request
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseCheckOnboardingStatus._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseCheckOnboardingStatus._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.CheckOnboardingStatus",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "CheckOnboardingStatus",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = PrivilegedAccessManagerRestTransport._CheckOnboardingStatus._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1030,24 +1122,64 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.CheckOnboardingStatusResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_check_onboarding_status(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        privilegedaccessmanager.CheckOnboardingStatusResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.check_onboarding_status",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "CheckOnboardingStatus",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CreateEntitlement(PrivilegedAccessManagerRestStub):
+    class _CreateEntitlement(
+        _BasePrivilegedAccessManagerRestTransport._BaseCreateEntitlement,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateEntitlement")
+            return hash("PrivilegedAccessManagerRestTransport.CreateEntitlement")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "entitlementId": "",
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1055,7 +1187,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the create entitlement method over HTTP.
 
@@ -1065,8 +1197,10 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.operations_pb2.Operation:
@@ -1076,57 +1210,64 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*}/entitlements",
-                    "body": "entitlement",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/entitlements",
-                    "body": "entitlement",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=folders/*/locations/*}/entitlements",
-                    "body": "entitlement",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseCreateEntitlement._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_entitlement(
                 request, metadata
             )
-            pb_request = privilegedaccessmanager.CreateEntitlementRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseCreateEntitlement._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BasePrivilegedAccessManagerRestTransport._BaseCreateEntitlement._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseCreateEntitlement._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.CreateEntitlement",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "CreateEntitlement",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                PrivilegedAccessManagerRestTransport._CreateEntitlement._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1137,22 +1278,60 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             # Return the response
             resp = operations_pb2.Operation()
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_entitlement(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.create_entitlement",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "CreateEntitlement",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _CreateGrant(PrivilegedAccessManagerRestStub):
+    class _CreateGrant(
+        _BasePrivilegedAccessManagerRestTransport._BaseCreateGrant,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateGrant")
+            return hash("PrivilegedAccessManagerRestTransport.CreateGrant")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1160,7 +1339,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.Grant:
             r"""Call the create grant method over HTTP.
 
@@ -1170,68 +1349,73 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.Grant:
-                    This is to ensure that the ``Grants`` and
-                ``ProducerGrants`` proto are byte compatible. A grant
-                represents a request from a user for obtaining the
-                access specified in an entitlement they are eligible
-                for.
+                    A grant represents a request from a
+                user for obtaining the access specified
+                in an entitlement they are eligible for.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=projects/*/locations/*/entitlements/*}/grants",
-                    "body": "grant",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=organizations/*/locations/*/entitlements/*}/grants",
-                    "body": "grant",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=folders/*/locations/*/entitlements/*}/grants",
-                    "body": "grant",
-                },
-            ]
-            request, metadata = self._interceptor.pre_create_grant(request, metadata)
-            pb_request = privilegedaccessmanager.CreateGrantRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseCreateGrant._get_http_options()
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            request, metadata = self._interceptor.pre_create_grant(request, metadata)
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseCreateGrant._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BasePrivilegedAccessManagerRestTransport._BaseCreateGrant._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseCreateGrant._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.CreateGrant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "CreateGrant",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = PrivilegedAccessManagerRestTransport._CreateGrant._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1244,22 +1428,59 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.Grant.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_grant(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = privilegedaccessmanager.Grant.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.create_grant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "CreateGrant",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _DeleteEntitlement(PrivilegedAccessManagerRestStub):
+    class _DeleteEntitlement(
+        _BasePrivilegedAccessManagerRestTransport._BaseDeleteEntitlement,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("DeleteEntitlement")
+            return hash("PrivilegedAccessManagerRestTransport.DeleteEntitlement")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1267,7 +1488,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the delete entitlement method over HTTP.
 
@@ -1277,8 +1498,10 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.operations_pb2.Operation:
@@ -1288,48 +1511,59 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=projects/*/locations/*/entitlements/*}",
-                },
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=organizations/*/locations/*/entitlements/*}",
-                },
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=folders/*/locations/*/entitlements/*}",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseDeleteEntitlement._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_entitlement(
                 request, metadata
             )
-            pb_request = privilegedaccessmanager.DeleteEntitlementRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseDeleteEntitlement._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseDeleteEntitlement._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.DeleteEntitlement",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "DeleteEntitlement",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                PrivilegedAccessManagerRestTransport._DeleteEntitlement._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1340,22 +1574,60 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             # Return the response
             resp = operations_pb2.Operation()
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_delete_entitlement(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.delete_entitlement",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "DeleteEntitlement",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _DenyGrant(PrivilegedAccessManagerRestStub):
+    class _DenyGrant(
+        _BasePrivilegedAccessManagerRestTransport._BaseDenyGrant,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("DenyGrant")
+            return hash("PrivilegedAccessManagerRestTransport.DenyGrant")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1363,7 +1635,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.Grant:
             r"""Call the deny grant method over HTTP.
 
@@ -1373,68 +1645,73 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.Grant:
-                    This is to ensure that the ``Grants`` and
-                ``ProducerGrants`` proto are byte compatible. A grant
-                represents a request from a user for obtaining the
-                access specified in an entitlement they are eligible
-                for.
+                    A grant represents a request from a
+                user for obtaining the access specified
+                in an entitlement they are eligible for.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=projects/*/locations/*/entitlements/*/grants/*}:deny",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=organizations/*/locations/*/entitlements/*/grants/*}:deny",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=folders/*/locations/*/entitlements/*/grants/*}:deny",
-                    "body": "*",
-                },
-            ]
-            request, metadata = self._interceptor.pre_deny_grant(request, metadata)
-            pb_request = privilegedaccessmanager.DenyGrantRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseDenyGrant._get_http_options()
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            request, metadata = self._interceptor.pre_deny_grant(request, metadata)
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseDenyGrant._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BasePrivilegedAccessManagerRestTransport._BaseDenyGrant._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseDenyGrant._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.DenyGrant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "DenyGrant",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = PrivilegedAccessManagerRestTransport._DenyGrant._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1447,22 +1724,59 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.Grant.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_deny_grant(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = privilegedaccessmanager.Grant.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.deny_grant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "DenyGrant",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetEntitlement(PrivilegedAccessManagerRestStub):
+    class _GetEntitlement(
+        _BasePrivilegedAccessManagerRestTransport._BaseGetEntitlement,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("GetEntitlement")
+            return hash("PrivilegedAccessManagerRestTransport.GetEntitlement")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1470,7 +1784,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.Entitlement:
             r"""Call the get entitlement method over HTTP.
 
@@ -1480,8 +1794,10 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.Entitlement:
@@ -1493,46 +1809,57 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/entitlements/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/entitlements/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*/entitlements/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_entitlement(request, metadata)
-            pb_request = privilegedaccessmanager.GetEntitlementRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseGetEntitlement._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_entitlement(request, metadata)
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseGetEntitlement._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseGetEntitlement._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.GetEntitlement",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "GetEntitlement",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                PrivilegedAccessManagerRestTransport._GetEntitlement._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1545,22 +1872,61 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.Entitlement.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_entitlement(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = privilegedaccessmanager.Entitlement.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.get_entitlement",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "GetEntitlement",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetGrant(PrivilegedAccessManagerRestStub):
+    class _GetGrant(
+        _BasePrivilegedAccessManagerRestTransport._BaseGetGrant,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("GetGrant")
+            return hash("PrivilegedAccessManagerRestTransport.GetGrant")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1568,7 +1934,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.Grant:
             r"""Call the get grant method over HTTP.
 
@@ -1578,59 +1944,68 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.Grant:
-                    This is to ensure that the ``Grants`` and
-                ``ProducerGrants`` proto are byte compatible. A grant
-                represents a request from a user for obtaining the
-                access specified in an entitlement they are eligible
-                for.
+                    A grant represents a request from a
+                user for obtaining the access specified
+                in an entitlement they are eligible for.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/entitlements/*/grants/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/entitlements/*/grants/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*/entitlements/*/grants/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_grant(request, metadata)
-            pb_request = privilegedaccessmanager.GetGrantRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseGetGrant._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_grant(request, metadata)
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseGetGrant._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseGetGrant._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.GetGrant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "GetGrant",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = PrivilegedAccessManagerRestTransport._GetGrant._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1643,22 +2018,59 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.Grant.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_grant(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = privilegedaccessmanager.Grant.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.get_grant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "GetGrant",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListEntitlements(PrivilegedAccessManagerRestStub):
+    class _ListEntitlements(
+        _BasePrivilegedAccessManagerRestTransport._BaseListEntitlements,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("ListEntitlements")
+            return hash("PrivilegedAccessManagerRestTransport.ListEntitlements")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1666,7 +2078,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.ListEntitlementsResponse:
             r"""Call the list entitlements method over HTTP.
 
@@ -1677,8 +2089,10 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.ListEntitlementsResponse:
@@ -1687,48 +2101,59 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/entitlements",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/entitlements",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}/entitlements",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseListEntitlements._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_entitlements(
                 request, metadata
             )
-            pb_request = privilegedaccessmanager.ListEntitlementsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseListEntitlements._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseListEntitlements._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.ListEntitlements",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ListEntitlements",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                PrivilegedAccessManagerRestTransport._ListEntitlements._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1741,22 +2166,63 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.ListEntitlementsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_entitlements(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        privilegedaccessmanager.ListEntitlementsResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.list_entitlements",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ListEntitlements",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListGrants(PrivilegedAccessManagerRestStub):
+    class _ListGrants(
+        _BasePrivilegedAccessManagerRestTransport._BaseListGrants,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("ListGrants")
+            return hash("PrivilegedAccessManagerRestTransport.ListGrants")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1764,7 +2230,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.ListGrantsResponse:
             r"""Call the list grants method over HTTP.
 
@@ -1775,8 +2241,10 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.ListGrantsResponse:
@@ -1785,46 +2253,55 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*/entitlements/*}/grants",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*/entitlements/*}/grants",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*/entitlements/*}/grants",
-                },
-            ]
-            request, metadata = self._interceptor.pre_list_grants(request, metadata)
-            pb_request = privilegedaccessmanager.ListGrantsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseListGrants._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_list_grants(request, metadata)
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseListGrants._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseListGrants._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.ListGrants",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ListGrants",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = PrivilegedAccessManagerRestTransport._ListGrants._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1837,22 +2314,62 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.ListGrantsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_grants(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        privilegedaccessmanager.ListGrantsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.list_grants",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ListGrants",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _RevokeGrant(PrivilegedAccessManagerRestStub):
+    class _RevokeGrant(
+        _BasePrivilegedAccessManagerRestTransport._BaseRevokeGrant,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("RevokeGrant")
+            return hash("PrivilegedAccessManagerRestTransport.RevokeGrant")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -1860,7 +2377,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the revoke grant method over HTTP.
 
@@ -1870,8 +2387,10 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.operations_pb2.Operation:
@@ -1881,55 +2400,60 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=projects/*/locations/*/entitlements/*/grants/*}:revoke",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=organizations/*/locations/*/entitlements/*/grants/*}:revoke",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1/{name=folders/*/locations/*/entitlements/*/grants/*}:revoke",
-                    "body": "*",
-                },
-            ]
-            request, metadata = self._interceptor.pre_revoke_grant(request, metadata)
-            pb_request = privilegedaccessmanager.RevokeGrantRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseRevokeGrant._get_http_options()
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            request, metadata = self._interceptor.pre_revoke_grant(request, metadata)
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseRevokeGrant._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BasePrivilegedAccessManagerRestTransport._BaseRevokeGrant._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseRevokeGrant._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.RevokeGrant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "RevokeGrant",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = PrivilegedAccessManagerRestTransport._RevokeGrant._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1940,24 +2464,59 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             # Return the response
             resp = operations_pb2.Operation()
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_revoke_grant(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.revoke_grant",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "RevokeGrant",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _SearchEntitlements(PrivilegedAccessManagerRestStub):
+    class _SearchEntitlements(
+        _BasePrivilegedAccessManagerRestTransport._BaseSearchEntitlements,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("SearchEntitlements")
+            return hash("PrivilegedAccessManagerRestTransport.SearchEntitlements")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "callerAccessType": {},
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1965,7 +2524,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.SearchEntitlementsResponse:
             r"""Call the search entitlements method over HTTP.
 
@@ -1975,56 +2534,69 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.SearchEntitlementsResponse:
                     Response message for ``SearchEntitlements`` method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*}/entitlements:search",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*}/entitlements:search",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*}/entitlements:search",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseSearchEntitlements._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_search_entitlements(
                 request, metadata
             )
-            pb_request = privilegedaccessmanager.SearchEntitlementsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseSearchEntitlements._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseSearchEntitlements._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.SearchEntitlements",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "SearchEntitlements",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                PrivilegedAccessManagerRestTransport._SearchEntitlements._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2037,24 +2609,63 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.SearchEntitlementsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_search_entitlements(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        privilegedaccessmanager.SearchEntitlementsResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.search_entitlements",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "SearchEntitlements",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _SearchGrants(PrivilegedAccessManagerRestStub):
+    class _SearchGrants(
+        _BasePrivilegedAccessManagerRestTransport._BaseSearchGrants,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("SearchGrants")
+            return hash("PrivilegedAccessManagerRestTransport.SearchGrants")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "callerRelationship": {},
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -2062,7 +2673,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> privilegedaccessmanager.SearchGrantsResponse:
             r"""Call the search grants method over HTTP.
 
@@ -2072,54 +2683,65 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.privilegedaccessmanager.SearchGrantsResponse:
                     Response message for ``SearchGrants`` method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=projects/*/locations/*/entitlements/*}/grants:search",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=organizations/*/locations/*/entitlements/*}/grants:search",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{parent=folders/*/locations/*/entitlements/*}/grants:search",
-                },
-            ]
-            request, metadata = self._interceptor.pre_search_grants(request, metadata)
-            pb_request = privilegedaccessmanager.SearchGrantsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseSearchGrants._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_search_grants(request, metadata)
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseSearchGrants._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseSearchGrants._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.SearchGrants",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "SearchGrants",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = PrivilegedAccessManagerRestTransport._SearchGrants._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2132,24 +2754,62 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             pb_resp = privilegedaccessmanager.SearchGrantsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_search_grants(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        privilegedaccessmanager.SearchGrantsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.search_grants",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "SearchGrants",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateEntitlement(PrivilegedAccessManagerRestStub):
+    class _UpdateEntitlement(
+        _BasePrivilegedAccessManagerRestTransport._BaseUpdateEntitlement,
+        PrivilegedAccessManagerRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateEntitlement")
+            return hash("PrivilegedAccessManagerRestTransport.UpdateEntitlement")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "updateMask": {},
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -2157,7 +2817,7 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the update entitlement method over HTTP.
 
@@ -2167,8 +2827,10 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.operations_pb2.Operation:
@@ -2178,57 +2840,64 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{entitlement.name=projects/*/locations/*/entitlements/*}",
-                    "body": "entitlement",
-                },
-                {
-                    "method": "patch",
-                    "uri": "/v1/{entitlement.name=organizations/*/locations/*/entitlements/*}",
-                    "body": "entitlement",
-                },
-                {
-                    "method": "patch",
-                    "uri": "/v1/{entitlement.name=folders/*/locations/*/entitlements/*}",
-                    "body": "entitlement",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseUpdateEntitlement._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_update_entitlement(
                 request, metadata
             )
-            pb_request = privilegedaccessmanager.UpdateEntitlementRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseUpdateEntitlement._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BasePrivilegedAccessManagerRestTransport._BaseUpdateEntitlement._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseUpdateEntitlement._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.UpdateEntitlement",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "UpdateEntitlement",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                PrivilegedAccessManagerRestTransport._UpdateEntitlement._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2239,7 +2908,29 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             # Return the response
             resp = operations_pb2.Operation()
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_entitlement(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.update_entitlement",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "UpdateEntitlement",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property
@@ -2392,14 +3083,42 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
     def get_location(self):
         return self._GetLocation(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _GetLocation(PrivilegedAccessManagerRestStub):
+    class _GetLocation(
+        _BasePrivilegedAccessManagerRestTransport._BaseGetLocation,
+        PrivilegedAccessManagerRestStub,
+    ):
+        def __hash__(self):
+            return hash("PrivilegedAccessManagerRestTransport.GetLocation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: locations_pb2.GetLocationRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> locations_pb2.Location:
             r"""Call the get location method over HTTP.
 
@@ -2409,47 +3128,64 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 locations_pb2.Location: Response from GetLocation method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*}",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseGetLocation._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_get_location(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseGetLocation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseGetLocation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.GetLocation",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "GetLocation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = PrivilegedAccessManagerRestTransport._GetLocation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2457,23 +3193,73 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = locations_pb2.Location()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_get_location(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerAsyncClient.GetLocation",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "GetLocation",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property
     def list_locations(self):
         return self._ListLocations(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _ListLocations(PrivilegedAccessManagerRestStub):
+    class _ListLocations(
+        _BasePrivilegedAccessManagerRestTransport._BaseListLocations,
+        PrivilegedAccessManagerRestStub,
+    ):
+        def __hash__(self):
+            return hash("PrivilegedAccessManagerRestTransport.ListLocations")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: locations_pb2.ListLocationsRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> locations_pb2.ListLocationsResponse:
             r"""Call the list locations method over HTTP.
 
@@ -2483,47 +3269,66 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 locations_pb2.ListLocationsResponse: Response from ListLocations method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*}/locations",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*}/locations",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*}/locations",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseListLocations._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_list_locations(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseListLocations._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseListLocations._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.ListLocations",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ListLocations",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = (
+                PrivilegedAccessManagerRestTransport._ListLocations._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2531,23 +3336,73 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = locations_pb2.ListLocationsResponse()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_list_locations(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerAsyncClient.ListLocations",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ListLocations",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property
     def delete_operation(self):
         return self._DeleteOperation(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _DeleteOperation(PrivilegedAccessManagerRestStub):
+    class _DeleteOperation(
+        _BasePrivilegedAccessManagerRestTransport._BaseDeleteOperation,
+        PrivilegedAccessManagerRestStub,
+    ):
+        def __hash__(self):
+            return hash("PrivilegedAccessManagerRestTransport.DeleteOperation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: operations_pb2.DeleteOperationRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> None:
             r"""Call the delete operation method over HTTP.
 
@@ -2557,46 +3412,65 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=projects/*/locations/*/operations/*}",
-                },
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=organizations/*/locations/*/operations/*}",
-                },
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=folders/*/locations/*/operations/*}",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseDeleteOperation._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_delete_operation(
                 request, metadata
             )
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseDeleteOperation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseDeleteOperation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.DeleteOperation",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "DeleteOperation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = (
+                PrivilegedAccessManagerRestTransport._DeleteOperation._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2610,14 +3484,42 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
     def get_operation(self):
         return self._GetOperation(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _GetOperation(PrivilegedAccessManagerRestStub):
+    class _GetOperation(
+        _BasePrivilegedAccessManagerRestTransport._BaseGetOperation,
+        PrivilegedAccessManagerRestStub,
+    ):
+        def __hash__(self):
+            return hash("PrivilegedAccessManagerRestTransport.GetOperation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: operations_pb2.GetOperationRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the get operation method over HTTP.
 
@@ -2627,47 +3529,64 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 operations_pb2.Operation: Response from GetOperation method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*/operations/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*/operations/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*/operations/*}",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseGetOperation._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_get_operation(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseGetOperation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseGetOperation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.GetOperation",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "GetOperation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = PrivilegedAccessManagerRestTransport._GetOperation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2675,23 +3594,73 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = operations_pb2.Operation()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_get_operation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerAsyncClient.GetOperation",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "GetOperation",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property
     def list_operations(self):
         return self._ListOperations(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _ListOperations(PrivilegedAccessManagerRestStub):
+    class _ListOperations(
+        _BasePrivilegedAccessManagerRestTransport._BaseListOperations,
+        PrivilegedAccessManagerRestStub,
+    ):
+        def __hash__(self):
+            return hash("PrivilegedAccessManagerRestTransport.ListOperations")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: operations_pb2.ListOperationsRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.ListOperationsResponse:
             r"""Call the list operations method over HTTP.
 
@@ -2701,47 +3670,66 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 operations_pb2.ListOperationsResponse: Response from ListOperations method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=projects/*/locations/*}/operations",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=organizations/*/locations/*}/operations",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=folders/*/locations/*}/operations",
-                },
-            ]
+            http_options = (
+                _BasePrivilegedAccessManagerRestTransport._BaseListOperations._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_list_operations(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BasePrivilegedAccessManagerRestTransport._BaseListOperations._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BasePrivilegedAccessManagerRestTransport._BaseListOperations._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerClient.ListOperations",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ListOperations",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = (
+                PrivilegedAccessManagerRestTransport._ListOperations._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -2749,9 +3737,31 @@ class PrivilegedAccessManagerRestTransport(PrivilegedAccessManagerTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = operations_pb2.ListOperationsResponse()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_list_operations(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.privilegedaccessmanager_v1.PrivilegedAccessManagerAsyncClient.ListOperations",
+                    extra={
+                        "serviceName": "google.cloud.privilegedaccessmanager.v1.PrivilegedAccessManager",
+                        "rpcName": "ListOperations",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property

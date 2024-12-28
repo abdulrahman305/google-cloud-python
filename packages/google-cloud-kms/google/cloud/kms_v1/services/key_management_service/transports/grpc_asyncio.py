@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -25,13 +29,92 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.kms_v1.types import resources, service
 
 from .base import DEFAULT_CLIENT_INFO, KeyManagementServiceTransport
 from .grpc import KeyManagementServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.kms.v1.KeyManagementService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.kms.v1.KeyManagementService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
@@ -240,7 +323,13 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -274,7 +363,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_key_rings" not in self._stubs:
-            self._stubs["list_key_rings"] = self.grpc_channel.unary_unary(
+            self._stubs["list_key_rings"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/ListKeyRings",
                 request_serializer=service.ListKeyRingsRequest.serialize,
                 response_deserializer=service.ListKeyRingsResponse.deserialize,
@@ -302,7 +391,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_crypto_keys" not in self._stubs:
-            self._stubs["list_crypto_keys"] = self.grpc_channel.unary_unary(
+            self._stubs["list_crypto_keys"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/ListCryptoKeys",
                 request_serializer=service.ListCryptoKeysRequest.serialize,
                 response_deserializer=service.ListCryptoKeysResponse.deserialize,
@@ -331,7 +420,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_crypto_key_versions" not in self._stubs:
-            self._stubs["list_crypto_key_versions"] = self.grpc_channel.unary_unary(
+            self._stubs["list_crypto_key_versions"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/ListCryptoKeyVersions",
                 request_serializer=service.ListCryptoKeyVersionsRequest.serialize,
                 response_deserializer=service.ListCryptoKeyVersionsResponse.deserialize,
@@ -359,7 +448,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_import_jobs" not in self._stubs:
-            self._stubs["list_import_jobs"] = self.grpc_channel.unary_unary(
+            self._stubs["list_import_jobs"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/ListImportJobs",
                 request_serializer=service.ListImportJobsRequest.serialize,
                 response_deserializer=service.ListImportJobsResponse.deserialize,
@@ -386,7 +475,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_key_ring" not in self._stubs:
-            self._stubs["get_key_ring"] = self.grpc_channel.unary_unary(
+            self._stubs["get_key_ring"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/GetKeyRing",
                 request_serializer=service.GetKeyRingRequest.serialize,
                 response_deserializer=resources.KeyRing.deserialize,
@@ -415,7 +504,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_crypto_key" not in self._stubs:
-            self._stubs["get_crypto_key"] = self.grpc_channel.unary_unary(
+            self._stubs["get_crypto_key"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/GetCryptoKey",
                 request_serializer=service.GetCryptoKeyRequest.serialize,
                 response_deserializer=resources.CryptoKey.deserialize,
@@ -444,7 +533,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_crypto_key_version" not in self._stubs:
-            self._stubs["get_crypto_key_version"] = self.grpc_channel.unary_unary(
+            self._stubs["get_crypto_key_version"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/GetCryptoKeyVersion",
                 request_serializer=service.GetCryptoKeyVersionRequest.serialize,
                 response_deserializer=resources.CryptoKeyVersion.deserialize,
@@ -476,7 +565,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_public_key" not in self._stubs:
-            self._stubs["get_public_key"] = self.grpc_channel.unary_unary(
+            self._stubs["get_public_key"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/GetPublicKey",
                 request_serializer=service.GetPublicKeyRequest.serialize,
                 response_deserializer=resources.PublicKey.deserialize,
@@ -503,7 +592,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_import_job" not in self._stubs:
-            self._stubs["get_import_job"] = self.grpc_channel.unary_unary(
+            self._stubs["get_import_job"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/GetImportJob",
                 request_serializer=service.GetImportJobRequest.serialize,
                 response_deserializer=resources.ImportJob.deserialize,
@@ -530,7 +619,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_key_ring" not in self._stubs:
-            self._stubs["create_key_ring"] = self.grpc_channel.unary_unary(
+            self._stubs["create_key_ring"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/CreateKeyRing",
                 request_serializer=service.CreateKeyRingRequest.serialize,
                 response_deserializer=resources.KeyRing.deserialize,
@@ -561,7 +650,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_crypto_key" not in self._stubs:
-            self._stubs["create_crypto_key"] = self.grpc_channel.unary_unary(
+            self._stubs["create_crypto_key"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/CreateCryptoKey",
                 request_serializer=service.CreateCryptoKeyRequest.serialize,
                 response_deserializer=resources.CryptoKey.deserialize,
@@ -596,7 +685,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_crypto_key_version" not in self._stubs:
-            self._stubs["create_crypto_key_version"] = self.grpc_channel.unary_unary(
+            self._stubs["create_crypto_key_version"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/CreateCryptoKeyVersion",
                 request_serializer=service.CreateCryptoKeyVersionRequest.serialize,
                 response_deserializer=resources.CryptoKeyVersion.deserialize,
@@ -633,7 +722,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "import_crypto_key_version" not in self._stubs:
-            self._stubs["import_crypto_key_version"] = self.grpc_channel.unary_unary(
+            self._stubs["import_crypto_key_version"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/ImportCryptoKeyVersion",
                 request_serializer=service.ImportCryptoKeyVersionRequest.serialize,
                 response_deserializer=resources.CryptoKeyVersion.deserialize,
@@ -663,7 +752,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_import_job" not in self._stubs:
-            self._stubs["create_import_job"] = self.grpc_channel.unary_unary(
+            self._stubs["create_import_job"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/CreateImportJob",
                 request_serializer=service.CreateImportJobRequest.serialize,
                 response_deserializer=resources.ImportJob.deserialize,
@@ -689,7 +778,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_crypto_key" not in self._stubs:
-            self._stubs["update_crypto_key"] = self.grpc_channel.unary_unary(
+            self._stubs["update_crypto_key"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/UpdateCryptoKey",
                 request_serializer=service.UpdateCryptoKeyRequest.serialize,
                 response_deserializer=resources.CryptoKey.deserialize,
@@ -730,7 +819,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_crypto_key_version" not in self._stubs:
-            self._stubs["update_crypto_key_version"] = self.grpc_channel.unary_unary(
+            self._stubs["update_crypto_key_version"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/UpdateCryptoKeyVersion",
                 request_serializer=service.UpdateCryptoKeyVersionRequest.serialize,
                 response_deserializer=resources.CryptoKeyVersion.deserialize,
@@ -766,7 +855,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         if "update_crypto_key_primary_version" not in self._stubs:
             self._stubs[
                 "update_crypto_key_primary_version"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/UpdateCryptoKeyPrimaryVersion",
                 request_serializer=service.UpdateCryptoKeyPrimaryVersionRequest.serialize,
                 response_deserializer=resources.CryptoKey.deserialize,
@@ -816,7 +905,9 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "destroy_crypto_key_version" not in self._stubs:
-            self._stubs["destroy_crypto_key_version"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "destroy_crypto_key_version"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/DestroyCryptoKeyVersion",
                 request_serializer=service.DestroyCryptoKeyVersionRequest.serialize,
                 response_deserializer=resources.CryptoKeyVersion.deserialize,
@@ -855,7 +946,9 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "restore_crypto_key_version" not in self._stubs:
-            self._stubs["restore_crypto_key_version"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "restore_crypto_key_version"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/RestoreCryptoKeyVersion",
                 request_serializer=service.RestoreCryptoKeyVersionRequest.serialize,
                 response_deserializer=resources.CryptoKeyVersion.deserialize,
@@ -885,7 +978,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "encrypt" not in self._stubs:
-            self._stubs["encrypt"] = self.grpc_channel.unary_unary(
+            self._stubs["encrypt"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/Encrypt",
                 request_serializer=service.EncryptRequest.serialize,
                 response_deserializer=service.EncryptResponse.deserialize,
@@ -915,7 +1008,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "decrypt" not in self._stubs:
-            self._stubs["decrypt"] = self.grpc_channel.unary_unary(
+            self._stubs["decrypt"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/Decrypt",
                 request_serializer=service.DecryptRequest.serialize,
                 response_deserializer=service.DecryptResponse.deserialize,
@@ -948,7 +1041,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "raw_encrypt" not in self._stubs:
-            self._stubs["raw_encrypt"] = self.grpc_channel.unary_unary(
+            self._stubs["raw_encrypt"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/RawEncrypt",
                 request_serializer=service.RawEncryptRequest.serialize,
                 response_deserializer=service.RawEncryptResponse.deserialize,
@@ -978,7 +1071,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "raw_decrypt" not in self._stubs:
-            self._stubs["raw_decrypt"] = self.grpc_channel.unary_unary(
+            self._stubs["raw_decrypt"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/RawDecrypt",
                 request_serializer=service.RawDecryptRequest.serialize,
                 response_deserializer=service.RawDecryptResponse.deserialize,
@@ -1011,7 +1104,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "asymmetric_sign" not in self._stubs:
-            self._stubs["asymmetric_sign"] = self.grpc_channel.unary_unary(
+            self._stubs["asymmetric_sign"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/AsymmetricSign",
                 request_serializer=service.AsymmetricSignRequest.serialize,
                 response_deserializer=service.AsymmetricSignResponse.deserialize,
@@ -1045,7 +1138,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "asymmetric_decrypt" not in self._stubs:
-            self._stubs["asymmetric_decrypt"] = self.grpc_channel.unary_unary(
+            self._stubs["asymmetric_decrypt"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/AsymmetricDecrypt",
                 request_serializer=service.AsymmetricDecryptRequest.serialize,
                 response_deserializer=service.AsymmetricDecryptResponse.deserialize,
@@ -1075,7 +1168,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "mac_sign" not in self._stubs:
-            self._stubs["mac_sign"] = self.grpc_channel.unary_unary(
+            self._stubs["mac_sign"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/MacSign",
                 request_serializer=service.MacSignRequest.serialize,
                 response_deserializer=service.MacSignResponse.deserialize,
@@ -1105,7 +1198,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "mac_verify" not in self._stubs:
-            self._stubs["mac_verify"] = self.grpc_channel.unary_unary(
+            self._stubs["mac_verify"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/MacVerify",
                 request_serializer=service.MacVerifyRequest.serialize,
                 response_deserializer=service.MacVerifyResponse.deserialize,
@@ -1135,7 +1228,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "generate_random_bytes" not in self._stubs:
-            self._stubs["generate_random_bytes"] = self.grpc_channel.unary_unary(
+            self._stubs["generate_random_bytes"] = self._logged_channel.unary_unary(
                 "/google.cloud.kms.v1.KeyManagementService/GenerateRandomBytes",
                 request_serializer=service.GenerateRandomBytesRequest.serialize,
                 response_deserializer=service.GenerateRandomBytesResponse.deserialize,
@@ -1160,7 +1253,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "set_iam_policy" not in self._stubs:
-            self._stubs["set_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["set_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/SetIamPolicy",
                 request_serializer=iam_policy_pb2.SetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -1186,7 +1279,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_iam_policy" not in self._stubs:
-            self._stubs["get_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["get_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/GetIamPolicy",
                 request_serializer=iam_policy_pb2.GetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -1215,7 +1308,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "test_iam_permissions" not in self._stubs:
-            self._stubs["test_iam_permissions"] = self.grpc_channel.unary_unary(
+            self._stubs["test_iam_permissions"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/TestIamPermissions",
                 request_serializer=iam_policy_pb2.TestIamPermissionsRequest.SerializeToString,
                 response_deserializer=iam_policy_pb2.TestIamPermissionsResponse.FromString,
@@ -1225,7 +1318,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.list_key_rings: gapic_v1.method_async.wrap_method(
+            self.list_key_rings: self._wrap_method(
                 self.list_key_rings,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1240,7 +1333,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_crypto_keys: gapic_v1.method_async.wrap_method(
+            self.list_crypto_keys: self._wrap_method(
                 self.list_crypto_keys,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1255,7 +1348,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_crypto_key_versions: gapic_v1.method_async.wrap_method(
+            self.list_crypto_key_versions: self._wrap_method(
                 self.list_crypto_key_versions,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1270,7 +1363,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_import_jobs: gapic_v1.method_async.wrap_method(
+            self.list_import_jobs: self._wrap_method(
                 self.list_import_jobs,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1285,7 +1378,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_key_ring: gapic_v1.method_async.wrap_method(
+            self.get_key_ring: self._wrap_method(
                 self.get_key_ring,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1300,7 +1393,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_crypto_key: gapic_v1.method_async.wrap_method(
+            self.get_crypto_key: self._wrap_method(
                 self.get_crypto_key,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1315,7 +1408,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_crypto_key_version: gapic_v1.method_async.wrap_method(
+            self.get_crypto_key_version: self._wrap_method(
                 self.get_crypto_key_version,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1330,7 +1423,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_public_key: gapic_v1.method_async.wrap_method(
+            self.get_public_key: self._wrap_method(
                 self.get_public_key,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1345,7 +1438,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_import_job: gapic_v1.method_async.wrap_method(
+            self.get_import_job: self._wrap_method(
                 self.get_import_job,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1360,7 +1453,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_key_ring: gapic_v1.method_async.wrap_method(
+            self.create_key_ring: self._wrap_method(
                 self.create_key_ring,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1375,7 +1468,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_crypto_key: gapic_v1.method_async.wrap_method(
+            self.create_crypto_key: self._wrap_method(
                 self.create_crypto_key,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1390,17 +1483,17 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_crypto_key_version: gapic_v1.method_async.wrap_method(
+            self.create_crypto_key_version: self._wrap_method(
                 self.create_crypto_key_version,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.import_crypto_key_version: gapic_v1.method_async.wrap_method(
+            self.import_crypto_key_version: self._wrap_method(
                 self.import_crypto_key_version,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_import_job: gapic_v1.method_async.wrap_method(
+            self.create_import_job: self._wrap_method(
                 self.create_import_job,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1415,7 +1508,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_crypto_key: gapic_v1.method_async.wrap_method(
+            self.update_crypto_key: self._wrap_method(
                 self.update_crypto_key,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1430,7 +1523,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_crypto_key_version: gapic_v1.method_async.wrap_method(
+            self.update_crypto_key_version: self._wrap_method(
                 self.update_crypto_key_version,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1445,7 +1538,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_crypto_key_primary_version: gapic_v1.method_async.wrap_method(
+            self.update_crypto_key_primary_version: self._wrap_method(
                 self.update_crypto_key_primary_version,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1460,7 +1553,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.destroy_crypto_key_version: gapic_v1.method_async.wrap_method(
+            self.destroy_crypto_key_version: self._wrap_method(
                 self.destroy_crypto_key_version,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1475,7 +1568,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.restore_crypto_key_version: gapic_v1.method_async.wrap_method(
+            self.restore_crypto_key_version: self._wrap_method(
                 self.restore_crypto_key_version,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1490,7 +1583,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.encrypt: gapic_v1.method_async.wrap_method(
+            self.encrypt: self._wrap_method(
                 self.encrypt,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1505,7 +1598,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.decrypt: gapic_v1.method_async.wrap_method(
+            self.decrypt: self._wrap_method(
                 self.decrypt,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1520,17 +1613,17 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.raw_encrypt: gapic_v1.method_async.wrap_method(
+            self.raw_encrypt: self._wrap_method(
                 self.raw_encrypt,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.raw_decrypt: gapic_v1.method_async.wrap_method(
+            self.raw_decrypt: self._wrap_method(
                 self.raw_decrypt,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.asymmetric_sign: gapic_v1.method_async.wrap_method(
+            self.asymmetric_sign: self._wrap_method(
                 self.asymmetric_sign,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1545,7 +1638,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.asymmetric_decrypt: gapic_v1.method_async.wrap_method(
+            self.asymmetric_decrypt: self._wrap_method(
                 self.asymmetric_decrypt,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1560,7 +1653,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.mac_sign: gapic_v1.method_async.wrap_method(
+            self.mac_sign: self._wrap_method(
                 self.mac_sign,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1575,7 +1668,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.mac_verify: gapic_v1.method_async.wrap_method(
+            self.mac_verify: self._wrap_method(
                 self.mac_verify,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1590,7 +1683,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.generate_random_bytes: gapic_v1.method_async.wrap_method(
+            self.generate_random_bytes: self._wrap_method(
                 self.generate_random_bytes,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1605,10 +1698,49 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_iam_policy: self._wrap_method(
+                self.get_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.set_iam_policy: self._wrap_method(
+                self.set_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.test_iam_permissions: self._wrap_method(
+                self.test_iam_permissions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def get_operation(
@@ -1620,7 +1752,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1639,7 +1771,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -1656,7 +1788,7 @@ class KeyManagementServiceGrpcAsyncIOTransport(KeyManagementServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,

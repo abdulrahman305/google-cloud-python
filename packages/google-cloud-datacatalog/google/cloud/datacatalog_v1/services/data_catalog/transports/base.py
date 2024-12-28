@@ -302,6 +302,41 @@ class DataCatalogTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.set_config: gapic_v1.method.wrap_method(
+                self.set_config,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.retrieve_config: gapic_v1.method.wrap_method(
+                self.retrieve_config,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.retrieve_effective_config: gapic_v1.method.wrap_method(
+                self.retrieve_effective_config,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: gapic_v1.method.wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: gapic_v1.method.wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: gapic_v1.method.wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: gapic_v1.method.wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
     def close(self):
@@ -628,6 +663,35 @@ class DataCatalogTransport(abc.ABC):
     ) -> Callable[
         [datacatalog.ImportEntriesRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def set_config(
+        self,
+    ) -> Callable[
+        [datacatalog.SetConfigRequest],
+        Union[datacatalog.MigrationConfig, Awaitable[datacatalog.MigrationConfig]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def retrieve_config(
+        self,
+    ) -> Callable[
+        [datacatalog.RetrieveConfigRequest],
+        Union[
+            datacatalog.OrganizationConfig, Awaitable[datacatalog.OrganizationConfig]
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def retrieve_effective_config(
+        self,
+    ) -> Callable[
+        [datacatalog.RetrieveEffectiveConfigRequest],
+        Union[datacatalog.MigrationConfig, Awaitable[datacatalog.MigrationConfig]],
     ]:
         raise NotImplementedError()
 

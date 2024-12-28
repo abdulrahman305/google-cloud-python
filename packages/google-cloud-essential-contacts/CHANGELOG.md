@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.9.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-essential-contacts-v1.8.1...google-cloud-essential-contacts-v1.9.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [1.8.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-essential-contacts-v1.8.0...google-cloud-essential-contacts-v1.8.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [1.8.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-essential-contacts-v1.7.6...google-cloud-essential-contacts-v1.8.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
+## [1.7.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-essential-contacts-v1.7.5...google-cloud-essential-contacts-v1.7.6) (2024-10-23)
+
+
+### Documentation
+
+* [google-cloud-essential-contacts] Marks the `google.cloud.essentialcontacts.v1.Contact.validation_state` field as `output_only` ([#13165](https://github.com/googleapis/google-cloud-python/issues/13165)) ([20472b8](https://github.com/googleapis/google-cloud-python/commit/20472b8af555f8fb778072237b2c7723f4df46e5))
+
 ## [1.7.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-essential-contacts-v1.7.4...google-cloud-essential-contacts-v1.7.5) (2024-07-30)
 
 

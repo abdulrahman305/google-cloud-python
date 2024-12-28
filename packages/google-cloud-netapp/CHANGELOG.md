@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.3.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.16...google-cloud-netapp-v0.3.17) (2024-12-12)
+
+
+### Features
+
+* Add EstablishPeering API for Onprem Migration ([2b05355](https://github.com/googleapis/google-cloud-python/commit/2b053555536107335ff5ea08b37fdfbeed864e6a))
+* Add new Active Directory state for AD Diagnostics support ([2b05355](https://github.com/googleapis/google-cloud-python/commit/2b053555536107335ff5ea08b37fdfbeed864e6a))
+* Add support for opt-in debug logging ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+* Add Sync API for Replications ([2b05355](https://github.com/googleapis/google-cloud-python/commit/2b053555536107335ff5ea08b37fdfbeed864e6a))
+* Enable creation of Onprem Migration in CreateVolume ([2b05355](https://github.com/googleapis/google-cloud-python/commit/2b053555536107335ff5ea08b37fdfbeed864e6a))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+
+
+### Documentation
+
+* Docs now do not allow underscore in IDs of various Resources ([2b05355](https://github.com/googleapis/google-cloud-python/commit/2b053555536107335ff5ea08b37fdfbeed864e6a))
+
+## [0.3.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.15...google-cloud-netapp-v0.3.16) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13244](https://github.com/googleapis/google-cloud-python/issues/13244)) ([ae1f471](https://github.com/googleapis/google-cloud-python/commit/ae1f47175bf3354f78cb558a844a9cab00317b95))
+
+## [0.3.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.14...google-cloud-netapp-v0.3.15) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13207](https://github.com/googleapis/google-cloud-python/issues/13207)) ([ceb9be8](https://github.com/googleapis/google-cloud-python/commit/ceb9be8f89ac7355d842bac1d77b2926eb0b649c))
+
+## [0.3.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.13...google-cloud-netapp-v0.3.14) (2024-09-16)
+
+
+### Features
+
+* A new field 'allow_auto_tiering' in message 'google.cloud.netapp.v1.StoragePool' is added ([5e3f4ae](https://github.com/googleapis/google-cloud-python/commit/5e3f4aebeb2f79efb1992ae623eb1aea86de2b0c))
+* A new field 'cold_tier_size_gib' in message 'google.cloud.netapp.v1.Volume' is added ([5e3f4ae](https://github.com/googleapis/google-cloud-python/commit/5e3f4aebeb2f79efb1992ae623eb1aea86de2b0c))
+* A new message 'google.cloud.netapp.v1.SwitchActiveReplicaZoneRequest' is added ([5e3f4ae](https://github.com/googleapis/google-cloud-python/commit/5e3f4aebeb2f79efb1992ae623eb1aea86de2b0c))
+* **api:** [google-cloud-netapp] A new rpc 'SwitchActiveReplicaZone' is added to service 'google.cloud.netapp.v1.NetApp' ([5e3f4ae](https://github.com/googleapis/google-cloud-python/commit/5e3f4aebeb2f79efb1992ae623eb1aea86de2b0c))
+
 ## [0.3.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.12...google-cloud-netapp-v0.3.13) (2024-07-31)
 
 

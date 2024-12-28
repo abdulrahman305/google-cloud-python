@@ -4,6 +4,37 @@
 
 [1]: https://pypi.org/project/google-cloud-automl/#history
 
+## [2.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-automl-v2.14.1...google-cloud-automl-v2.15.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([8c53239](https://github.com/googleapis/google-cloud-python/commit/8c53239ba1ddcbb7691f99db47bce7a8e0b737cd))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([8c53239](https://github.com/googleapis/google-cloud-python/commit/8c53239ba1ddcbb7691f99db47bce7a8e0b737cd))
+
+
+### Documentation
+
+* Update io.proto to use markdown headings instead of HTML, remove some unused HTML from ([8c53239](https://github.com/googleapis/google-cloud-python/commit/8c53239ba1ddcbb7691f99db47bce7a8e0b737cd))
+
+## [2.14.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-automl-v2.14.0...google-cloud-automl-v2.14.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([4ed4108](https://github.com/googleapis/google-cloud-python/commit/4ed41088ab3cbadfe4de7fa170f172666015ed24))
+
+## [2.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-automl-v2.13.5...google-cloud-automl-v2.14.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13200](https://github.com/googleapis/google-cloud-python/issues/13200)) ([19dc048](https://github.com/googleapis/google-cloud-python/commit/19dc0485852406b90743297bcf257020e6012593))
+
 ## [2.13.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-automl-v2.13.4...google-cloud-automl-v2.13.5) (2024-07-30)
 
 

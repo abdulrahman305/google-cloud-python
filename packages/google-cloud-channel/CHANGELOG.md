@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.20.1...google-cloud-channel-v1.21.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [1.20.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.20.0...google-cloud-channel-v1.20.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [1.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.19.0...google-cloud-channel-v1.20.0) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
+## [1.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.18.5...google-cloud-channel-v1.19.0) (2024-10-08)
+
+
+### Features
+
+* Add support for importing team customer from a different reseller ([c38431b](https://github.com/googleapis/google-cloud-python/commit/c38431b363fd4f18bb692593f401e3ac3759637c))
+* Add support for primary_admin_email as customer_identity for ImportCustomer ([c38431b](https://github.com/googleapis/google-cloud-python/commit/c38431b363fd4f18bb692593f401e3ac3759637c))
+* Add support to look up team customer Cloud Identity information ([c38431b](https://github.com/googleapis/google-cloud-python/commit/c38431b363fd4f18bb692593f401e3ac3759637c))
+
+
+### Documentation
+
+* Clarify the expected value of the domain field for team type customers ([c38431b](https://github.com/googleapis/google-cloud-python/commit/c38431b363fd4f18bb692593f401e3ac3759637c))
+
 ## [1.18.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.18.4...google-cloud-channel-v1.18.5) (2024-07-30)
 
 

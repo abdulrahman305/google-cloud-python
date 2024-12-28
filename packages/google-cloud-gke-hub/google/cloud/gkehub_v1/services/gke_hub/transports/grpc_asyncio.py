@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -22,13 +26,92 @@ from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.gkehub_v1.types import feature, membership, service
 
 from .base import DEFAULT_CLIENT_INFO, GkeHubTransport
 from .grpc import GkeHubGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.gkehub.v1.GkeHub",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.gkehub.v1.GkeHub",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
@@ -243,7 +326,13 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -266,7 +355,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -293,7 +382,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_memberships" not in self._stubs:
-            self._stubs["list_memberships"] = self.grpc_channel.unary_unary(
+            self._stubs["list_memberships"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/ListMemberships",
                 request_serializer=service.ListMembershipsRequest.serialize,
                 response_deserializer=service.ListMembershipsResponse.deserialize,
@@ -321,7 +410,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_features" not in self._stubs:
-            self._stubs["list_features"] = self.grpc_channel.unary_unary(
+            self._stubs["list_features"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/ListFeatures",
                 request_serializer=service.ListFeaturesRequest.serialize,
                 response_deserializer=service.ListFeaturesResponse.deserialize,
@@ -347,7 +436,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_membership" not in self._stubs:
-            self._stubs["get_membership"] = self.grpc_channel.unary_unary(
+            self._stubs["get_membership"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/GetMembership",
                 request_serializer=service.GetMembershipRequest.serialize,
                 response_deserializer=membership.Membership.deserialize,
@@ -373,7 +462,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_feature" not in self._stubs:
-            self._stubs["get_feature"] = self.grpc_channel.unary_unary(
+            self._stubs["get_feature"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/GetFeature",
                 request_serializer=service.GetFeatureRequest.serialize,
                 response_deserializer=feature.Feature.deserialize,
@@ -405,7 +494,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_membership" not in self._stubs:
-            self._stubs["create_membership"] = self.grpc_channel.unary_unary(
+            self._stubs["create_membership"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/CreateMembership",
                 request_serializer=service.CreateMembershipRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -431,7 +520,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_feature" not in self._stubs:
-            self._stubs["create_feature"] = self.grpc_channel.unary_unary(
+            self._stubs["create_feature"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/CreateFeature",
                 request_serializer=service.CreateFeatureRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -464,7 +553,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_membership" not in self._stubs:
-            self._stubs["delete_membership"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_membership"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/DeleteMembership",
                 request_serializer=service.DeleteMembershipRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -490,7 +579,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_feature" not in self._stubs:
-            self._stubs["delete_feature"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_feature"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/DeleteFeature",
                 request_serializer=service.DeleteFeatureRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -518,7 +607,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_membership" not in self._stubs:
-            self._stubs["update_membership"] = self.grpc_channel.unary_unary(
+            self._stubs["update_membership"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/UpdateMembership",
                 request_serializer=service.UpdateMembershipRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -544,7 +633,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_feature" not in self._stubs:
-            self._stubs["update_feature"] = self.grpc_channel.unary_unary(
+            self._stubs["update_feature"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/UpdateFeature",
                 request_serializer=service.UpdateFeatureRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -576,7 +665,7 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "generate_connect_manifest" not in self._stubs:
-            self._stubs["generate_connect_manifest"] = self.grpc_channel.unary_unary(
+            self._stubs["generate_connect_manifest"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkehub.v1.GkeHub/GenerateConnectManifest",
                 request_serializer=service.GenerateConnectManifestRequest.serialize,
                 response_deserializer=service.GenerateConnectManifestResponse.deserialize,
@@ -586,65 +675,74 @@ class GkeHubGrpcAsyncIOTransport(GkeHubTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.list_memberships: gapic_v1.method_async.wrap_method(
+            self.list_memberships: self._wrap_method(
                 self.list_memberships,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_features: gapic_v1.method_async.wrap_method(
+            self.list_features: self._wrap_method(
                 self.list_features,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_membership: gapic_v1.method_async.wrap_method(
+            self.get_membership: self._wrap_method(
                 self.get_membership,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_feature: gapic_v1.method_async.wrap_method(
+            self.get_feature: self._wrap_method(
                 self.get_feature,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_membership: gapic_v1.method_async.wrap_method(
+            self.create_membership: self._wrap_method(
                 self.create_membership,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_feature: gapic_v1.method_async.wrap_method(
+            self.create_feature: self._wrap_method(
                 self.create_feature,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_membership: gapic_v1.method_async.wrap_method(
+            self.delete_membership: self._wrap_method(
                 self.delete_membership,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_feature: gapic_v1.method_async.wrap_method(
+            self.delete_feature: self._wrap_method(
                 self.delete_feature,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_membership: gapic_v1.method_async.wrap_method(
+            self.update_membership: self._wrap_method(
                 self.update_membership,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_feature: gapic_v1.method_async.wrap_method(
+            self.update_feature: self._wrap_method(
                 self.update_feature,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.generate_connect_manifest: gapic_v1.method_async.wrap_method(
+            self.generate_connect_manifest: self._wrap_method(
                 self.generate_connect_manifest,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("GkeHubGrpcAsyncIOTransport",)

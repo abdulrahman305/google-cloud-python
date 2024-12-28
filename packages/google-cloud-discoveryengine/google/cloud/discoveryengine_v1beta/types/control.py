@@ -37,14 +37,21 @@ class Condition(proto.Message):
 
     Attributes:
         query_terms (MutableSequence[google.cloud.discoveryengine_v1beta.types.Condition.QueryTerm]):
-            Search only
-            A list of terms to match the query on.
+            Search only A list of terms to match the query on. Cannot be
+            set when
+            [Condition.query_regex][google.cloud.discoveryengine.v1beta.Condition.query_regex]
+            is set.
 
             Maximum of 10 query terms.
         active_time_range (MutableSequence[google.cloud.discoveryengine_v1beta.types.Condition.TimeRange]):
             Range of time(s) specifying when condition is
             active.
             Maximum of 10 time ranges.
+        query_regex (str):
+            Optional. Query regex to match the whole search query.
+            Cannot be set when
+            [Condition.query_terms][google.cloud.discoveryengine.v1beta.Condition.query_terms]
+            is set. This is currently supporting promotion use case.
     """
 
     class QueryTerm(proto.Message):
@@ -107,6 +114,10 @@ class Condition(proto.Message):
         number=3,
         message=TimeRange,
     )
+    query_regex: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
 
 
 class Control(proto.Message):
@@ -154,7 +165,7 @@ class Control(proto.Message):
         associated_serving_config_ids (MutableSequence[str]):
             Output only. List of all
             [ServingConfig][google.cloud.discoveryengine.v1beta.ServingConfig]
-            ids this control is attached to. May take up to 10 minutes
+            IDs this control is attached to. May take up to 10 minutes
             to update after changes.
         solution_type (google.cloud.discoveryengine_v1beta.types.SolutionType):
             Required. Immutable. What solution the

@@ -145,6 +145,7 @@ from .azure_service import (
 )
 from .common_resources import (
     BinaryAuthorization,
+    CloudMonitoringConfig,
     Fleet,
     Jwk,
     LoggingComponentConfig,
@@ -152,8 +153,10 @@ from .common_resources import (
     ManagedPrometheusConfig,
     MaxPodsConstraint,
     MonitoringConfig,
+    NodeKubeletConfig,
     NodeTaint,
     OperationMetadata,
+    SecurityPostureConfig,
     WorkloadIdentityConfig,
 )
 
@@ -277,6 +280,7 @@ __all__ = (
     "UpdateAzureClusterRequest",
     "UpdateAzureNodePoolRequest",
     "BinaryAuthorization",
+    "CloudMonitoringConfig",
     "Fleet",
     "Jwk",
     "LoggingComponentConfig",
@@ -284,7 +288,9 @@ __all__ = (
     "ManagedPrometheusConfig",
     "MaxPodsConstraint",
     "MonitoringConfig",
+    "NodeKubeletConfig",
     "NodeTaint",
     "OperationMetadata",
+    "SecurityPostureConfig",
     "WorkloadIdentityConfig",
 )

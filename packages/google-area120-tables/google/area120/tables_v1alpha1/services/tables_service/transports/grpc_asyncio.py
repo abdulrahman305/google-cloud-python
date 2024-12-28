@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -22,13 +26,92 @@ from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.area120.tables_v1alpha1.types import tables
 
 from .base import DEFAULT_CLIENT_INFO, TablesServiceTransport
 from .grpc import TablesServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.area120.tables.v1alpha1.TablesService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.area120.tables.v1alpha1.TablesService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
@@ -239,7 +322,13 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -269,7 +358,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_table" not in self._stubs:
-            self._stubs["get_table"] = self.grpc_channel.unary_unary(
+            self._stubs["get_table"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/GetTable",
                 request_serializer=tables.GetTableRequest.serialize,
                 response_deserializer=tables.Table.deserialize,
@@ -295,7 +384,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_tables" not in self._stubs:
-            self._stubs["list_tables"] = self.grpc_channel.unary_unary(
+            self._stubs["list_tables"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/ListTables",
                 request_serializer=tables.ListTablesRequest.serialize,
                 response_deserializer=tables.ListTablesResponse.deserialize,
@@ -322,7 +411,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_workspace" not in self._stubs:
-            self._stubs["get_workspace"] = self.grpc_channel.unary_unary(
+            self._stubs["get_workspace"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/GetWorkspace",
                 request_serializer=tables.GetWorkspaceRequest.serialize,
                 response_deserializer=tables.Workspace.deserialize,
@@ -350,7 +439,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_workspaces" not in self._stubs:
-            self._stubs["list_workspaces"] = self.grpc_channel.unary_unary(
+            self._stubs["list_workspaces"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/ListWorkspaces",
                 request_serializer=tables.ListWorkspacesRequest.serialize,
                 response_deserializer=tables.ListWorkspacesResponse.deserialize,
@@ -375,7 +464,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_row" not in self._stubs:
-            self._stubs["get_row"] = self.grpc_channel.unary_unary(
+            self._stubs["get_row"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/GetRow",
                 request_serializer=tables.GetRowRequest.serialize,
                 response_deserializer=tables.Row.deserialize,
@@ -402,7 +491,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_rows" not in self._stubs:
-            self._stubs["list_rows"] = self.grpc_channel.unary_unary(
+            self._stubs["list_rows"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/ListRows",
                 request_serializer=tables.ListRowsRequest.serialize,
                 response_deserializer=tables.ListRowsResponse.deserialize,
@@ -426,7 +515,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_row" not in self._stubs:
-            self._stubs["create_row"] = self.grpc_channel.unary_unary(
+            self._stubs["create_row"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/CreateRow",
                 request_serializer=tables.CreateRowRequest.serialize,
                 response_deserializer=tables.Row.deserialize,
@@ -454,7 +543,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "batch_create_rows" not in self._stubs:
-            self._stubs["batch_create_rows"] = self.grpc_channel.unary_unary(
+            self._stubs["batch_create_rows"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/BatchCreateRows",
                 request_serializer=tables.BatchCreateRowsRequest.serialize,
                 response_deserializer=tables.BatchCreateRowsResponse.deserialize,
@@ -478,7 +567,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_row" not in self._stubs:
-            self._stubs["update_row"] = self.grpc_channel.unary_unary(
+            self._stubs["update_row"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/UpdateRow",
                 request_serializer=tables.UpdateRowRequest.serialize,
                 response_deserializer=tables.Row.deserialize,
@@ -506,7 +595,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "batch_update_rows" not in self._stubs:
-            self._stubs["batch_update_rows"] = self.grpc_channel.unary_unary(
+            self._stubs["batch_update_rows"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/BatchUpdateRows",
                 request_serializer=tables.BatchUpdateRowsRequest.serialize,
                 response_deserializer=tables.BatchUpdateRowsResponse.deserialize,
@@ -532,7 +621,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_row" not in self._stubs:
-            self._stubs["delete_row"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_row"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/DeleteRow",
                 request_serializer=tables.DeleteRowRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -558,7 +647,7 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "batch_delete_rows" not in self._stubs:
-            self._stubs["batch_delete_rows"] = self.grpc_channel.unary_unary(
+            self._stubs["batch_delete_rows"] = self._logged_channel.unary_unary(
                 "/google.area120.tables.v1alpha1.TablesService/BatchDeleteRows",
                 request_serializer=tables.BatchDeleteRowsRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -568,70 +657,79 @@ class TablesServiceGrpcAsyncIOTransport(TablesServiceTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.get_table: gapic_v1.method_async.wrap_method(
+            self.get_table: self._wrap_method(
                 self.get_table,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_tables: gapic_v1.method_async.wrap_method(
+            self.list_tables: self._wrap_method(
                 self.list_tables,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_workspace: gapic_v1.method_async.wrap_method(
+            self.get_workspace: self._wrap_method(
                 self.get_workspace,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_workspaces: gapic_v1.method_async.wrap_method(
+            self.list_workspaces: self._wrap_method(
                 self.list_workspaces,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_row: gapic_v1.method_async.wrap_method(
+            self.get_row: self._wrap_method(
                 self.get_row,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_rows: gapic_v1.method_async.wrap_method(
+            self.list_rows: self._wrap_method(
                 self.list_rows,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_row: gapic_v1.method_async.wrap_method(
+            self.create_row: self._wrap_method(
                 self.create_row,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.batch_create_rows: gapic_v1.method_async.wrap_method(
+            self.batch_create_rows: self._wrap_method(
                 self.batch_create_rows,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_row: gapic_v1.method_async.wrap_method(
+            self.update_row: self._wrap_method(
                 self.update_row,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.batch_update_rows: gapic_v1.method_async.wrap_method(
+            self.batch_update_rows: self._wrap_method(
                 self.batch_update_rows,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_row: gapic_v1.method_async.wrap_method(
+            self.delete_row: self._wrap_method(
                 self.delete_row,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.batch_delete_rows: gapic_v1.method_async.wrap_method(
+            self.batch_delete_rows: self._wrap_method(
                 self.batch_delete_rows,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("TablesServiceGrpcAsyncIOTransport",)

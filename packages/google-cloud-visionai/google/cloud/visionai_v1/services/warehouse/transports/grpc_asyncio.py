@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -26,13 +30,92 @@ from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.visionai_v1.types import warehouse
 
 from .base import DEFAULT_CLIENT_INFO, WarehouseTransport
 from .grpc import WarehouseGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.visionai.v1.Warehouse",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.visionai.v1.Warehouse",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
@@ -231,7 +314,13 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -254,7 +343,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -279,7 +368,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_asset" not in self._stubs:
-            self._stubs["create_asset"] = self.grpc_channel.unary_unary(
+            self._stubs["create_asset"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/CreateAsset",
                 request_serializer=warehouse.CreateAssetRequest.serialize,
                 response_deserializer=warehouse.Asset.deserialize,
@@ -305,7 +394,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_asset" not in self._stubs:
-            self._stubs["update_asset"] = self.grpc_channel.unary_unary(
+            self._stubs["update_asset"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UpdateAsset",
                 request_serializer=warehouse.UpdateAssetRequest.serialize,
                 response_deserializer=warehouse.Asset.deserialize,
@@ -331,7 +420,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_asset" not in self._stubs:
-            self._stubs["get_asset"] = self.grpc_channel.unary_unary(
+            self._stubs["get_asset"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GetAsset",
                 request_serializer=warehouse.GetAssetRequest.serialize,
                 response_deserializer=warehouse.Asset.deserialize,
@@ -359,7 +448,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_assets" not in self._stubs:
-            self._stubs["list_assets"] = self.grpc_channel.unary_unary(
+            self._stubs["list_assets"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ListAssets",
                 request_serializer=warehouse.ListAssetsRequest.serialize,
                 response_deserializer=warehouse.ListAssetsResponse.deserialize,
@@ -385,7 +474,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_asset" not in self._stubs:
-            self._stubs["delete_asset"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_asset"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeleteAsset",
                 request_serializer=warehouse.DeleteAssetRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -423,7 +512,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "upload_asset" not in self._stubs:
-            self._stubs["upload_asset"] = self.grpc_channel.unary_unary(
+            self._stubs["upload_asset"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UploadAsset",
                 request_serializer=warehouse.UploadAssetRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -455,7 +544,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "generate_retrieval_url" not in self._stubs:
-            self._stubs["generate_retrieval_url"] = self.grpc_channel.unary_unary(
+            self._stubs["generate_retrieval_url"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GenerateRetrievalUrl",
                 request_serializer=warehouse.GenerateRetrievalUrlRequest.serialize,
                 response_deserializer=warehouse.GenerateRetrievalUrlResponse.deserialize,
@@ -481,7 +570,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "analyze_asset" not in self._stubs:
-            self._stubs["analyze_asset"] = self.grpc_channel.unary_unary(
+            self._stubs["analyze_asset"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/AnalyzeAsset",
                 request_serializer=warehouse.AnalyzeAssetRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -508,7 +597,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "index_asset" not in self._stubs:
-            self._stubs["index_asset"] = self.grpc_channel.unary_unary(
+            self._stubs["index_asset"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/IndexAsset",
                 request_serializer=warehouse.IndexAssetRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -537,7 +626,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "remove_index_asset" not in self._stubs:
-            self._stubs["remove_index_asset"] = self.grpc_channel.unary_unary(
+            self._stubs["remove_index_asset"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/RemoveIndexAsset",
                 request_serializer=warehouse.RemoveIndexAssetRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -566,7 +655,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "view_indexed_assets" not in self._stubs:
-            self._stubs["view_indexed_assets"] = self.grpc_channel.unary_unary(
+            self._stubs["view_indexed_assets"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ViewIndexedAssets",
                 request_serializer=warehouse.ViewIndexedAssetsRequest.serialize,
                 response_deserializer=warehouse.ViewIndexedAssetsResponse.deserialize,
@@ -592,7 +681,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_index" not in self._stubs:
-            self._stubs["create_index"] = self.grpc_channel.unary_unary(
+            self._stubs["create_index"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/CreateIndex",
                 request_serializer=warehouse.CreateIndexRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -620,7 +709,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_index" not in self._stubs:
-            self._stubs["update_index"] = self.grpc_channel.unary_unary(
+            self._stubs["update_index"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UpdateIndex",
                 request_serializer=warehouse.UpdateIndexRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -646,7 +735,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_index" not in self._stubs:
-            self._stubs["get_index"] = self.grpc_channel.unary_unary(
+            self._stubs["get_index"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GetIndex",
                 request_serializer=warehouse.GetIndexRequest.serialize,
                 response_deserializer=warehouse.Index.deserialize,
@@ -674,7 +763,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_indexes" not in self._stubs:
-            self._stubs["list_indexes"] = self.grpc_channel.unary_unary(
+            self._stubs["list_indexes"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ListIndexes",
                 request_serializer=warehouse.ListIndexesRequest.serialize,
                 response_deserializer=warehouse.ListIndexesResponse.deserialize,
@@ -702,7 +791,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_index" not in self._stubs:
-            self._stubs["delete_index"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_index"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeleteIndex",
                 request_serializer=warehouse.DeleteIndexRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -728,7 +817,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_corpus" not in self._stubs:
-            self._stubs["create_corpus"] = self.grpc_channel.unary_unary(
+            self._stubs["create_corpus"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/CreateCorpus",
                 request_serializer=warehouse.CreateCorpusRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -754,7 +843,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_corpus" not in self._stubs:
-            self._stubs["get_corpus"] = self.grpc_channel.unary_unary(
+            self._stubs["get_corpus"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GetCorpus",
                 request_serializer=warehouse.GetCorpusRequest.serialize,
                 response_deserializer=warehouse.Corpus.deserialize,
@@ -780,7 +869,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_corpus" not in self._stubs:
-            self._stubs["update_corpus"] = self.grpc_channel.unary_unary(
+            self._stubs["update_corpus"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UpdateCorpus",
                 request_serializer=warehouse.UpdateCorpusRequest.serialize,
                 response_deserializer=warehouse.Corpus.deserialize,
@@ -808,7 +897,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_corpora" not in self._stubs:
-            self._stubs["list_corpora"] = self.grpc_channel.unary_unary(
+            self._stubs["list_corpora"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ListCorpora",
                 request_serializer=warehouse.ListCorporaRequest.serialize,
                 response_deserializer=warehouse.ListCorporaResponse.deserialize,
@@ -835,7 +924,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_corpus" not in self._stubs:
-            self._stubs["delete_corpus"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_corpus"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeleteCorpus",
                 request_serializer=warehouse.DeleteCorpusRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -863,7 +952,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "analyze_corpus" not in self._stubs:
-            self._stubs["analyze_corpus"] = self.grpc_channel.unary_unary(
+            self._stubs["analyze_corpus"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/AnalyzeCorpus",
                 request_serializer=warehouse.AnalyzeCorpusRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -889,7 +978,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_data_schema" not in self._stubs:
-            self._stubs["create_data_schema"] = self.grpc_channel.unary_unary(
+            self._stubs["create_data_schema"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/CreateDataSchema",
                 request_serializer=warehouse.CreateDataSchemaRequest.serialize,
                 response_deserializer=warehouse.DataSchema.deserialize,
@@ -915,7 +1004,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_data_schema" not in self._stubs:
-            self._stubs["update_data_schema"] = self.grpc_channel.unary_unary(
+            self._stubs["update_data_schema"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UpdateDataSchema",
                 request_serializer=warehouse.UpdateDataSchemaRequest.serialize,
                 response_deserializer=warehouse.DataSchema.deserialize,
@@ -941,7 +1030,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_data_schema" not in self._stubs:
-            self._stubs["get_data_schema"] = self.grpc_channel.unary_unary(
+            self._stubs["get_data_schema"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GetDataSchema",
                 request_serializer=warehouse.GetDataSchemaRequest.serialize,
                 response_deserializer=warehouse.DataSchema.deserialize,
@@ -967,7 +1056,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_data_schema" not in self._stubs:
-            self._stubs["delete_data_schema"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_data_schema"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeleteDataSchema",
                 request_serializer=warehouse.DeleteDataSchemaRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -995,7 +1084,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_data_schemas" not in self._stubs:
-            self._stubs["list_data_schemas"] = self.grpc_channel.unary_unary(
+            self._stubs["list_data_schemas"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ListDataSchemas",
                 request_serializer=warehouse.ListDataSchemasRequest.serialize,
                 response_deserializer=warehouse.ListDataSchemasResponse.deserialize,
@@ -1021,7 +1110,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_annotation" not in self._stubs:
-            self._stubs["create_annotation"] = self.grpc_channel.unary_unary(
+            self._stubs["create_annotation"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/CreateAnnotation",
                 request_serializer=warehouse.CreateAnnotationRequest.serialize,
                 response_deserializer=warehouse.Annotation.deserialize,
@@ -1047,7 +1136,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_annotation" not in self._stubs:
-            self._stubs["get_annotation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_annotation"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GetAnnotation",
                 request_serializer=warehouse.GetAnnotationRequest.serialize,
                 response_deserializer=warehouse.Annotation.deserialize,
@@ -1075,7 +1164,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_annotations" not in self._stubs:
-            self._stubs["list_annotations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_annotations"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ListAnnotations",
                 request_serializer=warehouse.ListAnnotationsRequest.serialize,
                 response_deserializer=warehouse.ListAnnotationsResponse.deserialize,
@@ -1101,7 +1190,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_annotation" not in self._stubs:
-            self._stubs["update_annotation"] = self.grpc_channel.unary_unary(
+            self._stubs["update_annotation"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UpdateAnnotation",
                 request_serializer=warehouse.UpdateAnnotationRequest.serialize,
                 response_deserializer=warehouse.Annotation.deserialize,
@@ -1127,7 +1216,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_annotation" not in self._stubs:
-            self._stubs["delete_annotation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_annotation"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeleteAnnotation",
                 request_serializer=warehouse.DeleteAnnotationRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -1159,7 +1248,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "ingest_asset" not in self._stubs:
-            self._stubs["ingest_asset"] = self.grpc_channel.stream_stream(
+            self._stubs["ingest_asset"] = self._logged_channel.stream_stream(
                 "/google.cloud.visionai.v1.Warehouse/IngestAsset",
                 request_serializer=warehouse.IngestAssetRequest.serialize,
                 response_deserializer=warehouse.IngestAssetResponse.deserialize,
@@ -1172,11 +1261,12 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
     ) -> Callable[[warehouse.ClipAssetRequest], Awaitable[warehouse.ClipAssetResponse]]:
         r"""Return a callable for the clip asset method over gRPC.
 
-        Generates clips for downloading. The api takes in a time range,
-        and generates a clip of the first content available after
-        start_time and before end_time, which may overflow beyond these
-        bounds. Returned clips are truncated if the total size of the
-        clips are larger than 100MB.
+        Supported by STREAM_VIDEO corpus type. Generates clips for
+        downloading. The api takes in a time range, and generates a clip
+        of the first content available after start_time and before
+        end_time, which may overflow beyond these bounds. Returned clips
+        are truncated if the total size of the clips are larger than
+        100MB.
 
         Returns:
             Callable[[~.ClipAssetRequest],
@@ -1189,7 +1279,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "clip_asset" not in self._stubs:
-            self._stubs["clip_asset"] = self.grpc_channel.unary_unary(
+            self._stubs["clip_asset"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ClipAsset",
                 request_serializer=warehouse.ClipAssetRequest.serialize,
                 response_deserializer=warehouse.ClipAssetResponse.deserialize,
@@ -1219,7 +1309,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "generate_hls_uri" not in self._stubs:
-            self._stubs["generate_hls_uri"] = self.grpc_channel.unary_unary(
+            self._stubs["generate_hls_uri"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GenerateHlsUri",
                 request_serializer=warehouse.GenerateHlsUriRequest.serialize,
                 response_deserializer=warehouse.GenerateHlsUriResponse.deserialize,
@@ -1248,7 +1338,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "import_assets" not in self._stubs:
-            self._stubs["import_assets"] = self.grpc_channel.unary_unary(
+            self._stubs["import_assets"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ImportAssets",
                 request_serializer=warehouse.ImportAssetsRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1291,7 +1381,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_search_config" not in self._stubs:
-            self._stubs["create_search_config"] = self.grpc_channel.unary_unary(
+            self._stubs["create_search_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/CreateSearchConfig",
                 request_serializer=warehouse.CreateSearchConfigRequest.serialize,
                 response_deserializer=warehouse.SearchConfig.deserialize,
@@ -1333,7 +1423,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_search_config" not in self._stubs:
-            self._stubs["update_search_config"] = self.grpc_channel.unary_unary(
+            self._stubs["update_search_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UpdateSearchConfig",
                 request_serializer=warehouse.UpdateSearchConfigRequest.serialize,
                 response_deserializer=warehouse.SearchConfig.deserialize,
@@ -1361,7 +1451,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_search_config" not in self._stubs:
-            self._stubs["get_search_config"] = self.grpc_channel.unary_unary(
+            self._stubs["get_search_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GetSearchConfig",
                 request_serializer=warehouse.GetSearchConfigRequest.serialize,
                 response_deserializer=warehouse.SearchConfig.deserialize,
@@ -1390,7 +1480,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_search_config" not in self._stubs:
-            self._stubs["delete_search_config"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_search_config"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeleteSearchConfig",
                 request_serializer=warehouse.DeleteSearchConfigRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -1419,7 +1509,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_search_configs" not in self._stubs:
-            self._stubs["list_search_configs"] = self.grpc_channel.unary_unary(
+            self._stubs["list_search_configs"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ListSearchConfigs",
                 request_serializer=warehouse.ListSearchConfigsRequest.serialize,
                 response_deserializer=warehouse.ListSearchConfigsResponse.deserialize,
@@ -1447,7 +1537,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_search_hypernym" not in self._stubs:
-            self._stubs["create_search_hypernym"] = self.grpc_channel.unary_unary(
+            self._stubs["create_search_hypernym"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/CreateSearchHypernym",
                 request_serializer=warehouse.CreateSearchHypernymRequest.serialize,
                 response_deserializer=warehouse.SearchHypernym.deserialize,
@@ -1475,7 +1565,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_search_hypernym" not in self._stubs:
-            self._stubs["update_search_hypernym"] = self.grpc_channel.unary_unary(
+            self._stubs["update_search_hypernym"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UpdateSearchHypernym",
                 request_serializer=warehouse.UpdateSearchHypernymRequest.serialize,
                 response_deserializer=warehouse.SearchHypernym.deserialize,
@@ -1503,7 +1593,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_search_hypernym" not in self._stubs:
-            self._stubs["get_search_hypernym"] = self.grpc_channel.unary_unary(
+            self._stubs["get_search_hypernym"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GetSearchHypernym",
                 request_serializer=warehouse.GetSearchHypernymRequest.serialize,
                 response_deserializer=warehouse.SearchHypernym.deserialize,
@@ -1529,7 +1619,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_search_hypernym" not in self._stubs:
-            self._stubs["delete_search_hypernym"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_search_hypernym"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeleteSearchHypernym",
                 request_serializer=warehouse.DeleteSearchHypernymRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -1558,7 +1648,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_search_hypernyms" not in self._stubs:
-            self._stubs["list_search_hypernyms"] = self.grpc_channel.unary_unary(
+            self._stubs["list_search_hypernyms"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ListSearchHypernyms",
                 request_serializer=warehouse.ListSearchHypernymsRequest.serialize,
                 response_deserializer=warehouse.ListSearchHypernymsResponse.deserialize,
@@ -1586,7 +1676,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "search_assets" not in self._stubs:
-            self._stubs["search_assets"] = self.grpc_channel.unary_unary(
+            self._stubs["search_assets"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/SearchAssets",
                 request_serializer=warehouse.SearchAssetsRequest.serialize,
                 response_deserializer=warehouse.SearchAssetsResponse.deserialize,
@@ -1616,7 +1706,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "search_index_endpoint" not in self._stubs:
-            self._stubs["search_index_endpoint"] = self.grpc_channel.unary_unary(
+            self._stubs["search_index_endpoint"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/SearchIndexEndpoint",
                 request_serializer=warehouse.SearchIndexEndpointRequest.serialize,
                 response_deserializer=warehouse.SearchIndexEndpointResponse.deserialize,
@@ -1644,7 +1734,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_index_endpoint" not in self._stubs:
-            self._stubs["create_index_endpoint"] = self.grpc_channel.unary_unary(
+            self._stubs["create_index_endpoint"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/CreateIndexEndpoint",
                 request_serializer=warehouse.CreateIndexEndpointRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1672,7 +1762,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_index_endpoint" not in self._stubs:
-            self._stubs["get_index_endpoint"] = self.grpc_channel.unary_unary(
+            self._stubs["get_index_endpoint"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GetIndexEndpoint",
                 request_serializer=warehouse.GetIndexEndpointRequest.serialize,
                 response_deserializer=warehouse.IndexEndpoint.deserialize,
@@ -1701,7 +1791,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_index_endpoints" not in self._stubs:
-            self._stubs["list_index_endpoints"] = self.grpc_channel.unary_unary(
+            self._stubs["list_index_endpoints"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ListIndexEndpoints",
                 request_serializer=warehouse.ListIndexEndpointsRequest.serialize,
                 response_deserializer=warehouse.ListIndexEndpointsResponse.deserialize,
@@ -1729,7 +1819,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_index_endpoint" not in self._stubs:
-            self._stubs["update_index_endpoint"] = self.grpc_channel.unary_unary(
+            self._stubs["update_index_endpoint"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UpdateIndexEndpoint",
                 request_serializer=warehouse.UpdateIndexEndpointRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1757,7 +1847,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_index_endpoint" not in self._stubs:
-            self._stubs["delete_index_endpoint"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_index_endpoint"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeleteIndexEndpoint",
                 request_serializer=warehouse.DeleteIndexEndpointRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1783,7 +1873,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "deploy_index" not in self._stubs:
-            self._stubs["deploy_index"] = self.grpc_channel.unary_unary(
+            self._stubs["deploy_index"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeployIndex",
                 request_serializer=warehouse.DeployIndexRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1811,7 +1901,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "undeploy_index" not in self._stubs:
-            self._stubs["undeploy_index"] = self.grpc_channel.unary_unary(
+            self._stubs["undeploy_index"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UndeployIndex",
                 request_serializer=warehouse.UndeployIndexRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1839,7 +1929,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_collection" not in self._stubs:
-            self._stubs["create_collection"] = self.grpc_channel.unary_unary(
+            self._stubs["create_collection"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/CreateCollection",
                 request_serializer=warehouse.CreateCollectionRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1867,7 +1957,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_collection" not in self._stubs:
-            self._stubs["delete_collection"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_collection"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/DeleteCollection",
                 request_serializer=warehouse.DeleteCollectionRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1893,7 +1983,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_collection" not in self._stubs:
-            self._stubs["get_collection"] = self.grpc_channel.unary_unary(
+            self._stubs["get_collection"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/GetCollection",
                 request_serializer=warehouse.GetCollectionRequest.serialize,
                 response_deserializer=warehouse.Collection.deserialize,
@@ -1919,7 +2009,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_collection" not in self._stubs:
-            self._stubs["update_collection"] = self.grpc_channel.unary_unary(
+            self._stubs["update_collection"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/UpdateCollection",
                 request_serializer=warehouse.UpdateCollectionRequest.serialize,
                 response_deserializer=warehouse.Collection.deserialize,
@@ -1947,7 +2037,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_collections" not in self._stubs:
-            self._stubs["list_collections"] = self.grpc_channel.unary_unary(
+            self._stubs["list_collections"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ListCollections",
                 request_serializer=warehouse.ListCollectionsRequest.serialize,
                 response_deserializer=warehouse.ListCollectionsResponse.deserialize,
@@ -1976,7 +2066,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "add_collection_item" not in self._stubs:
-            self._stubs["add_collection_item"] = self.grpc_channel.unary_unary(
+            self._stubs["add_collection_item"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/AddCollectionItem",
                 request_serializer=warehouse.AddCollectionItemRequest.serialize,
                 response_deserializer=warehouse.AddCollectionItemResponse.deserialize,
@@ -2005,7 +2095,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "remove_collection_item" not in self._stubs:
-            self._stubs["remove_collection_item"] = self.grpc_channel.unary_unary(
+            self._stubs["remove_collection_item"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/RemoveCollectionItem",
                 request_serializer=warehouse.RemoveCollectionItemRequest.serialize,
                 response_deserializer=warehouse.RemoveCollectionItemResponse.deserialize,
@@ -2034,7 +2124,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "view_collection_items" not in self._stubs:
-            self._stubs["view_collection_items"] = self.grpc_channel.unary_unary(
+            self._stubs["view_collection_items"] = self._logged_channel.unary_unary(
                 "/google.cloud.visionai.v1.Warehouse/ViewCollectionItems",
                 request_serializer=warehouse.ViewCollectionItemsRequest.serialize,
                 response_deserializer=warehouse.ViewCollectionItemsResponse.deserialize,
@@ -2044,7 +2134,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_asset: gapic_v1.method_async.wrap_method(
+            self.create_asset: self._wrap_method(
                 self.create_asset,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -2058,82 +2148,82 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
                 default_timeout=120.0,
                 client_info=client_info,
             ),
-            self.update_asset: gapic_v1.method_async.wrap_method(
+            self.update_asset: self._wrap_method(
                 self.update_asset,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_asset: gapic_v1.method_async.wrap_method(
+            self.get_asset: self._wrap_method(
                 self.get_asset,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_assets: gapic_v1.method_async.wrap_method(
+            self.list_assets: self._wrap_method(
                 self.list_assets,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_asset: gapic_v1.method_async.wrap_method(
+            self.delete_asset: self._wrap_method(
                 self.delete_asset,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.upload_asset: gapic_v1.method_async.wrap_method(
+            self.upload_asset: self._wrap_method(
                 self.upload_asset,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.generate_retrieval_url: gapic_v1.method_async.wrap_method(
+            self.generate_retrieval_url: self._wrap_method(
                 self.generate_retrieval_url,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.analyze_asset: gapic_v1.method_async.wrap_method(
+            self.analyze_asset: self._wrap_method(
                 self.analyze_asset,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.index_asset: gapic_v1.method_async.wrap_method(
+            self.index_asset: self._wrap_method(
                 self.index_asset,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.remove_index_asset: gapic_v1.method_async.wrap_method(
+            self.remove_index_asset: self._wrap_method(
                 self.remove_index_asset,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.view_indexed_assets: gapic_v1.method_async.wrap_method(
+            self.view_indexed_assets: self._wrap_method(
                 self.view_indexed_assets,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_index: gapic_v1.method_async.wrap_method(
+            self.create_index: self._wrap_method(
                 self.create_index,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_index: gapic_v1.method_async.wrap_method(
+            self.update_index: self._wrap_method(
                 self.update_index,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_index: gapic_v1.method_async.wrap_method(
+            self.get_index: self._wrap_method(
                 self.get_index,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_indexes: gapic_v1.method_async.wrap_method(
+            self.list_indexes: self._wrap_method(
                 self.list_indexes,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_index: gapic_v1.method_async.wrap_method(
+            self.delete_index: self._wrap_method(
                 self.delete_index,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_corpus: gapic_v1.method_async.wrap_method(
+            self.create_corpus: self._wrap_method(
                 self.create_corpus,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -2147,32 +2237,32 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
                 default_timeout=120.0,
                 client_info=client_info,
             ),
-            self.get_corpus: gapic_v1.method_async.wrap_method(
+            self.get_corpus: self._wrap_method(
                 self.get_corpus,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_corpus: gapic_v1.method_async.wrap_method(
+            self.update_corpus: self._wrap_method(
                 self.update_corpus,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_corpora: gapic_v1.method_async.wrap_method(
+            self.list_corpora: self._wrap_method(
                 self.list_corpora,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_corpus: gapic_v1.method_async.wrap_method(
+            self.delete_corpus: self._wrap_method(
                 self.delete_corpus,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.analyze_corpus: gapic_v1.method_async.wrap_method(
+            self.analyze_corpus: self._wrap_method(
                 self.analyze_corpus,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_data_schema: gapic_v1.method_async.wrap_method(
+            self.create_data_schema: self._wrap_method(
                 self.create_data_schema,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -2186,27 +2276,27 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
                 default_timeout=120.0,
                 client_info=client_info,
             ),
-            self.update_data_schema: gapic_v1.method_async.wrap_method(
+            self.update_data_schema: self._wrap_method(
                 self.update_data_schema,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_data_schema: gapic_v1.method_async.wrap_method(
+            self.get_data_schema: self._wrap_method(
                 self.get_data_schema,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_data_schema: gapic_v1.method_async.wrap_method(
+            self.delete_data_schema: self._wrap_method(
                 self.delete_data_schema,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_data_schemas: gapic_v1.method_async.wrap_method(
+            self.list_data_schemas: self._wrap_method(
                 self.list_data_schemas,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_annotation: gapic_v1.method_async.wrap_method(
+            self.create_annotation: self._wrap_method(
                 self.create_annotation,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -2220,27 +2310,27 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
                 default_timeout=120.0,
                 client_info=client_info,
             ),
-            self.get_annotation: gapic_v1.method_async.wrap_method(
+            self.get_annotation: self._wrap_method(
                 self.get_annotation,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_annotations: gapic_v1.method_async.wrap_method(
+            self.list_annotations: self._wrap_method(
                 self.list_annotations,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_annotation: gapic_v1.method_async.wrap_method(
+            self.update_annotation: self._wrap_method(
                 self.update_annotation,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_annotation: gapic_v1.method_async.wrap_method(
+            self.delete_annotation: self._wrap_method(
                 self.delete_annotation,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.ingest_asset: gapic_v1.method_async.wrap_method(
+            self.ingest_asset: self._wrap_method(
                 self.ingest_asset,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -2254,160 +2344,189 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
                 default_timeout=120.0,
                 client_info=client_info,
             ),
-            self.clip_asset: gapic_v1.method_async.wrap_method(
+            self.clip_asset: self._wrap_method(
                 self.clip_asset,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.generate_hls_uri: gapic_v1.method_async.wrap_method(
+            self.generate_hls_uri: self._wrap_method(
                 self.generate_hls_uri,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.import_assets: gapic_v1.method_async.wrap_method(
+            self.import_assets: self._wrap_method(
                 self.import_assets,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_search_config: gapic_v1.method_async.wrap_method(
+            self.create_search_config: self._wrap_method(
                 self.create_search_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_search_config: gapic_v1.method_async.wrap_method(
+            self.update_search_config: self._wrap_method(
                 self.update_search_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_search_config: gapic_v1.method_async.wrap_method(
+            self.get_search_config: self._wrap_method(
                 self.get_search_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_search_config: gapic_v1.method_async.wrap_method(
+            self.delete_search_config: self._wrap_method(
                 self.delete_search_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_search_configs: gapic_v1.method_async.wrap_method(
+            self.list_search_configs: self._wrap_method(
                 self.list_search_configs,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_search_hypernym: gapic_v1.method_async.wrap_method(
+            self.create_search_hypernym: self._wrap_method(
                 self.create_search_hypernym,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_search_hypernym: gapic_v1.method_async.wrap_method(
+            self.update_search_hypernym: self._wrap_method(
                 self.update_search_hypernym,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_search_hypernym: gapic_v1.method_async.wrap_method(
+            self.get_search_hypernym: self._wrap_method(
                 self.get_search_hypernym,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_search_hypernym: gapic_v1.method_async.wrap_method(
+            self.delete_search_hypernym: self._wrap_method(
                 self.delete_search_hypernym,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_search_hypernyms: gapic_v1.method_async.wrap_method(
+            self.list_search_hypernyms: self._wrap_method(
                 self.list_search_hypernyms,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.search_assets: gapic_v1.method_async.wrap_method(
+            self.search_assets: self._wrap_method(
                 self.search_assets,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.search_index_endpoint: gapic_v1.method_async.wrap_method(
+            self.search_index_endpoint: self._wrap_method(
                 self.search_index_endpoint,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_index_endpoint: gapic_v1.method_async.wrap_method(
+            self.create_index_endpoint: self._wrap_method(
                 self.create_index_endpoint,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_index_endpoint: gapic_v1.method_async.wrap_method(
+            self.get_index_endpoint: self._wrap_method(
                 self.get_index_endpoint,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_index_endpoints: gapic_v1.method_async.wrap_method(
+            self.list_index_endpoints: self._wrap_method(
                 self.list_index_endpoints,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_index_endpoint: gapic_v1.method_async.wrap_method(
+            self.update_index_endpoint: self._wrap_method(
                 self.update_index_endpoint,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_index_endpoint: gapic_v1.method_async.wrap_method(
+            self.delete_index_endpoint: self._wrap_method(
                 self.delete_index_endpoint,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.deploy_index: gapic_v1.method_async.wrap_method(
+            self.deploy_index: self._wrap_method(
                 self.deploy_index,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.undeploy_index: gapic_v1.method_async.wrap_method(
+            self.undeploy_index: self._wrap_method(
                 self.undeploy_index,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_collection: gapic_v1.method_async.wrap_method(
+            self.create_collection: self._wrap_method(
                 self.create_collection,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_collection: gapic_v1.method_async.wrap_method(
+            self.delete_collection: self._wrap_method(
                 self.delete_collection,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_collection: gapic_v1.method_async.wrap_method(
+            self.get_collection: self._wrap_method(
                 self.get_collection,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_collection: gapic_v1.method_async.wrap_method(
+            self.update_collection: self._wrap_method(
                 self.update_collection,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_collections: gapic_v1.method_async.wrap_method(
+            self.list_collections: self._wrap_method(
                 self.list_collections,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.add_collection_item: gapic_v1.method_async.wrap_method(
+            self.add_collection_item: self._wrap_method(
                 self.add_collection_item,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.remove_collection_item: gapic_v1.method_async.wrap_method(
+            self.remove_collection_item: self._wrap_method(
                 self.remove_collection_item,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.view_collection_items: gapic_v1.method_async.wrap_method(
+            self.view_collection_items: self._wrap_method(
                 self.view_collection_items,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -2419,7 +2538,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -2436,7 +2555,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -2453,7 +2572,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -2472,7 +2591,7 @@ class WarehouseGrpcAsyncIOTransport(WarehouseTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,

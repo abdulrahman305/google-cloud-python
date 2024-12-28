@@ -60,7 +60,7 @@ class Message(proto.Message):
 
     Attributes:
         name (str):
-            Resource name of the message.
+            Identifier. Resource name of the message.
 
             Format: ``spaces/{space}/messages/{message}``
 
@@ -102,15 +102,15 @@ class Message(proto.Message):
             was deleted in Google Chat. If the message is
             never deleted, this field is empty.
         text (str):
-            Plain-text body of the message. The first link to an image,
-            video, or web page generates a `preview
+            Optional. Plain-text body of the message. The first link to
+            an image, video, or web page generates a `preview
             chip <https://developers.google.com/workspace/chat/preview-links>`__.
             You can also `@mention a Google Chat
             user <https://developers.google.com/workspace/chat/format-messages#messages-@mention>`__,
             or everyone in the space.
 
-            To learn about creating text messages, see `Send a text
-            message <https://developers.google.com/workspace/chat/create-messages#create-text-messages>`__.
+            To learn about creating text messages, see `Send a
+            message <https://developers.google.com/workspace/chat/create-messages>`__.
         formatted_text (str):
             Output only. Contains the message ``text`` with markups
             added to communicate formatting. This field might not
@@ -146,7 +146,7 @@ class Message(proto.Message):
             plain-text body of the message. ``cards`` and ``cards_v2``
             can have a maximum size of 32 KB.
         cards_v2 (MutableSequence[google.apps.chat_v1.types.CardWithId]):
-            An array of
+            Optional. An array of
             `cards <https://developers.google.com/workspace/chat/api/reference/rest/v1/cards>`__.
 
             Only Chat apps can create cards. If your Chat app
@@ -154,8 +154,9 @@ class Message(proto.Message):
             user <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__,
             the messages can't contain cards.
 
-            To learn about cards and how to create them, see `Send card
-            messages <https://developers.google.com/workspace/chat/create-messages#create>`__.
+            To learn how to create a message that contains cards, see
+            `Send a
+            message <https://developers.google.com/workspace/chat/create-messages>`__.
 
             `Card
             builder <https://addons.gsuite.google.com/uikit/builder>`__
@@ -167,15 +168,16 @@ class Message(proto.Message):
             `Start or reply to a message
             thread <https://developers.google.com/workspace/chat/create-messages#create-message-thread>`__.
         space (google.apps.chat_v1.types.Space):
-            If your Chat app `authenticates as a
+            Output only. If your Chat app `authenticates as a
             user <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__,
-            the output populates the
+            the output only populates the
             `space <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces>`__
             ``name``.
         fallback_text (str):
-            A plain-text description of the message's
-            cards, used when the actual cards can't be
-            displayed—for example, mobile notifications.
+            Optional. A plain-text description of the
+            message's cards, used when the actual cards
+            can't be displayed—for example, mobile
+            notifications.
         action_response (google.apps.chat_v1.types.ActionResponse):
             Input only. Parameters that a Chat app can
             use to configure how its response is posted.
@@ -186,7 +188,7 @@ class Message(proto.Message):
             Output only. Slash command information, if
             applicable.
         attachment (MutableSequence[google.apps.chat_v1.types.Attachment]):
-            User-uploaded attachment.
+            Optional. User-uploaded attachment.
         matched_url (google.apps.chat_v1.types.MatchedUrl):
             Output only. A URL in ``spaces.messages.text`` that matches
             a link preview pattern. For more information, see `Preview
@@ -210,20 +212,20 @@ class Message(proto.Message):
             Output only. The list of emoji reaction
             summaries on the message.
         private_message_viewer (google.apps.chat_v1.types.User):
-            Immutable. Input for creating a message, otherwise output
-            only. The user that can view the message. When set, the
-            message is private and only visible to the specified user
-            and the Chat app. Link previews and attachments aren't
-            supported for private messages.
+            Optional. Immutable. Input for creating a message, otherwise
+            output only. The user that can view the message. When set,
+            the message is private and only visible to the specified
+            user and the Chat app. To include this field in your
+            request, you must call the Chat API using `app
+            authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+            and omit the following:
 
-            Only Chat apps can send private messages. If your Chat app
-            `authenticates as a
-            user <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
-            to send a message, the message can't be private and must
-            omit this field.
+            -  `Attachments <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.messages.attachments>`__
+            -  `Accessory
+               widgets <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.messages#Message.AccessoryWidget>`__
 
-            For details, see `Send private messages to Google Chat
-            users <https://developers.google.com/workspace/chat/private-messages>`__.
+            For details, see `Send a message
+            privately <https://developers.google.com/workspace/chat/create-messages#private>`__.
         deletion_metadata (google.apps.chat_v1.types.DeletionMetadata):
             Output only. Information about a deleted message. A message
             is deleted when ``delete_time`` is set.
@@ -236,11 +238,11 @@ class Message(proto.Message):
             Output only. GIF images that are attached to
             the message.
         accessory_widgets (MutableSequence[google.apps.chat_v1.types.AccessoryWidget]):
-            One or more interactive widgets that appear at the bottom of
-            a message. You can add accessory widgets to messages that
-            contain text, cards, or both text and cards. Not supported
-            for messages that contain dialogs. For details, see `Add
-            interactive widgets at the bottom of a
+            Optional. One or more interactive widgets that appear at the
+            bottom of a message. You can add accessory widgets to
+            messages that contain text, cards, or both text and cards.
+            Not supported for messages that contain dialogs. For
+            details, see `Add interactive widgets at the bottom of a
             message <https://developers.google.com/workspace/chat/create-messages#add-accessory-widgets>`__.
 
             Creating a message with accessory widgets requires [app
@@ -428,7 +430,7 @@ class Thread(proto.Message):
 
     Attributes:
         name (str):
-            Output only. Resource name of the thread.
+            Identifier. Resource name of the thread.
 
             Example: ``spaces/{space}/threads/{thread}``
         thread_key (str):
@@ -523,8 +525,8 @@ class ActionResponse(proto.Message):
         )
 
     class UpdatedWidget(proto.Message):
-        r"""The response of the updated widget.
-        Used to provide autocomplete options for a widget.
+        r"""For ``selectionInput`` widgets, returns autocomplete suggestions for
+        a multiselect menu.
 
 
         .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
@@ -631,9 +633,9 @@ class DeleteMessageRequest(proto.Message):
             ``{message}``. For details, see [Name a message]
             (https://developers.google.com/workspace/chat/create-messages#name_a_created_message).
         force (bool):
-            When ``true``, deleting a message also deletes its threaded
-            replies. When ``false``, if a message has threaded replies,
-            deletion fails.
+            Optional. When ``true``, deleting a message also deletes its
+            threaded replies. When ``false``, if a message has threaded
+            replies, deletion fails.
 
             Only applies when `authenticating as a
             user <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
@@ -725,9 +727,14 @@ class CreateMessageRequest(proto.Message):
             returns the message created with that ID instead
             of creating a new message.
         message_reply_option (google.apps.chat_v1.types.CreateMessageRequest.MessageReplyOption):
-            Optional. Specifies whether a message starts
-            a thread or replies to one. Only supported in
-            named spaces.
+            Optional. Specifies whether a message starts a thread or
+            replies to one. Only supported in named spaces.
+
+            When `responding to user
+            interactions <https://developers.google.com/workspace/chat/receive-respond-interactions>`__,
+            this field is ignored. For interactions within a thread, the
+            reply is created in the same thread. Otherwise, the reply is
+            created as a new thread.
         message_id (str):
             Optional. A custom ID for a message. Lets Chat apps get,
             update, or delete a message without needing to store the
@@ -815,8 +822,8 @@ class ListMessagesRequest(proto.Message):
 
             Format: ``spaces/{space}``
         page_size (int):
-            The maximum number of messages returned. The service might
-            return fewer messages than this value.
+            Optional. The maximum number of messages returned. The
+            service might return fewer messages than this value.
 
             If unspecified, at most 25 are returned.
 
@@ -825,18 +832,16 @@ class ListMessagesRequest(proto.Message):
 
             Negative values return an ``INVALID_ARGUMENT`` error.
         page_token (str):
-            Optional, if resuming from a previous query.
-
-            A page token received from a previous list
-            messages call. Provide this parameter to
-            retrieve the subsequent page.
+            Optional. A page token received from a
+            previous list messages call. Provide this
+            parameter to retrieve the subsequent page.
 
             When paginating, all other parameters provided
             should match the call that provided the page
             token. Passing different values to the other
             parameters might lead to unexpected results.
         filter (str):
-            A query filter.
+            Optional. A query filter.
 
             You can filter messages by date (``create_time``) and thread
             (``thread.name``).
@@ -878,11 +883,9 @@ class ListMessagesRequest(proto.Message):
             Invalid queries are rejected by the server with an
             ``INVALID_ARGUMENT`` error.
         order_by (str):
-            Optional, if resuming from a previous query.
-
-            How the list of messages is ordered. Specify a value to
-            order by an ordering operation. Valid ordering operation
-            values are as follows:
+            Optional. How the list of messages is ordered. Specify a
+            value to order by an ordering operation. Valid ordering
+            operation values are as follows:
 
             -  ``ASC`` for ascending.
 
@@ -890,10 +893,10 @@ class ListMessagesRequest(proto.Message):
 
             The default ordering is ``create_time ASC``.
         show_deleted (bool):
-            Whether to include deleted messages. Deleted
-            messages include deleted time and metadata about
-            their deletion, but message content is
-            unavailable.
+            Optional. Whether to include deleted
+            messages. Deleted messages include deleted time
+            and metadata about their deletion, but message
+            content is unavailable.
     """
 
     parent: str = proto.Field(

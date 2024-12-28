@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -22,8 +26,11 @@ from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.apps.chat_v1.types import attachment
 from google.apps.chat_v1.types import membership
@@ -41,6 +48,82 @@ from google.apps.chat_v1.types import space_setup, thread_read_state
 
 from .base import DEFAULT_CLIENT_INFO, ChatServiceTransport
 from .grpc import ChatServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.chat.v1.ChatService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.chat.v1.ChatService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
@@ -239,7 +322,13 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -258,19 +347,44 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
     ) -> Callable[[gc_message.CreateMessageRequest], Awaitable[gc_message.Message]]:
         r"""Return a callable for the create message method over gRPC.
 
-        Creates a message in a Google Chat space. The maximum message
-        size, including text and cards, is 32,000 bytes. For an example,
-        see `Send a
+        Creates a message in a Google Chat space. For an example, see
+        `Send a
         message <https://developers.google.com/workspace/chat/create-messages>`__.
 
-        Calling this method requires
-        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__
-        and supports the following authentication types:
+        The ``create()`` method requires either `user
+        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+        or `app
+        authentication <https://developers.google.com/workspace/chat/authorize-import>`__.
+        Chat attributes the message sender differently depending on the
+        type of authentication that you use in your request.
 
-        -  For text messages, user authentication or app authentication
-           are supported.
-        -  For card messages, only app authentication is supported.
-           (Only Chat apps can create card messages.)
+        The following image shows how Chat attributes a message when you
+        use app authentication. Chat displays the Chat app as the
+        message sender. The content of the message can contain text
+        (``text``), cards (``cardsV2``), and accessory widgets
+        (``accessoryWidgets``).
+
+        |Message sent with app authentication async gRPC|
+
+        The following image shows how Chat attributes a message when you
+        use user authentication. Chat displays the user as the message
+        sender and attributes the Chat app to the message by displaying
+        its name. The content of message can only contain text
+        (``text``).
+
+        |Message sent with user authentication async gRPC|
+
+        The maximum message size, including the message contents, is
+        32,000 bytes.
+
+        For
+        `webhook <https://developers.google.com/workspace/chat/quickstart/webhooks>`__
+        requests, the response doesn't contain the full message. The
+        response only populates the ``name`` and ``thread.name`` fields
+        in addition to the information that was in the request.
+
+        .. |Message sent with app authentication async gRPC| image:: https://developers.google.com/workspace/chat/images/message-app-auth.svg
+        .. |Message sent with user authentication async gRPC| image:: https://developers.google.com/workspace/chat/images/message-user-auth.svg
 
         Returns:
             Callable[[~.CreateMessageRequest],
@@ -283,7 +397,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_message" not in self._stubs:
-            self._stubs["create_message"] = self.grpc_channel.unary_unary(
+            self._stubs["create_message"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/CreateMessage",
                 request_serializer=gc_message.CreateMessageRequest.serialize,
                 response_deserializer=gc_message.Message.deserialize,
@@ -299,9 +413,13 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         r"""Return a callable for the list messages method over gRPC.
 
         Lists messages in a space that the caller is a member of,
-        including messages from blocked members and spaces. For an
-        example, see `List
-        messages </chat/api/guides/v1/messages/list>`__. Requires `user
+        including messages from blocked members and spaces. If you list
+        messages from a space with no messages, the response is an empty
+        object. When using a REST/HTTP interface, the response contains
+        an empty JSON object, ``{}``. For an example, see `List
+        messages <https://developers.google.com/workspace/chat/api/guides/v1/messages/list>`__.
+
+        Requires `user
         authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
 
         Returns:
@@ -315,7 +433,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_messages" not in self._stubs:
-            self._stubs["list_messages"] = self.grpc_channel.unary_unary(
+            self._stubs["list_messages"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/ListMessages",
                 request_serializer=message.ListMessagesRequest.serialize,
                 response_deserializer=message.ListMessagesResponse.deserialize,
@@ -343,12 +461,17 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         lists memberships in spaces that the authenticated user has
         access to.
 
-        Requires
-        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__.
-        Supports `app
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
-        and `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+           You can authenticate and authorize this method with
+           administrator privileges by setting the ``use_admin_access``
+           field in the request.
 
         Returns:
             Callable[[~.ListMembershipsRequest],
@@ -361,7 +484,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_memberships" not in self._stubs:
-            self._stubs["list_memberships"] = self.grpc_channel.unary_unary(
+            self._stubs["list_memberships"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/ListMemberships",
                 request_serializer=membership.ListMembershipsRequest.serialize,
                 response_deserializer=membership.ListMembershipsResponse.deserialize,
@@ -378,12 +501,17 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         details about a user's or Google Chat app's
         membership <https://developers.google.com/workspace/chat/get-members>`__.
 
-        Requires
-        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__.
-        Supports `app
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
-        and `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+           You can authenticate and authorize this method with
+           administrator privileges by setting the ``use_admin_access``
+           field in the request.
 
         Returns:
             Callable[[~.GetMembershipRequest],
@@ -396,7 +524,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_membership" not in self._stubs:
-            self._stubs["get_membership"] = self.grpc_channel.unary_unary(
+            self._stubs["get_membership"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/GetMembership",
                 request_serializer=membership.GetMembershipRequest.serialize,
                 response_deserializer=membership.Membership.deserialize,
@@ -413,12 +541,14 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         details about a
         message <https://developers.google.com/workspace/chat/get-messages>`__.
 
-        Requires
-        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__.
-        Supports `app
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
-        and `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
 
         Note: Might return a message from a blocked member or space.
 
@@ -433,7 +563,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_message" not in self._stubs:
-            self._stubs["get_message"] = self.grpc_channel.unary_unary(
+            self._stubs["get_message"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/GetMessage",
                 request_serializer=message.GetMessageRequest.serialize,
                 response_deserializer=message.Message.deserialize,
@@ -453,12 +583,15 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         `Update a
         message <https://developers.google.com/workspace/chat/update-messages>`__.
 
-        Requires
-        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__.
-        Supports `app
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
-        and `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+
         When using app authentication, requests can only update messages
         created by the calling Chat app.
 
@@ -473,7 +606,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_message" not in self._stubs:
-            self._stubs["update_message"] = self.grpc_channel.unary_unary(
+            self._stubs["update_message"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/UpdateMessage",
                 request_serializer=gc_message.UpdateMessageRequest.serialize,
                 response_deserializer=gc_message.Message.deserialize,
@@ -489,12 +622,15 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         Deletes a message. For an example, see `Delete a
         message <https://developers.google.com/workspace/chat/delete-messages>`__.
 
-        Requires
-        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__.
-        Supports `app
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
-        and `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+
         When using app authentication, requests can only delete messages
         created by the calling Chat app.
 
@@ -509,7 +645,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_message" not in self._stubs:
-            self._stubs["delete_message"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_message"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/DeleteMessage",
                 request_serializer=message.DeleteMessageRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -541,7 +677,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_attachment" not in self._stubs:
-            self._stubs["get_attachment"] = self.grpc_channel.unary_unary(
+            self._stubs["get_attachment"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/GetAttachment",
                 request_serializer=attachment.GetAttachmentRequest.serialize,
                 response_deserializer=attachment.Attachment.deserialize,
@@ -560,6 +696,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         Uploads an attachment. For an example, see `Upload media as a
         file
         attachment <https://developers.google.com/workspace/chat/upload-media-attachments>`__.
+
         Requires user
         `authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
 
@@ -578,7 +715,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "upload_attachment" not in self._stubs:
-            self._stubs["upload_attachment"] = self.grpc_channel.unary_unary(
+            self._stubs["upload_attachment"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/UploadAttachment",
                 request_serializer=attachment.UploadAttachmentRequest.serialize,
                 response_deserializer=attachment.UploadAttachmentResponse.deserialize,
@@ -596,15 +733,14 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         see `List
         spaces <https://developers.google.com/workspace/chat/list-spaces>`__.
 
-        Requires
-        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__.
-        Supports `app
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
-        and `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
 
-        Lists spaces visible to the caller or authenticated user. Group
-        chats and DMs aren't listed until the first message is sent.
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
 
         To list all named spaces by Google Workspace organization, use
         the
@@ -622,12 +758,43 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_spaces" not in self._stubs:
-            self._stubs["list_spaces"] = self.grpc_channel.unary_unary(
+            self._stubs["list_spaces"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/ListSpaces",
                 request_serializer=space.ListSpacesRequest.serialize,
                 response_deserializer=space.ListSpacesResponse.deserialize,
             )
         return self._stubs["list_spaces"]
+
+    @property
+    def search_spaces(
+        self,
+    ) -> Callable[[space.SearchSpacesRequest], Awaitable[space.SearchSpacesResponse]]:
+        r"""Return a callable for the search spaces method over gRPC.
+
+        Returns a list of spaces in a Google Workspace organization
+        based on an administrator's search.
+
+        Requires `user authentication with administrator
+        privileges <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user#admin-privileges>`__.
+        In the request, set ``use_admin_access`` to ``true``.
+
+        Returns:
+            Callable[[~.SearchSpacesRequest],
+                    Awaitable[~.SearchSpacesResponse]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "search_spaces" not in self._stubs:
+            self._stubs["search_spaces"] = self._logged_channel.unary_unary(
+                "/google.chat.v1.ChatService/SearchSpaces",
+                request_serializer=space.SearchSpacesRequest.serialize,
+                response_deserializer=space.SearchSpacesResponse.deserialize,
+            )
+        return self._stubs["search_spaces"]
 
     @property
     def get_space(self) -> Callable[[space.GetSpaceRequest], Awaitable[space.Space]]:
@@ -637,12 +804,17 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         about a
         space <https://developers.google.com/workspace/chat/get-spaces>`__.
 
-        Requires
-        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__.
-        Supports `app
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
-        and `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+           You can authenticate and authorize this method with
+           administrator privileges by setting the ``use_admin_access``
+           field in the request.
 
         Returns:
             Callable[[~.GetSpaceRequest],
@@ -655,7 +827,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_space" not in self._stubs:
-            self._stubs["get_space"] = self.grpc_channel.unary_unary(
+            self._stubs["get_space"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/GetSpace",
                 request_serializer=space.GetSpaceRequest.serialize,
                 response_deserializer=space.Space.deserialize,
@@ -668,8 +840,9 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
     ) -> Callable[[gc_space.CreateSpaceRequest], Awaitable[gc_space.Space]]:
         r"""Return a callable for the create space method over gRPC.
 
-        Creates a named space. Spaces grouped by topics aren't
-        supported. For an example, see `Create a
+        Creates a space with no members. Can be used to create a named
+        space, or a group chat in ``Import mode``. For an example, see
+        `Create a
         space <https://developers.google.com/workspace/chat/create-spaces>`__.
 
         If you receive the error message ``ALREADY_EXISTS`` when
@@ -677,8 +850,21 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         space within the Google Workspace organization might already use
         this display name.
 
-        Requires `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+           with `administrator
+           approval <https://support.google.com/a?p=chat-app-auth>`__ in
+           `Developer
+           Preview <https://developers.google.com/workspace/preview>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+
+        When authenticating as an app, the ``space.customer`` field must
+        be set in the request.
 
         Returns:
             Callable[[~.CreateSpaceRequest],
@@ -691,7 +877,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_space" not in self._stubs:
-            self._stubs["create_space"] = self.grpc_channel.unary_unary(
+            self._stubs["create_space"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/CreateSpace",
                 request_serializer=gc_space.CreateSpaceRequest.serialize,
                 response_deserializer=gc_space.Space.deserialize,
@@ -774,7 +960,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "set_up_space" not in self._stubs:
-            self._stubs["set_up_space"] = self.grpc_channel.unary_unary(
+            self._stubs["set_up_space"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/SetUpSpace",
                 request_serializer=space_setup.SetUpSpaceRequest.serialize,
                 response_deserializer=space.Space.deserialize,
@@ -795,8 +981,21 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         An existing space within the Google Workspace organization might
         already use this display name.
 
-        Requires `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+           with `administrator
+           approval <https://support.google.com/a?p=chat-app-auth>`__ in
+           `Developer
+           Preview <https://developers.google.com/workspace/preview>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+           You can authenticate and authorize this method with
+           administrator privileges by setting the ``use_admin_access``
+           field in the request.
 
         Returns:
             Callable[[~.UpdateSpaceRequest],
@@ -809,7 +1008,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_space" not in self._stubs:
-            self._stubs["update_space"] = self.grpc_channel.unary_unary(
+            self._stubs["update_space"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/UpdateSpace",
                 request_serializer=gc_space.UpdateSpaceRequest.serialize,
                 response_deserializer=gc_space.Space.deserialize,
@@ -827,9 +1026,22 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         the space and memberships in the space—are also deleted. For an
         example, see `Delete a
         space <https://developers.google.com/workspace/chat/delete-spaces>`__.
-        Requires `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
-        from a user who has permission to delete the space.
+
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+           with `administrator
+           approval <https://support.google.com/a?p=chat-app-auth>`__ in
+           `Developer
+           Preview <https://developers.google.com/workspace/preview>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+           You can authenticate and authorize this method with
+           administrator privileges by setting the ``use_admin_access``
+           field in the request.
 
         Returns:
             Callable[[~.DeleteSpaceRequest],
@@ -842,7 +1054,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_space" not in self._stubs:
-            self._stubs["delete_space"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_space"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/DeleteSpace",
                 request_serializer=space.DeleteSpaceRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -859,9 +1071,12 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
 
         Completes the `import
         process <https://developers.google.com/workspace/chat/import-data>`__
-        for the specified space and makes it visible to users. Requires
-        app authentication and domain-wide delegation. For more
-        information, see `Authorize Google Chat apps to import
+        for the specified space and makes it visible to users.
+
+        Requires `app
+        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+        and domain-wide delegation. For more information, see `Authorize
+        Google Chat apps to import
         data <https://developers.google.com/workspace/chat/authorize-import>`__.
 
         Returns:
@@ -875,7 +1090,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "complete_import_space" not in self._stubs:
-            self._stubs["complete_import_space"] = self.grpc_channel.unary_unary(
+            self._stubs["complete_import_space"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/CompleteImportSpace",
                 request_serializer=space.CompleteImportSpaceRequest.serialize,
                 response_deserializer=space.CompleteImportSpaceResponse.deserialize,
@@ -893,20 +1108,24 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         error. For an example, see `Find a direct
         message </chat/api/guides/v1/spaces/find-direct-message>`__.
 
-        With `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__,
-        returns the direct message space between the specified user and
-        the authenticated user.
-
         With `app
         authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__,
         returns the direct message space between the specified user and
         the calling Chat app.
 
-        Requires `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
-        or `app
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__.
+        With `user
+        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__,
+        returns the direct message space between the specified user and
+        the authenticated user.
+
+        // Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
 
         Returns:
             Callable[[~.FindDirectMessageRequest],
@@ -919,7 +1138,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "find_direct_message" not in self._stubs:
-            self._stubs["find_direct_message"] = self.grpc_channel.unary_unary(
+            self._stubs["find_direct_message"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/FindDirectMessage",
                 request_serializer=space.FindDirectMessageRequest.serialize,
                 response_deserializer=space.Space.deserialize,
@@ -934,46 +1153,40 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
     ]:
         r"""Return a callable for the create membership method over gRPC.
 
-        Creates a human membership or app membership for the calling
-        app. Creating memberships for other apps isn't supported. For an
-        example, see `Invite or add a user or a Google Chat app to a
-        space <https://developers.google.com/workspace/chat/create-members>`__.
-        When creating a membership, if the specified member has their
-        auto-accept policy turned off, then they're invited, and must
-        accept the space invitation before joining. Otherwise, creating
-        a membership adds the member directly to the specified space.
-        Requires `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Creates a membership for the calling Chat app, a user, or a
+        Google Group. Creating memberships for other Chat apps isn't
+        supported. When creating a membership, if the specified member
+        has their auto-accept policy turned off, then they're invited,
+        and must accept the space invitation before joining. Otherwise,
+        creating a membership adds the member directly to the specified
+        space.
 
-        To specify the member to add, set the ``membership.member.name``
-        for the human or app member, or set the
-        ``membership.group_member.name`` for the group member.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
 
-        -  To add the calling app to a space or a direct message between
-           two human users, use ``users/app``. Unable to add other apps
-           to the space.
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+           with `administrator
+           approval <https://support.google.com/a?p=chat-app-auth>`__ in
+           `Developer
+           Preview <https://developers.google.com/workspace/preview>`__
 
-        -  To add a human user, use ``users/{user}``, where ``{user}``
-           can be the email address for the user. For users in the same
-           Workspace organization ``{user}`` can also be the ``id`` for
-           the person from the People API, or the ``id`` for the user in
-           the Directory API. For example, if the People API Person
-           profile ID for ``user@example.com`` is ``123456789``, you can
-           add the user to the space by setting the
-           ``membership.member.name`` to ``users/user@example.com`` or
-           ``users/123456789``.
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+           You can authenticate and authorize this method with
+           administrator privileges by setting the ``use_admin_access``
+           field in the request.
 
-        -  To add or invite a Google group in a named space, use
-           ``groups/{group}``, where ``{group}`` is the ``id`` for the
-           group from the Cloud Identity Groups API. For example, you
-           can use `Cloud Identity Groups lookup
-           API <https://cloud.google.com/identity/docs/reference/rest/v1/groups/lookup>`__
-           to retrieve the ID ``123456789`` for group email
-           ``group@example.com``, then you can add or invite the group
-           to a named space by setting the
-           ``membership.group_member.name`` to ``groups/123456789``.
-           Group email is not supported, and Google groups can only be
-           added as members in named spaces.
+        For example usage, see:
+
+        -  `Invite or add a user to a
+           space <https://developers.google.com/workspace/chat/create-members#create-user-membership>`__.
+
+        -  `Invite or add a Google Group to a
+           space <https://developers.google.com/workspace/chat/create-members#create-group-membership>`__.
+
+        -  `Add the Chat app to a
+           space <https://developers.google.com/workspace/chat/create-members#create-membership-calling-api>`__.
 
         Returns:
             Callable[[~.CreateMembershipRequest],
@@ -986,7 +1199,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_membership" not in self._stubs:
-            self._stubs["create_membership"] = self.grpc_channel.unary_unary(
+            self._stubs["create_membership"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/CreateMembership",
                 request_serializer=gc_membership.CreateMembershipRequest.serialize,
                 response_deserializer=gc_membership.Membership.deserialize,
@@ -1005,8 +1218,21 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         membership in a
         space <https://developers.google.com/workspace/chat/update-members>`__.
 
-        Requires `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+           with `administrator
+           approval <https://support.google.com/a?p=chat-app-auth>`__ in
+           `Developer
+           Preview <https://developers.google.com/workspace/preview>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+           You can authenticate and authorize this method with
+           administrator privileges by setting the ``use_admin_access``
+           field in the request.
 
         Returns:
             Callable[[~.UpdateMembershipRequest],
@@ -1019,7 +1245,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_membership" not in self._stubs:
-            self._stubs["update_membership"] = self.grpc_channel.unary_unary(
+            self._stubs["update_membership"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/UpdateMembership",
                 request_serializer=gc_membership.UpdateMembershipRequest.serialize,
                 response_deserializer=gc_membership.Membership.deserialize,
@@ -1038,8 +1264,21 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         Google Chat app from a
         space <https://developers.google.com/workspace/chat/delete-members>`__.
 
-        Requires `user
-        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        Supports the following types of
+        `authentication <https://developers.google.com/workspace/chat/authenticate-authorize>`__:
+
+        -  `App
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+           with `administrator
+           approval <https://support.google.com/a?p=chat-app-auth>`__ in
+           `Developer
+           Preview <https://developers.google.com/workspace/preview>`__
+
+        -  `User
+           authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+           You can authenticate and authorize this method with
+           administrator privileges by setting the ``use_admin_access``
+           field in the request.
 
         Returns:
             Callable[[~.DeleteMembershipRequest],
@@ -1052,7 +1291,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_membership" not in self._stubs:
-            self._stubs["delete_membership"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_membership"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/DeleteMembership",
                 request_serializer=membership.DeleteMembershipRequest.serialize,
                 response_deserializer=membership.Membership.deserialize,
@@ -1068,6 +1307,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         Creates a reaction and adds it to a message. Only unicode emojis
         are supported. For an example, see `Add a reaction to a
         message <https://developers.google.com/workspace/chat/create-reactions>`__.
+
         Requires `user
         authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
 
@@ -1082,7 +1322,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_reaction" not in self._stubs:
-            self._stubs["create_reaction"] = self.grpc_channel.unary_unary(
+            self._stubs["create_reaction"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/CreateReaction",
                 request_serializer=gc_reaction.CreateReactionRequest.serialize,
                 response_deserializer=gc_reaction.Reaction.deserialize,
@@ -1100,6 +1340,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         Lists reactions to a message. For an example, see `List
         reactions for a
         message <https://developers.google.com/workspace/chat/list-reactions>`__.
+
         Requires `user
         authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
 
@@ -1114,7 +1355,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_reactions" not in self._stubs:
-            self._stubs["list_reactions"] = self.grpc_channel.unary_unary(
+            self._stubs["list_reactions"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/ListReactions",
                 request_serializer=reaction.ListReactionsRequest.serialize,
                 response_deserializer=reaction.ListReactionsResponse.deserialize,
@@ -1130,6 +1371,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         Deletes a reaction to a message. Only unicode emojis are
         supported. For an example, see `Delete a
         reaction <https://developers.google.com/workspace/chat/delete-reactions>`__.
+
         Requires `user
         authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
 
@@ -1144,7 +1386,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_reaction" not in self._stubs:
-            self._stubs["delete_reaction"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_reaction"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/DeleteReaction",
                 request_serializer=reaction.DeleteReactionRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -1179,7 +1421,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_space_read_state" not in self._stubs:
-            self._stubs["get_space_read_state"] = self.grpc_channel.unary_unary(
+            self._stubs["get_space_read_state"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/GetSpaceReadState",
                 request_serializer=space_read_state.GetSpaceReadStateRequest.serialize,
                 response_deserializer=space_read_state.SpaceReadState.deserialize,
@@ -1214,7 +1456,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_space_read_state" not in self._stubs:
-            self._stubs["update_space_read_state"] = self.grpc_channel.unary_unary(
+            self._stubs["update_space_read_state"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/UpdateSpaceReadState",
                 request_serializer=gc_space_read_state.UpdateSpaceReadStateRequest.serialize,
                 response_deserializer=gc_space_read_state.SpaceReadState.deserialize,
@@ -1249,7 +1491,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_thread_read_state" not in self._stubs:
-            self._stubs["get_thread_read_state"] = self.grpc_channel.unary_unary(
+            self._stubs["get_thread_read_state"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/GetThreadReadState",
                 request_serializer=thread_read_state.GetThreadReadStateRequest.serialize,
                 response_deserializer=thread_read_state.ThreadReadState.deserialize,
@@ -1271,6 +1513,9 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         message was later updated, the server returns the updated
         ``Message`` resource in the event payload.
 
+        Note: The ``permissionSettings`` field is not returned in the
+        Space object of the Space event data for this request.
+
         Requires `user
         authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
         To get an event, the authenticated user must be a member of the
@@ -1291,7 +1536,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_space_event" not in self._stubs:
-            self._stubs["get_space_event"] = self.grpc_channel.unary_unary(
+            self._stubs["get_space_event"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/GetSpaceEvent",
                 request_serializer=space_event.GetSpaceEventRequest.serialize,
                 response_deserializer=space_event.SpaceEvent.deserialize,
@@ -1335,7 +1580,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_space_events" not in self._stubs:
-            self._stubs["list_space_events"] = self.grpc_channel.unary_unary(
+            self._stubs["list_space_events"] = self._logged_channel.unary_unary(
                 "/google.chat.v1.ChatService/ListSpaceEvents",
                 request_serializer=space_event.ListSpaceEventsRequest.serialize,
                 response_deserializer=space_event.ListSpaceEventsResponse.deserialize,
@@ -1345,7 +1590,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_message: gapic_v1.method_async.wrap_method(
+            self.create_message: self._wrap_method(
                 self.create_message,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1359,7 +1604,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.list_messages: gapic_v1.method_async.wrap_method(
+            self.list_messages: self._wrap_method(
                 self.list_messages,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1373,7 +1618,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.list_memberships: gapic_v1.method_async.wrap_method(
+            self.list_memberships: self._wrap_method(
                 self.list_memberships,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1387,7 +1632,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.get_membership: gapic_v1.method_async.wrap_method(
+            self.get_membership: self._wrap_method(
                 self.get_membership,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1401,7 +1646,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.get_message: gapic_v1.method_async.wrap_method(
+            self.get_message: self._wrap_method(
                 self.get_message,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1415,7 +1660,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.update_message: gapic_v1.method_async.wrap_method(
+            self.update_message: self._wrap_method(
                 self.update_message,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1429,7 +1674,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.delete_message: gapic_v1.method_async.wrap_method(
+            self.delete_message: self._wrap_method(
                 self.delete_message,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1443,7 +1688,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.get_attachment: gapic_v1.method_async.wrap_method(
+            self.get_attachment: self._wrap_method(
                 self.get_attachment,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1457,7 +1702,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.upload_attachment: gapic_v1.method_async.wrap_method(
+            self.upload_attachment: self._wrap_method(
                 self.upload_attachment,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1471,7 +1716,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.list_spaces: gapic_v1.method_async.wrap_method(
+            self.list_spaces: self._wrap_method(
                 self.list_spaces,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1485,7 +1730,21 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.get_space: gapic_v1.method_async.wrap_method(
+            self.search_spaces: self._wrap_method(
+                self.search_spaces,
+                default_retry=retries.AsyncRetry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=30.0,
+                ),
+                default_timeout=30.0,
+                client_info=client_info,
+            ),
+            self.get_space: self._wrap_method(
                 self.get_space,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1499,7 +1758,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.create_space: gapic_v1.method_async.wrap_method(
+            self.create_space: self._wrap_method(
                 self.create_space,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1513,7 +1772,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.set_up_space: gapic_v1.method_async.wrap_method(
+            self.set_up_space: self._wrap_method(
                 self.set_up_space,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1527,7 +1786,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.update_space: gapic_v1.method_async.wrap_method(
+            self.update_space: self._wrap_method(
                 self.update_space,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1541,7 +1800,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.delete_space: gapic_v1.method_async.wrap_method(
+            self.delete_space: self._wrap_method(
                 self.delete_space,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1555,7 +1814,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.complete_import_space: gapic_v1.method_async.wrap_method(
+            self.complete_import_space: self._wrap_method(
                 self.complete_import_space,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1569,7 +1828,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.find_direct_message: gapic_v1.method_async.wrap_method(
+            self.find_direct_message: self._wrap_method(
                 self.find_direct_message,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1583,7 +1842,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.create_membership: gapic_v1.method_async.wrap_method(
+            self.create_membership: self._wrap_method(
                 self.create_membership,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1597,7 +1856,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.update_membership: gapic_v1.method_async.wrap_method(
+            self.update_membership: self._wrap_method(
                 self.update_membership,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1611,7 +1870,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.delete_membership: gapic_v1.method_async.wrap_method(
+            self.delete_membership: self._wrap_method(
                 self.delete_membership,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1625,7 +1884,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.create_reaction: gapic_v1.method_async.wrap_method(
+            self.create_reaction: self._wrap_method(
                 self.create_reaction,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1639,7 +1898,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.list_reactions: gapic_v1.method_async.wrap_method(
+            self.list_reactions: self._wrap_method(
                 self.list_reactions,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1653,7 +1912,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.delete_reaction: gapic_v1.method_async.wrap_method(
+            self.delete_reaction: self._wrap_method(
                 self.delete_reaction,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1667,7 +1926,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.get_space_read_state: gapic_v1.method_async.wrap_method(
+            self.get_space_read_state: self._wrap_method(
                 self.get_space_read_state,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1681,7 +1940,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.update_space_read_state: gapic_v1.method_async.wrap_method(
+            self.update_space_read_state: self._wrap_method(
                 self.update_space_read_state,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1695,7 +1954,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.get_thread_read_state: gapic_v1.method_async.wrap_method(
+            self.get_thread_read_state: self._wrap_method(
                 self.get_thread_read_state,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1709,7 +1968,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.get_space_event: gapic_v1.method_async.wrap_method(
+            self.get_space_event: self._wrap_method(
                 self.get_space_event,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1723,7 +1982,7 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.list_space_events: gapic_v1.method_async.wrap_method(
+            self.list_space_events: self._wrap_method(
                 self.list_space_events,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1739,8 +1998,17 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("ChatServiceGrpcAsyncIOTransport",)

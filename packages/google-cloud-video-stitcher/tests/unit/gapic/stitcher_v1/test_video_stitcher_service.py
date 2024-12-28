@@ -24,6 +24,20 @@ except ImportError:  # pragma: NO COVER
 
 import math
 
+from google.api_core import api_core_version
+import grpc
+from grpc.experimental import aio
+from proto.marshal.rules import wrappers
+from proto.marshal.rules.dates import DurationRule, TimestampRule
+import pytest
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
 from google.api_core import (
     future,
     gapic_v1,
@@ -33,7 +47,7 @@ from google.api_core import (
     operations_v1,
     path_template,
 )
-from google.api_core import api_core_version, client_options
+from google.api_core import client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
 from google.api_core import retry as retries
@@ -45,11 +59,6 @@ from google.oauth2 import service_account
 from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
-import grpc
-from grpc.experimental import aio
-from proto.marshal.rules import wrappers
-from proto.marshal.rules.dates import DurationRule, TimestampRule
-import pytest
 
 from google.cloud.video.stitcher_v1.services.video_stitcher_service import (
     VideoStitcherServiceAsyncClient,
@@ -72,8 +81,22 @@ from google.cloud.video.stitcher_v1.types import (
 )
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -328,89 +351,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         VideoStitcherServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            VideoStitcherServiceClient,
-            transports.VideoStitcherServiceGrpcTransport,
-            "grpc",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1193,25 +1133,6 @@ def test_create_cdn_key(request_type, transport: str = "grpc"):
     assert isinstance(response, future.Future)
 
 
-def test_create_cdn_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_cdn_key), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_cdn_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateCdnKeyRequest()
-
-
 def test_create_cdn_key_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1270,8 +1191,9 @@ def test_create_cdn_key_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_cdn_key(request)
@@ -1282,27 +1204,6 @@ def test_create_cdn_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_cdn_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_cdn_key), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.create_cdn_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateCdnKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_cdn_key_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1310,7 +1211,7 @@ async def test_create_cdn_key_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1325,26 +1226,28 @@ async def test_create_cdn_key_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_cdn_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_cdn_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_cdn_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1353,7 +1256,7 @@ async def test_create_cdn_key_async(
     request_type=video_stitcher_service.CreateCdnKeyRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1416,7 +1319,7 @@ def test_create_cdn_key_field_headers():
 @pytest.mark.asyncio
 async def test_create_cdn_key_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1502,7 +1405,7 @@ def test_create_cdn_key_flattened_error():
 @pytest.mark.asyncio
 async def test_create_cdn_key_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1543,7 +1446,7 @@ async def test_create_cdn_key_flattened_async():
 @pytest.mark.asyncio
 async def test_create_cdn_key_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1595,25 +1498,6 @@ def test_list_cdn_keys(request_type, transport: str = "grpc"):
     assert isinstance(response, pagers.ListCdnKeysPager)
     assert response.next_page_token == "next_page_token_value"
     assert response.unreachable == ["unreachable_value"]
-
-
-def test_list_cdn_keys_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_cdn_keys), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_cdn_keys()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListCdnKeysRequest()
 
 
 def test_list_cdn_keys_non_empty_request_with_auto_populated_field():
@@ -1686,30 +1570,6 @@ def test_list_cdn_keys_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_cdn_keys_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_cdn_keys), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            video_stitcher_service.ListCdnKeysResponse(
-                next_page_token="next_page_token_value",
-                unreachable=["unreachable_value"],
-            )
-        )
-        response = await client.list_cdn_keys()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListCdnKeysRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_cdn_keys_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1717,7 +1577,7 @@ async def test_list_cdn_keys_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1732,22 +1592,23 @@ async def test_list_cdn_keys_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_cdn_keys
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_cdn_keys(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_cdn_keys(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1756,7 +1617,7 @@ async def test_list_cdn_keys_async(
     request_type=video_stitcher_service.ListCdnKeysRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1824,7 +1685,7 @@ def test_list_cdn_keys_field_headers():
 @pytest.mark.asyncio
 async def test_list_cdn_keys_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1894,7 +1755,7 @@ def test_list_cdn_keys_flattened_error():
 @pytest.mark.asyncio
 async def test_list_cdn_keys_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1923,7 +1784,7 @@ async def test_list_cdn_keys_flattened_async():
 @pytest.mark.asyncio
 async def test_list_cdn_keys_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2033,7 +1894,7 @@ def test_list_cdn_keys_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_cdn_keys_async_pager():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2083,7 +1944,7 @@ async def test_list_cdn_keys_async_pager():
 @pytest.mark.asyncio
 async def test_list_cdn_keys_async_pages():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2167,25 +2028,6 @@ def test_get_cdn_key(request_type, transport: str = "grpc"):
     assert response.hostname == "hostname_value"
 
 
-def test_get_cdn_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_cdn_key), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_cdn_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetCdnKeyRequest()
-
-
 def test_get_cdn_key_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2250,30 +2092,6 @@ def test_get_cdn_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_cdn_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_cdn_key), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cdn_keys.CdnKey(
-                name="name_value",
-                hostname="hostname_value",
-            )
-        )
-        response = await client.get_cdn_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetCdnKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_cdn_key_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2281,7 +2099,7 @@ async def test_get_cdn_key_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2296,22 +2114,23 @@ async def test_get_cdn_key_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_cdn_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_cdn_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_cdn_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2320,7 +2139,7 @@ async def test_get_cdn_key_async(
     request_type=video_stitcher_service.GetCdnKeyRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2388,7 +2207,7 @@ def test_get_cdn_key_field_headers():
 @pytest.mark.asyncio
 async def test_get_cdn_key_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2456,7 +2275,7 @@ def test_get_cdn_key_flattened_error():
 @pytest.mark.asyncio
 async def test_get_cdn_key_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2483,7 +2302,7 @@ async def test_get_cdn_key_flattened_async():
 @pytest.mark.asyncio
 async def test_get_cdn_key_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2526,25 +2345,6 @@ def test_delete_cdn_key(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_delete_cdn_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_cdn_key), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_cdn_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.DeleteCdnKeyRequest()
 
 
 def test_delete_cdn_key_non_empty_request_with_auto_populated_field():
@@ -2603,8 +2403,9 @@ def test_delete_cdn_key_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_cdn_key(request)
@@ -2615,27 +2416,6 @@ def test_delete_cdn_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_cdn_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_cdn_key), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.delete_cdn_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.DeleteCdnKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_cdn_key_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2643,7 +2423,7 @@ async def test_delete_cdn_key_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2658,26 +2438,28 @@ async def test_delete_cdn_key_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_cdn_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_cdn_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_cdn_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2686,7 +2468,7 @@ async def test_delete_cdn_key_async(
     request_type=video_stitcher_service.DeleteCdnKeyRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2749,7 +2531,7 @@ def test_delete_cdn_key_field_headers():
 @pytest.mark.asyncio
 async def test_delete_cdn_key_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2819,7 +2601,7 @@ def test_delete_cdn_key_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_cdn_key_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2848,7 +2630,7 @@ async def test_delete_cdn_key_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_cdn_key_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2891,25 +2673,6 @@ def test_update_cdn_key(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_update_cdn_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_cdn_key), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_cdn_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.UpdateCdnKeyRequest()
 
 
 def test_update_cdn_key_non_empty_request_with_auto_populated_field():
@@ -2964,8 +2727,9 @@ def test_update_cdn_key_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.update_cdn_key(request)
@@ -2976,27 +2740,6 @@ def test_update_cdn_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_cdn_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_cdn_key), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.update_cdn_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.UpdateCdnKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_cdn_key_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3004,7 +2747,7 @@ async def test_update_cdn_key_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3019,26 +2762,28 @@ async def test_update_cdn_key_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_cdn_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_cdn_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.update_cdn_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3047,7 +2792,7 @@ async def test_update_cdn_key_async(
     request_type=video_stitcher_service.UpdateCdnKeyRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3110,7 +2855,7 @@ def test_update_cdn_key_field_headers():
 @pytest.mark.asyncio
 async def test_update_cdn_key_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3191,7 +2936,7 @@ def test_update_cdn_key_flattened_error():
 @pytest.mark.asyncio
 async def test_update_cdn_key_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3228,7 +2973,7 @@ async def test_update_cdn_key_flattened_async():
 @pytest.mark.asyncio
 async def test_update_cdn_key_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3291,27 +3036,6 @@ def test_create_vod_session(request_type, transport: str = "grpc"):
     assert response.asset_id == "asset_id_value"
     assert response.ad_tracking == live_configs.AdTracking.CLIENT
     assert response.vod_config == "vod_config_value"
-
-
-def test_create_vod_session_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_vod_session), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_vod_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateVodSessionRequest()
 
 
 def test_create_vod_session_non_empty_request_with_auto_populated_field():
@@ -3384,37 +3108,6 @@ def test_create_vod_session_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_vod_session_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_vod_session), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            sessions.VodSession(
-                name="name_value",
-                play_uri="play_uri_value",
-                source_uri="source_uri_value",
-                ad_tag_uri="ad_tag_uri_value",
-                asset_id="asset_id_value",
-                ad_tracking=live_configs.AdTracking.CLIENT,
-                vod_config="vod_config_value",
-            )
-        )
-        response = await client.create_vod_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateVodSessionRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_vod_session_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3422,7 +3115,7 @@ async def test_create_vod_session_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3437,22 +3130,23 @@ async def test_create_vod_session_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_vod_session
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_vod_session(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_vod_session(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3461,7 +3155,7 @@ async def test_create_vod_session_async(
     request_type=video_stitcher_service.CreateVodSessionRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3543,7 +3237,7 @@ def test_create_vod_session_field_headers():
 @pytest.mark.asyncio
 async def test_create_vod_session_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3620,7 +3314,7 @@ def test_create_vod_session_flattened_error():
 @pytest.mark.asyncio
 async def test_create_vod_session_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3653,7 +3347,7 @@ async def test_create_vod_session_flattened_async():
 @pytest.mark.asyncio
 async def test_create_vod_session_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3712,25 +3406,6 @@ def test_get_vod_session(request_type, transport: str = "grpc"):
     assert response.asset_id == "asset_id_value"
     assert response.ad_tracking == live_configs.AdTracking.CLIENT
     assert response.vod_config == "vod_config_value"
-
-
-def test_get_vod_session_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_vod_session), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_vod_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetVodSessionRequest()
 
 
 def test_get_vod_session_non_empty_request_with_auto_populated_field():
@@ -3797,35 +3472,6 @@ def test_get_vod_session_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_vod_session_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_vod_session), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            sessions.VodSession(
-                name="name_value",
-                play_uri="play_uri_value",
-                source_uri="source_uri_value",
-                ad_tag_uri="ad_tag_uri_value",
-                asset_id="asset_id_value",
-                ad_tracking=live_configs.AdTracking.CLIENT,
-                vod_config="vod_config_value",
-            )
-        )
-        response = await client.get_vod_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetVodSessionRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_vod_session_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3833,7 +3479,7 @@ async def test_get_vod_session_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3848,22 +3494,23 @@ async def test_get_vod_session_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_vod_session
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_vod_session(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_vod_session(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3872,7 +3519,7 @@ async def test_get_vod_session_async(
     request_type=video_stitcher_service.GetVodSessionRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3950,7 +3597,7 @@ def test_get_vod_session_field_headers():
 @pytest.mark.asyncio
 async def test_get_vod_session_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4018,7 +3665,7 @@ def test_get_vod_session_flattened_error():
 @pytest.mark.asyncio
 async def test_get_vod_session_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4045,7 +3692,7 @@ async def test_get_vod_session_flattened_async():
 @pytest.mark.asyncio
 async def test_get_vod_session_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4093,27 +3740,6 @@ def test_list_vod_stitch_details(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListVodStitchDetailsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_vod_stitch_details_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_vod_stitch_details), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_vod_stitch_details()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListVodStitchDetailsRequest()
 
 
 def test_list_vod_stitch_details_non_empty_request_with_auto_populated_field():
@@ -4189,31 +3815,6 @@ def test_list_vod_stitch_details_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_vod_stitch_details_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_vod_stitch_details), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            video_stitcher_service.ListVodStitchDetailsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_vod_stitch_details()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListVodStitchDetailsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_vod_stitch_details_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4221,7 +3822,7 @@ async def test_list_vod_stitch_details_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4236,22 +3837,23 @@ async def test_list_vod_stitch_details_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_vod_stitch_details
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_vod_stitch_details(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_vod_stitch_details(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4260,7 +3862,7 @@ async def test_list_vod_stitch_details_async(
     request_type=video_stitcher_service.ListVodStitchDetailsRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4330,7 +3932,7 @@ def test_list_vod_stitch_details_field_headers():
 @pytest.mark.asyncio
 async def test_list_vod_stitch_details_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4404,7 +4006,7 @@ def test_list_vod_stitch_details_flattened_error():
 @pytest.mark.asyncio
 async def test_list_vod_stitch_details_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4435,7 +4037,7 @@ async def test_list_vod_stitch_details_flattened_async():
 @pytest.mark.asyncio
 async def test_list_vod_stitch_details_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4549,7 +4151,7 @@ def test_list_vod_stitch_details_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_vod_stitch_details_async_pager():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4601,7 +4203,7 @@ async def test_list_vod_stitch_details_async_pager():
 @pytest.mark.asyncio
 async def test_list_vod_stitch_details_async_pages():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4687,27 +4289,6 @@ def test_get_vod_stitch_detail(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
 
 
-def test_get_vod_stitch_detail_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_vod_stitch_detail), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_vod_stitch_detail()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetVodStitchDetailRequest()
-
-
 def test_get_vod_stitch_detail_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -4779,31 +4360,6 @@ def test_get_vod_stitch_detail_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_vod_stitch_detail_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_vod_stitch_detail), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            stitch_details.VodStitchDetail(
-                name="name_value",
-            )
-        )
-        response = await client.get_vod_stitch_detail()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetVodStitchDetailRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_vod_stitch_detail_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4811,7 +4367,7 @@ async def test_get_vod_stitch_detail_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4826,22 +4382,23 @@ async def test_get_vod_stitch_detail_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_vod_stitch_detail
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_vod_stitch_detail(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_vod_stitch_detail(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4850,7 +4407,7 @@ async def test_get_vod_stitch_detail_async(
     request_type=video_stitcher_service.GetVodStitchDetailRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4920,7 +4477,7 @@ def test_get_vod_stitch_detail_field_headers():
 @pytest.mark.asyncio
 async def test_get_vod_stitch_detail_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4994,7 +4551,7 @@ def test_get_vod_stitch_detail_flattened_error():
 @pytest.mark.asyncio
 async def test_get_vod_stitch_detail_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5025,7 +4582,7 @@ async def test_get_vod_stitch_detail_flattened_async():
 @pytest.mark.asyncio
 async def test_get_vod_stitch_detail_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5073,27 +4630,6 @@ def test_list_vod_ad_tag_details(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListVodAdTagDetailsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_vod_ad_tag_details_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_vod_ad_tag_details), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_vod_ad_tag_details()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListVodAdTagDetailsRequest()
 
 
 def test_list_vod_ad_tag_details_non_empty_request_with_auto_populated_field():
@@ -5169,31 +4705,6 @@ def test_list_vod_ad_tag_details_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_vod_ad_tag_details_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_vod_ad_tag_details), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            video_stitcher_service.ListVodAdTagDetailsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_vod_ad_tag_details()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListVodAdTagDetailsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_vod_ad_tag_details_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5201,7 +4712,7 @@ async def test_list_vod_ad_tag_details_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5216,22 +4727,23 @@ async def test_list_vod_ad_tag_details_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_vod_ad_tag_details
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_vod_ad_tag_details(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_vod_ad_tag_details(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5240,7 +4752,7 @@ async def test_list_vod_ad_tag_details_async(
     request_type=video_stitcher_service.ListVodAdTagDetailsRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5310,7 +4822,7 @@ def test_list_vod_ad_tag_details_field_headers():
 @pytest.mark.asyncio
 async def test_list_vod_ad_tag_details_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5384,7 +4896,7 @@ def test_list_vod_ad_tag_details_flattened_error():
 @pytest.mark.asyncio
 async def test_list_vod_ad_tag_details_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5415,7 +4927,7 @@ async def test_list_vod_ad_tag_details_flattened_async():
 @pytest.mark.asyncio
 async def test_list_vod_ad_tag_details_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5529,7 +5041,7 @@ def test_list_vod_ad_tag_details_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_vod_ad_tag_details_async_pager():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5581,7 +5093,7 @@ async def test_list_vod_ad_tag_details_async_pager():
 @pytest.mark.asyncio
 async def test_list_vod_ad_tag_details_async_pages():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5667,27 +5179,6 @@ def test_get_vod_ad_tag_detail(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
 
 
-def test_get_vod_ad_tag_detail_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_vod_ad_tag_detail), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_vod_ad_tag_detail()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetVodAdTagDetailRequest()
-
-
 def test_get_vod_ad_tag_detail_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5759,31 +5250,6 @@ def test_get_vod_ad_tag_detail_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_vod_ad_tag_detail_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_vod_ad_tag_detail), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            ad_tag_details.VodAdTagDetail(
-                name="name_value",
-            )
-        )
-        response = await client.get_vod_ad_tag_detail()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetVodAdTagDetailRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_vod_ad_tag_detail_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5791,7 +5257,7 @@ async def test_get_vod_ad_tag_detail_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5806,22 +5272,23 @@ async def test_get_vod_ad_tag_detail_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_vod_ad_tag_detail
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_vod_ad_tag_detail(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_vod_ad_tag_detail(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5830,7 +5297,7 @@ async def test_get_vod_ad_tag_detail_async(
     request_type=video_stitcher_service.GetVodAdTagDetailRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5900,7 +5367,7 @@ def test_get_vod_ad_tag_detail_field_headers():
 @pytest.mark.asyncio
 async def test_get_vod_ad_tag_detail_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5974,7 +5441,7 @@ def test_get_vod_ad_tag_detail_flattened_error():
 @pytest.mark.asyncio
 async def test_get_vod_ad_tag_detail_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6005,7 +5472,7 @@ async def test_get_vod_ad_tag_detail_flattened_async():
 @pytest.mark.asyncio
 async def test_get_vod_ad_tag_detail_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6053,27 +5520,6 @@ def test_list_live_ad_tag_details(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListLiveAdTagDetailsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_live_ad_tag_details_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_live_ad_tag_details), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_live_ad_tag_details()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListLiveAdTagDetailsRequest()
 
 
 def test_list_live_ad_tag_details_non_empty_request_with_auto_populated_field():
@@ -6149,31 +5595,6 @@ def test_list_live_ad_tag_details_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_live_ad_tag_details_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_live_ad_tag_details), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            video_stitcher_service.ListLiveAdTagDetailsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_live_ad_tag_details()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListLiveAdTagDetailsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_live_ad_tag_details_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6181,7 +5602,7 @@ async def test_list_live_ad_tag_details_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6196,22 +5617,23 @@ async def test_list_live_ad_tag_details_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_live_ad_tag_details
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_live_ad_tag_details(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_live_ad_tag_details(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6220,7 +5642,7 @@ async def test_list_live_ad_tag_details_async(
     request_type=video_stitcher_service.ListLiveAdTagDetailsRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6290,7 +5712,7 @@ def test_list_live_ad_tag_details_field_headers():
 @pytest.mark.asyncio
 async def test_list_live_ad_tag_details_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6364,7 +5786,7 @@ def test_list_live_ad_tag_details_flattened_error():
 @pytest.mark.asyncio
 async def test_list_live_ad_tag_details_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6395,7 +5817,7 @@ async def test_list_live_ad_tag_details_flattened_async():
 @pytest.mark.asyncio
 async def test_list_live_ad_tag_details_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6511,7 +5933,7 @@ def test_list_live_ad_tag_details_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_live_ad_tag_details_async_pager():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6563,7 +5985,7 @@ async def test_list_live_ad_tag_details_async_pager():
 @pytest.mark.asyncio
 async def test_list_live_ad_tag_details_async_pages():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6649,27 +6071,6 @@ def test_get_live_ad_tag_detail(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
 
 
-def test_get_live_ad_tag_detail_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_live_ad_tag_detail), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_live_ad_tag_detail()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetLiveAdTagDetailRequest()
-
-
 def test_get_live_ad_tag_detail_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -6741,31 +6142,6 @@ def test_get_live_ad_tag_detail_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_live_ad_tag_detail_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_live_ad_tag_detail), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            ad_tag_details.LiveAdTagDetail(
-                name="name_value",
-            )
-        )
-        response = await client.get_live_ad_tag_detail()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetLiveAdTagDetailRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_live_ad_tag_detail_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6773,7 +6149,7 @@ async def test_get_live_ad_tag_detail_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6788,22 +6164,23 @@ async def test_get_live_ad_tag_detail_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_live_ad_tag_detail
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_live_ad_tag_detail(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_live_ad_tag_detail(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6812,7 +6189,7 @@ async def test_get_live_ad_tag_detail_async(
     request_type=video_stitcher_service.GetLiveAdTagDetailRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6882,7 +6259,7 @@ def test_get_live_ad_tag_detail_field_headers():
 @pytest.mark.asyncio
 async def test_get_live_ad_tag_detail_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6956,7 +6333,7 @@ def test_get_live_ad_tag_detail_flattened_error():
 @pytest.mark.asyncio
 async def test_get_live_ad_tag_detail_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6987,7 +6364,7 @@ async def test_get_live_ad_tag_detail_flattened_async():
 @pytest.mark.asyncio
 async def test_get_live_ad_tag_detail_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7030,25 +6407,6 @@ def test_create_slate(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_create_slate_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_slate), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_slate()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateSlateRequest()
 
 
 def test_create_slate_non_empty_request_with_auto_populated_field():
@@ -7111,8 +6469,9 @@ def test_create_slate_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_slate(request)
@@ -7123,27 +6482,6 @@ def test_create_slate_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_slate_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_slate), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.create_slate()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateSlateRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_slate_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7151,7 +6489,7 @@ async def test_create_slate_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7166,26 +6504,28 @@ async def test_create_slate_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_slate
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_slate(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_slate(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7194,7 +6534,7 @@ async def test_create_slate_async(
     request_type=video_stitcher_service.CreateSlateRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7257,7 +6597,7 @@ def test_create_slate_field_headers():
 @pytest.mark.asyncio
 async def test_create_slate_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7337,7 +6677,7 @@ def test_create_slate_flattened_error():
 @pytest.mark.asyncio
 async def test_create_slate_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7374,7 +6714,7 @@ async def test_create_slate_flattened_async():
 @pytest.mark.asyncio
 async def test_create_slate_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7424,25 +6764,6 @@ def test_list_slates(request_type, transport: str = "grpc"):
     assert isinstance(response, pagers.ListSlatesPager)
     assert response.next_page_token == "next_page_token_value"
     assert response.unreachable == ["unreachable_value"]
-
-
-def test_list_slates_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_slates), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_slates()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListSlatesRequest()
 
 
 def test_list_slates_non_empty_request_with_auto_populated_field():
@@ -7515,30 +6836,6 @@ def test_list_slates_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_slates_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_slates), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            video_stitcher_service.ListSlatesResponse(
-                next_page_token="next_page_token_value",
-                unreachable=["unreachable_value"],
-            )
-        )
-        response = await client.list_slates()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListSlatesRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_slates_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7546,7 +6843,7 @@ async def test_list_slates_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7561,22 +6858,23 @@ async def test_list_slates_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_slates
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_slates(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_slates(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7585,7 +6883,7 @@ async def test_list_slates_async(
     request_type=video_stitcher_service.ListSlatesRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7653,7 +6951,7 @@ def test_list_slates_field_headers():
 @pytest.mark.asyncio
 async def test_list_slates_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7723,7 +7021,7 @@ def test_list_slates_flattened_error():
 @pytest.mark.asyncio
 async def test_list_slates_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7752,7 +7050,7 @@ async def test_list_slates_flattened_async():
 @pytest.mark.asyncio
 async def test_list_slates_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7862,7 +7160,7 @@ def test_list_slates_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_slates_async_pager():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7912,7 +7210,7 @@ async def test_list_slates_async_pager():
 @pytest.mark.asyncio
 async def test_list_slates_async_pages():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7996,25 +7294,6 @@ def test_get_slate(request_type, transport: str = "grpc"):
     assert response.uri == "uri_value"
 
 
-def test_get_slate_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_slate), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_slate()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetSlateRequest()
-
-
 def test_get_slate_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -8079,36 +7358,12 @@ def test_get_slate_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_slate_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_slate), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            slates.Slate(
-                name="name_value",
-                uri="uri_value",
-            )
-        )
-        response = await client.get_slate()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetSlateRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_slate_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8123,22 +7378,23 @@ async def test_get_slate_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_slate
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_slate(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_slate(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8146,7 +7402,7 @@ async def test_get_slate_async(
     transport: str = "grpc_asyncio", request_type=video_stitcher_service.GetSlateRequest
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8214,7 +7470,7 @@ def test_get_slate_field_headers():
 @pytest.mark.asyncio
 async def test_get_slate_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8282,7 +7538,7 @@ def test_get_slate_flattened_error():
 @pytest.mark.asyncio
 async def test_get_slate_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8309,7 +7565,7 @@ async def test_get_slate_flattened_async():
 @pytest.mark.asyncio
 async def test_get_slate_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8352,25 +7608,6 @@ def test_update_slate(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_update_slate_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_slate), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_slate()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.UpdateSlateRequest()
 
 
 def test_update_slate_non_empty_request_with_auto_populated_field():
@@ -8425,8 +7662,9 @@ def test_update_slate_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.update_slate(request)
@@ -8437,27 +7675,6 @@ def test_update_slate_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_slate_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_slate), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.update_slate()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.UpdateSlateRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_slate_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8465,7 +7682,7 @@ async def test_update_slate_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8480,26 +7697,28 @@ async def test_update_slate_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_slate
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_slate(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.update_slate(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8508,7 +7727,7 @@ async def test_update_slate_async(
     request_type=video_stitcher_service.UpdateSlateRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8571,7 +7790,7 @@ def test_update_slate_field_headers():
 @pytest.mark.asyncio
 async def test_update_slate_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8646,7 +7865,7 @@ def test_update_slate_flattened_error():
 @pytest.mark.asyncio
 async def test_update_slate_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8679,7 +7898,7 @@ async def test_update_slate_flattened_async():
 @pytest.mark.asyncio
 async def test_update_slate_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8723,25 +7942,6 @@ def test_delete_slate(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_delete_slate_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_slate), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_slate()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.DeleteSlateRequest()
 
 
 def test_delete_slate_non_empty_request_with_auto_populated_field():
@@ -8800,8 +8000,9 @@ def test_delete_slate_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_slate(request)
@@ -8812,27 +8013,6 @@ def test_delete_slate_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_slate_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_slate), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.delete_slate()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.DeleteSlateRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_slate_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8840,7 +8020,7 @@ async def test_delete_slate_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8855,26 +8035,28 @@ async def test_delete_slate_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_slate
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_slate(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_slate(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8883,7 +8065,7 @@ async def test_delete_slate_async(
     request_type=video_stitcher_service.DeleteSlateRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8946,7 +8128,7 @@ def test_delete_slate_field_headers():
 @pytest.mark.asyncio
 async def test_delete_slate_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9016,7 +8198,7 @@ def test_delete_slate_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_slate_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9045,7 +8227,7 @@ async def test_delete_slate_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_slate_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -9099,27 +8281,6 @@ def test_create_live_session(request_type, transport: str = "grpc"):
     assert response.play_uri == "play_uri_value"
     assert response.live_config == "live_config_value"
     assert response.ad_tracking == live_configs.AdTracking.CLIENT
-
-
-def test_create_live_session_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_live_session), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_live_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateLiveSessionRequest()
 
 
 def test_create_live_session_non_empty_request_with_auto_populated_field():
@@ -9192,34 +8353,6 @@ def test_create_live_session_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_live_session_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_live_session), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            sessions.LiveSession(
-                name="name_value",
-                play_uri="play_uri_value",
-                live_config="live_config_value",
-                ad_tracking=live_configs.AdTracking.CLIENT,
-            )
-        )
-        response = await client.create_live_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateLiveSessionRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_live_session_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -9227,7 +8360,7 @@ async def test_create_live_session_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -9242,22 +8375,23 @@ async def test_create_live_session_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_live_session
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_live_session(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_live_session(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9266,7 +8400,7 @@ async def test_create_live_session_async(
     request_type=video_stitcher_service.CreateLiveSessionRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9342,7 +8476,7 @@ def test_create_live_session_field_headers():
 @pytest.mark.asyncio
 async def test_create_live_session_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9421,7 +8555,7 @@ def test_create_live_session_flattened_error():
 @pytest.mark.asyncio
 async def test_create_live_session_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9456,7 +8590,7 @@ async def test_create_live_session_flattened_async():
 @pytest.mark.asyncio
 async def test_create_live_session_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -9509,25 +8643,6 @@ def test_get_live_session(request_type, transport: str = "grpc"):
     assert response.play_uri == "play_uri_value"
     assert response.live_config == "live_config_value"
     assert response.ad_tracking == live_configs.AdTracking.CLIENT
-
-
-def test_get_live_session_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_live_session), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_live_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetLiveSessionRequest()
 
 
 def test_get_live_session_non_empty_request_with_auto_populated_field():
@@ -9596,32 +8711,6 @@ def test_get_live_session_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_live_session_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_live_session), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            sessions.LiveSession(
-                name="name_value",
-                play_uri="play_uri_value",
-                live_config="live_config_value",
-                ad_tracking=live_configs.AdTracking.CLIENT,
-            )
-        )
-        response = await client.get_live_session()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetLiveSessionRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_live_session_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -9629,7 +8718,7 @@ async def test_get_live_session_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -9644,22 +8733,23 @@ async def test_get_live_session_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_live_session
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_live_session(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_live_session(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9668,7 +8758,7 @@ async def test_get_live_session_async(
     request_type=video_stitcher_service.GetLiveSessionRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9740,7 +8830,7 @@ def test_get_live_session_field_headers():
 @pytest.mark.asyncio
 async def test_get_live_session_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9810,7 +8900,7 @@ def test_get_live_session_flattened_error():
 @pytest.mark.asyncio
 async def test_get_live_session_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9839,7 +8929,7 @@ async def test_get_live_session_flattened_async():
 @pytest.mark.asyncio
 async def test_get_live_session_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -9884,27 +8974,6 @@ def test_create_live_config(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_create_live_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_live_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_live_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateLiveConfigRequest()
 
 
 def test_create_live_config_non_empty_request_with_auto_populated_field():
@@ -9973,8 +9042,9 @@ def test_create_live_config_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_live_config(request)
@@ -9985,29 +9055,6 @@ def test_create_live_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_live_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_live_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.create_live_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateLiveConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_live_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -10015,7 +9062,7 @@ async def test_create_live_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -10030,26 +9077,28 @@ async def test_create_live_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_live_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_live_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_live_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -10058,7 +9107,7 @@ async def test_create_live_config_async(
     request_type=video_stitcher_service.CreateLiveConfigRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -10125,7 +9174,7 @@ def test_create_live_config_field_headers():
 @pytest.mark.asyncio
 async def test_create_live_config_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -10209,7 +9258,7 @@ def test_create_live_config_flattened_error():
 @pytest.mark.asyncio
 async def test_create_live_config_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10248,7 +9297,7 @@ async def test_create_live_config_flattened_async():
 @pytest.mark.asyncio
 async def test_create_live_config_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -10300,27 +9349,6 @@ def test_list_live_configs(request_type, transport: str = "grpc"):
     assert isinstance(response, pagers.ListLiveConfigsPager)
     assert response.next_page_token == "next_page_token_value"
     assert response.unreachable == ["unreachable_value"]
-
-
-def test_list_live_configs_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_live_configs), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_live_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListLiveConfigsRequest()
 
 
 def test_list_live_configs_non_empty_request_with_auto_populated_field():
@@ -10397,32 +9425,6 @@ def test_list_live_configs_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_live_configs_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_live_configs), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            video_stitcher_service.ListLiveConfigsResponse(
-                next_page_token="next_page_token_value",
-                unreachable=["unreachable_value"],
-            )
-        )
-        response = await client.list_live_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListLiveConfigsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_live_configs_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -10430,7 +9432,7 @@ async def test_list_live_configs_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -10445,22 +9447,23 @@ async def test_list_live_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_live_configs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_live_configs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_live_configs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -10469,7 +9472,7 @@ async def test_list_live_configs_async(
     request_type=video_stitcher_service.ListLiveConfigsRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -10541,7 +9544,7 @@ def test_list_live_configs_field_headers():
 @pytest.mark.asyncio
 async def test_list_live_configs_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -10615,7 +9618,7 @@ def test_list_live_configs_flattened_error():
 @pytest.mark.asyncio
 async def test_list_live_configs_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10646,7 +9649,7 @@ async def test_list_live_configs_flattened_async():
 @pytest.mark.asyncio
 async def test_list_live_configs_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -10760,7 +9763,7 @@ def test_list_live_configs_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_live_configs_async_pager():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10812,7 +9815,7 @@ async def test_list_live_configs_async_pager():
 @pytest.mark.asyncio
 async def test_list_live_configs_async_pages():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10910,25 +9913,6 @@ def test_get_live_config(request_type, transport: str = "grpc"):
     )
 
 
-def test_get_live_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_live_config), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_live_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetLiveConfigRequest()
-
-
 def test_get_live_config_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -10993,35 +9977,6 @@ def test_get_live_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_live_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_live_config), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            live_configs.LiveConfig(
-                name="name_value",
-                source_uri="source_uri_value",
-                ad_tag_uri="ad_tag_uri_value",
-                state=live_configs.LiveConfig.State.CREATING,
-                ad_tracking=live_configs.AdTracking.CLIENT,
-                default_slate="default_slate_value",
-                stitching_policy=live_configs.LiveConfig.StitchingPolicy.CUT_CURRENT,
-            )
-        )
-        response = await client.get_live_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetLiveConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_live_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -11029,7 +9984,7 @@ async def test_get_live_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -11044,22 +9999,23 @@ async def test_get_live_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_live_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_live_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_live_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -11068,7 +10024,7 @@ async def test_get_live_config_async(
     request_type=video_stitcher_service.GetLiveConfigRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11148,7 +10104,7 @@ def test_get_live_config_field_headers():
 @pytest.mark.asyncio
 async def test_get_live_config_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11218,7 +10174,7 @@ def test_get_live_config_flattened_error():
 @pytest.mark.asyncio
 async def test_get_live_config_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -11247,7 +10203,7 @@ async def test_get_live_config_flattened_async():
 @pytest.mark.asyncio
 async def test_get_live_config_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -11292,27 +10248,6 @@ def test_delete_live_config(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_delete_live_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_live_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_live_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.DeleteLiveConfigRequest()
 
 
 def test_delete_live_config_non_empty_request_with_auto_populated_field():
@@ -11377,8 +10312,9 @@ def test_delete_live_config_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_live_config(request)
@@ -11389,29 +10325,6 @@ def test_delete_live_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_live_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_live_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.delete_live_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.DeleteLiveConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_live_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -11419,7 +10332,7 @@ async def test_delete_live_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -11434,26 +10347,28 @@ async def test_delete_live_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_live_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_live_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_live_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -11462,7 +10377,7 @@ async def test_delete_live_config_async(
     request_type=video_stitcher_service.DeleteLiveConfigRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11529,7 +10444,7 @@ def test_delete_live_config_field_headers():
 @pytest.mark.asyncio
 async def test_delete_live_config_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11603,7 +10518,7 @@ def test_delete_live_config_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_live_config_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -11634,7 +10549,7 @@ async def test_delete_live_config_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_live_config_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -11679,27 +10594,6 @@ def test_update_live_config(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_update_live_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_live_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_live_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.UpdateLiveConfigRequest()
 
 
 def test_update_live_config_non_empty_request_with_auto_populated_field():
@@ -11760,8 +10654,9 @@ def test_update_live_config_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.update_live_config(request)
@@ -11772,29 +10667,6 @@ def test_update_live_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_live_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_live_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.update_live_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.UpdateLiveConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_live_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -11802,7 +10674,7 @@ async def test_update_live_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -11817,26 +10689,28 @@ async def test_update_live_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_live_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_live_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.update_live_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -11845,7 +10719,7 @@ async def test_update_live_config_async(
     request_type=video_stitcher_service.UpdateLiveConfigRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11912,7 +10786,7 @@ def test_update_live_config_field_headers():
 @pytest.mark.asyncio
 async def test_update_live_config_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11991,7 +10865,7 @@ def test_update_live_config_flattened_error():
 @pytest.mark.asyncio
 async def test_update_live_config_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -12026,7 +10900,7 @@ async def test_update_live_config_flattened_async():
 @pytest.mark.asyncio
 async def test_update_live_config_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -12072,27 +10946,6 @@ def test_create_vod_config(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_create_vod_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_vod_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_vod_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateVodConfigRequest()
 
 
 def test_create_vod_config_non_empty_request_with_auto_populated_field():
@@ -12159,8 +11012,9 @@ def test_create_vod_config_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_vod_config(request)
@@ -12171,29 +11025,6 @@ def test_create_vod_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_vod_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_vod_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.create_vod_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.CreateVodConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_vod_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -12201,7 +11032,7 @@ async def test_create_vod_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -12216,26 +11047,28 @@ async def test_create_vod_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_vod_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_vod_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_vod_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -12244,7 +11077,7 @@ async def test_create_vod_config_async(
     request_type=video_stitcher_service.CreateVodConfigRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -12311,7 +11144,7 @@ def test_create_vod_config_field_headers():
 @pytest.mark.asyncio
 async def test_create_vod_config_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -12395,7 +11228,7 @@ def test_create_vod_config_flattened_error():
 @pytest.mark.asyncio
 async def test_create_vod_config_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -12434,7 +11267,7 @@ async def test_create_vod_config_flattened_async():
 @pytest.mark.asyncio
 async def test_create_vod_config_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -12484,25 +11317,6 @@ def test_list_vod_configs(request_type, transport: str = "grpc"):
     assert isinstance(response, pagers.ListVodConfigsPager)
     assert response.next_page_token == "next_page_token_value"
     assert response.unreachable == ["unreachable_value"]
-
-
-def test_list_vod_configs_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_vod_configs), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_vod_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListVodConfigsRequest()
 
 
 def test_list_vod_configs_non_empty_request_with_auto_populated_field():
@@ -12577,30 +11391,6 @@ def test_list_vod_configs_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_vod_configs_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_vod_configs), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            video_stitcher_service.ListVodConfigsResponse(
-                next_page_token="next_page_token_value",
-                unreachable=["unreachable_value"],
-            )
-        )
-        response = await client.list_vod_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.ListVodConfigsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_vod_configs_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -12608,7 +11398,7 @@ async def test_list_vod_configs_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -12623,22 +11413,23 @@ async def test_list_vod_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_vod_configs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_vod_configs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_vod_configs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -12647,7 +11438,7 @@ async def test_list_vod_configs_async(
     request_type=video_stitcher_service.ListVodConfigsRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -12715,7 +11506,7 @@ def test_list_vod_configs_field_headers():
 @pytest.mark.asyncio
 async def test_list_vod_configs_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -12785,7 +11576,7 @@ def test_list_vod_configs_flattened_error():
 @pytest.mark.asyncio
 async def test_list_vod_configs_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -12814,7 +11605,7 @@ async def test_list_vod_configs_flattened_async():
 @pytest.mark.asyncio
 async def test_list_vod_configs_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -12924,7 +11715,7 @@ def test_list_vod_configs_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_vod_configs_async_pager():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -12974,7 +11765,7 @@ async def test_list_vod_configs_async_pager():
 @pytest.mark.asyncio
 async def test_list_vod_configs_async_pages():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -13062,25 +11853,6 @@ def test_get_vod_config(request_type, transport: str = "grpc"):
     assert response.state == vod_configs.VodConfig.State.CREATING
 
 
-def test_get_vod_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_vod_config), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_vod_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetVodConfigRequest()
-
-
 def test_get_vod_config_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -13145,32 +11917,6 @@ def test_get_vod_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_vod_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_vod_config), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            vod_configs.VodConfig(
-                name="name_value",
-                source_uri="source_uri_value",
-                ad_tag_uri="ad_tag_uri_value",
-                state=vod_configs.VodConfig.State.CREATING,
-            )
-        )
-        response = await client.get_vod_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.GetVodConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_vod_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -13178,7 +11924,7 @@ async def test_get_vod_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -13193,22 +11939,23 @@ async def test_get_vod_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_vod_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_vod_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_vod_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -13217,7 +11964,7 @@ async def test_get_vod_config_async(
     request_type=video_stitcher_service.GetVodConfigRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -13289,7 +12036,7 @@ def test_get_vod_config_field_headers():
 @pytest.mark.asyncio
 async def test_get_vod_config_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -13359,7 +12106,7 @@ def test_get_vod_config_flattened_error():
 @pytest.mark.asyncio
 async def test_get_vod_config_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -13388,7 +12135,7 @@ async def test_get_vod_config_flattened_async():
 @pytest.mark.asyncio
 async def test_get_vod_config_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -13433,27 +12180,6 @@ def test_delete_vod_config(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_delete_vod_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_vod_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_vod_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.DeleteVodConfigRequest()
 
 
 def test_delete_vod_config_non_empty_request_with_auto_populated_field():
@@ -13516,8 +12242,9 @@ def test_delete_vod_config_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_vod_config(request)
@@ -13528,29 +12255,6 @@ def test_delete_vod_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_vod_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_vod_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.delete_vod_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.DeleteVodConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_vod_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -13558,7 +12262,7 @@ async def test_delete_vod_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -13573,26 +12277,28 @@ async def test_delete_vod_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_vod_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_vod_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_vod_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -13601,7 +12307,7 @@ async def test_delete_vod_config_async(
     request_type=video_stitcher_service.DeleteVodConfigRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -13668,7 +12374,7 @@ def test_delete_vod_config_field_headers():
 @pytest.mark.asyncio
 async def test_delete_vod_config_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -13742,7 +12448,7 @@ def test_delete_vod_config_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_vod_config_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -13773,7 +12479,7 @@ async def test_delete_vod_config_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_vod_config_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -13818,27 +12524,6 @@ def test_update_vod_config(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_update_vod_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_vod_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_vod_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.UpdateVodConfigRequest()
 
 
 def test_update_vod_config_non_empty_request_with_auto_populated_field():
@@ -13897,8 +12582,9 @@ def test_update_vod_config_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.update_vod_config(request)
@@ -13909,29 +12595,6 @@ def test_update_vod_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_vod_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_vod_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.update_vod_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == video_stitcher_service.UpdateVodConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_vod_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -13939,7 +12602,7 @@ async def test_update_vod_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = VideoStitcherServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -13954,26 +12617,28 @@ async def test_update_vod_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_vod_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_vod_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.update_vod_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -13982,7 +12647,7 @@ async def test_update_vod_config_async(
     request_type=video_stitcher_service.UpdateVodConfigRequest,
 ):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -14049,7 +12714,7 @@ def test_update_vod_config_field_headers():
 @pytest.mark.asyncio
 async def test_update_vod_config_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -14128,7 +12793,7 @@ def test_update_vod_config_flattened_error():
 @pytest.mark.asyncio
 async def test_update_vod_config_flattened_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -14163,7 +12828,7 @@ async def test_update_vod_config_flattened_async():
 @pytest.mark.asyncio
 async def test_update_vod_config_flattened_error_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -14267,17 +12932,1541 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "transport_name",
-    [
-        "grpc",
-    ],
-)
-def test_transport_kind(transport_name):
-    transport = VideoStitcherServiceClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_transport_kind_grpc():
+    transport = VideoStitcherServiceClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
     )
-    assert transport.kind == transport_name
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_cdn_key_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_cdn_key), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_cdn_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateCdnKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_cdn_keys_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_cdn_keys), "__call__") as call:
+        call.return_value = video_stitcher_service.ListCdnKeysResponse()
+        client.list_cdn_keys(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListCdnKeysRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_cdn_key_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_cdn_key), "__call__") as call:
+        call.return_value = cdn_keys.CdnKey()
+        client.get_cdn_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetCdnKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_cdn_key_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_cdn_key), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_cdn_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.DeleteCdnKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_cdn_key_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_cdn_key), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.update_cdn_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.UpdateCdnKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_vod_session_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_vod_session), "__call__"
+    ) as call:
+        call.return_value = sessions.VodSession()
+        client.create_vod_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateVodSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_vod_session_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_vod_session), "__call__") as call:
+        call.return_value = sessions.VodSession()
+        client.get_vod_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetVodSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_vod_stitch_details_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_vod_stitch_details), "__call__"
+    ) as call:
+        call.return_value = video_stitcher_service.ListVodStitchDetailsResponse()
+        client.list_vod_stitch_details(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListVodStitchDetailsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_vod_stitch_detail_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_vod_stitch_detail), "__call__"
+    ) as call:
+        call.return_value = stitch_details.VodStitchDetail()
+        client.get_vod_stitch_detail(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetVodStitchDetailRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_vod_ad_tag_details_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_vod_ad_tag_details), "__call__"
+    ) as call:
+        call.return_value = video_stitcher_service.ListVodAdTagDetailsResponse()
+        client.list_vod_ad_tag_details(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListVodAdTagDetailsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_vod_ad_tag_detail_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_vod_ad_tag_detail), "__call__"
+    ) as call:
+        call.return_value = ad_tag_details.VodAdTagDetail()
+        client.get_vod_ad_tag_detail(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetVodAdTagDetailRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_live_ad_tag_details_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_live_ad_tag_details), "__call__"
+    ) as call:
+        call.return_value = video_stitcher_service.ListLiveAdTagDetailsResponse()
+        client.list_live_ad_tag_details(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListLiveAdTagDetailsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_live_ad_tag_detail_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_live_ad_tag_detail), "__call__"
+    ) as call:
+        call.return_value = ad_tag_details.LiveAdTagDetail()
+        client.get_live_ad_tag_detail(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetLiveAdTagDetailRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_slate_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_slate), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_slate(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateSlateRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_slates_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_slates), "__call__") as call:
+        call.return_value = video_stitcher_service.ListSlatesResponse()
+        client.list_slates(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListSlatesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_slate_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_slate), "__call__") as call:
+        call.return_value = slates.Slate()
+        client.get_slate(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetSlateRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_slate_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_slate), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.update_slate(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.UpdateSlateRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_slate_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_slate), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_slate(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.DeleteSlateRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_live_session_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_live_session), "__call__"
+    ) as call:
+        call.return_value = sessions.LiveSession()
+        client.create_live_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateLiveSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_live_session_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_live_session), "__call__") as call:
+        call.return_value = sessions.LiveSession()
+        client.get_live_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetLiveSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_live_config_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_live_config), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_live_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateLiveConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_live_configs_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_live_configs), "__call__"
+    ) as call:
+        call.return_value = video_stitcher_service.ListLiveConfigsResponse()
+        client.list_live_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListLiveConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_live_config_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_live_config), "__call__") as call:
+        call.return_value = live_configs.LiveConfig()
+        client.get_live_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetLiveConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_live_config_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_live_config), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_live_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.DeleteLiveConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_live_config_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_live_config), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.update_live_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.UpdateLiveConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_vod_config_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_vod_config), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_vod_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateVodConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_vod_configs_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_vod_configs), "__call__") as call:
+        call.return_value = video_stitcher_service.ListVodConfigsResponse()
+        client.list_vod_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListVodConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_vod_config_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_vod_config), "__call__") as call:
+        call.return_value = vod_configs.VodConfig()
+        client.get_vod_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetVodConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_vod_config_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_vod_config), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_vod_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.DeleteVodConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_vod_config_empty_call_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_vod_config), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.update_vod_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.UpdateVodConfigRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = VideoStitcherServiceAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_cdn_key_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_cdn_key), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.create_cdn_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateCdnKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_cdn_keys_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_cdn_keys), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            video_stitcher_service.ListCdnKeysResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        await client.list_cdn_keys(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListCdnKeysRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_cdn_key_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_cdn_key), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cdn_keys.CdnKey(
+                name="name_value",
+                hostname="hostname_value",
+            )
+        )
+        await client.get_cdn_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetCdnKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_cdn_key_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_cdn_key), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.delete_cdn_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.DeleteCdnKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_cdn_key_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_cdn_key), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.update_cdn_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.UpdateCdnKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_vod_session_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_vod_session), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            sessions.VodSession(
+                name="name_value",
+                play_uri="play_uri_value",
+                source_uri="source_uri_value",
+                ad_tag_uri="ad_tag_uri_value",
+                asset_id="asset_id_value",
+                ad_tracking=live_configs.AdTracking.CLIENT,
+                vod_config="vod_config_value",
+            )
+        )
+        await client.create_vod_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateVodSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_vod_session_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_vod_session), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            sessions.VodSession(
+                name="name_value",
+                play_uri="play_uri_value",
+                source_uri="source_uri_value",
+                ad_tag_uri="ad_tag_uri_value",
+                asset_id="asset_id_value",
+                ad_tracking=live_configs.AdTracking.CLIENT,
+                vod_config="vod_config_value",
+            )
+        )
+        await client.get_vod_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetVodSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_vod_stitch_details_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_vod_stitch_details), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            video_stitcher_service.ListVodStitchDetailsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_vod_stitch_details(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListVodStitchDetailsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_vod_stitch_detail_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_vod_stitch_detail), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            stitch_details.VodStitchDetail(
+                name="name_value",
+            )
+        )
+        await client.get_vod_stitch_detail(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetVodStitchDetailRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_vod_ad_tag_details_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_vod_ad_tag_details), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            video_stitcher_service.ListVodAdTagDetailsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_vod_ad_tag_details(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListVodAdTagDetailsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_vod_ad_tag_detail_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_vod_ad_tag_detail), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            ad_tag_details.VodAdTagDetail(
+                name="name_value",
+            )
+        )
+        await client.get_vod_ad_tag_detail(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetVodAdTagDetailRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_live_ad_tag_details_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_live_ad_tag_details), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            video_stitcher_service.ListLiveAdTagDetailsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_live_ad_tag_details(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListLiveAdTagDetailsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_live_ad_tag_detail_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_live_ad_tag_detail), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            ad_tag_details.LiveAdTagDetail(
+                name="name_value",
+            )
+        )
+        await client.get_live_ad_tag_detail(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetLiveAdTagDetailRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_slate_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_slate), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.create_slate(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateSlateRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_slates_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_slates), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            video_stitcher_service.ListSlatesResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        await client.list_slates(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListSlatesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_slate_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_slate), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            slates.Slate(
+                name="name_value",
+                uri="uri_value",
+            )
+        )
+        await client.get_slate(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetSlateRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_slate_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_slate), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.update_slate(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.UpdateSlateRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_slate_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_slate), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.delete_slate(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.DeleteSlateRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_live_session_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_live_session), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            sessions.LiveSession(
+                name="name_value",
+                play_uri="play_uri_value",
+                live_config="live_config_value",
+                ad_tracking=live_configs.AdTracking.CLIENT,
+            )
+        )
+        await client.create_live_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateLiveSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_live_session_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_live_session), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            sessions.LiveSession(
+                name="name_value",
+                play_uri="play_uri_value",
+                live_config="live_config_value",
+                ad_tracking=live_configs.AdTracking.CLIENT,
+            )
+        )
+        await client.get_live_session(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetLiveSessionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_live_config_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_live_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.create_live_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateLiveConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_live_configs_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_live_configs), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            video_stitcher_service.ListLiveConfigsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        await client.list_live_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListLiveConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_live_config_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_live_config), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            live_configs.LiveConfig(
+                name="name_value",
+                source_uri="source_uri_value",
+                ad_tag_uri="ad_tag_uri_value",
+                state=live_configs.LiveConfig.State.CREATING,
+                ad_tracking=live_configs.AdTracking.CLIENT,
+                default_slate="default_slate_value",
+                stitching_policy=live_configs.LiveConfig.StitchingPolicy.CUT_CURRENT,
+            )
+        )
+        await client.get_live_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetLiveConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_live_config_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_live_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.delete_live_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.DeleteLiveConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_live_config_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_live_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.update_live_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.UpdateLiveConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_vod_config_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_vod_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.create_vod_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.CreateVodConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_vod_configs_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_vod_configs), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            video_stitcher_service.ListVodConfigsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        await client.list_vod_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.ListVodConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_vod_config_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_vod_config), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            vod_configs.VodConfig(
+                name="name_value",
+                source_uri="source_uri_value",
+                ad_tag_uri="ad_tag_uri_value",
+                state=vod_configs.VodConfig.State.CREATING,
+            )
+        )
+        await client.get_vod_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.GetVodConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_vod_config_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_vod_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.delete_vod_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.DeleteVodConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_vod_config_empty_call_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_vod_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.update_vod_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = video_stitcher_service.UpdateVodConfigRequest()
+
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -15116,20 +15305,6 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-    with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
-    ) as close:
-        async with client:
-            close.assert_not_called()
-        close.assert_called_once()
-
-
 def test_delete_operation(transport: str = "grpc"):
     client = VideoStitcherServiceClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -15157,7 +15332,7 @@ def test_delete_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_delete_operation_async(transport: str = "grpc_asyncio"):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -15210,7 +15385,7 @@ def test_delete_operation_field_headers():
 @pytest.mark.asyncio
 async def test_delete_operation_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -15255,7 +15430,7 @@ def test_delete_operation_from_dict():
 @pytest.mark.asyncio
 async def test_delete_operation_from_dict_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.delete_operation), "__call__") as call:
@@ -15296,7 +15471,7 @@ def test_cancel_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_cancel_operation_async(transport: str = "grpc_asyncio"):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -15349,7 +15524,7 @@ def test_cancel_operation_field_headers():
 @pytest.mark.asyncio
 async def test_cancel_operation_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -15394,7 +15569,7 @@ def test_cancel_operation_from_dict():
 @pytest.mark.asyncio
 async def test_cancel_operation_from_dict_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.cancel_operation), "__call__") as call:
@@ -15435,7 +15610,7 @@ def test_get_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_get_operation_async(transport: str = "grpc_asyncio"):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -15490,7 +15665,7 @@ def test_get_operation_field_headers():
 @pytest.mark.asyncio
 async def test_get_operation_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -15537,7 +15712,7 @@ def test_get_operation_from_dict():
 @pytest.mark.asyncio
 async def test_get_operation_from_dict_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
@@ -15580,7 +15755,7 @@ def test_list_operations(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_operations_async(transport: str = "grpc_asyncio"):
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -15635,7 +15810,7 @@ def test_list_operations_field_headers():
 @pytest.mark.asyncio
 async def test_list_operations_field_headers_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -15682,7 +15857,7 @@ def test_list_operations_from_dict():
 @pytest.mark.asyncio
 async def test_list_operations_from_dict_async():
     client = VideoStitcherServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
@@ -15698,21 +15873,29 @@ async def test_list_operations_from_dict_async():
         call.assert_called()
 
 
-def test_transport_close():
-    transports = {
-        "grpc": "_grpc_channel",
-    }
+def test_transport_close_grpc():
+    client = VideoStitcherServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
-    for transport, close_name in transports.items():
-        client = VideoStitcherServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = VideoStitcherServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        async with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

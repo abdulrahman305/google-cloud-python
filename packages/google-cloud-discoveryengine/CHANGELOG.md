@@ -1,5 +1,132 @@
 # Changelog
 
+## [0.13.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.4...google-cloud-discoveryengine-v0.13.5) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [0.13.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.3...google-cloud-discoveryengine-v0.13.4) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [0.13.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.2...google-cloud-discoveryengine-v0.13.3) (2024-10-31)
+
+
+### Features
+
+* Add AdvancedCompleteQuery API ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* Add BillingEstimation in data store ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* Add GroundedGenerationService API ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* Add lite search API to allow public website search with API key ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* Add one_box_page_size on search ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* Add Sitemap APIs to preview channel ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* Support advanced boost search ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* Support Google Workspace search ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* Support natural language understanding search ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* support query regex in control match rules ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* Support search personalization to preview channel ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+
+
+### Documentation
+
+* deprecate asynchronous mode in answer generation ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* deprecate extractive_answers in answer generation ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+* keep the API doc up-to-date with recent changes ([fc70893](https://github.com/googleapis/google-cloud-python/commit/fc708935dda0102226e83dbf6cff992f1bf21373))
+
+## [0.13.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.1...google-cloud-discoveryengine-v0.13.2) (2024-10-28)
+
+
+### Features
+
+* add lite search API to allow public website search with API key ([365d55d](https://github.com/googleapis/google-cloud-python/commit/365d55d8d610ac811a01bdb5d016c6fcc130ac98))
+* add LOW_GROUNDED_ANSWER in answer skip reasons ([365d55d](https://github.com/googleapis/google-cloud-python/commit/365d55d8d610ac811a01bdb5d016c6fcc130ac98))
+* support query regex in control match rules ([365d55d](https://github.com/googleapis/google-cloud-python/commit/365d55d8d610ac811a01bdb5d016c6fcc130ac98))
+
+
+### Documentation
+
+* keep the API doc up-to-date with recent changes ([365d55d](https://github.com/googleapis/google-cloud-python/commit/365d55d8d610ac811a01bdb5d016c6fcc130ac98))
+
+## [0.13.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.0...google-cloud-discoveryengine-v0.13.1) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13202](https://github.com/googleapis/google-cloud-python/issues/13202)) ([5b1f2f3](https://github.com/googleapis/google-cloud-python/commit/5b1f2f3a81ed171b643812e67a7ed179b9b703ea))
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
+## [0.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.12.3...google-cloud-discoveryengine-v0.13.0) (2024-10-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* [google-cloud-discoveryengine] fix the location type annotation
+
+### Bug Fixes
+
+* [google-cloud-discoveryengine] fix the location type annotation ([a341b84](https://github.com/googleapis/google-cloud-python/commit/a341b8400a535074618a970f6d001d7289cfb24a))
+* [google-cloud-discoveryengine] fix the location type annotation ([#13149](https://github.com/googleapis/google-cloud-python/issues/13149)) ([a341b84](https://github.com/googleapis/google-cloud-python/commit/a341b8400a535074618a970f6d001d7289cfb24a))
+
+## [0.12.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.12.2...google-cloud-discoveryengine-v0.12.3) (2024-10-10)
+
+
+### Features
+
+* Add BillingEstimation in data store ([c5e93d8](https://github.com/googleapis/google-cloud-python/commit/c5e93d8d8a7d51b753a870b29e70d0e63815b6e1))
+* Add GroundedGenerationService API ([c5e93d8](https://github.com/googleapis/google-cloud-python/commit/c5e93d8d8a7d51b753a870b29e70d0e63815b6e1))
+* Add one_box_page_size on search ([c5e93d8](https://github.com/googleapis/google-cloud-python/commit/c5e93d8d8a7d51b753a870b29e70d0e63815b6e1))
+* Add site_credential for site search config ([c5e93d8](https://github.com/googleapis/google-cloud-python/commit/c5e93d8d8a7d51b753a870b29e70d0e63815b6e1))
+* Support advanced boost search ([c5e93d8](https://github.com/googleapis/google-cloud-python/commit/c5e93d8d8a7d51b753a870b29e70d0e63815b6e1))
+* Support Google Workspace search ([c5e93d8](https://github.com/googleapis/google-cloud-python/commit/c5e93d8d8a7d51b753a870b29e70d0e63815b6e1))
+
+
+### Documentation
+
+* Update documentation ([c5e93d8](https://github.com/googleapis/google-cloud-python/commit/c5e93d8d8a7d51b753a870b29e70d0e63815b6e1))
+
+## [0.12.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.12.1...google-cloud-discoveryengine-v0.12.2) (2024-09-04)
+
+
+### Features
+
+* **v1alpha:** return index status in document ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1alpha:** return joined status in user event ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1alpha:** return query segment in NL query understanding ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1alpha:** support batch get documents metadata by uri patterns ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1alpha:** support creating workspace search data stores ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1beta:** allow set relevance threshold on search ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1beta:** return index status in document ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1beta:** return joined status in user event ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1beta:** return structured document info in answers ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1beta:** support batch documents purge with GCS input ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1beta:** support batch get documents metadata by uri patterns ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1beta:** support natural language understanding in search ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1beta:** support one box search ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1:** promot user event purge to v1 ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1:** promote search tuning service to v1 ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1:** return index status in document ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1:** return joined status in user event ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1:** return structured document info in answers ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1:** support batch documents purge with GCS input ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1:** support batch get documents metadata by uri patterns ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+
+
+### Documentation
+
+* **v1alpha:** keep the API doc up-to-date with recent changes ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1beta:** keep the API doc up-to-date with recent changes ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+* **v1:** keep the API doc up-to-date with recent changes ([51947fb](https://github.com/googleapis/google-cloud-python/commit/51947fb5913a3859ee45cd66a0dbad51a84cebe9))
+
 ## [0.12.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.12.0...google-cloud-discoveryengine-v0.12.1) (2024-08-08)
 
 

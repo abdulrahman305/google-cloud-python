@@ -26,6 +26,7 @@ from google.apps.chat_v1.types.action_status import ActionStatus
 from google.apps.chat_v1.types.annotation import (
     Annotation,
     AnnotationType,
+    ChatSpaceLinkData,
     DriveLinkData,
     RichLinkMetadata,
     SlashCommandMetadata,
@@ -110,6 +111,8 @@ from google.apps.chat_v1.types.space import (
     GetSpaceRequest,
     ListSpacesRequest,
     ListSpacesResponse,
+    SearchSpacesRequest,
+    SearchSpacesResponse,
     Space,
     UpdateSpaceRequest,
 )
@@ -137,6 +140,7 @@ __all__ = (
     "ChatServiceAsyncClient",
     "ActionStatus",
     "Annotation",
+    "ChatSpaceLinkData",
     "DriveLinkData",
     "RichLinkMetadata",
     "SlashCommandMetadata",
@@ -210,6 +214,8 @@ __all__ = (
     "GetSpaceRequest",
     "ListSpacesRequest",
     "ListSpacesResponse",
+    "SearchSpacesRequest",
+    "SearchSpacesResponse",
     "Space",
     "UpdateSpaceRequest",
     "GetSpaceEventRequest",

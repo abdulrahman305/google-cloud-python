@@ -232,6 +232,76 @@ class SecureSourceManagerTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.create_branch_rule: gapic_v1.method.wrap_method(
+                self.create_branch_rule,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_branch_rules: gapic_v1.method.wrap_method(
+                self.list_branch_rules,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_branch_rule: gapic_v1.method.wrap_method(
+                self.get_branch_rule,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_branch_rule: gapic_v1.method.wrap_method(
+                self.update_branch_rule,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_branch_rule: gapic_v1.method.wrap_method(
+                self.delete_branch_rule,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_location: gapic_v1.method.wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: gapic_v1.method.wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_iam_policy: gapic_v1.method.wrap_method(
+                self.get_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.set_iam_policy: gapic_v1.method.wrap_method(
+                self.set_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.test_iam_permissions: gapic_v1.method.wrap_method(
+                self.test_iam_permissions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: gapic_v1.method.wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: gapic_v1.method.wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: gapic_v1.method.wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: gapic_v1.method.wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
     def close(self):
@@ -358,6 +428,57 @@ class SecureSourceManagerTransport(abc.ABC):
             iam_policy_pb2.TestIamPermissionsResponse,
             Awaitable[iam_policy_pb2.TestIamPermissionsResponse],
         ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_branch_rule(
+        self,
+    ) -> Callable[
+        [secure_source_manager.CreateBranchRuleRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_branch_rules(
+        self,
+    ) -> Callable[
+        [secure_source_manager.ListBranchRulesRequest],
+        Union[
+            secure_source_manager.ListBranchRulesResponse,
+            Awaitable[secure_source_manager.ListBranchRulesResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_branch_rule(
+        self,
+    ) -> Callable[
+        [secure_source_manager.GetBranchRuleRequest],
+        Union[
+            secure_source_manager.BranchRule,
+            Awaitable[secure_source_manager.BranchRule],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_branch_rule(
+        self,
+    ) -> Callable[
+        [secure_source_manager.UpdateBranchRuleRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_branch_rule(
+        self,
+    ) -> Callable[
+        [secure_source_manager.DeleteBranchRuleRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()
 

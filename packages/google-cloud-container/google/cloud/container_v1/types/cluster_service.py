@@ -69,6 +69,7 @@ __protobuf__ = proto.module(
         "GcePersistentDiskCsiDriverConfig",
         "GcpFilestoreCsiDriverConfig",
         "GcsFuseCsiDriverConfig",
+        "ParallelstoreCsiDriverConfig",
         "RayOperatorConfig",
         "GkeBackupAgentConfig",
         "StatefulHAConfig",
@@ -79,6 +80,9 @@ __protobuf__ = proto.module(
         "PodCIDROverprovisionConfig",
         "IPAllocationPolicy",
         "Cluster",
+        "RBACBindingConfig",
+        "UserManagedKeysConfig",
+        "CompliancePostureConfig",
         "K8sBetaAPIConfig",
         "SecurityPostureConfig",
         "NodePoolAutoConfig",
@@ -87,6 +91,7 @@ __protobuf__ = proto.module(
         "ClusterUpdate",
         "AdditionalPodRangesConfig",
         "RangeInfo",
+        "DesiredEnterpriseConfig",
         "Operation",
         "OperationProgress",
         "CreateClusterRequest",
@@ -178,6 +183,7 @@ __protobuf__ = proto.module(
         "NotificationConfig",
         "ConfidentialNodes",
         "UpgradeEvent",
+        "UpgradeInfoEvent",
         "UpgradeAvailableEvent",
         "SecurityBulletinEvent",
         "Autopilot",
@@ -193,10 +199,12 @@ __protobuf__ = proto.module(
         "MonitoringComponentConfig",
         "ManagedPrometheusConfig",
         "Fleet",
+        "ControlPlaneEndpointsConfig",
         "LocalNvmeSsdBlockConfig",
         "EphemeralStorageLocalSsdConfig",
         "ResourceManagerTags",
         "EnterpriseConfig",
+        "SecretManagerConfig",
         "SecondaryBootDisk",
         "SecondaryBootDiskUpdateStrategy",
     },
@@ -353,7 +361,8 @@ class LinuxNodeConfig(proto.Message):
             net.core.netdev_max_backlog net.core.rmem_max
             net.core.wmem_default net.core.wmem_max net.core.optmem_max
             net.core.somaxconn net.ipv4.tcp_rmem net.ipv4.tcp_wmem
-            net.ipv4.tcp_tw_reuse
+            net.ipv4.tcp_tw_reuse kernel.shmmni kernel.shmmax
+            kernel.shmall
         cgroup_mode (google.cloud.container_v1.types.LinuxNodeConfig.CgroupMode):
             cgroup_mode specifies the cgroup mode to be used on the
             node.
@@ -767,11 +776,66 @@ class NodeConfig(proto.Message):
         secondary_boot_disks (MutableSequence[google.cloud.container_v1.types.SecondaryBootDisk]):
             List of secondary boot disks attached to the
             nodes.
+        storage_pools (MutableSequence[str]):
+            List of Storage Pools where boot disks are
+            provisioned.
         secondary_boot_disk_update_strategy (google.cloud.container_v1.types.SecondaryBootDiskUpdateStrategy):
             Secondary boot disk update strategy.
 
             This field is a member of `oneof`_ ``_secondary_boot_disk_update_strategy``.
+        local_ssd_encryption_mode (google.cloud.container_v1.types.NodeConfig.LocalSsdEncryptionMode):
+            Specifies which method should be used for
+            encrypting the Local SSDs attahced to the node.
+
+            This field is a member of `oneof`_ ``_local_ssd_encryption_mode``.
+        effective_cgroup_mode (google.cloud.container_v1.types.NodeConfig.EffectiveCgroupMode):
+            Output only. effective_cgroup_mode is the cgroup mode
+            actually used by the node pool. It is determined by the
+            cgroup mode specified in the LinuxNodeConfig or the default
+            cgroup mode based on the cluster creation version.
     """
+
+    class LocalSsdEncryptionMode(proto.Enum):
+        r"""LocalSsdEncryptionMode specifies the method used for
+        encrypting the Local SSDs attached to the node.
+
+        Values:
+            LOCAL_SSD_ENCRYPTION_MODE_UNSPECIFIED (0):
+                The given node will be encrypted using keys
+                managed by Google infrastructure and the keys
+                will be deleted when the node is deleted.
+            STANDARD_ENCRYPTION (1):
+                The given node will be encrypted using keys
+                managed by Google infrastructure and the keys
+                will be deleted when the node is deleted.
+            EPHEMERAL_KEY_ENCRYPTION (2):
+                The given node will opt-in for using
+                ephemeral key for encryption of Local SSDs.
+                The Local SSDs will not be able to recover data
+                in case of node crash.
+        """
+        LOCAL_SSD_ENCRYPTION_MODE_UNSPECIFIED = 0
+        STANDARD_ENCRYPTION = 1
+        EPHEMERAL_KEY_ENCRYPTION = 2
+
+    class EffectiveCgroupMode(proto.Enum):
+        r"""Possible effective cgroup modes for the node.
+
+        Values:
+            EFFECTIVE_CGROUP_MODE_UNSPECIFIED (0):
+                EFFECTIVE_CGROUP_MODE_UNSPECIFIED means the cgroup
+                configuration for the node pool is unspecified, i.e. the
+                node pool is a Windows node pool.
+            EFFECTIVE_CGROUP_MODE_V1 (1):
+                CGROUP_MODE_V1 means the node pool is configured to use
+                cgroupv1 for the cgroup configuration.
+            EFFECTIVE_CGROUP_MODE_V2 (2):
+                CGROUP_MODE_V2 means the node pool is configured to use
+                cgroupv2 for the cgroup configuration.
+        """
+        EFFECTIVE_CGROUP_MODE_UNSPECIFIED = 0
+        EFFECTIVE_CGROUP_MODE_V1 = 1
+        EFFECTIVE_CGROUP_MODE_V2 = 2
 
     machine_type: str = proto.Field(
         proto.STRING,
@@ -950,6 +1014,10 @@ class NodeConfig(proto.Message):
         number=48,
         message="SecondaryBootDisk",
     )
+    storage_pools: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=49,
+    )
     secondary_boot_disk_update_strategy: "SecondaryBootDiskUpdateStrategy" = (
         proto.Field(
             proto.MESSAGE,
@@ -957,6 +1025,17 @@ class NodeConfig(proto.Message):
             optional=True,
             message="SecondaryBootDiskUpdateStrategy",
         )
+    )
+    local_ssd_encryption_mode: LocalSsdEncryptionMode = proto.Field(
+        proto.ENUM,
+        number=54,
+        optional=True,
+        enum=LocalSsdEncryptionMode,
+    )
+    effective_cgroup_mode: EffectiveCgroupMode = proto.Field(
+        proto.ENUM,
+        number=55,
+        enum=EffectiveCgroupMode,
     )
 
 
@@ -1048,7 +1127,7 @@ class NodeNetworkConfig(proto.Message):
             Whether nodes have internal IP addresses only. If
             enable_private_nodes is not specified, then the value is
             derived from
-            [cluster.privateClusterConfig.enablePrivateNodes][google.container.v1beta1.PrivateClusterConfig.enablePrivateNodes]
+            [Cluster.NetworkConfig.default_enable_private_nodes][]
 
             This field is a member of `oneof`_ ``_enable_private_nodes``.
         network_performance_config (google.cloud.container_v1.types.NodeNetworkConfig.NetworkPerformanceConfig):
@@ -1665,9 +1744,9 @@ class MasterAuth(proto.Message):
             certificate that is the root of trust for the
             cluster.
         client_certificate (str):
-            Output only. Base64-encoded public
-            certificate used by clients to authenticate to
-            the cluster endpoint.
+            Output only. Base64-encoded public certificate used by
+            clients to authenticate to the cluster endpoint. Issued only
+            if client_certificate_config is set.
         client_key (str):
             Output only. Base64-encoded private key used
             by clients to authenticate to the cluster
@@ -1771,6 +1850,9 @@ class AddonsConfig(proto.Message):
         stateful_ha_config (google.cloud.container_v1.types.StatefulHAConfig):
             Optional. Configuration for the StatefulHA
             add-on.
+        parallelstore_csi_driver_config (google.cloud.container_v1.types.ParallelstoreCsiDriverConfig):
+            Configuration for the Cloud Storage
+            Parallelstore CSI driver.
         ray_operator_config (google.cloud.container_v1.types.RayOperatorConfig):
             Optional. Configuration for Ray Operator
             addon.
@@ -1837,6 +1919,11 @@ class AddonsConfig(proto.Message):
         proto.MESSAGE,
         number=18,
         message="StatefulHAConfig",
+    )
+    parallelstore_csi_driver_config: "ParallelstoreCsiDriverConfig" = proto.Field(
+        proto.MESSAGE,
+        number=19,
+        message="ParallelstoreCsiDriverConfig",
     )
     ray_operator_config: "RayOperatorConfig" = proto.Field(
         proto.MESSAGE,
@@ -1951,13 +2038,22 @@ class PrivateClusterConfig(proto.Message):
 
     Attributes:
         enable_private_nodes (bool):
-            Whether nodes have internal IP addresses
-            only. If enabled, all nodes are given only RFC
-            1918 private addresses and communicate with the
-            master via private networking.
+            Whether nodes have internal IP addresses only. If enabled,
+            all nodes are given only RFC 1918 private addresses and
+            communicate with the master via private networking.
+
+            Deprecated: Use
+            [NetworkConfig.default_enable_private_nodes][google.container.v1.NetworkConfig.default_enable_private_nodes]
+            instead.
         enable_private_endpoint (bool):
-            Whether the master's internal IP address is
-            used as the cluster endpoint.
+            Whether the master's internal IP address is used as the
+            cluster endpoint.
+
+            Deprecated: Use
+            [ControlPlaneEndpointsConfig.IPEndpointsConfig.enable_public_endpoint][google.container.v1.ControlPlaneEndpointsConfig.IPEndpointsConfig.enable_public_endpoint]
+            instead. Note that the value of enable_public_endpoint is
+            reversed: if enable_private_endpoint is false, then
+            enable_public_endpoint will be true.
         master_ipv4_cidr_block (str):
             The IP range in CIDR notation to use for the
             hosted master network. This range will be used
@@ -1966,20 +2062,36 @@ class PrivateClusterConfig(proto.Message):
             VIP. This range must not overlap with any other
             ranges in use within the cluster's network.
         private_endpoint (str):
-            Output only. The internal IP address of this
-            cluster's master endpoint.
+            Output only. The internal IP address of this cluster's
+            master endpoint.
+
+            Deprecated: Use
+            [ControlPlaneEndpointsConfig.IPEndpointsConfig.private_endpoint][google.container.v1.ControlPlaneEndpointsConfig.IPEndpointsConfig.private_endpoint]
+            instead.
         public_endpoint (str):
-            Output only. The external IP address of this
-            cluster's master endpoint.
+            Output only. The external IP address of this cluster's
+            master endpoint.
+
+            Deprecated:Use
+            [ControlPlaneEndpointsConfig.IPEndpointsConfig.public_endpoint][google.container.v1.ControlPlaneEndpointsConfig.IPEndpointsConfig.public_endpoint]
+            instead.
         peering_name (str):
             Output only. The peering name in the customer
             VPC used by this cluster.
         master_global_access_config (google.cloud.container_v1.types.PrivateClusterMasterGlobalAccessConfig):
             Controls master global access settings.
+
+            Deprecated: Use
+            [ControlPlaneEndpointsConfig.IPEndpointsConfig.enable_global_access][]
+            instead.
         private_endpoint_subnetwork (str):
             Subnet to provision the master's private endpoint during
             cluster creation. Specified in
             projects/\ */regions/*/subnetworks/\* format.
+
+            Deprecated: Use
+            [ControlPlaneEndpointsConfig.IPEndpointsConfig.private_endpoint_subnetwork][google.container.v1.ControlPlaneEndpointsConfig.IPEndpointsConfig.private_endpoint_subnetwork]
+            instead.
     """
 
     enable_private_nodes: bool = proto.Field(
@@ -2140,6 +2252,21 @@ class GcsFuseCsiDriverConfig(proto.Message):
     )
 
 
+class ParallelstoreCsiDriverConfig(proto.Message):
+    r"""Configuration for the Cloud Storage Parallelstore CSI driver.
+
+    Attributes:
+        enabled (bool):
+            Whether the Cloud Storage Parallelstore CSI
+            driver is enabled for this cluster.
+    """
+
+    enabled: bool = proto.Field(
+        proto.BOOL,
+        number=1,
+    )
+
+
 class RayOperatorConfig(proto.Message):
     r"""Configuration options for the Ray Operator add-on.
 
@@ -2223,6 +2350,11 @@ class MasterAuthorizedNetworksConfig(proto.Message):
             Compute Engine Public IP addresses.
 
             This field is a member of `oneof`_ ``_gcp_public_cidrs_access_enabled``.
+        private_endpoint_enforcement_enabled (bool):
+            Whether master authorized networks is
+            enforced on private endpoint or not.
+
+            This field is a member of `oneof`_ ``_private_endpoint_enforcement_enabled``.
     """
 
     class CidrBlock(proto.Message):
@@ -2257,6 +2389,11 @@ class MasterAuthorizedNetworksConfig(proto.Message):
     gcp_public_cidrs_access_enabled: bool = proto.Field(
         proto.BOOL,
         number=3,
+        optional=True,
+    )
+    private_endpoint_enforcement_enabled: bool = proto.Field(
+        proto.BOOL,
+        number=5,
         optional=True,
     )
 
@@ -2756,8 +2893,12 @@ class Cluster(proto.Message):
         ip_allocation_policy (google.cloud.container_v1.types.IPAllocationPolicy):
             Configuration for cluster IP allocation.
         master_authorized_networks_config (google.cloud.container_v1.types.MasterAuthorizedNetworksConfig):
-            The configuration options for master
-            authorized networks feature.
+            The configuration options for master authorized networks
+            feature.
+
+            Deprecated: Use
+            [ControlPlaneEndpointsConfig.IPEndpointsConfig.authorized_networks_config][google.container.v1.ControlPlaneEndpointsConfig.IPEndpointsConfig.authorized_networks_config]
+            instead.
         maintenance_policy (google.cloud.container_v1.types.MaintenancePolicy):
             Configure the maintenance policy for this
             cluster.
@@ -2940,10 +3081,18 @@ class Cluster(proto.Message):
         security_posture_config (google.cloud.container_v1.types.SecurityPostureConfig):
             Enable/Disable Security Posture API features
             for the cluster.
+        control_plane_endpoints_config (google.cloud.container_v1.types.ControlPlaneEndpointsConfig):
+            Configuration for all cluster's control plane
+            endpoints.
         enable_k8s_beta_apis (google.cloud.container_v1.types.K8sBetaAPIConfig):
             Beta APIs Config
         enterprise_config (google.cloud.container_v1.types.EnterpriseConfig):
             GKE Enterprise Configuration.
+        secret_manager_config (google.cloud.container_v1.types.SecretManagerConfig):
+            Secret CSI driver configuration.
+        compliance_posture_config (google.cloud.container_v1.types.CompliancePostureConfig):
+            Enable/Disable Compliance Posture features
+            for the cluster.
         satisfies_pzs (bool):
             Output only. Reserved for future use.
 
@@ -2952,6 +3101,17 @@ class Cluster(proto.Message):
             Output only. Reserved for future use.
 
             This field is a member of `oneof`_ ``_satisfies_pzi``.
+        user_managed_keys_config (google.cloud.container_v1.types.UserManagedKeysConfig):
+            The Custom keys configuration for the
+            cluster.
+
+            This field is a member of `oneof`_ ``_user_managed_keys_config``.
+        rbac_binding_config (google.cloud.container_v1.types.RBACBindingConfig):
+            RBACBindingConfig allows user to restrict
+            ClusterRoleBindings an RoleBindings that can be
+            created.
+
+            This field is a member of `oneof`_ ``_rbac_binding_config``.
     """
 
     class Status(proto.Enum):
@@ -3288,6 +3448,11 @@ class Cluster(proto.Message):
         number=145,
         message="SecurityPostureConfig",
     )
+    control_plane_endpoints_config: "ControlPlaneEndpointsConfig" = proto.Field(
+        proto.MESSAGE,
+        number=146,
+        message="ControlPlaneEndpointsConfig",
+    )
     enable_k8s_beta_apis: "K8sBetaAPIConfig" = proto.Field(
         proto.MESSAGE,
         number=143,
@@ -3298,6 +3463,16 @@ class Cluster(proto.Message):
         number=149,
         message="EnterpriseConfig",
     )
+    secret_manager_config: "SecretManagerConfig" = proto.Field(
+        proto.MESSAGE,
+        number=150,
+        message="SecretManagerConfig",
+    )
+    compliance_posture_config: "CompliancePostureConfig" = proto.Field(
+        proto.MESSAGE,
+        number=151,
+        message="CompliancePostureConfig",
+    )
     satisfies_pzs: bool = proto.Field(
         proto.BOOL,
         number=152,
@@ -3307,6 +3482,192 @@ class Cluster(proto.Message):
         proto.BOOL,
         number=153,
         optional=True,
+    )
+    user_managed_keys_config: "UserManagedKeysConfig" = proto.Field(
+        proto.MESSAGE,
+        number=154,
+        optional=True,
+        message="UserManagedKeysConfig",
+    )
+    rbac_binding_config: "RBACBindingConfig" = proto.Field(
+        proto.MESSAGE,
+        number=156,
+        optional=True,
+        message="RBACBindingConfig",
+    )
+
+
+class RBACBindingConfig(proto.Message):
+    r"""RBACBindingConfig allows user to restrict ClusterRoleBindings
+    an RoleBindings that can be created.
+
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        enable_insecure_binding_system_unauthenticated (bool):
+            Setting this to true will allow any
+            ClusterRoleBinding and RoleBinding with subjets
+            system:anonymous or system:unauthenticated.
+
+            This field is a member of `oneof`_ ``_enable_insecure_binding_system_unauthenticated``.
+        enable_insecure_binding_system_authenticated (bool):
+            Setting this to true will allow any
+            ClusterRoleBinding and RoleBinding with subjects
+            system:authenticated.
+
+            This field is a member of `oneof`_ ``_enable_insecure_binding_system_authenticated``.
+    """
+
+    enable_insecure_binding_system_unauthenticated: bool = proto.Field(
+        proto.BOOL,
+        number=1,
+        optional=True,
+    )
+    enable_insecure_binding_system_authenticated: bool = proto.Field(
+        proto.BOOL,
+        number=2,
+        optional=True,
+    )
+
+
+class UserManagedKeysConfig(proto.Message):
+    r"""UserManagedKeysConfig holds the resource address to Keys
+    which are used for signing certs and token that are used for
+    communication within cluster.
+
+    Attributes:
+        cluster_ca (str):
+            The Certificate Authority Service caPool to
+            use for the cluster CA in this cluster.
+        etcd_api_ca (str):
+            Resource path of the Certificate Authority
+            Service caPool to use for the etcd API CA in
+            this cluster.
+        etcd_peer_ca (str):
+            Resource path of the Certificate Authority
+            Service caPool to use for the etcd peer CA in
+            this cluster.
+        service_account_signing_keys (MutableSequence[str]):
+            The Cloud KMS cryptoKeyVersions to use for signing service
+            account JWTs issued by this cluster.
+
+            Format:
+            ``projects/{project}/locations/{location}/keyRings/{keyring}/cryptoKeys/{cryptoKey}/cryptoKeyVersions/{cryptoKeyVersion}``
+        service_account_verification_keys (MutableSequence[str]):
+            The Cloud KMS cryptoKeyVersions to use for verifying service
+            account JWTs issued by this cluster.
+
+            Format:
+            ``projects/{project}/locations/{location}/keyRings/{keyring}/cryptoKeys/{cryptoKey}/cryptoKeyVersions/{cryptoKeyVersion}``
+        aggregation_ca (str):
+            The Certificate Authority Service caPool to
+            use for the aggregation CA in this cluster.
+        control_plane_disk_encryption_key (str):
+            The Cloud KMS cryptoKey to use for
+            Confidential Hyperdisk on the control plane
+            nodes.
+        gkeops_etcd_backup_encryption_key (str):
+            Resource path of the Cloud KMS cryptoKey to
+            use for encryption of internal etcd backups.
+    """
+
+    cluster_ca: str = proto.Field(
+        proto.STRING,
+        number=10,
+    )
+    etcd_api_ca: str = proto.Field(
+        proto.STRING,
+        number=11,
+    )
+    etcd_peer_ca: str = proto.Field(
+        proto.STRING,
+        number=12,
+    )
+    service_account_signing_keys: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=13,
+    )
+    service_account_verification_keys: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=14,
+    )
+    aggregation_ca: str = proto.Field(
+        proto.STRING,
+        number=15,
+    )
+    control_plane_disk_encryption_key: str = proto.Field(
+        proto.STRING,
+        number=16,
+    )
+    gkeops_etcd_backup_encryption_key: str = proto.Field(
+        proto.STRING,
+        number=17,
+    )
+
+
+class CompliancePostureConfig(proto.Message):
+    r"""CompliancePostureConfig defines the settings needed to
+    enable/disable features for the Compliance Posture.
+
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        mode (google.cloud.container_v1.types.CompliancePostureConfig.Mode):
+            Defines the enablement mode for Compliance
+            Posture.
+
+            This field is a member of `oneof`_ ``_mode``.
+        compliance_standards (MutableSequence[google.cloud.container_v1.types.CompliancePostureConfig.ComplianceStandard]):
+            List of enabled compliance standards.
+    """
+
+    class Mode(proto.Enum):
+        r"""Mode defines enablement mode for Compliance Posture.
+
+        Values:
+            MODE_UNSPECIFIED (0):
+                Default value not specified.
+            DISABLED (1):
+                Disables Compliance Posture features on the
+                cluster.
+            ENABLED (2):
+                Enables Compliance Posture features on the
+                cluster.
+        """
+        MODE_UNSPECIFIED = 0
+        DISABLED = 1
+        ENABLED = 2
+
+    class ComplianceStandard(proto.Message):
+        r"""Defines the details of a compliance standard.
+
+        .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+        Attributes:
+            standard (str):
+                Name of the compliance standard.
+
+                This field is a member of `oneof`_ ``_standard``.
+        """
+
+        standard: str = proto.Field(
+            proto.STRING,
+            number=1,
+            optional=True,
+        )
+
+    mode: Mode = proto.Field(
+        proto.ENUM,
+        number=1,
+        optional=True,
+        enum=Mode,
+    )
+    compliance_standards: MutableSequence[ComplianceStandard] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=2,
+        message=ComplianceStandard,
     )
 
 
@@ -3426,6 +3787,9 @@ class NodePoolAutoConfig(proto.Message):
 
             Currently only ``insecure_kubelet_readonly_port_enabled``
             can be set here.
+        linux_node_config (google.cloud.container_v1.types.LinuxNodeConfig):
+            Output only. Configuration options for Linux
+            nodes.
     """
 
     network_tags: "NetworkTags" = proto.Field(
@@ -3442,6 +3806,11 @@ class NodePoolAutoConfig(proto.Message):
         proto.MESSAGE,
         number=3,
         message="NodeKubeletConfig",
+    )
+    linux_node_config: "LinuxNodeConfig" = proto.Field(
+        proto.MESSAGE,
+        number=4,
+        message="LinuxNodeConfig",
     )
 
 
@@ -3584,8 +3953,12 @@ class ClusterUpdate(proto.Message):
             locations of all node pools and will result in nodes being
             added and/or removed.
         desired_master_authorized_networks_config (google.cloud.container_v1.types.MasterAuthorizedNetworksConfig):
-            The desired configuration options for master
-            authorized networks feature.
+            The desired configuration options for master authorized
+            networks feature.
+
+            Deprecated: Use
+            desired_control_plane_endpoints_config.ip_endpoints_config.authorized_networks_config
+            instead.
         desired_cluster_autoscaling (google.cloud.container_v1.types.ClusterAutoscaling):
             Cluster-level autoscaling configuration.
         desired_binary_authorization (google.cloud.container_v1.types.BinaryAuthorization):
@@ -3618,6 +3991,10 @@ class ClusterUpdate(proto.Message):
             [ClusterUpdate.desired_enable_private_endpoint][google.container.v1.ClusterUpdate.desired_enable_private_endpoint]
             for modifying other fields within
             [PrivateClusterConfig][google.container.v1.PrivateClusterConfig].
+
+            Deprecated: Use
+            desired_control_plane_endpoints_config.ip_endpoints_config.global_access
+            instead.
         desired_intra_node_visibility_config (google.cloud.container_v1.types.IntraNodeVisibilityConfig):
             The desired config of Intra-node visibility.
         desired_default_snat_status (google.cloud.container_v1.types.DefaultSnatStatus):
@@ -3650,10 +4027,25 @@ class ClusterUpdate(proto.Message):
             ServiceExternalIPsConfig specifies the config
             for the use of Services with ExternalIPs field.
         desired_enable_private_endpoint (bool):
-            Enable/Disable private endpoint for the
-            cluster's master.
+            Enable/Disable private endpoint for the cluster's master.
+
+            Deprecated: Use
+            desired_control_plane_endpoints_config.ip_endpoints_config.enable_public_endpoint
+            instead. Note that the value of enable_public_endpoint is
+            reversed: if enable_private_endpoint is false, then
+            enable_public_endpoint will be true.
 
             This field is a member of `oneof`_ ``_desired_enable_private_endpoint``.
+        desired_default_enable_private_nodes (bool):
+            Override the default setting of whether future created nodes
+            have private IP addresses only, namely
+            [NetworkConfig.default_enable_private_nodes][google.container.v1.NetworkConfig.default_enable_private_nodes]
+
+            This field is a member of `oneof`_ ``_desired_default_enable_private_nodes``.
+        desired_control_plane_endpoints_config (google.cloud.container_v1.types.ControlPlaneEndpointsConfig):
+            [Control plane
+            endpoints][google.container.v1.Cluster.control_plane_endpoints_config]
+            configuration.
         desired_master_version (str):
             The Kubernetes version to change the master
             to.
@@ -3746,6 +4138,15 @@ class ClusterUpdate(proto.Message):
             Policy for the cluster.
 
             This field is a member of `oneof`_ ``_desired_enable_cilium_clusterwide_network_policy``.
+        desired_secret_manager_config (google.cloud.container_v1.types.SecretManagerConfig):
+            Enable/Disable Secret Manager Config.
+
+            This field is a member of `oneof`_ ``_desired_secret_manager_config``.
+        desired_compliance_posture_config (google.cloud.container_v1.types.CompliancePostureConfig):
+            Enable/Disable Compliance Posture features
+            for the cluster.
+
+            This field is a member of `oneof`_ ``_desired_compliance_posture_config``.
         desired_node_kubelet_config (google.cloud.container_v1.types.NodeKubeletConfig):
             The desired node kubelet config for the
             cluster.
@@ -3754,6 +4155,24 @@ class ClusterUpdate(proto.Message):
             auto-provisioned node pools in autopilot
             clusters and node auto-provisioning enabled
             clusters.
+        user_managed_keys_config (google.cloud.container_v1.types.UserManagedKeysConfig):
+            The Custom keys configuration for the
+            cluster.
+        desired_rbac_binding_config (google.cloud.container_v1.types.RBACBindingConfig):
+            RBACBindingConfig allows user to restrict
+            ClusterRoleBindings an RoleBindings that can be
+            created.
+
+            This field is a member of `oneof`_ ``_desired_rbac_binding_config``.
+        desired_enterprise_config (google.cloud.container_v1.types.DesiredEnterpriseConfig):
+            The desired enterprise configuration for the
+            cluster.
+        desired_node_pool_auto_config_linux_node_config (google.cloud.container_v1.types.LinuxNodeConfig):
+            The desired Linux node config for all auto-provisioned node
+            pools in autopilot clusters and node auto-provisioning
+            enabled clusters.
+
+            Currently only ``cgroup_mode`` can be set here.
     """
 
     desired_node_version: str = proto.Field(
@@ -3917,6 +4336,16 @@ class ClusterUpdate(proto.Message):
         number=71,
         optional=True,
     )
+    desired_default_enable_private_nodes: bool = proto.Field(
+        proto.BOOL,
+        number=72,
+        optional=True,
+    )
+    desired_control_plane_endpoints_config: "ControlPlaneEndpointsConfig" = proto.Field(
+        proto.MESSAGE,
+        number=73,
+        message="ControlPlaneEndpointsConfig",
+    )
     desired_master_version: str = proto.Field(
         proto.STRING,
         number=100,
@@ -4023,6 +4452,18 @@ class ClusterUpdate(proto.Message):
         number=138,
         optional=True,
     )
+    desired_secret_manager_config: "SecretManagerConfig" = proto.Field(
+        proto.MESSAGE,
+        number=139,
+        optional=True,
+        message="SecretManagerConfig",
+    )
+    desired_compliance_posture_config: "CompliancePostureConfig" = proto.Field(
+        proto.MESSAGE,
+        number=140,
+        optional=True,
+        message="CompliancePostureConfig",
+    )
     desired_node_kubelet_config: "NodeKubeletConfig" = proto.Field(
         proto.MESSAGE,
         number=141,
@@ -4032,6 +4473,27 @@ class ClusterUpdate(proto.Message):
         proto.MESSAGE,
         number=142,
         message="NodeKubeletConfig",
+    )
+    user_managed_keys_config: "UserManagedKeysConfig" = proto.Field(
+        proto.MESSAGE,
+        number=143,
+        message="UserManagedKeysConfig",
+    )
+    desired_rbac_binding_config: "RBACBindingConfig" = proto.Field(
+        proto.MESSAGE,
+        number=144,
+        optional=True,
+        message="RBACBindingConfig",
+    )
+    desired_enterprise_config: "DesiredEnterpriseConfig" = proto.Field(
+        proto.MESSAGE,
+        number=147,
+        message="DesiredEnterpriseConfig",
+    )
+    desired_node_pool_auto_config_linux_node_config: "LinuxNodeConfig" = proto.Field(
+        proto.MESSAGE,
+        number=150,
+        message="LinuxNodeConfig",
     )
 
 
@@ -4077,6 +4539,22 @@ class RangeInfo(proto.Message):
     utilization: float = proto.Field(
         proto.DOUBLE,
         number=2,
+    )
+
+
+class DesiredEnterpriseConfig(proto.Message):
+    r"""DesiredEnterpriseConfig is a wrapper used for updating
+    enterprise_config.
+
+    Attributes:
+        desired_tier (google.cloud.container_v1.types.EnterpriseConfig.ClusterTier):
+            desired_tier specifies the desired tier of the cluster.
+    """
+
+    desired_tier: "EnterpriseConfig.ClusterTier" = proto.Field(
+        proto.ENUM,
+        number=1,
+        enum="EnterpriseConfig.ClusterTier",
     )
 
 
@@ -4755,6 +5233,10 @@ class UpdateNodePoolRequest(proto.Message):
         queued_provisioning (google.cloud.container_v1.types.NodePool.QueuedProvisioning):
             Specifies the configuration of queued
             provisioning.
+        storage_pools (MutableSequence[str]):
+            List of Storage Pools where boot disks are
+            provisioned. Existing Storage Pools will be
+            replaced with storage-pools.
     """
 
     project_id: str = proto.Field(
@@ -4899,6 +5381,10 @@ class UpdateNodePoolRequest(proto.Message):
         proto.MESSAGE,
         number=42,
         message="NodePool.QueuedProvisioning",
+    )
+    storage_pools: MutableSequence[str] = proto.RepeatedField(
+        proto.STRING,
+        number=43,
     )
 
 
@@ -5654,6 +6140,9 @@ class ServerConfig(proto.Message):
                 clusters on the channel.
             valid_versions (MutableSequence[str]):
                 List of valid versions for the channel.
+            upgrade_target_version (str):
+                The auto upgrade target version for clusters
+                on the channel.
         """
 
         channel: "ReleaseChannel.Channel" = proto.Field(
@@ -5668,6 +6157,10 @@ class ServerConfig(proto.Message):
         valid_versions: MutableSequence[str] = proto.RepeatedField(
             proto.STRING,
             number=4,
+        )
+        upgrade_target_version: str = proto.Field(
+            proto.STRING,
+            number=5,
         )
 
     default_cluster_version: str = proto.Field(
@@ -7211,10 +7704,11 @@ class NodePoolAutoscaling(proto.Message):
         enabled (bool):
             Is autoscaling enabled for this node pool.
         min_node_count (int):
-            Minimum number of nodes for one location in the NodePool.
-            Must be >= 1 and <= max_node_count.
+            Minimum number of nodes for one location in the node pool.
+            Must be greater than or equal to 0 and less than or equal to
+            max_node_count.
         max_node_count (int):
-            Maximum number of nodes for one location in the NodePool.
+            Maximum number of nodes for one location in the node pool.
             Must be >= min_node_count. There has to be enough quota to
             scale up the cluster.
         autoprovisioned (bool):
@@ -7224,14 +7718,14 @@ class NodePoolAutoscaling(proto.Message):
             nodepool.
         total_min_node_count (int):
             Minimum number of nodes in the node pool. Must be greater
-            than 1 less than total_max_node_count. The
-            total_*_node_count fields are mutually exclusive with the
-            \*_node_count fields.
+            than or equal to 0 and less than or equal to
+            total_max_node_count. The total_*_node_count fields are
+            mutually exclusive with the \*_node_count fields.
         total_max_node_count (int):
             Maximum number of nodes in the node pool. Must be greater
-            than total_min_node_count. There has to be enough quota to
-            scale up the cluster. The total_*_node_count fields are
-            mutually exclusive with the \*_node_count fields.
+            than or equal to total_min_node_count. There has to be
+            enough quota to scale up the cluster. The total_*_node_count
+            fields are mutually exclusive with the \*_node_count fields.
     """
 
     class LocationPolicy(proto.Enum):
@@ -7908,6 +8402,14 @@ class NetworkConfig(proto.Message):
             enabled on this cluster.
 
             This field is a member of `oneof`_ ``_enable_cilium_clusterwide_network_policy``.
+        default_enable_private_nodes (bool):
+            Controls whether by default nodes have private IP addresses
+            only. It is invalid to specify both
+            [PrivateClusterConfig.enablePrivateNodes][] and this field
+            at the same time. To update the default setting, use
+            [ClusterUpdate.desired_default_enable_private_nodes][google.container.v1.ClusterUpdate.desired_default_enable_private_nodes]
+
+            This field is a member of `oneof`_ ``_default_enable_private_nodes``.
     """
 
     class ClusterNetworkPerformanceConfig(proto.Message):
@@ -8012,6 +8514,11 @@ class NetworkConfig(proto.Message):
     enable_cilium_clusterwide_network_policy: bool = proto.Field(
         proto.BOOL,
         number=21,
+        optional=True,
+    )
+    default_enable_private_nodes: bool = proto.Field(
+        proto.BOOL,
+        number=22,
         optional=True,
     )
 
@@ -8388,11 +8895,17 @@ class ReleaseChannel(proto.Message):
                 Clusters subscribed to STABLE receive
                 versions that are known to be stable and
                 reliable in production.
+            EXTENDED (4):
+                Clusters subscribed to EXTENDED receive
+                extended support and availability for versions
+                which are known to be stable and reliable in
+                production.
         """
         UNSPECIFIED = 0
         RAPID = 1
         REGULAR = 2
         STABLE = 3
+        EXTENDED = 4
 
     channel: Channel = proto.Field(
         proto.ENUM,
@@ -9204,6 +9717,98 @@ class UpgradeEvent(proto.Message):
     )
 
 
+class UpgradeInfoEvent(proto.Message):
+    r"""UpgradeInfoEvent is a notification sent to customers about
+    the upgrade information of a resource.
+
+    Attributes:
+        resource_type (google.cloud.container_v1.types.UpgradeResourceType):
+            The resource type associated with the
+            upgrade.
+        operation (str):
+            The operation associated with this upgrade.
+        start_time (google.protobuf.timestamp_pb2.Timestamp):
+            The time when the operation was started.
+        end_time (google.protobuf.timestamp_pb2.Timestamp):
+            The time when the operation ended.
+        current_version (str):
+            The current version before the upgrade.
+        target_version (str):
+            The target version for the upgrade.
+        resource (str):
+            Optional relative path to the resource. For
+            example in node pool upgrades, the relative path
+            of the node pool.
+        state (google.cloud.container_v1.types.UpgradeInfoEvent.State):
+            Output only. The state of the upgrade.
+        description (str):
+            A brief description of the event.
+    """
+
+    class State(proto.Enum):
+        r"""The state of the upgrade.
+
+        Values:
+            STATE_UNSPECIFIED (0):
+                STATE_UNSPECIFIED indicates the state is unspecified.
+            STARTED (3):
+                STARTED indicates the upgrade has started.
+            SUCCEEDED (4):
+                SUCCEEDED indicates the upgrade has completed
+                successfully.
+            FAILED (5):
+                FAILED indicates the upgrade has failed.
+            CANCELED (6):
+                CANCELED indicates the upgrade has canceled.
+        """
+        STATE_UNSPECIFIED = 0
+        STARTED = 3
+        SUCCEEDED = 4
+        FAILED = 5
+        CANCELED = 6
+
+    resource_type: "UpgradeResourceType" = proto.Field(
+        proto.ENUM,
+        number=1,
+        enum="UpgradeResourceType",
+    )
+    operation: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    start_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=timestamp_pb2.Timestamp,
+    )
+    end_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=4,
+        message=timestamp_pb2.Timestamp,
+    )
+    current_version: str = proto.Field(
+        proto.STRING,
+        number=5,
+    )
+    target_version: str = proto.Field(
+        proto.STRING,
+        number=6,
+    )
+    resource: str = proto.Field(
+        proto.STRING,
+        number=7,
+    )
+    state: State = proto.Field(
+        proto.ENUM,
+        number=8,
+        enum=State,
+    )
+    description: str = proto.Field(
+        proto.STRING,
+        number=11,
+    )
+
+
 class UpgradeAvailableEvent(proto.Message):
     r"""UpgradeAvailableEvent is a notification sent to customers
     when a new available version is released.
@@ -9412,6 +10017,10 @@ class LoggingComponentConfig(proto.Message):
                 kube-scheduler
             CONTROLLER_MANAGER (5):
                 kube-controller-manager
+            KCP_SSHD (7):
+                kcp-sshd
+            KCP_CONNECTION (8):
+                kcp connection logs
         """
         COMPONENT_UNSPECIFIED = 0
         SYSTEM_COMPONENTS = 1
@@ -9419,6 +10028,8 @@ class LoggingComponentConfig(proto.Message):
         APISERVER = 3
         SCHEDULER = 4
         CONTROLLER_MANAGER = 5
+        KCP_SSHD = 7
+        KCP_CONNECTION = 8
 
     enable_components: MutableSequence[Component] = proto.RepeatedField(
         proto.ENUM,
@@ -9701,6 +10312,141 @@ class Fleet(proto.Message):
     )
 
 
+class ControlPlaneEndpointsConfig(proto.Message):
+    r"""Configuration for all of the cluster's control plane
+    endpoints.
+
+    Attributes:
+        dns_endpoint_config (google.cloud.container_v1.types.ControlPlaneEndpointsConfig.DNSEndpointConfig):
+            DNS endpoint configuration.
+        ip_endpoints_config (google.cloud.container_v1.types.ControlPlaneEndpointsConfig.IPEndpointsConfig):
+            IP endpoints configuration.
+    """
+
+    class DNSEndpointConfig(proto.Message):
+        r"""Describes the configuration of a DNS endpoint.
+
+        .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+        Attributes:
+            endpoint (str):
+                Output only. The cluster's DNS endpoint configuration. A DNS
+                format address. This is accessible from the public internet.
+                Ex: uid.us-central1.gke.goog. Always present, but the
+                behavior may change according to the value of
+                [DNSEndpointConfig.allow_external_traffic][google.container.v1.ControlPlaneEndpointsConfig.DNSEndpointConfig.allow_external_traffic].
+            allow_external_traffic (bool):
+                Controls whether user traffic is allowed over
+                this endpoint. Note that GCP-managed services
+                may still use the endpoint even if this is
+                false.
+
+                This field is a member of `oneof`_ ``_allow_external_traffic``.
+        """
+
+        endpoint: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+        allow_external_traffic: bool = proto.Field(
+            proto.BOOL,
+            number=3,
+            optional=True,
+        )
+
+    class IPEndpointsConfig(proto.Message):
+        r"""IP endpoints configuration.
+
+        .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+        Attributes:
+            enabled (bool):
+                Controls whether to allow direct IP access.
+
+                This field is a member of `oneof`_ ``_enabled``.
+            enable_public_endpoint (bool):
+                Controls whether the control plane allows access through a
+                public IP. It is invalid to specify both
+                [PrivateClusterConfig.enablePrivateEndpoint][] and this
+                field at the same time.
+
+                This field is a member of `oneof`_ ``_enable_public_endpoint``.
+            global_access (bool):
+                Controls whether the control plane's private endpoint is
+                accessible from sources in other regions. It is invalid to
+                specify both
+                [PrivateClusterMasterGlobalAccessConfig.enabled][google.container.v1.PrivateClusterMasterGlobalAccessConfig.enabled]
+                and this field at the same time.
+
+                This field is a member of `oneof`_ ``_global_access``.
+            authorized_networks_config (google.cloud.container_v1.types.MasterAuthorizedNetworksConfig):
+                Configuration of authorized networks. If enabled, restricts
+                access to the control plane based on source IP. It is
+                invalid to specify both
+                [Cluster.masterAuthorizedNetworksConfig][] and this field at
+                the same time.
+            public_endpoint (str):
+                Output only. The external IP address of this
+                cluster's control plane. Only populated if
+                enabled.
+            private_endpoint (str):
+                Output only. The internal IP address of this
+                cluster's control plane. Only populated if
+                enabled.
+            private_endpoint_subnetwork (str):
+                Subnet to provision the master's private endpoint during
+                cluster creation. Specified in
+                projects/\ */regions/*/subnetworks/\* format. It is invalid
+                to specify both
+                [PrivateClusterConfig.privateEndpointSubnetwork][] and this
+                field at the same time.
+        """
+
+        enabled: bool = proto.Field(
+            proto.BOOL,
+            number=1,
+            optional=True,
+        )
+        enable_public_endpoint: bool = proto.Field(
+            proto.BOOL,
+            number=2,
+            optional=True,
+        )
+        global_access: bool = proto.Field(
+            proto.BOOL,
+            number=3,
+            optional=True,
+        )
+        authorized_networks_config: "MasterAuthorizedNetworksConfig" = proto.Field(
+            proto.MESSAGE,
+            number=4,
+            message="MasterAuthorizedNetworksConfig",
+        )
+        public_endpoint: str = proto.Field(
+            proto.STRING,
+            number=5,
+        )
+        private_endpoint: str = proto.Field(
+            proto.STRING,
+            number=6,
+        )
+        private_endpoint_subnetwork: str = proto.Field(
+            proto.STRING,
+            number=7,
+        )
+
+    dns_endpoint_config: DNSEndpointConfig = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=DNSEndpointConfig,
+    )
+    ip_endpoints_config: IPEndpointsConfig = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=IPEndpointsConfig,
+    )
+
+
 class LocalNvmeSsdBlockConfig(proto.Message):
     r"""LocalNvmeSsdBlockConfig contains configuration for using
     raw-block local NVMe SSDs
@@ -9800,8 +10546,10 @@ class EnterpriseConfig(proto.Message):
 
     Attributes:
         cluster_tier (google.cloud.container_v1.types.EnterpriseConfig.ClusterTier):
-            Output only. cluster_tier specifies the premium tier of the
-            cluster.
+            Output only. cluster_tier indicates the effective tier of
+            the cluster.
+        desired_tier (google.cloud.container_v1.types.EnterpriseConfig.ClusterTier):
+            desired_tier specifies the desired tier of the cluster.
     """
 
     class ClusterTier(proto.Enum):
@@ -9824,6 +10572,30 @@ class EnterpriseConfig(proto.Message):
         proto.ENUM,
         number=1,
         enum=ClusterTier,
+    )
+    desired_tier: ClusterTier = proto.Field(
+        proto.ENUM,
+        number=2,
+        enum=ClusterTier,
+    )
+
+
+class SecretManagerConfig(proto.Message):
+    r"""SecretManagerConfig is config for secret manager enablement.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        enabled (bool):
+            Enable/Disable Secret Manager Config.
+
+            This field is a member of `oneof`_ ``_enabled``.
+    """
+
+    enabled: bool = proto.Field(
+        proto.BOOL,
+        number=1,
+        optional=True,
     )
 
 

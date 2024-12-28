@@ -34,6 +34,8 @@ __protobuf__ = proto.module(
     package="google.cloud.datacatalog.v1",
     manifest={
         "EntryType",
+        "TagTemplateMigration",
+        "CatalogUIExperience",
         "SearchCatalogRequest",
         "SearchCatalogResponse",
         "CreateEntryGroupRequest",
@@ -62,6 +64,7 @@ __protobuf__ = proto.module(
         "VertexModelSpec",
         "VertexDatasetSpec",
         "ModelSpec",
+        "FeatureOnlineStoreSpec",
         "BusinessContext",
         "EntryOverview",
         "Contacts",
@@ -94,6 +97,11 @@ __protobuf__ = proto.module(
         "ImportEntriesMetadata",
         "ModifyEntryOverviewRequest",
         "ModifyEntryContactsRequest",
+        "SetConfigRequest",
+        "RetrieveConfigRequest",
+        "RetrieveEffectiveConfigRequest",
+        "OrganizationConfig",
+        "MigrationConfig",
     },
 )
 
@@ -161,6 +169,15 @@ class EntryType(proto.Enum):
 
             For more information, see [Looker Look API]
             (https://developers.looker.com/api/explorer/4.0/methods/Look).
+        FEATURE_ONLINE_STORE (19):
+            Feature Online Store resource in Vertex AI
+            Feature Store.
+        FEATURE_VIEW (20):
+            Feature View resource in Vertex AI Feature
+            Store.
+        FEATURE_GROUP (21):
+            Feature Group resource in Vertex AI Feature
+            Store.
     """
     ENTRY_TYPE_UNSPECIFIED = 0
     TABLE = 2
@@ -178,6 +195,46 @@ class EntryType(proto.Enum):
     DASHBOARD = 16
     EXPLORE = 17
     LOOK = 18
+    FEATURE_ONLINE_STORE = 19
+    FEATURE_VIEW = 20
+    FEATURE_GROUP = 21
+
+
+class TagTemplateMigration(proto.Enum):
+    r"""Configuration related to the opt-in status for the migration
+    of TagTemplates to Dataplex.
+
+    Values:
+        TAG_TEMPLATE_MIGRATION_UNSPECIFIED (0):
+            Default value. Migration of Tag Templates
+            from Data Catalog to Dataplex is not performed.
+        TAG_TEMPLATE_MIGRATION_ENABLED (1):
+            Migration of Tag Templates from Data Catalog
+            to Dataplex is enabled.
+        TAG_TEMPLATE_MIGRATION_DISABLED (2):
+            Migration of Tag Templates from Data Catalog
+            to Dataplex is disabled.
+    """
+    TAG_TEMPLATE_MIGRATION_UNSPECIFIED = 0
+    TAG_TEMPLATE_MIGRATION_ENABLED = 1
+    TAG_TEMPLATE_MIGRATION_DISABLED = 2
+
+
+class CatalogUIExperience(proto.Enum):
+    r"""Configuration related to the opt-in status for the UI switch
+    to Dataplex.
+
+    Values:
+        CATALOG_UI_EXPERIENCE_UNSPECIFIED (0):
+            Default value. The default UI is Dataplex.
+        CATALOG_UI_EXPERIENCE_ENABLED (1):
+            The UI is Dataplex.
+        CATALOG_UI_EXPERIENCE_DISABLED (2):
+            The UI is Data Catalog.
+    """
+    CATALOG_UI_EXPERIENCE_UNSPECIFIED = 0
+    CATALOG_UI_EXPERIENCE_ENABLED = 1
+    CATALOG_UI_EXPERIENCE_DISABLED = 2
 
 
 class SearchCatalogRequest(proto.Message):
@@ -807,8 +864,8 @@ class Entry(proto.Message):
 
     Attributes:
         name (str):
-            Output only. The resource name of an entry in
-            URL format.
+            Output only. Identifier. The resource name of
+            an entry in URL format.
             Note: The entry itself and its child resources
             might not be stored in the location specified in
             its name.
@@ -952,6 +1009,11 @@ class Entry(proto.Message):
             This field is a member of `oneof`_ ``spec``.
         model_spec (google.cloud.datacatalog_v1.types.ModelSpec):
             Model specification.
+
+            This field is a member of `oneof`_ ``spec``.
+        feature_online_store_spec (google.cloud.datacatalog_v1.types.FeatureOnlineStoreSpec):
+            FeatureonlineStore spec for Vertex AI Feature
+            Store.
 
             This field is a member of `oneof`_ ``spec``.
         display_name (str):
@@ -1111,6 +1173,12 @@ class Entry(proto.Message):
         number=43,
         oneof="spec",
         message="ModelSpec",
+    )
+    feature_online_store_spec: "FeatureOnlineStoreSpec" = proto.Field(
+        proto.MESSAGE,
+        number=45,
+        oneof="spec",
+        message="FeatureOnlineStoreSpec",
     )
     display_name: str = proto.Field(
         proto.STRING,
@@ -1644,12 +1712,22 @@ class VertexModelSourceInfo(proto.Message):
             MODEL_GARDEN (4):
                 The Model is saved or tuned from Model
                 Garden.
+            GENIE (5):
+                The Model is saved or tuned from Genie.
+            CUSTOM_TEXT_EMBEDDING (6):
+                The Model is uploaded by text embedding
+                finetuning pipeline.
+            MARKETPLACE (7):
+                The Model is saved or tuned from Marketplace.
         """
         MODEL_SOURCE_TYPE_UNSPECIFIED = 0
         AUTOML = 1
         CUSTOM = 2
         BQML = 3
         MODEL_GARDEN = 4
+        GENIE = 5
+        CUSTOM_TEXT_EMBEDDING = 6
+        MARKETPLACE = 7
 
     source_type: ModelSourceType = proto.Field(
         proto.ENUM,
@@ -1805,6 +1883,39 @@ class ModelSpec(proto.Message):
     )
 
 
+class FeatureOnlineStoreSpec(proto.Message):
+    r"""Detail description of the source information of a Vertex
+    Feature Online Store.
+
+    Attributes:
+        storage_type (google.cloud.datacatalog_v1.types.FeatureOnlineStoreSpec.StorageType):
+            Output only. Type of underelaying storage for
+            the FeatureOnlineStore.
+    """
+
+    class StorageType(proto.Enum):
+        r"""Type of underlaying storage type.
+
+        Values:
+            STORAGE_TYPE_UNSPECIFIED (0):
+                Should not be used.
+            BIGTABLE (1):
+                Underlsying storgae is Bigtable.
+            OPTIMIZED (2):
+                Underlaying is optimized online server
+                (Lightning).
+        """
+        STORAGE_TYPE_UNSPECIFIED = 0
+        BIGTABLE = 1
+        OPTIMIZED = 2
+
+    storage_type: StorageType = proto.Field(
+        proto.ENUM,
+        number=1,
+        enum=StorageType,
+    )
+
+
 class BusinessContext(proto.Message):
     r"""Business Context of the entry.
 
@@ -1894,8 +2005,8 @@ class EntryGroup(proto.Message):
 
     Attributes:
         name (str):
-            The resource name of the entry group in URL
-            format.
+            Identifier. The resource name of the entry
+            group in URL format.
             Note: The entry group itself and its child
             resources might not be stored in the location
             specified in its name.
@@ -1911,6 +2022,13 @@ class EntryGroup(proto.Message):
         data_catalog_timestamps (google.cloud.datacatalog_v1.types.SystemTimestamps):
             Output only. Timestamps of the entry group.
             Default value is empty.
+        transferred_to_dataplex (bool):
+            Optional. When set to [true], it means DataCatalog
+            EntryGroup was transferred to Dataplex Catalog Service. It
+            makes EntryGroup and its Entries to be read-only in
+            DataCatalog. However, new Tags on EntryGroup and its Entries
+            can be created. After setting the flag to [true] it cannot
+            be unset.
     """
 
     name: str = proto.Field(
@@ -1929,6 +2047,10 @@ class EntryGroup(proto.Message):
         proto.MESSAGE,
         number=4,
         message=timestamps.SystemTimestamps,
+    )
+    transferred_to_dataplex: bool = proto.Field(
+        proto.BOOL,
+        number=9,
     )
 
 
@@ -2727,6 +2849,130 @@ class ModifyEntryContactsRequest(proto.Message):
         proto.MESSAGE,
         number=2,
         message="Contacts",
+    )
+
+
+class SetConfigRequest(proto.Message):
+    r"""Request message for
+    [SetConfig][google.cloud.datacatalog.v1.DataCatalog.SetConfig].
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        name (str):
+            Required. The organization or project whose
+            config is being specified.
+        tag_template_migration (google.cloud.datacatalog_v1.types.TagTemplateMigration):
+            Opt-in status for the migration of Tag
+            Templates to Dataplex.
+
+            This field is a member of `oneof`_ ``configuration``.
+        catalog_ui_experience (google.cloud.datacatalog_v1.types.CatalogUIExperience):
+            Opt-in status for the UI switch to Dataplex.
+
+            This field is a member of `oneof`_ ``configuration``.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    tag_template_migration: "TagTemplateMigration" = proto.Field(
+        proto.ENUM,
+        number=2,
+        oneof="configuration",
+        enum="TagTemplateMigration",
+    )
+    catalog_ui_experience: "CatalogUIExperience" = proto.Field(
+        proto.ENUM,
+        number=3,
+        oneof="configuration",
+        enum="CatalogUIExperience",
+    )
+
+
+class RetrieveConfigRequest(proto.Message):
+    r"""Request message for
+    [RetrieveConfig][google.cloud.datacatalog.v1.DataCatalog.RetrieveConfig].
+
+    Attributes:
+        name (str):
+            Required. The organization whose config is
+            being retrieved.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
+class RetrieveEffectiveConfigRequest(proto.Message):
+    r"""Request message for
+    [RetrieveEffectiveConfig][google.cloud.datacatalog.v1.DataCatalog.RetrieveEffectiveConfig].
+
+    Attributes:
+        name (str):
+            Required. The resource whose effective config
+            is being retrieved.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
+class OrganizationConfig(proto.Message):
+    r"""The configuration related to the migration from Data Catalog to
+    Dataplex that has been applied to an organization and any projects
+    under it. It is the response message for
+    [RetrieveConfig][google.cloud.datacatalog.v1.DataCatalog.RetrieveConfig].
+
+    Attributes:
+        config (MutableMapping[str, google.cloud.datacatalog_v1.types.MigrationConfig]):
+            Map of organizations and project resource names and their
+            configuration. The format for the map keys is
+            ``organizations/{organizationId}`` or
+            ``projects/{projectId}``.
+    """
+
+    config: MutableMapping[str, "MigrationConfig"] = proto.MapField(
+        proto.STRING,
+        proto.MESSAGE,
+        number=1,
+        message="MigrationConfig",
+    )
+
+
+class MigrationConfig(proto.Message):
+    r"""The configuration related to the migration to Dataplex applied to an
+    organization or project. It is the response message for
+    [SetConfig][google.cloud.datacatalog.v1.DataCatalog.SetConfig] and
+    [RetrieveEffectiveConfig][google.cloud.datacatalog.v1.DataCatalog.RetrieveEffectiveConfig].
+
+    Attributes:
+        tag_template_migration (google.cloud.datacatalog_v1.types.TagTemplateMigration):
+            Opt-in status for the migration of Tag
+            Templates to Dataplex.
+        catalog_ui_experience (google.cloud.datacatalog_v1.types.CatalogUIExperience):
+            Opt-in status for the UI switch to Dataplex.
+    """
+
+    tag_template_migration: "TagTemplateMigration" = proto.Field(
+        proto.ENUM,
+        number=1,
+        enum="TagTemplateMigration",
+    )
+    catalog_ui_experience: "CatalogUIExperience" = proto.Field(
+        proto.ENUM,
+        number=2,
+        enum="CatalogUIExperience",
     )
 
 

@@ -55,6 +55,11 @@
                 "delete_order"
               ]
             },
+            "DeleteSite": {
+              "methods": [
+                "delete_site"
+              ]
+            },
             "DeleteZone": {
               "methods": [
                 "delete_zone"
@@ -138,6 +143,11 @@
             "ListZones": {
               "methods": [
                 "list_zones"
+              ]
+            },
+            "RecordActionOnComment": {
+              "methods": [
+                "record_action_on_comment"
               ]
             },
             "SignalZoneState": {
@@ -225,6 +235,11 @@
                 "delete_order"
               ]
             },
+            "DeleteSite": {
+              "methods": [
+                "delete_site"
+              ]
+            },
             "DeleteZone": {
               "methods": [
                 "delete_zone"
@@ -308,6 +323,11 @@
             "ListZones": {
               "methods": [
                 "list_zones"
+              ]
+            },
+            "RecordActionOnComment": {
+              "methods": [
+                "record_action_on_comment"
               ]
             },
             "SignalZoneState": {
@@ -395,6 +415,11 @@
                 "delete_order"
               ]
             },
+            "DeleteSite": {
+              "methods": [
+                "delete_site"
+              ]
+            },
             "DeleteZone": {
               "methods": [
                 "delete_zone"
@@ -478,6 +503,11 @@
             "ListZones": {
               "methods": [
                 "list_zones"
+              ]
+            },
+            "RecordActionOnComment": {
+              "methods": [
+                "record_action_on_comment"
               ]
             },
             "SignalZoneState": {

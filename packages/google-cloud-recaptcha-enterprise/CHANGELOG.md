@@ -1,5 +1,78 @@
 # Changelog
 
+## [1.26.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.25.0...google-cloud-recaptcha-enterprise-v1.26.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([8e6b0cc](https://github.com/googleapis/google-cloud-python/commit/8e6b0cca8709ae8c7f0c722c5ebf0707358d3359))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([8e6b0cc](https://github.com/googleapis/google-cloud-python/commit/8e6b0cca8709ae8c7f0c722c5ebf0707358d3359))
+
+
+### Documentation
+
+* [google-cloud-recaptcha-enterprise] challenge is also returned for INVISIBLE keys ([#13312](https://github.com/googleapis/google-cloud-python/issues/13312)) ([adea041](https://github.com/googleapis/google-cloud-python/commit/adea041c1d43b94d11ff9d4d5ba13c0d7898cac2))
+
+## [1.25.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.24.1...google-cloud-recaptcha-enterprise-v1.25.0) (2024-11-14)
+
+
+### Features
+
+* A new enum `Challenge` is added ([511d7cc](https://github.com/googleapis/google-cloud-python/commit/511d7cc4bf1bb5eec1709aab5a836d37b26ff029))
+* A new field `challenge` is added to message `.google.cloud.recaptchaenterprise.v1.RiskAnalysis` ([511d7cc](https://github.com/googleapis/google-cloud-python/commit/511d7cc4bf1bb5eec1709aab5a836d37b26ff029))
+
+## [1.24.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.24.0...google-cloud-recaptcha-enterprise-v1.24.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13245](https://github.com/googleapis/google-cloud-python/issues/13245)) ([875f712](https://github.com/googleapis/google-cloud-python/commit/875f712265a36919409964f5ade218330f1d0147))
+
+## [1.24.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.23.0...google-cloud-recaptcha-enterprise-v1.24.0) (2024-10-31)
+
+
+### Features
+
+* enable Akamai web application firewall ([81bf6fe](https://github.com/googleapis/google-cloud-python/commit/81bf6fe826181c729ec756756d1bf315914a8fc4))
+* support for ListIpOverrides and RemoveIpOverride ([81bf6fe](https://github.com/googleapis/google-cloud-python/commit/81bf6fe826181c729ec756756d1bf315914a8fc4))
+
+
+### Documentation
+
+* minor updates to reference documentation ([81bf6fe](https://github.com/googleapis/google-cloud-python/commit/81bf6fe826181c729ec756756d1bf315914a8fc4))
+
+## [1.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.22.1...google-cloud-recaptcha-enterprise-v1.23.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13209](https://github.com/googleapis/google-cloud-python/issues/13209)) ([5f2e30d](https://github.com/googleapis/google-cloud-python/commit/5f2e30d62eea6080f5707ee18755f2bb812ad00b))
+
+## [1.22.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.22.0...google-cloud-recaptcha-enterprise-v1.22.1) (2024-09-03)
+
+
+### Documentation
+
+* minor doc fixes ([7e40c8c](https://github.com/googleapis/google-cloud-python/commit/7e40c8c40039e0c01ef9a8bfea8804edfee48d70))
+
+## [1.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.21.2...google-cloud-recaptcha-enterprise-v1.22.0) (2024-08-22)
+
+
+### Features
+
+* add `express_settings` to `Key` ([0b90478](https://github.com/googleapis/google-cloud-python/commit/0b90478bb70be96b304397fc433d2dbaf0160d30))
+* add AddIpOverride RPC ([0b90478](https://github.com/googleapis/google-cloud-python/commit/0b90478bb70be96b304397fc433d2dbaf0160d30))
+
+
+### Documentation
+
+* clarify `Event.express` field ([0b90478](https://github.com/googleapis/google-cloud-python/commit/0b90478bb70be96b304397fc433d2dbaf0160d30))
+* fix billing, quota, and usecase links ([0b90478](https://github.com/googleapis/google-cloud-python/commit/0b90478bb70be96b304397fc433d2dbaf0160d30))
+
 ## [1.21.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.21.1...google-cloud-recaptcha-enterprise-v1.21.2) (2024-07-30)
 
 

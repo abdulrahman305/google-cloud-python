@@ -22,9 +22,26 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
+
+from google.api_core import api_core_version
+from google.protobuf import json_format
+import grpc
+from grpc.experimental import aio
+from proto.marshal.rules import wrappers
+from proto.marshal.rules.dates import DurationRule, TimestampRule
+import pytest
+from requests import PreparedRequest, Request, Response
+from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
 
 from google.api_core import (
     future,
@@ -35,7 +52,7 @@ from google.api_core import (
     operations_v1,
     path_template,
 )
-from google.api_core import api_core_version, client_options
+from google.api_core import client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
 from google.api_core import retry as retries
@@ -46,16 +63,8 @@ from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
 from google.protobuf import any_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
-from google.protobuf import json_format
 from google.protobuf import timestamp_pb2  # type: ignore
 from google.rpc import status_pb2  # type: ignore
-import grpc
-from grpc.experimental import aio
-from proto.marshal.rules import wrappers
-from proto.marshal.rules.dates import DurationRule, TimestampRule
-import pytest
-from requests import PreparedRequest, Request, Response
-from requests.sessions import Session
 
 from google.cloud.vision_v1p3beta1.services.product_search import (
     ProductSearchAsyncClient,
@@ -66,8 +75,22 @@ from google.cloud.vision_v1p3beta1.services.product_search import (
 from google.cloud.vision_v1p3beta1.types import geometry, product_search_service
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -303,86 +326,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         ProductSearchClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (ProductSearchClient, transports.ProductSearchGrpcTransport, "grpc"),
-        (ProductSearchClient, transports.ProductSearchRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1170,27 +1113,6 @@ def test_create_product_set(request_type, transport: str = "grpc"):
     assert response.display_name == "display_name_value"
 
 
-def test_create_product_set_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_product_set), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.CreateProductSetRequest()
-
-
 def test_create_product_set_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1263,32 +1185,6 @@ def test_create_product_set_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_product_set_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_product_set), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.ProductSet(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.create_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.CreateProductSetRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_product_set_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1296,7 +1192,7 @@ async def test_create_product_set_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1311,22 +1207,23 @@ async def test_create_product_set_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_product_set
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_product_set(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_product_set(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1335,7 +1232,7 @@ async def test_create_product_set_async(
     request_type=product_search_service.CreateProductSetRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1407,7 +1304,7 @@ def test_create_product_set_field_headers():
 @pytest.mark.asyncio
 async def test_create_product_set_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1491,7 +1388,7 @@ def test_create_product_set_flattened_error():
 @pytest.mark.asyncio
 async def test_create_product_set_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1530,7 +1427,7 @@ async def test_create_product_set_flattened_async():
 @pytest.mark.asyncio
 async def test_create_product_set_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1580,27 +1477,6 @@ def test_list_product_sets(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListProductSetsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_product_sets_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_product_sets), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_product_sets()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ListProductSetsRequest()
 
 
 def test_list_product_sets_non_empty_request_with_auto_populated_field():
@@ -1673,31 +1549,6 @@ def test_list_product_sets_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_product_sets_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_product_sets), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.ListProductSetsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_product_sets()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ListProductSetsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_product_sets_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1705,7 +1556,7 @@ async def test_list_product_sets_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1720,22 +1571,23 @@ async def test_list_product_sets_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_product_sets
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_product_sets(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_product_sets(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1744,7 +1596,7 @@ async def test_list_product_sets_async(
     request_type=product_search_service.ListProductSetsRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1814,7 +1666,7 @@ def test_list_product_sets_field_headers():
 @pytest.mark.asyncio
 async def test_list_product_sets_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1888,7 +1740,7 @@ def test_list_product_sets_flattened_error():
 @pytest.mark.asyncio
 async def test_list_product_sets_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1919,7 +1771,7 @@ async def test_list_product_sets_flattened_async():
 @pytest.mark.asyncio
 async def test_list_product_sets_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2033,7 +1885,7 @@ def test_list_product_sets_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_product_sets_async_pager():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2085,7 +1937,7 @@ async def test_list_product_sets_async_pager():
 @pytest.mark.asyncio
 async def test_list_product_sets_async_pages():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2171,25 +2023,6 @@ def test_get_product_set(request_type, transport: str = "grpc"):
     assert response.display_name == "display_name_value"
 
 
-def test_get_product_set_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_product_set), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.GetProductSetRequest()
-
-
 def test_get_product_set_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2254,30 +2087,6 @@ def test_get_product_set_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_product_set_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_product_set), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.ProductSet(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.get_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.GetProductSetRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_product_set_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2285,7 +2094,7 @@ async def test_get_product_set_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2300,22 +2109,23 @@ async def test_get_product_set_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_product_set
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_product_set(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_product_set(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2324,7 +2134,7 @@ async def test_get_product_set_async(
     request_type=product_search_service.GetProductSetRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2392,7 +2202,7 @@ def test_get_product_set_field_headers():
 @pytest.mark.asyncio
 async def test_get_product_set_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2462,7 +2272,7 @@ def test_get_product_set_flattened_error():
 @pytest.mark.asyncio
 async def test_get_product_set_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2491,7 +2301,7 @@ async def test_get_product_set_flattened_async():
 @pytest.mark.asyncio
 async def test_get_product_set_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2541,27 +2351,6 @@ def test_update_product_set(request_type, transport: str = "grpc"):
     assert isinstance(response, product_search_service.ProductSet)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
-
-
-def test_update_product_set_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_product_set), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.UpdateProductSetRequest()
 
 
 def test_update_product_set_non_empty_request_with_auto_populated_field():
@@ -2630,32 +2419,6 @@ def test_update_product_set_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_product_set_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_product_set), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.ProductSet(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.update_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.UpdateProductSetRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_product_set_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2663,7 +2426,7 @@ async def test_update_product_set_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2678,22 +2441,23 @@ async def test_update_product_set_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_product_set
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_product_set(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_product_set(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2702,7 +2466,7 @@ async def test_update_product_set_async(
     request_type=product_search_service.UpdateProductSetRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2774,7 +2538,7 @@ def test_update_product_set_field_headers():
 @pytest.mark.asyncio
 async def test_update_product_set_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2853,7 +2617,7 @@ def test_update_product_set_flattened_error():
 @pytest.mark.asyncio
 async def test_update_product_set_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2888,7 +2652,7 @@ async def test_update_product_set_flattened_async():
 @pytest.mark.asyncio
 async def test_update_product_set_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2934,27 +2698,6 @@ def test_delete_product_set(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_product_set_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_product_set), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.DeleteProductSetRequest()
 
 
 def test_delete_product_set_non_empty_request_with_auto_populated_field():
@@ -3027,27 +2770,6 @@ def test_delete_product_set_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_product_set_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_product_set), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.DeleteProductSetRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_product_set_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3055,7 +2777,7 @@ async def test_delete_product_set_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3070,22 +2792,23 @@ async def test_delete_product_set_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_product_set
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_product_set(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_product_set(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3094,7 +2817,7 @@ async def test_delete_product_set_async(
     request_type=product_search_service.DeleteProductSetRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3159,7 +2882,7 @@ def test_delete_product_set_field_headers():
 @pytest.mark.asyncio
 async def test_delete_product_set_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3231,7 +2954,7 @@ def test_delete_product_set_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_product_set_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3260,7 +2983,7 @@ async def test_delete_product_set_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_product_set_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3312,25 +3035,6 @@ def test_create_product(request_type, transport: str = "grpc"):
     assert response.display_name == "display_name_value"
     assert response.description == "description_value"
     assert response.product_category == "product_category_value"
-
-
-def test_create_product_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_product), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_product()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.CreateProductRequest()
 
 
 def test_create_product_non_empty_request_with_auto_populated_field():
@@ -3399,32 +3103,6 @@ def test_create_product_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_product_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_product), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.Product(
-                name="name_value",
-                display_name="display_name_value",
-                description="description_value",
-                product_category="product_category_value",
-            )
-        )
-        response = await client.create_product()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.CreateProductRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_product_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3432,7 +3110,7 @@ async def test_create_product_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3447,22 +3125,23 @@ async def test_create_product_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_product
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_product(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_product(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3471,7 +3150,7 @@ async def test_create_product_async(
     request_type=product_search_service.CreateProductRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3543,7 +3222,7 @@ def test_create_product_field_headers():
 @pytest.mark.asyncio
 async def test_create_product_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3623,7 +3302,7 @@ def test_create_product_flattened_error():
 @pytest.mark.asyncio
 async def test_create_product_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3660,7 +3339,7 @@ async def test_create_product_flattened_async():
 @pytest.mark.asyncio
 async def test_create_product_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3708,25 +3387,6 @@ def test_list_products(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListProductsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_products_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_products), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_products()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ListProductsRequest()
 
 
 def test_list_products_non_empty_request_with_auto_populated_field():
@@ -3795,29 +3455,6 @@ def test_list_products_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_products_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_products), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.ListProductsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_products()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ListProductsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_products_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3825,7 +3462,7 @@ async def test_list_products_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3840,22 +3477,23 @@ async def test_list_products_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_products
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_products(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_products(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3864,7 +3502,7 @@ async def test_list_products_async(
     request_type=product_search_service.ListProductsRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3930,7 +3568,7 @@ def test_list_products_field_headers():
 @pytest.mark.asyncio
 async def test_list_products_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4000,7 +3638,7 @@ def test_list_products_flattened_error():
 @pytest.mark.asyncio
 async def test_list_products_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4029,7 +3667,7 @@ async def test_list_products_flattened_async():
 @pytest.mark.asyncio
 async def test_list_products_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4139,7 +3777,7 @@ def test_list_products_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_products_async_pager():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4189,7 +3827,7 @@ async def test_list_products_async_pager():
 @pytest.mark.asyncio
 async def test_list_products_async_pages():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4277,25 +3915,6 @@ def test_get_product(request_type, transport: str = "grpc"):
     assert response.product_category == "product_category_value"
 
 
-def test_get_product_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_product), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_product()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.GetProductRequest()
-
-
 def test_get_product_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -4360,32 +3979,6 @@ def test_get_product_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_product_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_product), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.Product(
-                name="name_value",
-                display_name="display_name_value",
-                description="description_value",
-                product_category="product_category_value",
-            )
-        )
-        response = await client.get_product()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.GetProductRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_product_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4393,7 +3986,7 @@ async def test_get_product_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4408,22 +4001,23 @@ async def test_get_product_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_product
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_product(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_product(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4432,7 +4026,7 @@ async def test_get_product_async(
     request_type=product_search_service.GetProductRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4504,7 +4098,7 @@ def test_get_product_field_headers():
 @pytest.mark.asyncio
 async def test_get_product_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4574,7 +4168,7 @@ def test_get_product_flattened_error():
 @pytest.mark.asyncio
 async def test_get_product_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4603,7 +4197,7 @@ async def test_get_product_flattened_async():
 @pytest.mark.asyncio
 async def test_get_product_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4655,25 +4249,6 @@ def test_update_product(request_type, transport: str = "grpc"):
     assert response.display_name == "display_name_value"
     assert response.description == "description_value"
     assert response.product_category == "product_category_value"
-
-
-def test_update_product_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_product), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_product()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.UpdateProductRequest()
 
 
 def test_update_product_non_empty_request_with_auto_populated_field():
@@ -4736,32 +4311,6 @@ def test_update_product_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_product_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_product), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.Product(
-                name="name_value",
-                display_name="display_name_value",
-                description="description_value",
-                product_category="product_category_value",
-            )
-        )
-        response = await client.update_product()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.UpdateProductRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_product_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4769,7 +4318,7 @@ async def test_update_product_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4784,22 +4333,23 @@ async def test_update_product_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_product
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_product(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_product(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4808,7 +4358,7 @@ async def test_update_product_async(
     request_type=product_search_service.UpdateProductRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4880,7 +4430,7 @@ def test_update_product_field_headers():
 @pytest.mark.asyncio
 async def test_update_product_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4955,7 +4505,7 @@ def test_update_product_flattened_error():
 @pytest.mark.asyncio
 async def test_update_product_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4988,7 +4538,7 @@ async def test_update_product_flattened_async():
 @pytest.mark.asyncio
 async def test_update_product_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5032,25 +4582,6 @@ def test_delete_product(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_product_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_product), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_product()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.DeleteProductRequest()
 
 
 def test_delete_product_non_empty_request_with_auto_populated_field():
@@ -5117,25 +4648,6 @@ def test_delete_product_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_product_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_product), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_product()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.DeleteProductRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_product_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5143,7 +4655,7 @@ async def test_delete_product_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5158,22 +4670,23 @@ async def test_delete_product_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_product
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_product(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_product(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5182,7 +4695,7 @@ async def test_delete_product_async(
     request_type=product_search_service.DeleteProductRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5243,7 +4756,7 @@ def test_delete_product_field_headers():
 @pytest.mark.asyncio
 async def test_delete_product_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5311,7 +4824,7 @@ def test_delete_product_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_product_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5338,7 +4851,7 @@ async def test_delete_product_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_product_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5388,27 +4901,6 @@ def test_create_reference_image(request_type, transport: str = "grpc"):
     assert isinstance(response, product_search_service.ReferenceImage)
     assert response.name == "name_value"
     assert response.uri == "uri_value"
-
-
-def test_create_reference_image_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_reference_image), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_reference_image()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.CreateReferenceImageRequest()
 
 
 def test_create_reference_image_non_empty_request_with_auto_populated_field():
@@ -5484,32 +4976,6 @@ def test_create_reference_image_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_reference_image_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_reference_image), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.ReferenceImage(
-                name="name_value",
-                uri="uri_value",
-            )
-        )
-        response = await client.create_reference_image()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.CreateReferenceImageRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_reference_image_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5517,7 +4983,7 @@ async def test_create_reference_image_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5532,22 +4998,23 @@ async def test_create_reference_image_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_reference_image
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_reference_image(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_reference_image(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5556,7 +5023,7 @@ async def test_create_reference_image_async(
     request_type=product_search_service.CreateReferenceImageRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5628,7 +5095,7 @@ def test_create_reference_image_field_headers():
 @pytest.mark.asyncio
 async def test_create_reference_image_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5712,7 +5179,7 @@ def test_create_reference_image_flattened_error():
 @pytest.mark.asyncio
 async def test_create_reference_image_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5751,7 +5218,7 @@ async def test_create_reference_image_flattened_async():
 @pytest.mark.asyncio
 async def test_create_reference_image_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5798,27 +5265,6 @@ def test_delete_reference_image(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_reference_image_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_reference_image), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_reference_image()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.DeleteReferenceImageRequest()
 
 
 def test_delete_reference_image_non_empty_request_with_auto_populated_field():
@@ -5892,27 +5338,6 @@ def test_delete_reference_image_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_reference_image_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_reference_image), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_reference_image()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.DeleteReferenceImageRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_reference_image_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5920,7 +5345,7 @@ async def test_delete_reference_image_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5935,22 +5360,23 @@ async def test_delete_reference_image_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_reference_image
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_reference_image(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_reference_image(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5959,7 +5385,7 @@ async def test_delete_reference_image_async(
     request_type=product_search_service.DeleteReferenceImageRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6024,7 +5450,7 @@ def test_delete_reference_image_field_headers():
 @pytest.mark.asyncio
 async def test_delete_reference_image_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6096,7 +5522,7 @@ def test_delete_reference_image_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_reference_image_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6125,7 +5551,7 @@ async def test_delete_reference_image_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_reference_image_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6175,27 +5601,6 @@ def test_list_reference_images(request_type, transport: str = "grpc"):
     assert isinstance(response, pagers.ListReferenceImagesPager)
     assert response.page_size == 951
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_reference_images_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_reference_images), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_reference_images()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ListReferenceImagesRequest()
 
 
 def test_list_reference_images_non_empty_request_with_auto_populated_field():
@@ -6271,32 +5676,6 @@ def test_list_reference_images_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_reference_images_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_reference_images), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.ListReferenceImagesResponse(
-                page_size=951,
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_reference_images()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ListReferenceImagesRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_reference_images_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6304,7 +5683,7 @@ async def test_list_reference_images_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6319,22 +5698,23 @@ async def test_list_reference_images_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_reference_images
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_reference_images(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_reference_images(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6343,7 +5723,7 @@ async def test_list_reference_images_async(
     request_type=product_search_service.ListReferenceImagesRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6415,7 +5795,7 @@ def test_list_reference_images_field_headers():
 @pytest.mark.asyncio
 async def test_list_reference_images_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6489,7 +5869,7 @@ def test_list_reference_images_flattened_error():
 @pytest.mark.asyncio
 async def test_list_reference_images_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6520,7 +5900,7 @@ async def test_list_reference_images_flattened_async():
 @pytest.mark.asyncio
 async def test_list_reference_images_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6636,7 +6016,7 @@ def test_list_reference_images_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_reference_images_async_pager():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6690,7 +6070,7 @@ async def test_list_reference_images_async_pager():
 @pytest.mark.asyncio
 async def test_list_reference_images_async_pages():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6778,27 +6158,6 @@ def test_get_reference_image(request_type, transport: str = "grpc"):
     assert response.uri == "uri_value"
 
 
-def test_get_reference_image_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_reference_image), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_reference_image()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.GetReferenceImageRequest()
-
-
 def test_get_reference_image_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -6869,32 +6228,6 @@ def test_get_reference_image_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_reference_image_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_reference_image), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.ReferenceImage(
-                name="name_value",
-                uri="uri_value",
-            )
-        )
-        response = await client.get_reference_image()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.GetReferenceImageRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_reference_image_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6902,7 +6235,7 @@ async def test_get_reference_image_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6917,22 +6250,23 @@ async def test_get_reference_image_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_reference_image
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_reference_image(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_reference_image(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6941,7 +6275,7 @@ async def test_get_reference_image_async(
     request_type=product_search_service.GetReferenceImageRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7013,7 +6347,7 @@ def test_get_reference_image_field_headers():
 @pytest.mark.asyncio
 async def test_get_reference_image_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7087,7 +6421,7 @@ def test_get_reference_image_flattened_error():
 @pytest.mark.asyncio
 async def test_get_reference_image_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7118,7 +6452,7 @@ async def test_get_reference_image_flattened_async():
 @pytest.mark.asyncio
 async def test_get_reference_image_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7163,27 +6497,6 @@ def test_add_product_to_product_set(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_add_product_to_product_set_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.add_product_to_product_set), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.add_product_to_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.AddProductToProductSetRequest()
 
 
 def test_add_product_to_product_set_non_empty_request_with_auto_populated_field():
@@ -7259,27 +6572,6 @@ def test_add_product_to_product_set_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_add_product_to_product_set_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.add_product_to_product_set), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.add_product_to_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.AddProductToProductSetRequest()
-
-
-@pytest.mark.asyncio
 async def test_add_product_to_product_set_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7287,7 +6579,7 @@ async def test_add_product_to_product_set_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7302,22 +6594,23 @@ async def test_add_product_to_product_set_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.add_product_to_product_set
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.add_product_to_product_set(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.add_product_to_product_set(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7326,7 +6619,7 @@ async def test_add_product_to_product_set_async(
     request_type=product_search_service.AddProductToProductSetRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7391,7 +6684,7 @@ def test_add_product_to_product_set_field_headers():
 @pytest.mark.asyncio
 async def test_add_product_to_product_set_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7468,7 +6761,7 @@ def test_add_product_to_product_set_flattened_error():
 @pytest.mark.asyncio
 async def test_add_product_to_product_set_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7501,7 +6794,7 @@ async def test_add_product_to_product_set_flattened_async():
 @pytest.mark.asyncio
 async def test_add_product_to_product_set_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7547,27 +6840,6 @@ def test_remove_product_from_product_set(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_remove_product_from_product_set_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.remove_product_from_product_set), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.remove_product_from_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.RemoveProductFromProductSetRequest()
 
 
 def test_remove_product_from_product_set_non_empty_request_with_auto_populated_field():
@@ -7643,27 +6915,6 @@ def test_remove_product_from_product_set_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_remove_product_from_product_set_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.remove_product_from_product_set), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.remove_product_from_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.RemoveProductFromProductSetRequest()
-
-
-@pytest.mark.asyncio
 async def test_remove_product_from_product_set_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7671,7 +6922,7 @@ async def test_remove_product_from_product_set_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7686,22 +6937,23 @@ async def test_remove_product_from_product_set_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.remove_product_from_product_set
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.remove_product_from_product_set(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.remove_product_from_product_set(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7710,7 +6962,7 @@ async def test_remove_product_from_product_set_async(
     request_type=product_search_service.RemoveProductFromProductSetRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7775,7 +7027,7 @@ def test_remove_product_from_product_set_field_headers():
 @pytest.mark.asyncio
 async def test_remove_product_from_product_set_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7852,7 +7104,7 @@ def test_remove_product_from_product_set_flattened_error():
 @pytest.mark.asyncio
 async def test_remove_product_from_product_set_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7885,7 +7137,7 @@ async def test_remove_product_from_product_set_flattened_async():
 @pytest.mark.asyncio
 async def test_remove_product_from_product_set_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7934,27 +7186,6 @@ def test_list_products_in_product_set(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListProductsInProductSetPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_products_in_product_set_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_products_in_product_set), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_products_in_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ListProductsInProductSetRequest()
 
 
 def test_list_products_in_product_set_non_empty_request_with_auto_populated_field():
@@ -8030,31 +7261,6 @@ def test_list_products_in_product_set_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_products_in_product_set_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_products_in_product_set), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            product_search_service.ListProductsInProductSetResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_products_in_product_set()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ListProductsInProductSetRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_products_in_product_set_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8062,7 +7268,7 @@ async def test_list_products_in_product_set_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8077,22 +7283,23 @@ async def test_list_products_in_product_set_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_products_in_product_set
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_products_in_product_set(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_products_in_product_set(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8101,7 +7308,7 @@ async def test_list_products_in_product_set_async(
     request_type=product_search_service.ListProductsInProductSetRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8171,7 +7378,7 @@ def test_list_products_in_product_set_field_headers():
 @pytest.mark.asyncio
 async def test_list_products_in_product_set_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8245,7 +7452,7 @@ def test_list_products_in_product_set_flattened_error():
 @pytest.mark.asyncio
 async def test_list_products_in_product_set_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8276,7 +7483,7 @@ async def test_list_products_in_product_set_flattened_async():
 @pytest.mark.asyncio
 async def test_list_products_in_product_set_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8392,7 +7599,7 @@ def test_list_products_in_product_set_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_products_in_product_set_async_pager():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8444,7 +7651,7 @@ async def test_list_products_in_product_set_async_pager():
 @pytest.mark.asyncio
 async def test_list_products_in_product_set_async_pages():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8527,27 +7734,6 @@ def test_import_product_sets(request_type, transport: str = "grpc"):
     assert isinstance(response, future.Future)
 
 
-def test_import_product_sets_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.import_product_sets), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.import_product_sets()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ImportProductSetsRequest()
-
-
 def test_import_product_sets_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -8610,8 +7796,9 @@ def test_import_product_sets_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.import_product_sets(request)
@@ -8622,29 +7809,6 @@ def test_import_product_sets_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_import_product_sets_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.import_product_sets), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.import_product_sets()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == product_search_service.ImportProductSetsRequest()
-
-
-@pytest.mark.asyncio
 async def test_import_product_sets_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8652,7 +7816,7 @@ async def test_import_product_sets_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ProductSearchAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8667,26 +7831,28 @@ async def test_import_product_sets_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.import_product_sets
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.import_product_sets(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.import_product_sets(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8695,7 +7861,7 @@ async def test_import_product_sets_async(
     request_type=product_search_service.ImportProductSetsRequest,
 ):
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8762,7 +7928,7 @@ def test_import_product_sets_field_headers():
 @pytest.mark.asyncio
 async def test_import_product_sets_field_headers_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8853,7 +8019,7 @@ def test_import_product_sets_flattened_error():
 @pytest.mark.asyncio
 async def test_import_product_sets_flattened_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8896,7 +8062,7 @@ async def test_import_product_sets_flattened_async():
 @pytest.mark.asyncio
 async def test_import_product_sets_flattened_error_async():
     client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8911,132 +8077,6 @@ async def test_import_product_sets_flattened_error_async():
                 )
             ),
         )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.CreateProductSetRequest,
-        dict,
-    ],
-)
-def test_create_product_set_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request_init["product_set"] = {
-        "name": "name_value",
-        "display_name": "display_name_value",
-        "index_time": {"seconds": 751, "nanos": 543},
-        "index_error": {
-            "code": 411,
-            "message": "message_value",
-            "details": [
-                {
-                    "type_url": "type.googleapis.com/google.protobuf.Duration",
-                    "value": b"\x08\x0c\x10\xdb\x07",
-                }
-            ],
-        },
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = product_search_service.CreateProductSetRequest.meta.fields[
-        "product_set"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["product_set"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["product_set"][field])):
-                    del request_init["product_set"][field][i][subfield]
-            else:
-                del request_init["product_set"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.ProductSet(
-            name="name_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.ProductSet.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_product_set(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, product_search_service.ProductSet)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_create_product_set_rest_use_cached_wrapped_rpc():
@@ -9148,6 +8188,7 @@ def test_create_product_set_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_product_set(request)
 
@@ -9171,87 +8212,6 @@ def test_create_product_set_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_product_set_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_create_product_set"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_create_product_set"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.CreateProductSetRequest.pb(
-            product_search_service.CreateProductSetRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = product_search_service.ProductSet.to_json(
-            product_search_service.ProductSet()
-        )
-
-        request = product_search_service.CreateProductSetRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.ProductSet()
-
-        client.create_product_set(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_product_set_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.CreateProductSetRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_product_set(request)
 
 
 def test_create_product_set_rest_flattened():
@@ -9284,6 +8244,7 @@ def test_create_product_set_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_product_set(**mock_args)
 
@@ -9313,52 +8274,6 @@ def test_create_product_set_rest_flattened_error(transport: str = "rest"):
             product_set=product_search_service.ProductSet(name="name_value"),
             product_set_id="product_set_id_value",
         )
-
-
-def test_create_product_set_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.ListProductSetsRequest,
-        dict,
-    ],
-)
-def test_list_product_sets_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.ListProductSetsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.ListProductSetsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_product_sets(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListProductSetsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_product_sets_rest_use_cached_wrapped_rpc():
@@ -9474,6 +8389,7 @@ def test_list_product_sets_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_product_sets(request)
 
@@ -9497,89 +8413,6 @@ def test_list_product_sets_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_product_sets_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_list_product_sets"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_list_product_sets"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.ListProductSetsRequest.pb(
-            product_search_service.ListProductSetsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            product_search_service.ListProductSetsResponse.to_json(
-                product_search_service.ListProductSetsResponse()
-            )
-        )
-
-        request = product_search_service.ListProductSetsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.ListProductSetsResponse()
-
-        client.list_product_sets(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_product_sets_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.ListProductSetsRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_product_sets(request)
 
 
 def test_list_product_sets_rest_flattened():
@@ -9610,6 +8443,7 @@ def test_list_product_sets_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_product_sets(**mock_args)
 
@@ -9700,48 +8534,6 @@ def test_list_product_sets_rest_pager(transport: str = "rest"):
         pages = list(client.list_product_sets(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.GetProductSetRequest,
-        dict,
-    ],
-)
-def test_get_product_set_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.ProductSet(
-            name="name_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.ProductSet.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_product_set(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, product_search_service.ProductSet)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_get_product_set_rest_use_cached_wrapped_rpc():
@@ -9846,6 +8638,7 @@ def test_get_product_set_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_product_set(request)
 
@@ -9861,87 +8654,6 @@ def test_get_product_set_rest_unset_required_fields():
 
     unset_fields = transport.get_product_set._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_product_set_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_get_product_set"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_get_product_set"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.GetProductSetRequest.pb(
-            product_search_service.GetProductSetRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = product_search_service.ProductSet.to_json(
-            product_search_service.ProductSet()
-        )
-
-        request = product_search_service.GetProductSetRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.ProductSet()
-
-        client.get_product_set(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_product_set_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.GetProductSetRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_product_set(request)
 
 
 def test_get_product_set_rest_flattened():
@@ -9974,6 +8686,7 @@ def test_get_product_set_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_product_set(**mock_args)
 
@@ -10001,142 +8714,6 @@ def test_get_product_set_rest_flattened_error(transport: str = "rest"):
             product_search_service.GetProductSetRequest(),
             name="name_value",
         )
-
-
-def test_get_product_set_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.UpdateProductSetRequest,
-        dict,
-    ],
-)
-def test_update_product_set_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "product_set": {
-            "name": "projects/sample1/locations/sample2/productSets/sample3"
-        }
-    }
-    request_init["product_set"] = {
-        "name": "projects/sample1/locations/sample2/productSets/sample3",
-        "display_name": "display_name_value",
-        "index_time": {"seconds": 751, "nanos": 543},
-        "index_error": {
-            "code": 411,
-            "message": "message_value",
-            "details": [
-                {
-                    "type_url": "type.googleapis.com/google.protobuf.Duration",
-                    "value": b"\x08\x0c\x10\xdb\x07",
-                }
-            ],
-        },
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = product_search_service.UpdateProductSetRequest.meta.fields[
-        "product_set"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["product_set"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["product_set"][field])):
-                    del request_init["product_set"][field][i][subfield]
-            else:
-                del request_init["product_set"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.ProductSet(
-            name="name_value",
-            display_name="display_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.ProductSet.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_product_set(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, product_search_service.ProductSet)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
 
 
 def test_update_product_set_rest_use_cached_wrapped_rpc():
@@ -10243,6 +8820,7 @@ def test_update_product_set_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_product_set(request)
 
@@ -10258,91 +8836,6 @@ def test_update_product_set_rest_unset_required_fields():
 
     unset_fields = transport.update_product_set._get_unset_required_fields({})
     assert set(unset_fields) == (set(("updateMask",)) & set(("productSet",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_product_set_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_update_product_set"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_update_product_set"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.UpdateProductSetRequest.pb(
-            product_search_service.UpdateProductSetRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = product_search_service.ProductSet.to_json(
-            product_search_service.ProductSet()
-        )
-
-        request = product_search_service.UpdateProductSetRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.ProductSet()
-
-        client.update_product_set(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_product_set_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.UpdateProductSetRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "product_set": {
-            "name": "projects/sample1/locations/sample2/productSets/sample3"
-        }
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_product_set(request)
 
 
 def test_update_product_set_rest_flattened():
@@ -10378,6 +8871,7 @@ def test_update_product_set_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_product_set(**mock_args)
 
@@ -10406,47 +8900,6 @@ def test_update_product_set_rest_flattened_error(transport: str = "rest"):
             product_set=product_search_service.ProductSet(name="name_value"),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
-
-
-def test_update_product_set_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.DeleteProductSetRequest,
-        dict,
-    ],
-)
-def test_delete_product_set_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_product_set(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_delete_product_set_rest_use_cached_wrapped_rpc():
@@ -10552,6 +9005,7 @@ def test_delete_product_set_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_product_set(request)
 
@@ -10567,79 +9021,6 @@ def test_delete_product_set_rest_unset_required_fields():
 
     unset_fields = transport.delete_product_set._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_product_set_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_delete_product_set"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = product_search_service.DeleteProductSetRequest.pb(
-            product_search_service.DeleteProductSetRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = product_search_service.DeleteProductSetRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.delete_product_set(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_delete_product_set_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.DeleteProductSetRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_product_set(request)
 
 
 def test_delete_product_set_rest_flattened():
@@ -10670,6 +9051,7 @@ def test_delete_product_set_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_product_set(**mock_args)
 
@@ -10697,132 +9079,6 @@ def test_delete_product_set_rest_flattened_error(transport: str = "rest"):
             product_search_service.DeleteProductSetRequest(),
             name="name_value",
         )
-
-
-def test_delete_product_set_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.CreateProductRequest,
-        dict,
-    ],
-)
-def test_create_product_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request_init["product"] = {
-        "name": "name_value",
-        "display_name": "display_name_value",
-        "description": "description_value",
-        "product_category": "product_category_value",
-        "product_labels": [{"key": "key_value", "value": "value_value"}],
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = product_search_service.CreateProductRequest.meta.fields["product"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["product"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["product"][field])):
-                    del request_init["product"][field][i][subfield]
-            else:
-                del request_init["product"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.Product(
-            name="name_value",
-            display_name="display_name_value",
-            description="description_value",
-            product_category="product_category_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.Product.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_product(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, product_search_service.Product)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
-    assert response.description == "description_value"
-    assert response.product_category == "product_category_value"
 
 
 def test_create_product_rest_use_cached_wrapped_rpc():
@@ -10930,6 +9186,7 @@ def test_create_product_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_product(request)
 
@@ -10953,87 +9210,6 @@ def test_create_product_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_product_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_create_product"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_create_product"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.CreateProductRequest.pb(
-            product_search_service.CreateProductRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = product_search_service.Product.to_json(
-            product_search_service.Product()
-        )
-
-        request = product_search_service.CreateProductRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.Product()
-
-        client.create_product(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_product_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.CreateProductRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_product(request)
 
 
 def test_create_product_rest_flattened():
@@ -11066,6 +9242,7 @@ def test_create_product_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_product(**mock_args)
 
@@ -11095,52 +9272,6 @@ def test_create_product_rest_flattened_error(transport: str = "rest"):
             product=product_search_service.Product(name="name_value"),
             product_id="product_id_value",
         )
-
-
-def test_create_product_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.ListProductsRequest,
-        dict,
-    ],
-)
-def test_list_products_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.ListProductsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.ListProductsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_products(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListProductsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_products_rest_use_cached_wrapped_rpc():
@@ -11252,6 +9383,7 @@ def test_list_products_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_products(request)
 
@@ -11275,87 +9407,6 @@ def test_list_products_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_products_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_list_products"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_list_products"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.ListProductsRequest.pb(
-            product_search_service.ListProductsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = product_search_service.ListProductsResponse.to_json(
-            product_search_service.ListProductsResponse()
-        )
-
-        request = product_search_service.ListProductsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.ListProductsResponse()
-
-        client.list_products(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_products_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.ListProductsRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_products(request)
 
 
 def test_list_products_rest_flattened():
@@ -11386,6 +9437,7 @@ def test_list_products_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_products(**mock_args)
 
@@ -11476,52 +9528,6 @@ def test_list_products_rest_pager(transport: str = "rest"):
         pages = list(client.list_products(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.GetProductRequest,
-        dict,
-    ],
-)
-def test_get_product_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/products/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.Product(
-            name="name_value",
-            display_name="display_name_value",
-            description="description_value",
-            product_category="product_category_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.Product.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_product(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, product_search_service.Product)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
-    assert response.description == "description_value"
-    assert response.product_category == "product_category_value"
 
 
 def test_get_product_rest_use_cached_wrapped_rpc():
@@ -11626,6 +9632,7 @@ def test_get_product_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_product(request)
 
@@ -11641,87 +9648,6 @@ def test_get_product_rest_unset_required_fields():
 
     unset_fields = transport.get_product._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_product_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_get_product"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_get_product"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.GetProductRequest.pb(
-            product_search_service.GetProductRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = product_search_service.Product.to_json(
-            product_search_service.Product()
-        )
-
-        request = product_search_service.GetProductRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.Product()
-
-        client.get_product(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_product_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.GetProductRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/products/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_product(request)
 
 
 def test_get_product_rest_flattened():
@@ -11752,6 +9678,7 @@ def test_get_product_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_product(**mock_args)
 
@@ -11779,134 +9706,6 @@ def test_get_product_rest_flattened_error(transport: str = "rest"):
             product_search_service.GetProductRequest(),
             name="name_value",
         )
-
-
-def test_get_product_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.UpdateProductRequest,
-        dict,
-    ],
-)
-def test_update_product_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "product": {"name": "projects/sample1/locations/sample2/products/sample3"}
-    }
-    request_init["product"] = {
-        "name": "projects/sample1/locations/sample2/products/sample3",
-        "display_name": "display_name_value",
-        "description": "description_value",
-        "product_category": "product_category_value",
-        "product_labels": [{"key": "key_value", "value": "value_value"}],
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = product_search_service.UpdateProductRequest.meta.fields["product"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["product"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["product"][field])):
-                    del request_init["product"][field][i][subfield]
-            else:
-                del request_init["product"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.Product(
-            name="name_value",
-            display_name="display_name_value",
-            description="description_value",
-            product_category="product_category_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.Product.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_product(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, product_search_service.Product)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
-    assert response.description == "description_value"
-    assert response.product_category == "product_category_value"
 
 
 def test_update_product_rest_use_cached_wrapped_rpc():
@@ -12009,6 +9808,7 @@ def test_update_product_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_product(request)
 
@@ -12024,89 +9824,6 @@ def test_update_product_rest_unset_required_fields():
 
     unset_fields = transport.update_product._get_unset_required_fields({})
     assert set(unset_fields) == (set(("updateMask",)) & set(("product",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_product_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_update_product"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_update_product"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.UpdateProductRequest.pb(
-            product_search_service.UpdateProductRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = product_search_service.Product.to_json(
-            product_search_service.Product()
-        )
-
-        request = product_search_service.UpdateProductRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.Product()
-
-        client.update_product(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_product_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.UpdateProductRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "product": {"name": "projects/sample1/locations/sample2/products/sample3"}
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_product(request)
 
 
 def test_update_product_rest_flattened():
@@ -12140,6 +9857,7 @@ def test_update_product_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_product(**mock_args)
 
@@ -12168,47 +9886,6 @@ def test_update_product_rest_flattened_error(transport: str = "rest"):
             product=product_search_service.Product(name="name_value"),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
-
-
-def test_update_product_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.DeleteProductRequest,
-        dict,
-    ],
-)
-def test_delete_product_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/products/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_product(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_delete_product_rest_use_cached_wrapped_rpc():
@@ -12310,6 +9987,7 @@ def test_delete_product_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_product(request)
 
@@ -12325,79 +10003,6 @@ def test_delete_product_rest_unset_required_fields():
 
     unset_fields = transport.delete_product._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_product_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_delete_product"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = product_search_service.DeleteProductRequest.pb(
-            product_search_service.DeleteProductRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = product_search_service.DeleteProductRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.delete_product(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_delete_product_rest_bad_request(
-    transport: str = "rest", request_type=product_search_service.DeleteProductRequest
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/products/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_product(request)
 
 
 def test_delete_product_rest_flattened():
@@ -12426,6 +10031,7 @@ def test_delete_product_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_product(**mock_args)
 
@@ -12453,133 +10059,6 @@ def test_delete_product_rest_flattened_error(transport: str = "rest"):
             product_search_service.DeleteProductRequest(),
             name="name_value",
         )
-
-
-def test_delete_product_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.CreateReferenceImageRequest,
-        dict,
-    ],
-)
-def test_create_reference_image_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/products/sample3"}
-    request_init["reference_image"] = {
-        "name": "name_value",
-        "uri": "uri_value",
-        "bounding_polys": [
-            {
-                "vertices": [{"x": 120, "y": 121}],
-                "normalized_vertices": [{"x": 0.12, "y": 0.121}],
-            }
-        ],
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = product_search_service.CreateReferenceImageRequest.meta.fields[
-        "reference_image"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["reference_image"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["reference_image"][field])):
-                    del request_init["reference_image"][field][i][subfield]
-            else:
-                del request_init["reference_image"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.ReferenceImage(
-            name="name_value",
-            uri="uri_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.ReferenceImage.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_reference_image(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, product_search_service.ReferenceImage)
-    assert response.name == "name_value"
-    assert response.uri == "uri_value"
 
 
 def test_create_reference_image_rest_use_cached_wrapped_rpc():
@@ -12692,6 +10171,7 @@ def test_create_reference_image_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_reference_image(request)
 
@@ -12715,88 +10195,6 @@ def test_create_reference_image_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_reference_image_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_create_reference_image"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_create_reference_image"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.CreateReferenceImageRequest.pb(
-            product_search_service.CreateReferenceImageRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = product_search_service.ReferenceImage.to_json(
-            product_search_service.ReferenceImage()
-        )
-
-        request = product_search_service.CreateReferenceImageRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.ReferenceImage()
-
-        client.create_reference_image(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_reference_image_rest_bad_request(
-    transport: str = "rest",
-    request_type=product_search_service.CreateReferenceImageRequest,
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/products/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_reference_image(request)
 
 
 def test_create_reference_image_rest_flattened():
@@ -12831,6 +10229,7 @@ def test_create_reference_image_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_reference_image(**mock_args)
 
@@ -12860,49 +10259,6 @@ def test_create_reference_image_rest_flattened_error(transport: str = "rest"):
             reference_image=product_search_service.ReferenceImage(name="name_value"),
             reference_image_id="reference_image_id_value",
         )
-
-
-def test_create_reference_image_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.DeleteReferenceImageRequest,
-        dict,
-    ],
-)
-def test_delete_reference_image_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/products/sample3/referenceImages/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_reference_image(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_delete_reference_image_rest_use_cached_wrapped_rpc():
@@ -13009,6 +10365,7 @@ def test_delete_reference_image_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_reference_image(request)
 
@@ -13024,82 +10381,6 @@ def test_delete_reference_image_rest_unset_required_fields():
 
     unset_fields = transport.delete_reference_image._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_reference_image_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_delete_reference_image"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = product_search_service.DeleteReferenceImageRequest.pb(
-            product_search_service.DeleteReferenceImageRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = product_search_service.DeleteReferenceImageRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.delete_reference_image(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_delete_reference_image_rest_bad_request(
-    transport: str = "rest",
-    request_type=product_search_service.DeleteReferenceImageRequest,
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/products/sample3/referenceImages/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_reference_image(request)
 
 
 def test_delete_reference_image_rest_flattened():
@@ -13130,6 +10411,7 @@ def test_delete_reference_image_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_reference_image(**mock_args)
 
@@ -13157,56 +10439,6 @@ def test_delete_reference_image_rest_flattened_error(transport: str = "rest"):
             product_search_service.DeleteReferenceImageRequest(),
             name="name_value",
         )
-
-
-def test_delete_reference_image_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.ListReferenceImagesRequest,
-        dict,
-    ],
-)
-def test_list_reference_images_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/products/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.ListReferenceImagesResponse(
-            page_size=951,
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.ListReferenceImagesResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_reference_images(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListReferenceImagesPager)
-    assert response.page_size == 951
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_reference_images_rest_use_cached_wrapped_rpc():
@@ -13325,6 +10557,7 @@ def test_list_reference_images_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_reference_images(request)
 
@@ -13348,90 +10581,6 @@ def test_list_reference_images_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_reference_images_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_list_reference_images"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_list_reference_images"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.ListReferenceImagesRequest.pb(
-            product_search_service.ListReferenceImagesRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            product_search_service.ListReferenceImagesResponse.to_json(
-                product_search_service.ListReferenceImagesResponse()
-            )
-        )
-
-        request = product_search_service.ListReferenceImagesRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.ListReferenceImagesResponse()
-
-        client.list_reference_images(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_reference_images_rest_bad_request(
-    transport: str = "rest",
-    request_type=product_search_service.ListReferenceImagesRequest,
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/products/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_reference_images(request)
 
 
 def test_list_reference_images_rest_flattened():
@@ -13466,6 +10615,7 @@ def test_list_reference_images_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_reference_images(**mock_args)
 
@@ -13561,50 +10711,6 @@ def test_list_reference_images_rest_pager(transport: str = "rest"):
         pages = list(client.list_reference_images(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.GetReferenceImageRequest,
-        dict,
-    ],
-)
-def test_get_reference_image_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/products/sample3/referenceImages/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.ReferenceImage(
-            name="name_value",
-            uri="uri_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.ReferenceImage.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_reference_image(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, product_search_service.ReferenceImage)
-    assert response.name == "name_value"
-    assert response.uri == "uri_value"
 
 
 def test_get_reference_image_rest_use_cached_wrapped_rpc():
@@ -13713,6 +10819,7 @@ def test_get_reference_image_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_reference_image(request)
 
@@ -13728,90 +10835,6 @@ def test_get_reference_image_rest_unset_required_fields():
 
     unset_fields = transport.get_reference_image._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_reference_image_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_get_reference_image"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_get_reference_image"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.GetReferenceImageRequest.pb(
-            product_search_service.GetReferenceImageRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = product_search_service.ReferenceImage.to_json(
-            product_search_service.ReferenceImage()
-        )
-
-        request = product_search_service.GetReferenceImageRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.ReferenceImage()
-
-        client.get_reference_image(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_reference_image_rest_bad_request(
-    transport: str = "rest",
-    request_type=product_search_service.GetReferenceImageRequest,
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/products/sample3/referenceImages/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_reference_image(request)
 
 
 def test_get_reference_image_rest_flattened():
@@ -13844,6 +10867,7 @@ def test_get_reference_image_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_reference_image(**mock_args)
 
@@ -13871,47 +10895,6 @@ def test_get_reference_image_rest_flattened_error(transport: str = "rest"):
             product_search_service.GetReferenceImageRequest(),
             name="name_value",
         )
-
-
-def test_get_reference_image_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.AddProductToProductSetRequest,
-        dict,
-    ],
-)
-def test_add_product_to_product_set_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.add_product_to_product_set(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_add_product_to_product_set_rest_use_cached_wrapped_rpc():
@@ -14023,6 +11006,7 @@ def test_add_product_to_product_set_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.add_product_to_product_set(request)
 
@@ -14046,80 +11030,6 @@ def test_add_product_to_product_set_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_add_product_to_product_set_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_add_product_to_product_set"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = product_search_service.AddProductToProductSetRequest.pb(
-            product_search_service.AddProductToProductSetRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = product_search_service.AddProductToProductSetRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.add_product_to_product_set(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_add_product_to_product_set_rest_bad_request(
-    transport: str = "rest",
-    request_type=product_search_service.AddProductToProductSetRequest,
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.add_product_to_product_set(request)
 
 
 def test_add_product_to_product_set_rest_flattened():
@@ -14151,6 +11061,7 @@ def test_add_product_to_product_set_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.add_product_to_product_set(**mock_args)
 
@@ -14179,47 +11090,6 @@ def test_add_product_to_product_set_rest_flattened_error(transport: str = "rest"
             name="name_value",
             product="product_value",
         )
-
-
-def test_add_product_to_product_set_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.RemoveProductFromProductSetRequest,
-        dict,
-    ],
-)
-def test_remove_product_from_product_set_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.remove_product_from_product_set(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_remove_product_from_product_set_rest_use_cached_wrapped_rpc():
@@ -14331,6 +11201,7 @@ def test_remove_product_from_product_set_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.remove_product_from_product_set(request)
 
@@ -14356,80 +11227,6 @@ def test_remove_product_from_product_set_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_remove_product_from_product_set_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_remove_product_from_product_set"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = product_search_service.RemoveProductFromProductSetRequest.pb(
-            product_search_service.RemoveProductFromProductSetRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = product_search_service.RemoveProductFromProductSetRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.remove_product_from_product_set(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_remove_product_from_product_set_rest_bad_request(
-    transport: str = "rest",
-    request_type=product_search_service.RemoveProductFromProductSetRequest,
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.remove_product_from_product_set(request)
 
 
 def test_remove_product_from_product_set_rest_flattened():
@@ -14461,6 +11258,7 @@ def test_remove_product_from_product_set_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.remove_product_from_product_set(**mock_args)
 
@@ -14489,54 +11287,6 @@ def test_remove_product_from_product_set_rest_flattened_error(transport: str = "
             name="name_value",
             product="product_value",
         )
-
-
-def test_remove_product_from_product_set_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.ListProductsInProductSetRequest,
-        dict,
-    ],
-)
-def test_list_products_in_product_set_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = product_search_service.ListProductsInProductSetResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = product_search_service.ListProductsInProductSetResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_products_in_product_set(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListProductsInProductSetPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_products_in_product_set_rest_use_cached_wrapped_rpc():
@@ -14655,6 +11405,7 @@ def test_list_products_in_product_set_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_products_in_product_set(request)
 
@@ -14678,90 +11429,6 @@ def test_list_products_in_product_set_rest_unset_required_fields():
         )
         & set(("name",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_products_in_product_set_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_list_products_in_product_set"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_list_products_in_product_set"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.ListProductsInProductSetRequest.pb(
-            product_search_service.ListProductsInProductSetRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            product_search_service.ListProductsInProductSetResponse.to_json(
-                product_search_service.ListProductsInProductSetResponse()
-            )
-        )
-
-        request = product_search_service.ListProductsInProductSetRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = product_search_service.ListProductsInProductSetResponse()
-
-        client.list_products_in_product_set(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_products_in_product_set_rest_bad_request(
-    transport: str = "rest",
-    request_type=product_search_service.ListProductsInProductSetRequest,
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_products_in_product_set(request)
 
 
 def test_list_products_in_product_set_rest_flattened():
@@ -14796,6 +11463,7 @@ def test_list_products_in_product_set_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_products_in_product_set(**mock_args)
 
@@ -14889,41 +11557,6 @@ def test_list_products_in_product_set_rest_pager(transport: str = "rest"):
         pages = list(client.list_products_in_product_set(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        product_search_service.ImportProductSetsRequest,
-        dict,
-    ],
-)
-def test_import_product_sets_rest(request_type):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.import_product_sets(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_import_product_sets_rest_use_cached_wrapped_rpc():
@@ -15034,6 +11667,7 @@ def test_import_product_sets_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.import_product_sets(request)
 
@@ -15057,90 +11691,6 @@ def test_import_product_sets_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_import_product_sets_rest_interceptors(null_interceptor):
-    transport = transports.ProductSearchRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ProductSearchRestInterceptor(),
-    )
-    client = ProductSearchClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.ProductSearchRestInterceptor, "post_import_product_sets"
-    ) as post, mock.patch.object(
-        transports.ProductSearchRestInterceptor, "pre_import_product_sets"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = product_search_service.ImportProductSetsRequest.pb(
-            product_search_service.ImportProductSetsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = product_search_service.ImportProductSetsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.import_product_sets(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_import_product_sets_rest_bad_request(
-    transport: str = "rest",
-    request_type=product_search_service.ImportProductSetsRequest,
-):
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.import_product_sets(request)
 
 
 def test_import_product_sets_rest_flattened():
@@ -15174,6 +11724,7 @@ def test_import_product_sets_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.import_product_sets(**mock_args)
 
@@ -15206,12 +11757,6 @@ def test_import_product_sets_rest_flattened_error(transport: str = "rest"):
                 )
             ),
         )
-
-
-def test_import_product_sets_rest_error():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
 
 
 def test_credentials_transport_error():
@@ -15306,18 +11851,3952 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_grpc():
+    transport = ProductSearchClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_product_set_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_product_set), "__call__"
+    ) as call:
+        call.return_value = product_search_service.ProductSet()
+        client.create_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.CreateProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_product_sets_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_product_sets), "__call__"
+    ) as call:
+        call.return_value = product_search_service.ListProductSetsResponse()
+        client.list_product_sets(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListProductSetsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_product_set_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_product_set), "__call__") as call:
+        call.return_value = product_search_service.ProductSet()
+        client.get_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.GetProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_product_set_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_product_set), "__call__"
+    ) as call:
+        call.return_value = product_search_service.ProductSet()
+        client.update_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.UpdateProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_product_set_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_product_set), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.DeleteProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_product_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_product), "__call__") as call:
+        call.return_value = product_search_service.Product()
+        client.create_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.CreateProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_products_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_products), "__call__") as call:
+        call.return_value = product_search_service.ListProductsResponse()
+        client.list_products(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListProductsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_product_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_product), "__call__") as call:
+        call.return_value = product_search_service.Product()
+        client.get_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.GetProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_product_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_product), "__call__") as call:
+        call.return_value = product_search_service.Product()
+        client.update_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.UpdateProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_product_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_product), "__call__") as call:
+        call.return_value = None
+        client.delete_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.DeleteProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_reference_image_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_reference_image), "__call__"
+    ) as call:
+        call.return_value = product_search_service.ReferenceImage()
+        client.create_reference_image(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.CreateReferenceImageRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_reference_image_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_reference_image), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_reference_image(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.DeleteReferenceImageRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_reference_images_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_reference_images), "__call__"
+    ) as call:
+        call.return_value = product_search_service.ListReferenceImagesResponse()
+        client.list_reference_images(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListReferenceImagesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_reference_image_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_reference_image), "__call__"
+    ) as call:
+        call.return_value = product_search_service.ReferenceImage()
+        client.get_reference_image(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.GetReferenceImageRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_add_product_to_product_set_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.add_product_to_product_set), "__call__"
+    ) as call:
+        call.return_value = None
+        client.add_product_to_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.AddProductToProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_remove_product_from_product_set_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_product_from_product_set), "__call__"
+    ) as call:
+        call.return_value = None
+        client.remove_product_from_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.RemoveProductFromProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_products_in_product_set_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_products_in_product_set), "__call__"
+    ) as call:
+        call.return_value = product_search_service.ListProductsInProductSetResponse()
+        client.list_products_in_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListProductsInProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_import_product_sets_empty_call_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.import_product_sets), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.import_product_sets(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ImportProductSetsRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = ProductSearchAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_product_set_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_product_set), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.ProductSet(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.create_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.CreateProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_product_sets_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_product_sets), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.ListProductSetsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_product_sets(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListProductSetsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_product_set_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_product_set), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.ProductSet(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.get_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.GetProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_product_set_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_product_set), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.ProductSet(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.update_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.UpdateProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_product_set_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_product_set), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.DeleteProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_product_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_product), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.Product(
+                name="name_value",
+                display_name="display_name_value",
+                description="description_value",
+                product_category="product_category_value",
+            )
+        )
+        await client.create_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.CreateProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_products_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_products), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.ListProductsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_products(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListProductsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_product_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_product), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.Product(
+                name="name_value",
+                display_name="display_name_value",
+                description="description_value",
+                product_category="product_category_value",
+            )
+        )
+        await client.get_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.GetProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_product_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_product), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.Product(
+                name="name_value",
+                display_name="display_name_value",
+                description="description_value",
+                product_category="product_category_value",
+            )
+        )
+        await client.update_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.UpdateProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_product_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_product), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.DeleteProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_reference_image_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_reference_image), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.ReferenceImage(
+                name="name_value",
+                uri="uri_value",
+            )
+        )
+        await client.create_reference_image(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.CreateReferenceImageRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_reference_image_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_reference_image), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_reference_image(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.DeleteReferenceImageRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_reference_images_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_reference_images), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.ListReferenceImagesResponse(
+                page_size=951,
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_reference_images(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListReferenceImagesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_reference_image_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_reference_image), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.ReferenceImage(
+                name="name_value",
+                uri="uri_value",
+            )
+        )
+        await client.get_reference_image(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.GetReferenceImageRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_add_product_to_product_set_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.add_product_to_product_set), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.add_product_to_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.AddProductToProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_remove_product_from_product_set_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_product_from_product_set), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.remove_product_from_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.RemoveProductFromProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_products_in_product_set_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_products_in_product_set), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            product_search_service.ListProductsInProductSetResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_products_in_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListProductsInProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_import_product_sets_empty_call_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.import_product_sets), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.import_product_sets(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ImportProductSetsRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = ProductSearchClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_create_product_set_rest_bad_request(
+    request_type=product_search_service.CreateProductSetRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_product_set(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "grpc",
-        "rest",
+        product_search_service.CreateProductSetRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = ProductSearchClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_create_product_set_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request_init["product_set"] = {
+        "name": "name_value",
+        "display_name": "display_name_value",
+        "index_time": {"seconds": 751, "nanos": 543},
+        "index_error": {
+            "code": 411,
+            "message": "message_value",
+            "details": [
+                {
+                    "type_url": "type.googleapis.com/google.protobuf.Duration",
+                    "value": b"\x08\x0c\x10\xdb\x07",
+                }
+            ],
+        },
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = product_search_service.CreateProductSetRequest.meta.fields[
+        "product_set"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["product_set"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["product_set"][field])):
+                    del request_init["product_set"][field][i][subfield]
+            else:
+                del request_init["product_set"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.ProductSet(
+            name="name_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.ProductSet.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_product_set(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, product_search_service.ProductSet)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_product_set_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_create_product_set"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_create_product_set"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.CreateProductSetRequest.pb(
+            product_search_service.CreateProductSetRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.ProductSet.to_json(
+            product_search_service.ProductSet()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.CreateProductSetRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.ProductSet()
+
+        client.create_product_set(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_product_sets_rest_bad_request(
+    request_type=product_search_service.ListProductSetsRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_product_sets(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.ListProductSetsRequest,
+        dict,
+    ],
+)
+def test_list_product_sets_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.ListProductSetsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.ListProductSetsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_product_sets(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListProductSetsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_product_sets_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_list_product_sets"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_list_product_sets"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.ListProductSetsRequest.pb(
+            product_search_service.ListProductSetsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.ListProductSetsResponse.to_json(
+            product_search_service.ListProductSetsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.ListProductSetsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.ListProductSetsResponse()
+
+        client.list_product_sets(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_product_set_rest_bad_request(
+    request_type=product_search_service.GetProductSetRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_product_set(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.GetProductSetRequest,
+        dict,
+    ],
+)
+def test_get_product_set_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.ProductSet(
+            name="name_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.ProductSet.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_product_set(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, product_search_service.ProductSet)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_product_set_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_get_product_set"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_get_product_set"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.GetProductSetRequest.pb(
+            product_search_service.GetProductSetRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.ProductSet.to_json(
+            product_search_service.ProductSet()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.GetProductSetRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.ProductSet()
+
+        client.get_product_set(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_product_set_rest_bad_request(
+    request_type=product_search_service.UpdateProductSetRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "product_set": {
+            "name": "projects/sample1/locations/sample2/productSets/sample3"
+        }
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_product_set(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.UpdateProductSetRequest,
+        dict,
+    ],
+)
+def test_update_product_set_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "product_set": {
+            "name": "projects/sample1/locations/sample2/productSets/sample3"
+        }
+    }
+    request_init["product_set"] = {
+        "name": "projects/sample1/locations/sample2/productSets/sample3",
+        "display_name": "display_name_value",
+        "index_time": {"seconds": 751, "nanos": 543},
+        "index_error": {
+            "code": 411,
+            "message": "message_value",
+            "details": [
+                {
+                    "type_url": "type.googleapis.com/google.protobuf.Duration",
+                    "value": b"\x08\x0c\x10\xdb\x07",
+                }
+            ],
+        },
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = product_search_service.UpdateProductSetRequest.meta.fields[
+        "product_set"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["product_set"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["product_set"][field])):
+                    del request_init["product_set"][field][i][subfield]
+            else:
+                del request_init["product_set"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.ProductSet(
+            name="name_value",
+            display_name="display_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.ProductSet.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_product_set(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, product_search_service.ProductSet)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_product_set_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_update_product_set"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_update_product_set"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.UpdateProductSetRequest.pb(
+            product_search_service.UpdateProductSetRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.ProductSet.to_json(
+            product_search_service.ProductSet()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.UpdateProductSetRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.ProductSet()
+
+        client.update_product_set(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_product_set_rest_bad_request(
+    request_type=product_search_service.DeleteProductSetRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_product_set(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.DeleteProductSetRequest,
+        dict,
+    ],
+)
+def test_delete_product_set_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_product_set(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_product_set_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_delete_product_set"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = product_search_service.DeleteProductSetRequest.pb(
+            product_search_service.DeleteProductSetRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = product_search_service.DeleteProductSetRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_product_set(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_create_product_rest_bad_request(
+    request_type=product_search_service.CreateProductRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_product(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.CreateProductRequest,
+        dict,
+    ],
+)
+def test_create_product_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request_init["product"] = {
+        "name": "name_value",
+        "display_name": "display_name_value",
+        "description": "description_value",
+        "product_category": "product_category_value",
+        "product_labels": [{"key": "key_value", "value": "value_value"}],
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = product_search_service.CreateProductRequest.meta.fields["product"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["product"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["product"][field])):
+                    del request_init["product"][field][i][subfield]
+            else:
+                del request_init["product"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.Product(
+            name="name_value",
+            display_name="display_name_value",
+            description="description_value",
+            product_category="product_category_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.Product.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_product(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, product_search_service.Product)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+    assert response.description == "description_value"
+    assert response.product_category == "product_category_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_product_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_create_product"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_create_product"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.CreateProductRequest.pb(
+            product_search_service.CreateProductRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.Product.to_json(
+            product_search_service.Product()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.CreateProductRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.Product()
+
+        client.create_product(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_products_rest_bad_request(
+    request_type=product_search_service.ListProductsRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_products(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.ListProductsRequest,
+        dict,
+    ],
+)
+def test_list_products_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.ListProductsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.ListProductsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_products(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListProductsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_products_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_list_products"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_list_products"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.ListProductsRequest.pb(
+            product_search_service.ListProductsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.ListProductsResponse.to_json(
+            product_search_service.ListProductsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.ListProductsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.ListProductsResponse()
+
+        client.list_products(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_product_rest_bad_request(
+    request_type=product_search_service.GetProductRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/products/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_product(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.GetProductRequest,
+        dict,
+    ],
+)
+def test_get_product_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/products/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.Product(
+            name="name_value",
+            display_name="display_name_value",
+            description="description_value",
+            product_category="product_category_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.Product.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_product(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, product_search_service.Product)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+    assert response.description == "description_value"
+    assert response.product_category == "product_category_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_product_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_get_product"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_get_product"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.GetProductRequest.pb(
+            product_search_service.GetProductRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.Product.to_json(
+            product_search_service.Product()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.GetProductRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.Product()
+
+        client.get_product(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_product_rest_bad_request(
+    request_type=product_search_service.UpdateProductRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "product": {"name": "projects/sample1/locations/sample2/products/sample3"}
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_product(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.UpdateProductRequest,
+        dict,
+    ],
+)
+def test_update_product_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "product": {"name": "projects/sample1/locations/sample2/products/sample3"}
+    }
+    request_init["product"] = {
+        "name": "projects/sample1/locations/sample2/products/sample3",
+        "display_name": "display_name_value",
+        "description": "description_value",
+        "product_category": "product_category_value",
+        "product_labels": [{"key": "key_value", "value": "value_value"}],
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = product_search_service.UpdateProductRequest.meta.fields["product"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["product"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["product"][field])):
+                    del request_init["product"][field][i][subfield]
+            else:
+                del request_init["product"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.Product(
+            name="name_value",
+            display_name="display_name_value",
+            description="description_value",
+            product_category="product_category_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.Product.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_product(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, product_search_service.Product)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+    assert response.description == "description_value"
+    assert response.product_category == "product_category_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_product_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_update_product"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_update_product"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.UpdateProductRequest.pb(
+            product_search_service.UpdateProductRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.Product.to_json(
+            product_search_service.Product()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.UpdateProductRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.Product()
+
+        client.update_product(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_product_rest_bad_request(
+    request_type=product_search_service.DeleteProductRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/products/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_product(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.DeleteProductRequest,
+        dict,
+    ],
+)
+def test_delete_product_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/products/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_product(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_product_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_delete_product"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = product_search_service.DeleteProductRequest.pb(
+            product_search_service.DeleteProductRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = product_search_service.DeleteProductRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_product(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_create_reference_image_rest_bad_request(
+    request_type=product_search_service.CreateReferenceImageRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/products/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_reference_image(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.CreateReferenceImageRequest,
+        dict,
+    ],
+)
+def test_create_reference_image_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/products/sample3"}
+    request_init["reference_image"] = {
+        "name": "name_value",
+        "uri": "uri_value",
+        "bounding_polys": [
+            {
+                "vertices": [{"x": 120, "y": 121}],
+                "normalized_vertices": [{"x": 0.12, "y": 0.121}],
+            }
+        ],
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = product_search_service.CreateReferenceImageRequest.meta.fields[
+        "reference_image"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["reference_image"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["reference_image"][field])):
+                    del request_init["reference_image"][field][i][subfield]
+            else:
+                del request_init["reference_image"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.ReferenceImage(
+            name="name_value",
+            uri="uri_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.ReferenceImage.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_reference_image(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, product_search_service.ReferenceImage)
+    assert response.name == "name_value"
+    assert response.uri == "uri_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_reference_image_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_create_reference_image"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_create_reference_image"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.CreateReferenceImageRequest.pb(
+            product_search_service.CreateReferenceImageRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.ReferenceImage.to_json(
+            product_search_service.ReferenceImage()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.CreateReferenceImageRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.ReferenceImage()
+
+        client.create_reference_image(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_reference_image_rest_bad_request(
+    request_type=product_search_service.DeleteReferenceImageRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/products/sample3/referenceImages/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_reference_image(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.DeleteReferenceImageRequest,
+        dict,
+    ],
+)
+def test_delete_reference_image_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/products/sample3/referenceImages/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_reference_image(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_reference_image_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_delete_reference_image"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = product_search_service.DeleteReferenceImageRequest.pb(
+            product_search_service.DeleteReferenceImageRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = product_search_service.DeleteReferenceImageRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_reference_image(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_list_reference_images_rest_bad_request(
+    request_type=product_search_service.ListReferenceImagesRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/products/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_reference_images(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.ListReferenceImagesRequest,
+        dict,
+    ],
+)
+def test_list_reference_images_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/products/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.ListReferenceImagesResponse(
+            page_size=951,
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.ListReferenceImagesResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_reference_images(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListReferenceImagesPager)
+    assert response.page_size == 951
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_reference_images_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_list_reference_images"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_list_reference_images"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.ListReferenceImagesRequest.pb(
+            product_search_service.ListReferenceImagesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.ListReferenceImagesResponse.to_json(
+            product_search_service.ListReferenceImagesResponse()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.ListReferenceImagesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.ListReferenceImagesResponse()
+
+        client.list_reference_images(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_reference_image_rest_bad_request(
+    request_type=product_search_service.GetReferenceImageRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/products/sample3/referenceImages/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_reference_image(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.GetReferenceImageRequest,
+        dict,
+    ],
+)
+def test_get_reference_image_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/products/sample3/referenceImages/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.ReferenceImage(
+            name="name_value",
+            uri="uri_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.ReferenceImage.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_reference_image(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, product_search_service.ReferenceImage)
+    assert response.name == "name_value"
+    assert response.uri == "uri_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_reference_image_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_get_reference_image"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_get_reference_image"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.GetReferenceImageRequest.pb(
+            product_search_service.GetReferenceImageRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.ReferenceImage.to_json(
+            product_search_service.ReferenceImage()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.GetReferenceImageRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.ReferenceImage()
+
+        client.get_reference_image(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_add_product_to_product_set_rest_bad_request(
+    request_type=product_search_service.AddProductToProductSetRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.add_product_to_product_set(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.AddProductToProductSetRequest,
+        dict,
+    ],
+)
+def test_add_product_to_product_set_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.add_product_to_product_set(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_add_product_to_product_set_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_add_product_to_product_set"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = product_search_service.AddProductToProductSetRequest.pb(
+            product_search_service.AddProductToProductSetRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = product_search_service.AddProductToProductSetRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.add_product_to_product_set(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_remove_product_from_product_set_rest_bad_request(
+    request_type=product_search_service.RemoveProductFromProductSetRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.remove_product_from_product_set(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.RemoveProductFromProductSetRequest,
+        dict,
+    ],
+)
+def test_remove_product_from_product_set_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.remove_product_from_product_set(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_remove_product_from_product_set_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_remove_product_from_product_set"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = product_search_service.RemoveProductFromProductSetRequest.pb(
+            product_search_service.RemoveProductFromProductSetRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = product_search_service.RemoveProductFromProductSetRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.remove_product_from_product_set(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_list_products_in_product_set_rest_bad_request(
+    request_type=product_search_service.ListProductsInProductSetRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_products_in_product_set(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.ListProductsInProductSetRequest,
+        dict,
+    ],
+)
+def test_list_products_in_product_set_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/productSets/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = product_search_service.ListProductsInProductSetResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = product_search_service.ListProductsInProductSetResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_products_in_product_set(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListProductsInProductSetPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_products_in_product_set_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_list_products_in_product_set"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_list_products_in_product_set"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.ListProductsInProductSetRequest.pb(
+            product_search_service.ListProductsInProductSetRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = product_search_service.ListProductsInProductSetResponse.to_json(
+            product_search_service.ListProductsInProductSetResponse()
+        )
+        req.return_value.content = return_value
+
+        request = product_search_service.ListProductsInProductSetRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = product_search_service.ListProductsInProductSetResponse()
+
+        client.list_products_in_product_set(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_import_product_sets_rest_bad_request(
+    request_type=product_search_service.ImportProductSetsRequest,
+):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.import_product_sets(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        product_search_service.ImportProductSetsRequest,
+        dict,
+    ],
+)
+def test_import_product_sets_rest_call_success(request_type):
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.import_product_sets(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_import_product_sets_rest_interceptors(null_interceptor):
+    transport = transports.ProductSearchRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ProductSearchRestInterceptor(),
+    )
+    client = ProductSearchClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.ProductSearchRestInterceptor, "post_import_product_sets"
+    ) as post, mock.patch.object(
+        transports.ProductSearchRestInterceptor, "pre_import_product_sets"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = product_search_service.ImportProductSetsRequest.pb(
+            product_search_service.ImportProductSetsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = product_search_service.ImportProductSetsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.import_product_sets(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_initialize_client_w_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_product_set_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_product_set), "__call__"
+    ) as call:
+        client.create_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.CreateProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_product_sets_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_product_sets), "__call__"
+    ) as call:
+        client.list_product_sets(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListProductSetsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_product_set_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_product_set), "__call__") as call:
+        client.get_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.GetProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_product_set_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_product_set), "__call__"
+    ) as call:
+        client.update_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.UpdateProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_product_set_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_product_set), "__call__"
+    ) as call:
+        client.delete_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.DeleteProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_product_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_product), "__call__") as call:
+        client.create_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.CreateProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_products_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_products), "__call__") as call:
+        client.list_products(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListProductsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_product_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_product), "__call__") as call:
+        client.get_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.GetProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_product_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_product), "__call__") as call:
+        client.update_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.UpdateProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_product_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_product), "__call__") as call:
+        client.delete_product(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.DeleteProductRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_reference_image_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_reference_image), "__call__"
+    ) as call:
+        client.create_reference_image(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.CreateReferenceImageRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_reference_image_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_reference_image), "__call__"
+    ) as call:
+        client.delete_reference_image(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.DeleteReferenceImageRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_reference_images_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_reference_images), "__call__"
+    ) as call:
+        client.list_reference_images(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListReferenceImagesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_reference_image_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_reference_image), "__call__"
+    ) as call:
+        client.get_reference_image(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.GetReferenceImageRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_add_product_to_product_set_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.add_product_to_product_set), "__call__"
+    ) as call:
+        client.add_product_to_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.AddProductToProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_remove_product_from_product_set_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_product_from_product_set), "__call__"
+    ) as call:
+        client.remove_product_from_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.RemoveProductFromProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_products_in_product_set_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_products_in_product_set), "__call__"
+    ) as call:
+        client.list_products_in_product_set(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ListProductsInProductSetRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_import_product_sets_empty_call_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.import_product_sets), "__call__"
+    ) as call:
+        client.import_product_sets(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = product_search_service.ImportProductSetsRequest()
+
+        assert args[0] == request_msg
+
+
+def test_product_search_rest_lro_client():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    transport = client.transport
+
+    # Ensure that we have an api-core operations client.
+    assert isinstance(
+        transport.operations_client,
+        operations_v1.AbstractOperationsClient,
+    )
+
+    # Ensure that subsequent calls to the property send the exact same object.
+    assert transport.operations_client is transport.operations_client
 
 
 def test_transport_grpc_default():
@@ -15581,23 +16060,6 @@ def test_product_search_http_transport_client_cert_source_for_mtls():
             credentials=cred, client_cert_source_for_mtls=client_cert_source_callback
         )
         mock_configure_mtls_channel.assert_called_once_with(client_cert_source_callback)
-
-
-def test_product_search_rest_lro_client():
-    client = ProductSearchClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    transport = client.transport
-
-    # Ensure that we have a api-core operations client.
-    assert isinstance(
-        transport.operations_client,
-        operations_v1.AbstractOperationsClient,
-    )
-
-    # Ensure that subsequent calls to the property send the exact same object.
-    assert transport.operations_client is transport.operations_client
 
 
 @pytest.mark.parametrize(
@@ -16088,36 +16550,41 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = ProductSearchAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+def test_transport_close_grpc():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = ProductSearchAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
         async with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = ProductSearchClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = ProductSearchClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

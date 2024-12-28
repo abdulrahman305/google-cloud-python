@@ -1,5 +1,67 @@
 # Changelog
 
+## [0.10.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-connect-gateway-v0.10.0...google-cloud-gke-connect-gateway-v0.10.1) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [0.10.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-connect-gateway-v0.9.2...google-cloud-gke-connect-gateway-v0.10.0) (2024-11-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* gRPC support is being removed in favor of HTTP support, as gRPC is not currently supported by Connect Gateway
+* Remove async client which requires gRPC
+* [google-cloud-gke-connect-gateway] Update default transport type for Connect Gateway v1 client to "rest"
+
+### Features
+
+* [google-cloud-gke-connect-gateway] Update default transport type for Connect Gateway v1 client to "rest" ([fd8ae4b](https://github.com/googleapis/google-cloud-python/commit/fd8ae4b2563624d18d6ed9d9a8d8493b9725e777))
+
+
+### Bug Fixes
+
+* gRPC support is being removed in favor of HTTP support, as gRPC is not currently supported by Connect Gateway ([fd8ae4b](https://github.com/googleapis/google-cloud-python/commit/fd8ae4b2563624d18d6ed9d9a8d8493b9725e777))
+* Remove async client which requires gRPC ([fd8ae4b](https://github.com/googleapis/google-cloud-python/commit/fd8ae4b2563624d18d6ed9d9a8d8493b9725e777))
+
+## [0.9.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-connect-gateway-v0.9.1...google-cloud-gke-connect-gateway-v0.9.2) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13243](https://github.com/googleapis/google-cloud-python/issues/13243)) ([d794dec](https://github.com/googleapis/google-cloud-python/commit/d794dec5eff5f23a1ff926012bf9e6cad719e020))
+
+## [0.9.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-connect-gateway-v0.9.0...google-cloud-gke-connect-gateway-v0.9.1) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
+## [0.9.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-connect-gateway-v0.8.11...google-cloud-gke-connect-gateway-v0.9.0) (2024-08-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* [google-cloud-gke-connect-gateway] removed the nonfunctional GatewayService and replaced it with the GatewayControl service
+* existing client libraries are being regenerated to remove unused functionality and introduce new features.
+
+### Features
+
+* [google-cloud-gke-connect-gateway] removed the nonfunctional GatewayService and replaced it with the GatewayControl service ([6639798](https://github.com/googleapis/google-cloud-python/commit/6639798f019e86e72ce6cd5a2c837320439cb2b6))
+
+
+### Bug Fixes
+
+* Set google.cloud.gkeconnect.gateway_v1 as the default import ([6639798](https://github.com/googleapis/google-cloud-python/commit/6639798f019e86e72ce6cd5a2c837320439cb2b6))
+
 ## [0.8.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-connect-gateway-v0.8.10...google-cloud-gke-connect-gateway-v0.8.11) (2024-07-30)
 
 

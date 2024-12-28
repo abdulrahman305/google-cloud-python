@@ -50,14 +50,18 @@ from .types.css_product_common import (
     Attributes,
     Certification,
     CssProductStatus,
+    HeadlineOfferInstallment,
+    HeadlineOfferSubscriptionCost,
     ProductDetail,
     ProductDimension,
     ProductWeight,
+    SubscriptionPeriod,
 )
 from .types.css_product_inputs import (
     CssProductInput,
     DeleteCssProductInputRequest,
     InsertCssProductInputRequest,
+    UpdateCssProductInputRequest,
 )
 from .types.css_products import (
     CssProduct,
@@ -87,6 +91,8 @@ __all__ = (
     "DeleteCssProductInputRequest",
     "GetAccountRequest",
     "GetCssProductRequest",
+    "HeadlineOfferInstallment",
+    "HeadlineOfferSubscriptionCost",
     "InsertCssProductInputRequest",
     "ListAccountLabelsRequest",
     "ListAccountLabelsResponse",
@@ -97,6 +103,8 @@ __all__ = (
     "ProductDetail",
     "ProductDimension",
     "ProductWeight",
+    "SubscriptionPeriod",
     "UpdateAccountLabelRequest",
     "UpdateAccountLabelsRequest",
+    "UpdateCssProductInputRequest",
 )

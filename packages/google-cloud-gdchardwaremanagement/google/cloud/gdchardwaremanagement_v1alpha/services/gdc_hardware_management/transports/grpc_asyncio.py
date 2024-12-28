@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -23,13 +27,92 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.gdchardwaremanagement_v1alpha.types import resources, service
 
 from .base import DEFAULT_CLIENT_INFO, GDCHardwareManagementTransport
 from .grpc import GDCHardwareManagementGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
@@ -228,7 +311,13 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -251,7 +340,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -276,7 +365,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_orders" not in self._stubs:
-            self._stubs["list_orders"] = self.grpc_channel.unary_unary(
+            self._stubs["list_orders"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/ListOrders",
                 request_serializer=service.ListOrdersRequest.serialize,
                 response_deserializer=service.ListOrdersResponse.deserialize,
@@ -302,7 +391,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_order" not in self._stubs:
-            self._stubs["get_order"] = self.grpc_channel.unary_unary(
+            self._stubs["get_order"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/GetOrder",
                 request_serializer=service.GetOrderRequest.serialize,
                 response_deserializer=resources.Order.deserialize,
@@ -328,7 +417,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_order" not in self._stubs:
-            self._stubs["create_order"] = self.grpc_channel.unary_unary(
+            self._stubs["create_order"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/CreateOrder",
                 request_serializer=service.CreateOrderRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -354,7 +443,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_order" not in self._stubs:
-            self._stubs["update_order"] = self.grpc_channel.unary_unary(
+            self._stubs["update_order"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/UpdateOrder",
                 request_serializer=service.UpdateOrderRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -380,7 +469,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_order" not in self._stubs:
-            self._stubs["delete_order"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_order"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/DeleteOrder",
                 request_serializer=service.DeleteOrderRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -406,7 +495,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "submit_order" not in self._stubs:
-            self._stubs["submit_order"] = self.grpc_channel.unary_unary(
+            self._stubs["submit_order"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/SubmitOrder",
                 request_serializer=service.SubmitOrderRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -432,7 +521,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_sites" not in self._stubs:
-            self._stubs["list_sites"] = self.grpc_channel.unary_unary(
+            self._stubs["list_sites"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/ListSites",
                 request_serializer=service.ListSitesRequest.serialize,
                 response_deserializer=service.ListSitesResponse.deserialize,
@@ -456,7 +545,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_site" not in self._stubs:
-            self._stubs["get_site"] = self.grpc_channel.unary_unary(
+            self._stubs["get_site"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/GetSite",
                 request_serializer=service.GetSiteRequest.serialize,
                 response_deserializer=resources.Site.deserialize,
@@ -482,7 +571,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_site" not in self._stubs:
-            self._stubs["create_site"] = self.grpc_channel.unary_unary(
+            self._stubs["create_site"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/CreateSite",
                 request_serializer=service.CreateSiteRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -508,12 +597,38 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_site" not in self._stubs:
-            self._stubs["update_site"] = self.grpc_channel.unary_unary(
+            self._stubs["update_site"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/UpdateSite",
                 request_serializer=service.UpdateSiteRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
             )
         return self._stubs["update_site"]
+
+    @property
+    def delete_site(
+        self,
+    ) -> Callable[[service.DeleteSiteRequest], Awaitable[operations_pb2.Operation]]:
+        r"""Return a callable for the delete site method over gRPC.
+
+        Deletes a site.
+
+        Returns:
+            Callable[[~.DeleteSiteRequest],
+                    Awaitable[~.Operation]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "delete_site" not in self._stubs:
+            self._stubs["delete_site"] = self._logged_channel.unary_unary(
+                "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/DeleteSite",
+                request_serializer=service.DeleteSiteRequest.serialize,
+                response_deserializer=operations_pb2.Operation.FromString,
+            )
+        return self._stubs["delete_site"]
 
     @property
     def list_hardware_groups(
@@ -537,7 +652,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_hardware_groups" not in self._stubs:
-            self._stubs["list_hardware_groups"] = self.grpc_channel.unary_unary(
+            self._stubs["list_hardware_groups"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/ListHardwareGroups",
                 request_serializer=service.ListHardwareGroupsRequest.serialize,
                 response_deserializer=service.ListHardwareGroupsResponse.deserialize,
@@ -565,7 +680,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_hardware_group" not in self._stubs:
-            self._stubs["get_hardware_group"] = self.grpc_channel.unary_unary(
+            self._stubs["get_hardware_group"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/GetHardwareGroup",
                 request_serializer=service.GetHardwareGroupRequest.serialize,
                 response_deserializer=resources.HardwareGroup.deserialize,
@@ -593,7 +708,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_hardware_group" not in self._stubs:
-            self._stubs["create_hardware_group"] = self.grpc_channel.unary_unary(
+            self._stubs["create_hardware_group"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/CreateHardwareGroup",
                 request_serializer=service.CreateHardwareGroupRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -621,7 +736,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_hardware_group" not in self._stubs:
-            self._stubs["update_hardware_group"] = self.grpc_channel.unary_unary(
+            self._stubs["update_hardware_group"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/UpdateHardwareGroup",
                 request_serializer=service.UpdateHardwareGroupRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -649,7 +764,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_hardware_group" not in self._stubs:
-            self._stubs["delete_hardware_group"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_hardware_group"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/DeleteHardwareGroup",
                 request_serializer=service.DeleteHardwareGroupRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -677,7 +792,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_hardware" not in self._stubs:
-            self._stubs["list_hardware"] = self.grpc_channel.unary_unary(
+            self._stubs["list_hardware"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/ListHardware",
                 request_serializer=service.ListHardwareRequest.serialize,
                 response_deserializer=service.ListHardwareResponse.deserialize,
@@ -703,7 +818,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_hardware" not in self._stubs:
-            self._stubs["get_hardware"] = self.grpc_channel.unary_unary(
+            self._stubs["get_hardware"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/GetHardware",
                 request_serializer=service.GetHardwareRequest.serialize,
                 response_deserializer=resources.Hardware.deserialize,
@@ -729,7 +844,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_hardware" not in self._stubs:
-            self._stubs["create_hardware"] = self.grpc_channel.unary_unary(
+            self._stubs["create_hardware"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/CreateHardware",
                 request_serializer=service.CreateHardwareRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -755,7 +870,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_hardware" not in self._stubs:
-            self._stubs["update_hardware"] = self.grpc_channel.unary_unary(
+            self._stubs["update_hardware"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/UpdateHardware",
                 request_serializer=service.UpdateHardwareRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -781,7 +896,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_hardware" not in self._stubs:
-            self._stubs["delete_hardware"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_hardware"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/DeleteHardware",
                 request_serializer=service.DeleteHardwareRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -809,7 +924,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_comments" not in self._stubs:
-            self._stubs["list_comments"] = self.grpc_channel.unary_unary(
+            self._stubs["list_comments"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/ListComments",
                 request_serializer=service.ListCommentsRequest.serialize,
                 response_deserializer=service.ListCommentsResponse.deserialize,
@@ -835,7 +950,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_comment" not in self._stubs:
-            self._stubs["get_comment"] = self.grpc_channel.unary_unary(
+            self._stubs["get_comment"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/GetComment",
                 request_serializer=service.GetCommentRequest.serialize,
                 response_deserializer=resources.Comment.deserialize,
@@ -861,12 +976,43 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_comment" not in self._stubs:
-            self._stubs["create_comment"] = self.grpc_channel.unary_unary(
+            self._stubs["create_comment"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/CreateComment",
                 request_serializer=service.CreateCommentRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
             )
         return self._stubs["create_comment"]
+
+    @property
+    def record_action_on_comment(
+        self,
+    ) -> Callable[[service.RecordActionOnCommentRequest], Awaitable[resources.Comment]]:
+        r"""Return a callable for the record action on comment method over gRPC.
+
+        Record Action on a Comment. If the Action specified
+        in the request is READ, the viewed time in the comment
+        is set to the time the request was received. If the
+        comment is already marked as read, subsequent calls will
+        be ignored. If the Action is UNREAD, the viewed time is
+        cleared from the comment.
+
+        Returns:
+            Callable[[~.RecordActionOnCommentRequest],
+                    Awaitable[~.Comment]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "record_action_on_comment" not in self._stubs:
+            self._stubs["record_action_on_comment"] = self._logged_channel.unary_unary(
+                "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/RecordActionOnComment",
+                request_serializer=service.RecordActionOnCommentRequest.serialize,
+                response_deserializer=resources.Comment.deserialize,
+            )
+        return self._stubs["record_action_on_comment"]
 
     @property
     def list_change_log_entries(
@@ -890,7 +1036,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_change_log_entries" not in self._stubs:
-            self._stubs["list_change_log_entries"] = self.grpc_channel.unary_unary(
+            self._stubs["list_change_log_entries"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/ListChangeLogEntries",
                 request_serializer=service.ListChangeLogEntriesRequest.serialize,
                 response_deserializer=service.ListChangeLogEntriesResponse.deserialize,
@@ -918,7 +1064,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_change_log_entry" not in self._stubs:
-            self._stubs["get_change_log_entry"] = self.grpc_channel.unary_unary(
+            self._stubs["get_change_log_entry"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/GetChangeLogEntry",
                 request_serializer=service.GetChangeLogEntryRequest.serialize,
                 response_deserializer=resources.ChangeLogEntry.deserialize,
@@ -944,7 +1090,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_skus" not in self._stubs:
-            self._stubs["list_skus"] = self.grpc_channel.unary_unary(
+            self._stubs["list_skus"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/ListSkus",
                 request_serializer=service.ListSkusRequest.serialize,
                 response_deserializer=service.ListSkusResponse.deserialize,
@@ -968,7 +1114,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_sku" not in self._stubs:
-            self._stubs["get_sku"] = self.grpc_channel.unary_unary(
+            self._stubs["get_sku"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/GetSku",
                 request_serializer=service.GetSkuRequest.serialize,
                 response_deserializer=resources.Sku.deserialize,
@@ -994,7 +1140,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_zones" not in self._stubs:
-            self._stubs["list_zones"] = self.grpc_channel.unary_unary(
+            self._stubs["list_zones"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/ListZones",
                 request_serializer=service.ListZonesRequest.serialize,
                 response_deserializer=service.ListZonesResponse.deserialize,
@@ -1018,7 +1164,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_zone" not in self._stubs:
-            self._stubs["get_zone"] = self.grpc_channel.unary_unary(
+            self._stubs["get_zone"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/GetZone",
                 request_serializer=service.GetZoneRequest.serialize,
                 response_deserializer=resources.Zone.deserialize,
@@ -1044,7 +1190,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_zone" not in self._stubs:
-            self._stubs["create_zone"] = self.grpc_channel.unary_unary(
+            self._stubs["create_zone"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/CreateZone",
                 request_serializer=service.CreateZoneRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1070,7 +1216,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_zone" not in self._stubs:
-            self._stubs["update_zone"] = self.grpc_channel.unary_unary(
+            self._stubs["update_zone"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/UpdateZone",
                 request_serializer=service.UpdateZoneRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1096,7 +1242,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_zone" not in self._stubs:
-            self._stubs["delete_zone"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_zone"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/DeleteZone",
                 request_serializer=service.DeleteZoneRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1124,7 +1270,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "signal_zone_state" not in self._stubs:
-            self._stubs["signal_zone_state"] = self.grpc_channel.unary_unary(
+            self._stubs["signal_zone_state"] = self._logged_channel.unary_unary(
                 "/google.cloud.gdchardwaremanagement.v1alpha.GDCHardwareManagement/SignalZoneState",
                 request_serializer=service.SignalZoneStateRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1134,7 +1280,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.list_orders: gapic_v1.method_async.wrap_method(
+            self.list_orders: self._wrap_method(
                 self.list_orders,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1148,7 +1294,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_order: gapic_v1.method_async.wrap_method(
+            self.get_order: self._wrap_method(
                 self.get_order,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1162,12 +1308,12 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_order: gapic_v1.method_async.wrap_method(
+            self.create_order: self._wrap_method(
                 self.create_order,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_order: gapic_v1.method_async.wrap_method(
+            self.update_order: self._wrap_method(
                 self.update_order,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1181,7 +1327,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_order: gapic_v1.method_async.wrap_method(
+            self.delete_order: self._wrap_method(
                 self.delete_order,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1195,7 +1341,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.submit_order: gapic_v1.method_async.wrap_method(
+            self.submit_order: self._wrap_method(
                 self.submit_order,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1209,7 +1355,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_sites: gapic_v1.method_async.wrap_method(
+            self.list_sites: self._wrap_method(
                 self.list_sites,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1223,7 +1369,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_site: gapic_v1.method_async.wrap_method(
+            self.get_site: self._wrap_method(
                 self.get_site,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1237,12 +1383,12 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_site: gapic_v1.method_async.wrap_method(
+            self.create_site: self._wrap_method(
                 self.create_site,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_site: gapic_v1.method_async.wrap_method(
+            self.update_site: self._wrap_method(
                 self.update_site,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1256,7 +1402,21 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_hardware_groups: gapic_v1.method_async.wrap_method(
+            self.delete_site: self._wrap_method(
+                self.delete_site,
+                default_retry=retries.AsyncRetry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.list_hardware_groups: self._wrap_method(
                 self.list_hardware_groups,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1270,7 +1430,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_hardware_group: gapic_v1.method_async.wrap_method(
+            self.get_hardware_group: self._wrap_method(
                 self.get_hardware_group,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1284,12 +1444,12 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_hardware_group: gapic_v1.method_async.wrap_method(
+            self.create_hardware_group: self._wrap_method(
                 self.create_hardware_group,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_hardware_group: gapic_v1.method_async.wrap_method(
+            self.update_hardware_group: self._wrap_method(
                 self.update_hardware_group,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1303,7 +1463,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_hardware_group: gapic_v1.method_async.wrap_method(
+            self.delete_hardware_group: self._wrap_method(
                 self.delete_hardware_group,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1317,7 +1477,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_hardware: gapic_v1.method_async.wrap_method(
+            self.list_hardware: self._wrap_method(
                 self.list_hardware,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1331,7 +1491,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_hardware: gapic_v1.method_async.wrap_method(
+            self.get_hardware: self._wrap_method(
                 self.get_hardware,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1345,12 +1505,12 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_hardware: gapic_v1.method_async.wrap_method(
+            self.create_hardware: self._wrap_method(
                 self.create_hardware,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_hardware: gapic_v1.method_async.wrap_method(
+            self.update_hardware: self._wrap_method(
                 self.update_hardware,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1364,7 +1524,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_hardware: gapic_v1.method_async.wrap_method(
+            self.delete_hardware: self._wrap_method(
                 self.delete_hardware,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1378,7 +1538,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_comments: gapic_v1.method_async.wrap_method(
+            self.list_comments: self._wrap_method(
                 self.list_comments,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1392,7 +1552,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_comment: gapic_v1.method_async.wrap_method(
+            self.get_comment: self._wrap_method(
                 self.get_comment,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1406,12 +1566,17 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_comment: gapic_v1.method_async.wrap_method(
+            self.create_comment: self._wrap_method(
                 self.create_comment,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_change_log_entries: gapic_v1.method_async.wrap_method(
+            self.record_action_on_comment: self._wrap_method(
+                self.record_action_on_comment,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_change_log_entries: self._wrap_method(
                 self.list_change_log_entries,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1425,7 +1590,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_change_log_entry: gapic_v1.method_async.wrap_method(
+            self.get_change_log_entry: self._wrap_method(
                 self.get_change_log_entry,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1439,7 +1604,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_skus: gapic_v1.method_async.wrap_method(
+            self.list_skus: self._wrap_method(
                 self.list_skus,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1453,7 +1618,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_sku: gapic_v1.method_async.wrap_method(
+            self.get_sku: self._wrap_method(
                 self.get_sku,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1467,7 +1632,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_zones: gapic_v1.method_async.wrap_method(
+            self.list_zones: self._wrap_method(
                 self.list_zones,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1481,7 +1646,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_zone: gapic_v1.method_async.wrap_method(
+            self.get_zone: self._wrap_method(
                 self.get_zone,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1495,12 +1660,12 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_zone: gapic_v1.method_async.wrap_method(
+            self.create_zone: self._wrap_method(
                 self.create_zone,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_zone: gapic_v1.method_async.wrap_method(
+            self.update_zone: self._wrap_method(
                 self.update_zone,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1514,7 +1679,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_zone: gapic_v1.method_async.wrap_method(
+            self.delete_zone: self._wrap_method(
                 self.delete_zone,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1528,15 +1693,54 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.signal_zone_state: gapic_v1.method_async.wrap_method(
+            self.signal_zone_state: self._wrap_method(
                 self.signal_zone_state,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -1548,7 +1752,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1565,7 +1769,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1582,7 +1786,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1601,7 +1805,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,
@@ -1620,7 +1824,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -1637,7 +1841,7 @@ class GDCHardwareManagementGrpcAsyncIOTransport(GDCHardwareManagementTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,

@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -25,8 +29,11 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.gke_backup_v1.types import (
     backup,
@@ -39,6 +46,82 @@ from google.cloud.gke_backup_v1.types import (
 
 from .base import DEFAULT_CLIENT_INFO, BackupForGKETransport
 from .grpc import BackupForGKEGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
@@ -239,7 +322,13 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -262,7 +351,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -289,7 +378,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_backup_plan" not in self._stubs:
-            self._stubs["create_backup_plan"] = self.grpc_channel.unary_unary(
+            self._stubs["create_backup_plan"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/CreateBackupPlan",
                 request_serializer=gkebackup.CreateBackupPlanRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -317,7 +406,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_backup_plans" not in self._stubs:
-            self._stubs["list_backup_plans"] = self.grpc_channel.unary_unary(
+            self._stubs["list_backup_plans"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/ListBackupPlans",
                 request_serializer=gkebackup.ListBackupPlansRequest.serialize,
                 response_deserializer=gkebackup.ListBackupPlansResponse.deserialize,
@@ -343,7 +432,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_backup_plan" not in self._stubs:
-            self._stubs["get_backup_plan"] = self.grpc_channel.unary_unary(
+            self._stubs["get_backup_plan"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/GetBackupPlan",
                 request_serializer=gkebackup.GetBackupPlanRequest.serialize,
                 response_deserializer=backup_plan.BackupPlan.deserialize,
@@ -371,7 +460,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_backup_plan" not in self._stubs:
-            self._stubs["update_backup_plan"] = self.grpc_channel.unary_unary(
+            self._stubs["update_backup_plan"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/UpdateBackupPlan",
                 request_serializer=gkebackup.UpdateBackupPlanRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -399,7 +488,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_backup_plan" not in self._stubs:
-            self._stubs["delete_backup_plan"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_backup_plan"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/DeleteBackupPlan",
                 request_serializer=gkebackup.DeleteBackupPlanRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -425,7 +514,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_backup" not in self._stubs:
-            self._stubs["create_backup"] = self.grpc_channel.unary_unary(
+            self._stubs["create_backup"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/CreateBackup",
                 request_serializer=gkebackup.CreateBackupRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -453,7 +542,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_backups" not in self._stubs:
-            self._stubs["list_backups"] = self.grpc_channel.unary_unary(
+            self._stubs["list_backups"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/ListBackups",
                 request_serializer=gkebackup.ListBackupsRequest.serialize,
                 response_deserializer=gkebackup.ListBackupsResponse.deserialize,
@@ -479,7 +568,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_backup" not in self._stubs:
-            self._stubs["get_backup"] = self.grpc_channel.unary_unary(
+            self._stubs["get_backup"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/GetBackup",
                 request_serializer=gkebackup.GetBackupRequest.serialize,
                 response_deserializer=backup.Backup.deserialize,
@@ -505,7 +594,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_backup" not in self._stubs:
-            self._stubs["update_backup"] = self.grpc_channel.unary_unary(
+            self._stubs["update_backup"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/UpdateBackup",
                 request_serializer=gkebackup.UpdateBackupRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -531,7 +620,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_backup" not in self._stubs:
-            self._stubs["delete_backup"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_backup"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/DeleteBackup",
                 request_serializer=gkebackup.DeleteBackupRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -560,7 +649,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_volume_backups" not in self._stubs:
-            self._stubs["list_volume_backups"] = self.grpc_channel.unary_unary(
+            self._stubs["list_volume_backups"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/ListVolumeBackups",
                 request_serializer=gkebackup.ListVolumeBackupsRequest.serialize,
                 response_deserializer=gkebackup.ListVolumeBackupsResponse.deserialize,
@@ -586,7 +675,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_volume_backup" not in self._stubs:
-            self._stubs["get_volume_backup"] = self.grpc_channel.unary_unary(
+            self._stubs["get_volume_backup"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/GetVolumeBackup",
                 request_serializer=gkebackup.GetVolumeBackupRequest.serialize,
                 response_deserializer=volume.VolumeBackup.deserialize,
@@ -614,7 +703,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_restore_plan" not in self._stubs:
-            self._stubs["create_restore_plan"] = self.grpc_channel.unary_unary(
+            self._stubs["create_restore_plan"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/CreateRestorePlan",
                 request_serializer=gkebackup.CreateRestorePlanRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -643,7 +732,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_restore_plans" not in self._stubs:
-            self._stubs["list_restore_plans"] = self.grpc_channel.unary_unary(
+            self._stubs["list_restore_plans"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/ListRestorePlans",
                 request_serializer=gkebackup.ListRestorePlansRequest.serialize,
                 response_deserializer=gkebackup.ListRestorePlansResponse.deserialize,
@@ -671,7 +760,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_restore_plan" not in self._stubs:
-            self._stubs["get_restore_plan"] = self.grpc_channel.unary_unary(
+            self._stubs["get_restore_plan"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/GetRestorePlan",
                 request_serializer=gkebackup.GetRestorePlanRequest.serialize,
                 response_deserializer=restore_plan.RestorePlan.deserialize,
@@ -699,7 +788,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_restore_plan" not in self._stubs:
-            self._stubs["update_restore_plan"] = self.grpc_channel.unary_unary(
+            self._stubs["update_restore_plan"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/UpdateRestorePlan",
                 request_serializer=gkebackup.UpdateRestorePlanRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -727,7 +816,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_restore_plan" not in self._stubs:
-            self._stubs["delete_restore_plan"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_restore_plan"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/DeleteRestorePlan",
                 request_serializer=gkebackup.DeleteRestorePlanRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -755,7 +844,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_restore" not in self._stubs:
-            self._stubs["create_restore"] = self.grpc_channel.unary_unary(
+            self._stubs["create_restore"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/CreateRestore",
                 request_serializer=gkebackup.CreateRestoreRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -783,7 +872,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_restores" not in self._stubs:
-            self._stubs["list_restores"] = self.grpc_channel.unary_unary(
+            self._stubs["list_restores"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/ListRestores",
                 request_serializer=gkebackup.ListRestoresRequest.serialize,
                 response_deserializer=gkebackup.ListRestoresResponse.deserialize,
@@ -809,7 +898,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_restore" not in self._stubs:
-            self._stubs["get_restore"] = self.grpc_channel.unary_unary(
+            self._stubs["get_restore"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/GetRestore",
                 request_serializer=gkebackup.GetRestoreRequest.serialize,
                 response_deserializer=restore.Restore.deserialize,
@@ -837,7 +926,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_restore" not in self._stubs:
-            self._stubs["update_restore"] = self.grpc_channel.unary_unary(
+            self._stubs["update_restore"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/UpdateRestore",
                 request_serializer=gkebackup.UpdateRestoreRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -865,7 +954,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_restore" not in self._stubs:
-            self._stubs["delete_restore"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_restore"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/DeleteRestore",
                 request_serializer=gkebackup.DeleteRestoreRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -894,7 +983,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_volume_restores" not in self._stubs:
-            self._stubs["list_volume_restores"] = self.grpc_channel.unary_unary(
+            self._stubs["list_volume_restores"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/ListVolumeRestores",
                 request_serializer=gkebackup.ListVolumeRestoresRequest.serialize,
                 response_deserializer=gkebackup.ListVolumeRestoresResponse.deserialize,
@@ -920,7 +1009,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_volume_restore" not in self._stubs:
-            self._stubs["get_volume_restore"] = self.grpc_channel.unary_unary(
+            self._stubs["get_volume_restore"] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/GetVolumeRestore",
                 request_serializer=gkebackup.GetVolumeRestoreRequest.serialize,
                 response_deserializer=volume.VolumeRestore.deserialize,
@@ -951,7 +1040,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         if "get_backup_index_download_url" not in self._stubs:
             self._stubs[
                 "get_backup_index_download_url"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.gkebackup.v1.BackupForGKE/GetBackupIndexDownloadUrl",
                 request_serializer=gkebackup.GetBackupIndexDownloadUrlRequest.serialize,
                 response_deserializer=gkebackup.GetBackupIndexDownloadUrlResponse.deserialize,
@@ -961,12 +1050,12 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_backup_plan: gapic_v1.method_async.wrap_method(
+            self.create_backup_plan: self._wrap_method(
                 self.create_backup_plan,
                 default_timeout=300.0,
                 client_info=client_info,
             ),
-            self.list_backup_plans: gapic_v1.method_async.wrap_method(
+            self.list_backup_plans: self._wrap_method(
                 self.list_backup_plans,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -980,7 +1069,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_backup_plan: gapic_v1.method_async.wrap_method(
+            self.get_backup_plan: self._wrap_method(
                 self.get_backup_plan,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -994,22 +1083,22 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_backup_plan: gapic_v1.method_async.wrap_method(
+            self.update_backup_plan: self._wrap_method(
                 self.update_backup_plan,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_backup_plan: gapic_v1.method_async.wrap_method(
+            self.delete_backup_plan: self._wrap_method(
                 self.delete_backup_plan,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_backup: gapic_v1.method_async.wrap_method(
+            self.create_backup: self._wrap_method(
                 self.create_backup,
                 default_timeout=120.0,
                 client_info=client_info,
             ),
-            self.list_backups: gapic_v1.method_async.wrap_method(
+            self.list_backups: self._wrap_method(
                 self.list_backups,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1023,7 +1112,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_backup: gapic_v1.method_async.wrap_method(
+            self.get_backup: self._wrap_method(
                 self.get_backup,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1037,17 +1126,17 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_backup: gapic_v1.method_async.wrap_method(
+            self.update_backup: self._wrap_method(
                 self.update_backup,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_backup: gapic_v1.method_async.wrap_method(
+            self.delete_backup: self._wrap_method(
                 self.delete_backup,
                 default_timeout=300.0,
                 client_info=client_info,
             ),
-            self.list_volume_backups: gapic_v1.method_async.wrap_method(
+            self.list_volume_backups: self._wrap_method(
                 self.list_volume_backups,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1061,7 +1150,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_volume_backup: gapic_v1.method_async.wrap_method(
+            self.get_volume_backup: self._wrap_method(
                 self.get_volume_backup,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1075,12 +1164,12 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_restore_plan: gapic_v1.method_async.wrap_method(
+            self.create_restore_plan: self._wrap_method(
                 self.create_restore_plan,
                 default_timeout=120.0,
                 client_info=client_info,
             ),
-            self.list_restore_plans: gapic_v1.method_async.wrap_method(
+            self.list_restore_plans: self._wrap_method(
                 self.list_restore_plans,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1094,7 +1183,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_restore_plan: gapic_v1.method_async.wrap_method(
+            self.get_restore_plan: self._wrap_method(
                 self.get_restore_plan,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1108,22 +1197,22 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_restore_plan: gapic_v1.method_async.wrap_method(
+            self.update_restore_plan: self._wrap_method(
                 self.update_restore_plan,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_restore_plan: gapic_v1.method_async.wrap_method(
+            self.delete_restore_plan: self._wrap_method(
                 self.delete_restore_plan,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_restore: gapic_v1.method_async.wrap_method(
+            self.create_restore: self._wrap_method(
                 self.create_restore,
                 default_timeout=120.0,
                 client_info=client_info,
             ),
-            self.list_restores: gapic_v1.method_async.wrap_method(
+            self.list_restores: self._wrap_method(
                 self.list_restores,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1137,7 +1226,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_restore: gapic_v1.method_async.wrap_method(
+            self.get_restore: self._wrap_method(
                 self.get_restore,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1151,17 +1240,17 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_restore: gapic_v1.method_async.wrap_method(
+            self.update_restore: self._wrap_method(
                 self.update_restore,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_restore: gapic_v1.method_async.wrap_method(
+            self.delete_restore: self._wrap_method(
                 self.delete_restore,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_volume_restores: gapic_v1.method_async.wrap_method(
+            self.list_volume_restores: self._wrap_method(
                 self.list_volume_restores,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1175,7 +1264,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_volume_restore: gapic_v1.method_async.wrap_method(
+            self.get_volume_restore: self._wrap_method(
                 self.get_volume_restore,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1189,7 +1278,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_backup_index_download_url: gapic_v1.method_async.wrap_method(
+            self.get_backup_index_download_url: self._wrap_method(
                 self.get_backup_index_download_url,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1203,10 +1292,64 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_iam_policy: self._wrap_method(
+                self.get_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.set_iam_policy: self._wrap_method(
+                self.set_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.test_iam_permissions: self._wrap_method(
+                self.test_iam_permissions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -1218,7 +1361,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1235,7 +1378,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1252,7 +1395,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1271,7 +1414,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,
@@ -1290,7 +1433,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -1307,7 +1450,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,
@@ -1332,7 +1475,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "set_iam_policy" not in self._stubs:
-            self._stubs["set_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["set_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/SetIamPolicy",
                 request_serializer=iam_policy_pb2.SetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -1358,7 +1501,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_iam_policy" not in self._stubs:
-            self._stubs["get_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["get_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/GetIamPolicy",
                 request_serializer=iam_policy_pb2.GetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -1387,7 +1530,7 @@ class BackupForGKEGrpcAsyncIOTransport(BackupForGKETransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "test_iam_permissions" not in self._stubs:
-            self._stubs["test_iam_permissions"] = self.grpc_channel.unary_unary(
+            self._stubs["test_iam_permissions"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/TestIamPermissions",
                 request_serializer=iam_policy_pb2.TestIamPermissionsRequest.SerializeToString,
                 response_deserializer=iam_policy_pb2.TestIamPermissionsResponse.FromString,

@@ -189,6 +189,11 @@ class NetAppTransport(abc.ABC):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.switch_active_replica_zone: gapic_v1.method.wrap_method(
+                self.switch_active_replica_zone,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.list_volumes: gapic_v1.method.wrap_method(
                 self.list_volumes,
                 default_retry=retries.Retry(
@@ -434,6 +439,16 @@ class NetAppTransport(abc.ABC):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.establish_peering: gapic_v1.method.wrap_method(
+                self.establish_peering,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.sync_replication: gapic_v1.method.wrap_method(
+                self.sync_replication,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.create_backup_vault: gapic_v1.method.wrap_method(
                 self.create_backup_vault,
                 default_timeout=60.0,
@@ -563,6 +578,36 @@ class NetAppTransport(abc.ABC):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.get_location: gapic_v1.method.wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: gapic_v1.method.wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: gapic_v1.method.wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: gapic_v1.method.wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: gapic_v1.method.wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: gapic_v1.method.wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
     def close(self):
@@ -623,6 +668,15 @@ class NetAppTransport(abc.ABC):
         self,
     ) -> Callable[
         [storage_pool.DeleteStoragePoolRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def switch_active_replica_zone(
+        self,
+    ) -> Callable[
+        [storage_pool.SwitchActiveReplicaZoneRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()
@@ -911,6 +965,24 @@ class NetAppTransport(abc.ABC):
         self,
     ) -> Callable[
         [replication.ReverseReplicationDirectionRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def establish_peering(
+        self,
+    ) -> Callable[
+        [replication.EstablishPeeringRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def sync_replication(
+        self,
+    ) -> Callable[
+        [replication.SyncReplicationRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()

@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -24,14 +28,93 @@ from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.dialogflowcx_v3beta1.types import flow
 from google.cloud.dialogflowcx_v3beta1.types import flow as gcdc_flow
 
 from .base import DEFAULT_CLIENT_INFO, FlowsTransport
 from .grpc import FlowsGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.dialogflow.cx.v3beta1.Flows",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.dialogflow.cx.v3beta1.Flows",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class FlowsGrpcAsyncIOTransport(FlowsTransport):
@@ -174,7 +257,8 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
 
         if isinstance(channel, aio.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -230,7 +314,13 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -253,7 +343,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -282,7 +372,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_flow" not in self._stubs:
-            self._stubs["create_flow"] = self.grpc_channel.unary_unary(
+            self._stubs["create_flow"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/CreateFlow",
                 request_serializer=gcdc_flow.CreateFlowRequest.serialize,
                 response_deserializer=gcdc_flow.Flow.deserialize,
@@ -308,7 +398,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_flow" not in self._stubs:
-            self._stubs["delete_flow"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_flow"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/DeleteFlow",
                 request_serializer=flow.DeleteFlowRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -334,7 +424,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_flows" not in self._stubs:
-            self._stubs["list_flows"] = self.grpc_channel.unary_unary(
+            self._stubs["list_flows"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/ListFlows",
                 request_serializer=flow.ListFlowsRequest.serialize,
                 response_deserializer=flow.ListFlowsResponse.deserialize,
@@ -358,7 +448,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_flow" not in self._stubs:
-            self._stubs["get_flow"] = self.grpc_channel.unary_unary(
+            self._stubs["get_flow"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/GetFlow",
                 request_serializer=flow.GetFlowRequest.serialize,
                 response_deserializer=flow.Flow.deserialize,
@@ -388,7 +478,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_flow" not in self._stubs:
-            self._stubs["update_flow"] = self.grpc_channel.unary_unary(
+            self._stubs["update_flow"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/UpdateFlow",
                 request_serializer=gcdc_flow.UpdateFlowRequest.serialize,
                 response_deserializer=gcdc_flow.Flow.deserialize,
@@ -429,7 +519,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "train_flow" not in self._stubs:
-            self._stubs["train_flow"] = self.grpc_channel.unary_unary(
+            self._stubs["train_flow"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/TrainFlow",
                 request_serializer=flow.TrainFlowRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -458,7 +548,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "validate_flow" not in self._stubs:
-            self._stubs["validate_flow"] = self.grpc_channel.unary_unary(
+            self._stubs["validate_flow"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/ValidateFlow",
                 request_serializer=flow.ValidateFlowRequest.serialize,
                 response_deserializer=flow.FlowValidationResult.deserialize,
@@ -487,7 +577,9 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_flow_validation_result" not in self._stubs:
-            self._stubs["get_flow_validation_result"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "get_flow_validation_result"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/GetFlowValidationResult",
                 request_serializer=flow.GetFlowValidationResultRequest.serialize,
                 response_deserializer=flow.FlowValidationResult.deserialize,
@@ -528,7 +620,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "import_flow" not in self._stubs:
-            self._stubs["import_flow"] = self.grpc_channel.unary_unary(
+            self._stubs["import_flow"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/ImportFlow",
                 request_serializer=flow.ImportFlowRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -567,7 +659,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "export_flow" not in self._stubs:
-            self._stubs["export_flow"] = self.grpc_channel.unary_unary(
+            self._stubs["export_flow"] = self._logged_channel.unary_unary(
                 "/google.cloud.dialogflow.cx.v3beta1.Flows/ExportFlow",
                 request_serializer=flow.ExportFlowRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -577,60 +669,94 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_flow: gapic_v1.method_async.wrap_method(
+            self.create_flow: self._wrap_method(
                 self.create_flow,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_flow: gapic_v1.method_async.wrap_method(
+            self.delete_flow: self._wrap_method(
                 self.delete_flow,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_flows: gapic_v1.method_async.wrap_method(
+            self.list_flows: self._wrap_method(
                 self.list_flows,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_flow: gapic_v1.method_async.wrap_method(
+            self.get_flow: self._wrap_method(
                 self.get_flow,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_flow: gapic_v1.method_async.wrap_method(
+            self.update_flow: self._wrap_method(
                 self.update_flow,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.train_flow: gapic_v1.method_async.wrap_method(
+            self.train_flow: self._wrap_method(
                 self.train_flow,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.validate_flow: gapic_v1.method_async.wrap_method(
+            self.validate_flow: self._wrap_method(
                 self.validate_flow,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_flow_validation_result: gapic_v1.method_async.wrap_method(
+            self.get_flow_validation_result: self._wrap_method(
                 self.get_flow_validation_result,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.import_flow: gapic_v1.method_async.wrap_method(
+            self.import_flow: self._wrap_method(
                 self.import_flow,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.export_flow: gapic_v1.method_async.wrap_method(
+            self.export_flow: self._wrap_method(
                 self.export_flow,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def cancel_operation(
@@ -642,7 +768,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -659,7 +785,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -678,7 +804,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,
@@ -697,7 +823,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -714,7 +840,7 @@ class FlowsGrpcAsyncIOTransport(FlowsTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,

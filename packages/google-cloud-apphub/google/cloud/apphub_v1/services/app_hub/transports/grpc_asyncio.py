@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -25,8 +29,11 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.apphub_v1.types import (
     apphub_service,
@@ -38,6 +45,82 @@ from google.cloud.apphub_v1.types import (
 
 from .base import DEFAULT_CLIENT_INFO, AppHubTransport
 from .grpc import AppHubGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.apphub.v1.AppHub",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.apphub.v1.AppHub",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class AppHubGrpcAsyncIOTransport(AppHubTransport):
@@ -236,7 +319,13 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -259,7 +348,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -292,7 +381,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         if "lookup_service_project_attachment" not in self._stubs:
             self._stubs[
                 "lookup_service_project_attachment"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/LookupServiceProjectAttachment",
                 request_serializer=apphub_service.LookupServiceProjectAttachmentRequest.serialize,
                 response_deserializer=apphub_service.LookupServiceProjectAttachmentResponse.deserialize,
@@ -324,7 +413,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         if "list_service_project_attachments" not in self._stubs:
             self._stubs[
                 "list_service_project_attachments"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/ListServiceProjectAttachments",
                 request_serializer=apphub_service.ListServiceProjectAttachmentsRequest.serialize,
                 response_deserializer=apphub_service.ListServiceProjectAttachmentsResponse.deserialize,
@@ -356,7 +445,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         if "create_service_project_attachment" not in self._stubs:
             self._stubs[
                 "create_service_project_attachment"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/CreateServiceProjectAttachment",
                 request_serializer=apphub_service.CreateServiceProjectAttachmentRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -387,7 +476,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         if "get_service_project_attachment" not in self._stubs:
             self._stubs[
                 "get_service_project_attachment"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/GetServiceProjectAttachment",
                 request_serializer=apphub_service.GetServiceProjectAttachmentRequest.serialize,
                 response_deserializer=service_project_attachment.ServiceProjectAttachment.deserialize,
@@ -419,7 +508,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         if "delete_service_project_attachment" not in self._stubs:
             self._stubs[
                 "delete_service_project_attachment"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/DeleteServiceProjectAttachment",
                 request_serializer=apphub_service.DeleteServiceProjectAttachmentRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -454,7 +543,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         if "detach_service_project_attachment" not in self._stubs:
             self._stubs[
                 "detach_service_project_attachment"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/DetachServiceProjectAttachment",
                 request_serializer=apphub_service.DetachServiceProjectAttachmentRequest.serialize,
                 response_deserializer=apphub_service.DetachServiceProjectAttachmentResponse.deserialize,
@@ -484,7 +573,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_discovered_services" not in self._stubs:
-            self._stubs["list_discovered_services"] = self.grpc_channel.unary_unary(
+            self._stubs["list_discovered_services"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/ListDiscoveredServices",
                 request_serializer=apphub_service.ListDiscoveredServicesRequest.serialize,
                 response_deserializer=apphub_service.ListDiscoveredServicesResponse.deserialize,
@@ -514,7 +603,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_discovered_service" not in self._stubs:
-            self._stubs["get_discovered_service"] = self.grpc_channel.unary_unary(
+            self._stubs["get_discovered_service"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/GetDiscoveredService",
                 request_serializer=apphub_service.GetDiscoveredServiceRequest.serialize,
                 response_deserializer=service.DiscoveredService.deserialize,
@@ -544,7 +633,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "lookup_discovered_service" not in self._stubs:
-            self._stubs["lookup_discovered_service"] = self.grpc_channel.unary_unary(
+            self._stubs["lookup_discovered_service"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/LookupDiscoveredService",
                 request_serializer=apphub_service.LookupDiscoveredServiceRequest.serialize,
                 response_deserializer=apphub_service.LookupDiscoveredServiceResponse.deserialize,
@@ -573,7 +662,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_services" not in self._stubs:
-            self._stubs["list_services"] = self.grpc_channel.unary_unary(
+            self._stubs["list_services"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/ListServices",
                 request_serializer=apphub_service.ListServicesRequest.serialize,
                 response_deserializer=apphub_service.ListServicesResponse.deserialize,
@@ -601,7 +690,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_service" not in self._stubs:
-            self._stubs["create_service"] = self.grpc_channel.unary_unary(
+            self._stubs["create_service"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/CreateService",
                 request_serializer=apphub_service.CreateServiceRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -627,7 +716,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_service" not in self._stubs:
-            self._stubs["get_service"] = self.grpc_channel.unary_unary(
+            self._stubs["get_service"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/GetService",
                 request_serializer=apphub_service.GetServiceRequest.serialize,
                 response_deserializer=service.Service.deserialize,
@@ -655,7 +744,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_service" not in self._stubs:
-            self._stubs["update_service"] = self.grpc_channel.unary_unary(
+            self._stubs["update_service"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/UpdateService",
                 request_serializer=apphub_service.UpdateServiceRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -683,7 +772,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_service" not in self._stubs:
-            self._stubs["delete_service"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_service"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/DeleteService",
                 request_serializer=apphub_service.DeleteServiceRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -713,7 +802,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_discovered_workloads" not in self._stubs:
-            self._stubs["list_discovered_workloads"] = self.grpc_channel.unary_unary(
+            self._stubs["list_discovered_workloads"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/ListDiscoveredWorkloads",
                 request_serializer=apphub_service.ListDiscoveredWorkloadsRequest.serialize,
                 response_deserializer=apphub_service.ListDiscoveredWorkloadsResponse.deserialize,
@@ -743,7 +832,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_discovered_workload" not in self._stubs:
-            self._stubs["get_discovered_workload"] = self.grpc_channel.unary_unary(
+            self._stubs["get_discovered_workload"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/GetDiscoveredWorkload",
                 request_serializer=apphub_service.GetDiscoveredWorkloadRequest.serialize,
                 response_deserializer=workload.DiscoveredWorkload.deserialize,
@@ -773,7 +862,9 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "lookup_discovered_workload" not in self._stubs:
-            self._stubs["lookup_discovered_workload"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "lookup_discovered_workload"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/LookupDiscoveredWorkload",
                 request_serializer=apphub_service.LookupDiscoveredWorkloadRequest.serialize,
                 response_deserializer=apphub_service.LookupDiscoveredWorkloadResponse.deserialize,
@@ -802,7 +893,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_workloads" not in self._stubs:
-            self._stubs["list_workloads"] = self.grpc_channel.unary_unary(
+            self._stubs["list_workloads"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/ListWorkloads",
                 request_serializer=apphub_service.ListWorkloadsRequest.serialize,
                 response_deserializer=apphub_service.ListWorkloadsResponse.deserialize,
@@ -830,7 +921,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_workload" not in self._stubs:
-            self._stubs["create_workload"] = self.grpc_channel.unary_unary(
+            self._stubs["create_workload"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/CreateWorkload",
                 request_serializer=apphub_service.CreateWorkloadRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -856,7 +947,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_workload" not in self._stubs:
-            self._stubs["get_workload"] = self.grpc_channel.unary_unary(
+            self._stubs["get_workload"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/GetWorkload",
                 request_serializer=apphub_service.GetWorkloadRequest.serialize,
                 response_deserializer=workload.Workload.deserialize,
@@ -884,7 +975,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_workload" not in self._stubs:
-            self._stubs["update_workload"] = self.grpc_channel.unary_unary(
+            self._stubs["update_workload"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/UpdateWorkload",
                 request_serializer=apphub_service.UpdateWorkloadRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -912,7 +1003,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_workload" not in self._stubs:
-            self._stubs["delete_workload"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_workload"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/DeleteWorkload",
                 request_serializer=apphub_service.DeleteWorkloadRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -941,7 +1032,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_applications" not in self._stubs:
-            self._stubs["list_applications"] = self.grpc_channel.unary_unary(
+            self._stubs["list_applications"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/ListApplications",
                 request_serializer=apphub_service.ListApplicationsRequest.serialize,
                 response_deserializer=apphub_service.ListApplicationsResponse.deserialize,
@@ -970,7 +1061,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_application" not in self._stubs:
-            self._stubs["create_application"] = self.grpc_channel.unary_unary(
+            self._stubs["create_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/CreateApplication",
                 request_serializer=apphub_service.CreateApplicationRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -998,7 +1089,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_application" not in self._stubs:
-            self._stubs["get_application"] = self.grpc_channel.unary_unary(
+            self._stubs["get_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/GetApplication",
                 request_serializer=apphub_service.GetApplicationRequest.serialize,
                 response_deserializer=application.Application.deserialize,
@@ -1027,7 +1118,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_application" not in self._stubs:
-            self._stubs["update_application"] = self.grpc_channel.unary_unary(
+            self._stubs["update_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/UpdateApplication",
                 request_serializer=apphub_service.UpdateApplicationRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1056,7 +1147,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_application" not in self._stubs:
-            self._stubs["delete_application"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_application"] = self._logged_channel.unary_unary(
                 "/google.cloud.apphub.v1.AppHub/DeleteApplication",
                 request_serializer=apphub_service.DeleteApplicationRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1066,7 +1157,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.lookup_service_project_attachment: gapic_v1.method_async.wrap_method(
+            self.lookup_service_project_attachment: self._wrap_method(
                 self.lookup_service_project_attachment,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1080,7 +1171,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_service_project_attachments: gapic_v1.method_async.wrap_method(
+            self.list_service_project_attachments: self._wrap_method(
                 self.list_service_project_attachments,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1094,12 +1185,12 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_service_project_attachment: gapic_v1.method_async.wrap_method(
+            self.create_service_project_attachment: self._wrap_method(
                 self.create_service_project_attachment,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_service_project_attachment: gapic_v1.method_async.wrap_method(
+            self.get_service_project_attachment: self._wrap_method(
                 self.get_service_project_attachment,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1113,17 +1204,17 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_service_project_attachment: gapic_v1.method_async.wrap_method(
+            self.delete_service_project_attachment: self._wrap_method(
                 self.delete_service_project_attachment,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.detach_service_project_attachment: gapic_v1.method_async.wrap_method(
+            self.detach_service_project_attachment: self._wrap_method(
                 self.detach_service_project_attachment,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_discovered_services: gapic_v1.method_async.wrap_method(
+            self.list_discovered_services: self._wrap_method(
                 self.list_discovered_services,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1137,7 +1228,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_discovered_service: gapic_v1.method_async.wrap_method(
+            self.get_discovered_service: self._wrap_method(
                 self.get_discovered_service,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1151,7 +1242,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.lookup_discovered_service: gapic_v1.method_async.wrap_method(
+            self.lookup_discovered_service: self._wrap_method(
                 self.lookup_discovered_service,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1165,7 +1256,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_services: gapic_v1.method_async.wrap_method(
+            self.list_services: self._wrap_method(
                 self.list_services,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1179,12 +1270,12 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_service: gapic_v1.method_async.wrap_method(
+            self.create_service: self._wrap_method(
                 self.create_service,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_service: gapic_v1.method_async.wrap_method(
+            self.get_service: self._wrap_method(
                 self.get_service,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1198,17 +1289,17 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_service: gapic_v1.method_async.wrap_method(
+            self.update_service: self._wrap_method(
                 self.update_service,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_service: gapic_v1.method_async.wrap_method(
+            self.delete_service: self._wrap_method(
                 self.delete_service,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_discovered_workloads: gapic_v1.method_async.wrap_method(
+            self.list_discovered_workloads: self._wrap_method(
                 self.list_discovered_workloads,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1222,7 +1313,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_discovered_workload: gapic_v1.method_async.wrap_method(
+            self.get_discovered_workload: self._wrap_method(
                 self.get_discovered_workload,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1236,7 +1327,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.lookup_discovered_workload: gapic_v1.method_async.wrap_method(
+            self.lookup_discovered_workload: self._wrap_method(
                 self.lookup_discovered_workload,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1250,7 +1341,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_workloads: gapic_v1.method_async.wrap_method(
+            self.list_workloads: self._wrap_method(
                 self.list_workloads,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1264,12 +1355,12 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_workload: gapic_v1.method_async.wrap_method(
+            self.create_workload: self._wrap_method(
                 self.create_workload,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_workload: gapic_v1.method_async.wrap_method(
+            self.get_workload: self._wrap_method(
                 self.get_workload,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1283,17 +1374,17 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_workload: gapic_v1.method_async.wrap_method(
+            self.update_workload: self._wrap_method(
                 self.update_workload,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_workload: gapic_v1.method_async.wrap_method(
+            self.delete_workload: self._wrap_method(
                 self.delete_workload,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_applications: gapic_v1.method_async.wrap_method(
+            self.list_applications: self._wrap_method(
                 self.list_applications,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1307,12 +1398,12 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_application: gapic_v1.method_async.wrap_method(
+            self.create_application: self._wrap_method(
                 self.create_application,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_application: gapic_v1.method_async.wrap_method(
+            self.get_application: self._wrap_method(
                 self.get_application,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1326,20 +1417,74 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_application: gapic_v1.method_async.wrap_method(
+            self.update_application: self._wrap_method(
                 self.update_application,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_application: gapic_v1.method_async.wrap_method(
+            self.delete_application: self._wrap_method(
                 self.delete_application,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_iam_policy: self._wrap_method(
+                self.get_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.set_iam_policy: self._wrap_method(
+                self.set_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.test_iam_permissions: self._wrap_method(
+                self.test_iam_permissions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -1351,7 +1496,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1368,7 +1513,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1385,7 +1530,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1404,7 +1549,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,
@@ -1423,7 +1568,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -1440,7 +1585,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,
@@ -1465,7 +1610,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "set_iam_policy" not in self._stubs:
-            self._stubs["set_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["set_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/SetIamPolicy",
                 request_serializer=iam_policy_pb2.SetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -1491,7 +1636,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_iam_policy" not in self._stubs:
-            self._stubs["get_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["get_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/GetIamPolicy",
                 request_serializer=iam_policy_pb2.GetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -1520,7 +1665,7 @@ class AppHubGrpcAsyncIOTransport(AppHubTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "test_iam_permissions" not in self._stubs:
-            self._stubs["test_iam_permissions"] = self.grpc_channel.unary_unary(
+            self._stubs["test_iam_permissions"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/TestIamPermissions",
                 request_serializer=iam_policy_pb2.TestIamPermissionsRequest.SerializeToString,
                 response_deserializer=iam_policy_pb2.TestIamPermissionsResponse.FromString,

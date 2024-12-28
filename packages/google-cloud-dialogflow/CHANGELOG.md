@@ -2,7 +2,85 @@
 
 [PyPI History][1]
 
-[1]: https://pypi.org/project/dialogflow/#history
+[1]: https://pypi.org/project/google-cloud-dialogflow/#history
+
+## [2.38.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-v2.37.0...google-cloud-dialogflow-v2.38.0) (2024-12-18)
+
+
+### Features
+
+* [google-cloud-dialogflow] add new fields for delivering ([aa99816](https://github.com/googleapis/google-cloud-python/commit/aa998161a58ad9ce48c61ce913184fd49532327d))
+* [google-cloud-dialogflow] add new fields for delivering intermediate transcriptions through PubSub ([#13358](https://github.com/googleapis/google-cloud-python/issues/13358)) ([aa99816](https://github.com/googleapis/google-cloud-python/commit/aa998161a58ad9ce48c61ce913184fd49532327d))
+
+## [2.37.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-v2.36.0...google-cloud-dialogflow-v2.37.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([247863d](https://github.com/googleapis/google-cloud-python/commit/247863d68bed85b452aff82b444bcef222e0c1c1))
+* properly mark TrainingPhrase name field output-only ([247863d](https://github.com/googleapis/google-cloud-python/commit/247863d68bed85b452aff82b444bcef222e0c1c1))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([247863d](https://github.com/googleapis/google-cloud-python/commit/247863d68bed85b452aff82b444bcef222e0c1c1))
+
+
+### Documentation
+
+* fixed the references to proto method / fields ([247863d](https://github.com/googleapis/google-cloud-python/commit/247863d68bed85b452aff82b444bcef222e0c1c1))
+
+## [2.36.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-v2.35.0...google-cloud-dialogflow-v2.36.0) (2024-11-14)
+
+
+### Features
+
+* add options of query_source, search_config, end_user_metadata and exact_search ([ede7d85](https://github.com/googleapis/google-cloud-python/commit/ede7d853aa30133dc2f8e3df28d85308dcff11e2))
+* add options of query_source, search_config, end_user_metadata and exact_search  ([28eb346](https://github.com/googleapis/google-cloud-python/commit/28eb346014b52f5e54c7b8ffa32499d60ab0ebe6))
+* expose metadata in AnswerSource ([28eb346](https://github.com/googleapis/google-cloud-python/commit/28eb346014b52f5e54c7b8ffa32499d60ab0ebe6))
+* expose metadata in AnswerSource ([ede7d85](https://github.com/googleapis/google-cloud-python/commit/ede7d853aa30133dc2f8e3df28d85308dcff11e2))
+
+## [2.35.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-v2.34.0...google-cloud-dialogflow-v2.35.0) (2024-11-11)
+
+
+### Features
+
+* add options of query_source, search_config and context_size (https://github.com/googleapis/google-cloud-python/pull/13242) ([e03cab6](https://github.com/googleapis/google-cloud-python/commit/e03cab6861998d36f4efacd694918b53656085e8))
+* add SipTrunks service (https://github.com/googleapis/google-cloud-python/pull/13242) ([e03cab6](https://github.com/googleapis/google-cloud-python/commit/e03cab6861998d36f4efacd694918b53656085e8))
+* added support for ALAW encoding (https://github.com/googleapis/google-cloud-python/pull/13242) ([e03cab6](https://github.com/googleapis/google-cloud-python/commit/e03cab6861998d36f4efacd694918b53656085e8))
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13238](https://github.com/googleapis/google-cloud-python/issues/13238)) ([cb14bda](https://github.com/googleapis/google-cloud-python/commit/cb14bda5e3d48df4f353a381a2e6fce878f83e78))
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+
+### Documentation
+
+* update PyPI package link in CHANGELOG.md ([e03cab6](https://github.com/googleapis/google-cloud-python/commit/e03cab6861998d36f4efacd694918b53656085e8))
+
+## [2.34.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-v2.33.0...google-cloud-dialogflow-v2.34.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13202](https://github.com/googleapis/google-cloud-python/issues/13202)) ([5b1f2f3](https://github.com/googleapis/google-cloud-python/commit/5b1f2f3a81ed171b643812e67a7ed179b9b703ea))
+
+## [2.33.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-v2.32.0...google-cloud-dialogflow-v2.33.0) (2024-10-08)
+
+
+### Features
+
+* add ALAW encoding value to Audio encoding enum ([c169348](https://github.com/googleapis/google-cloud-python/commit/c1693486f314261e3799547ee6f5e53dd7e687fc))
+* created new boolean fields in conversation dataset for zone isolation and zone separation compliance status ([c169348](https://github.com/googleapis/google-cloud-python/commit/c1693486f314261e3799547ee6f5e53dd7e687fc))
+
+## [2.32.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-v2.31.0...google-cloud-dialogflow-v2.32.0) (2024-09-23)
+
+
+### Features
+
+* created new boolean fields in conversation model for zone isolation and zone separation compliance status ([1f8b564](https://github.com/googleapis/google-cloud-python/commit/1f8b5640b0ac5397318ede4ebcfa120120ebccc8))
 
 ## [2.31.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-v2.30.2...google-cloud-dialogflow-v2.31.0) (2024-08-08)
 

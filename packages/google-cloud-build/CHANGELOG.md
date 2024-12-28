@@ -4,6 +4,51 @@
 
 [1]: https://pypi.org/project/google-cloud-build/#history
 
+## [3.28.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.27.1...google-cloud-build-v3.28.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+## [3.27.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.27.0...google-cloud-build-v3.27.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [3.27.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.26.0...google-cloud-build-v3.27.0) (2024-10-28)
+
+
+### Features
+
+* [google-cloud-build] Add PrivateServiceConnect option to WorkerPool ([#13221](https://github.com/googleapis/google-cloud-python/issues/13221)) ([629b927](https://github.com/googleapis/google-cloud-python/commit/629b927a0ec0c3342a0d22a344b15afb41cf5e37))
+
+## [3.26.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.25.0...google-cloud-build-v3.26.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
+## [3.25.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.24.2...google-cloud-build-v3.25.0) (2024-09-23)
+
+
+### Features
+
+* Add LEGACY_BUCKET option to DefaultLogsBucketBehavior ([e889809](https://github.com/googleapis/google-cloud-python/commit/e889809389c5b194ec77955664eb2859cde28d73))
+
+
+### Documentation
+
+* Sanitize docs ([e889809](https://github.com/googleapis/google-cloud-python/commit/e889809389c5b194ec77955664eb2859cde28d73))
+
 ## [3.24.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.24.1...google-cloud-build-v3.24.2) (2024-07-30)
 
 

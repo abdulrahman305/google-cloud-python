@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -61,6 +61,15 @@ from google.cloud.commerce_consumer_procurement_v1.types import (
 from .client import ConsumerProcurementServiceClient
 from .transports.base import DEFAULT_CLIENT_INFO, ConsumerProcurementServiceTransport
 from .transports.grpc_asyncio import ConsumerProcurementServiceGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class ConsumerProcurementServiceAsyncClient:
@@ -217,10 +226,7 @@ class ConsumerProcurementServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(ConsumerProcurementServiceClient).get_transport_class,
-        type(ConsumerProcurementServiceClient),
-    )
+    get_transport_class = ConsumerProcurementServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -292,13 +298,35 @@ class ConsumerProcurementServiceAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.cloud.commerce.consumer.procurement_v1.ConsumerProcurementServiceAsyncClient`.",
+                extra={
+                    "serviceName": "google.cloud.commerce.consumer.procurement.v1.ConsumerProcurementService",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.cloud.commerce.consumer.procurement.v1.ConsumerProcurementService",
+                    "credentialsType": None,
+                },
+            )
+
     async def place_order(
         self,
         request: Optional[Union[procurement_service.PlaceOrderRequest, dict]] = None,
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Creates a new
         [Order][google.cloud.commerce.consumer.procurement.v1.Order].
@@ -350,8 +378,10 @@ class ConsumerProcurementServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -420,7 +450,7 @@ class ConsumerProcurementServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> order.Order:
         r"""Returns the requested
         [Order][google.cloud.commerce.consumer.procurement.v1.Order]
@@ -466,8 +496,10 @@ class ConsumerProcurementServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.commerce_consumer_procurement_v1.types.Order:
@@ -544,7 +576,7 @@ class ConsumerProcurementServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListOrdersAsyncPager:
         r"""Lists
         [Order][google.cloud.commerce.consumer.procurement.v1.Order]
@@ -593,8 +625,10 @@ class ConsumerProcurementServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.commerce_consumer_procurement_v1.services.consumer_procurement_service.pagers.ListOrdersAsyncPager:
@@ -662,13 +696,241 @@ class ConsumerProcurementServiceAsyncClient:
         # Done; return the response.
         return response
 
+    async def modify_order(
+        self,
+        request: Optional[Union[procurement_service.ModifyOrderRequest, dict]] = None,
+        *,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation_async.AsyncOperation:
+        r"""Modifies an existing
+        [Order][google.cloud.commerce.consumer.procurement.v1.Order]
+        resource.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import commerce_consumer_procurement_v1
+
+            async def sample_modify_order():
+                # Create a client
+                client = commerce_consumer_procurement_v1.ConsumerProcurementServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = commerce_consumer_procurement_v1.ModifyOrderRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.modify_order(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = (await operation).result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.commerce_consumer_procurement_v1.types.ModifyOrderRequest, dict]]):
+                The request object. Request message for
+                [ConsumerProcurementService.ModifyOrder][google.cloud.commerce.consumer.procurement.v1.ConsumerProcurementService.ModifyOrder].
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation_async.AsyncOperation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.commerce_consumer_procurement_v1.types.Order` Represents a purchase made by a customer on Cloud Marketplace.
+                   Creating an order makes sure that both the Google
+                   backend systems as well as external service
+                   provider's systems (if needed) allow use of purchased
+                   products and ensures the appropriate billing events
+                   occur.
+
+                   An Order can be made against one Product with
+                   multiple add-ons (optional) or one Quote which might
+                   reference multiple products.
+
+                   Customers typically choose a price plan for each
+                   Product purchased when they create an order and can
+                   change their plan later, if the product allows.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, procurement_service.ModifyOrderRequest):
+            request = procurement_service.ModifyOrderRequest(request)
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.modify_order
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation_async.from_gapic(
+            response,
+            self._client._transport.operations_client,
+            order.Order,
+            metadata_type=procurement_service.ModifyOrderMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def cancel_order(
+        self,
+        request: Optional[Union[procurement_service.CancelOrderRequest, dict]] = None,
+        *,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation_async.AsyncOperation:
+        r"""Cancels an existing
+        [Order][google.cloud.commerce.consumer.procurement.v1.Order].
+        Every product procured in the Order will be cancelled.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import commerce_consumer_procurement_v1
+
+            async def sample_cancel_order():
+                # Create a client
+                client = commerce_consumer_procurement_v1.ConsumerProcurementServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = commerce_consumer_procurement_v1.CancelOrderRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.cancel_order(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = (await operation).result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.commerce_consumer_procurement_v1.types.CancelOrderRequest, dict]]):
+                The request object. Request message for
+                [ConsumerProcurementService.CancelOrder][google.cloud.commerce.consumer.procurement.v1.ConsumerProcurementService.CancelOrder].
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation_async.AsyncOperation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.commerce_consumer_procurement_v1.types.Order` Represents a purchase made by a customer on Cloud Marketplace.
+                   Creating an order makes sure that both the Google
+                   backend systems as well as external service
+                   provider's systems (if needed) allow use of purchased
+                   products and ensures the appropriate billing events
+                   occur.
+
+                   An Order can be made against one Product with
+                   multiple add-ons (optional) or one Quote which might
+                   reference multiple products.
+
+                   Customers typically choose a price plan for each
+                   Product purchased when they create an order and can
+                   change their plan later, if the product allows.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, procurement_service.CancelOrderRequest):
+            request = procurement_service.CancelOrderRequest(request)
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.cancel_order
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation_async.from_gapic(
+            response,
+            self._client._transport.operations_client,
+            order.Order,
+            metadata_type=procurement_service.CancelOrderMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
     async def get_operation(
         self,
         request: Optional[operations_pb2.GetOperationRequest] = None,
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.Operation:
         r"""Gets the latest state of a long-running operation.
 
@@ -679,8 +941,10 @@ class ConsumerProcurementServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.Operation:
                 An ``Operation`` object.
@@ -693,11 +957,7 @@ class ConsumerProcurementServiceAsyncClient:
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method_async.wrap_method(
-            self._client._transport.get_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self.transport._wrapped_methods[self._client._transport.get_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.

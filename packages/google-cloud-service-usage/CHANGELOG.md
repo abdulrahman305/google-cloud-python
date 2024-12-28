@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-usage-v1.11.1...google-cloud-service-usage-v1.12.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+## [1.11.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-usage-v1.11.0...google-cloud-service-usage-v1.11.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([59c4287](https://github.com/googleapis/google-cloud-python/commit/59c42878386ee08d1717b73e47d33d76cfb38ba0))
+
+## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-usage-v1.10.5...google-cloud-service-usage-v1.11.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13202](https://github.com/googleapis/google-cloud-python/issues/13202)) ([5b1f2f3](https://github.com/googleapis/google-cloud-python/commit/5b1f2f3a81ed171b643812e67a7ed179b9b703ea))
+
 ## [1.10.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-usage-v1.10.4...google-cloud-service-usage-v1.10.5) (2024-07-30)
 
 

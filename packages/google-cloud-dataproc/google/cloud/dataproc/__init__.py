@@ -135,6 +135,7 @@ from google.cloud.dataproc_v1.types.jobs import (
     CancelJobRequest,
     DeleteJobRequest,
     DriverSchedulingConfig,
+    FlinkJob,
     GetJobRequest,
     HadoopJob,
     HiveJob,
@@ -188,6 +189,7 @@ from google.cloud.dataproc_v1.types.sessions import (
     ListSessionsRequest,
     ListSessionsResponse,
     Session,
+    SparkConnectConfig,
     TerminateSessionRequest,
 )
 from google.cloud.dataproc_v1.types.shared import (
@@ -315,6 +317,7 @@ __all__ = (
     "CancelJobRequest",
     "DeleteJobRequest",
     "DriverSchedulingConfig",
+    "FlinkJob",
     "GetJobRequest",
     "HadoopJob",
     "HiveJob",
@@ -360,6 +363,7 @@ __all__ = (
     "ListSessionsRequest",
     "ListSessionsResponse",
     "Session",
+    "SparkConnectConfig",
     "TerminateSessionRequest",
     "AutotuningConfig",
     "EnvironmentConfig",

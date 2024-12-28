@@ -26,7 +26,7 @@ from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
 
 from google.ads.admanager_v1 import gapic_version as package_version
-from google.ads.admanager_v1.types import company_service
+from google.ads.admanager_v1.types import company_messages, company_service
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
@@ -139,6 +139,11 @@ class CompanyServiceTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.get_operation: gapic_v1.method.wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
     def close(self):
@@ -155,7 +160,7 @@ class CompanyServiceTransport(abc.ABC):
         self,
     ) -> Callable[
         [company_service.GetCompanyRequest],
-        Union[company_service.Company, Awaitable[company_service.Company]],
+        Union[company_messages.Company, Awaitable[company_messages.Company]],
     ]:
         raise NotImplementedError()
 

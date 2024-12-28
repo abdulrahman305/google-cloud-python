@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -25,23 +29,103 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.dataplex_v1.types import catalog
 
 from .base import DEFAULT_CLIENT_INFO, CatalogServiceTransport
 from .grpc import CatalogServiceGrpcTransport
 
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.dataplex.v1.CatalogService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.dataplex.v1.CatalogService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
+
 
 class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     """gRPC AsyncIO backend transport for CatalogService.
 
     The primary resources offered by this service are
-    EntryGroups, EntryTypes, AspectTypes, Entry and Aspect which
-    collectively allow a data administrator to organize, manage,
-    secure and catalog data across their organization located across
-    cloud projects in a variety of storage systems including Cloud
+    EntryGroups, EntryTypes, AspectTypes, and Entries. They
+    collectively let data administrators organize, manage, secure,
+    and catalog data located across cloud projects in their
+    organization in a variety of storage systems, including Cloud
     Storage and BigQuery.
 
     This class defines the same methods as the primary client, so the
@@ -235,7 +319,13 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -258,7 +348,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -272,7 +362,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the create entry type method over gRPC.
 
-        Creates an EntryType
+        Creates an EntryType.
 
         Returns:
             Callable[[~.CreateEntryTypeRequest],
@@ -285,7 +375,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_entry_type" not in self._stubs:
-            self._stubs["create_entry_type"] = self.grpc_channel.unary_unary(
+            self._stubs["create_entry_type"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/CreateEntryType",
                 request_serializer=catalog.CreateEntryTypeRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -300,7 +390,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the update entry type method over gRPC.
 
-        Updates a EntryType resource.
+        Updates an EntryType.
 
         Returns:
             Callable[[~.UpdateEntryTypeRequest],
@@ -313,7 +403,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_entry_type" not in self._stubs:
-            self._stubs["update_entry_type"] = self.grpc_channel.unary_unary(
+            self._stubs["update_entry_type"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/UpdateEntryType",
                 request_serializer=catalog.UpdateEntryTypeRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -328,7 +418,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the delete entry type method over gRPC.
 
-        Deletes a EntryType resource.
+        Deletes an EntryType.
 
         Returns:
             Callable[[~.DeleteEntryTypeRequest],
@@ -341,7 +431,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_entry_type" not in self._stubs:
-            self._stubs["delete_entry_type"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_entry_type"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/DeleteEntryType",
                 request_serializer=catalog.DeleteEntryTypeRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -369,7 +459,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_entry_types" not in self._stubs:
-            self._stubs["list_entry_types"] = self.grpc_channel.unary_unary(
+            self._stubs["list_entry_types"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/ListEntryTypes",
                 request_serializer=catalog.ListEntryTypesRequest.serialize,
                 response_deserializer=catalog.ListEntryTypesResponse.deserialize,
@@ -382,7 +472,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ) -> Callable[[catalog.GetEntryTypeRequest], Awaitable[catalog.EntryType]]:
         r"""Return a callable for the get entry type method over gRPC.
 
-        Retrieves a EntryType resource.
+        Gets an EntryType.
 
         Returns:
             Callable[[~.GetEntryTypeRequest],
@@ -395,7 +485,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_entry_type" not in self._stubs:
-            self._stubs["get_entry_type"] = self.grpc_channel.unary_unary(
+            self._stubs["get_entry_type"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/GetEntryType",
                 request_serializer=catalog.GetEntryTypeRequest.serialize,
                 response_deserializer=catalog.EntryType.deserialize,
@@ -410,7 +500,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the create aspect type method over gRPC.
 
-        Creates an AspectType
+        Creates an AspectType.
 
         Returns:
             Callable[[~.CreateAspectTypeRequest],
@@ -423,7 +513,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_aspect_type" not in self._stubs:
-            self._stubs["create_aspect_type"] = self.grpc_channel.unary_unary(
+            self._stubs["create_aspect_type"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/CreateAspectType",
                 request_serializer=catalog.CreateAspectTypeRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -438,7 +528,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the update aspect type method over gRPC.
 
-        Updates a AspectType resource.
+        Updates an AspectType.
 
         Returns:
             Callable[[~.UpdateAspectTypeRequest],
@@ -451,7 +541,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_aspect_type" not in self._stubs:
-            self._stubs["update_aspect_type"] = self.grpc_channel.unary_unary(
+            self._stubs["update_aspect_type"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/UpdateAspectType",
                 request_serializer=catalog.UpdateAspectTypeRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -466,7 +556,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the delete aspect type method over gRPC.
 
-        Deletes a AspectType resource.
+        Deletes an AspectType.
 
         Returns:
             Callable[[~.DeleteAspectTypeRequest],
@@ -479,7 +569,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_aspect_type" not in self._stubs:
-            self._stubs["delete_aspect_type"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_aspect_type"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/DeleteAspectType",
                 request_serializer=catalog.DeleteAspectTypeRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -507,7 +597,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_aspect_types" not in self._stubs:
-            self._stubs["list_aspect_types"] = self.grpc_channel.unary_unary(
+            self._stubs["list_aspect_types"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/ListAspectTypes",
                 request_serializer=catalog.ListAspectTypesRequest.serialize,
                 response_deserializer=catalog.ListAspectTypesResponse.deserialize,
@@ -520,7 +610,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ) -> Callable[[catalog.GetAspectTypeRequest], Awaitable[catalog.AspectType]]:
         r"""Return a callable for the get aspect type method over gRPC.
 
-        Retrieves a AspectType resource.
+        Gets an AspectType.
 
         Returns:
             Callable[[~.GetAspectTypeRequest],
@@ -533,7 +623,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_aspect_type" not in self._stubs:
-            self._stubs["get_aspect_type"] = self.grpc_channel.unary_unary(
+            self._stubs["get_aspect_type"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/GetAspectType",
                 request_serializer=catalog.GetAspectTypeRequest.serialize,
                 response_deserializer=catalog.AspectType.deserialize,
@@ -548,7 +638,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the create entry group method over gRPC.
 
-        Creates an EntryGroup
+        Creates an EntryGroup.
 
         Returns:
             Callable[[~.CreateEntryGroupRequest],
@@ -561,7 +651,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_entry_group" not in self._stubs:
-            self._stubs["create_entry_group"] = self.grpc_channel.unary_unary(
+            self._stubs["create_entry_group"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/CreateEntryGroup",
                 request_serializer=catalog.CreateEntryGroupRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -576,7 +666,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the update entry group method over gRPC.
 
-        Updates a EntryGroup resource.
+        Updates an EntryGroup.
 
         Returns:
             Callable[[~.UpdateEntryGroupRequest],
@@ -589,7 +679,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_entry_group" not in self._stubs:
-            self._stubs["update_entry_group"] = self.grpc_channel.unary_unary(
+            self._stubs["update_entry_group"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/UpdateEntryGroup",
                 request_serializer=catalog.UpdateEntryGroupRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -604,7 +694,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the delete entry group method over gRPC.
 
-        Deletes a EntryGroup resource.
+        Deletes an EntryGroup.
 
         Returns:
             Callable[[~.DeleteEntryGroupRequest],
@@ -617,7 +707,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_entry_group" not in self._stubs:
-            self._stubs["delete_entry_group"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_entry_group"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/DeleteEntryGroup",
                 request_serializer=catalog.DeleteEntryGroupRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -645,7 +735,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_entry_groups" not in self._stubs:
-            self._stubs["list_entry_groups"] = self.grpc_channel.unary_unary(
+            self._stubs["list_entry_groups"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/ListEntryGroups",
                 request_serializer=catalog.ListEntryGroupsRequest.serialize,
                 response_deserializer=catalog.ListEntryGroupsResponse.deserialize,
@@ -658,7 +748,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ) -> Callable[[catalog.GetEntryGroupRequest], Awaitable[catalog.EntryGroup]]:
         r"""Return a callable for the get entry group method over gRPC.
 
-        Retrieves a EntryGroup resource.
+        Gets an EntryGroup.
 
         Returns:
             Callable[[~.GetEntryGroupRequest],
@@ -671,7 +761,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_entry_group" not in self._stubs:
-            self._stubs["get_entry_group"] = self.grpc_channel.unary_unary(
+            self._stubs["get_entry_group"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/GetEntryGroup",
                 request_serializer=catalog.GetEntryGroupRequest.serialize,
                 response_deserializer=catalog.EntryGroup.deserialize,
@@ -697,7 +787,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_entry" not in self._stubs:
-            self._stubs["create_entry"] = self.grpc_channel.unary_unary(
+            self._stubs["create_entry"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/CreateEntry",
                 request_serializer=catalog.CreateEntryRequest.serialize,
                 response_deserializer=catalog.Entry.deserialize,
@@ -723,7 +813,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_entry" not in self._stubs:
-            self._stubs["update_entry"] = self.grpc_channel.unary_unary(
+            self._stubs["update_entry"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/UpdateEntry",
                 request_serializer=catalog.UpdateEntryRequest.serialize,
                 response_deserializer=catalog.Entry.deserialize,
@@ -749,7 +839,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_entry" not in self._stubs:
-            self._stubs["delete_entry"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_entry"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/DeleteEntry",
                 request_serializer=catalog.DeleteEntryRequest.serialize,
                 response_deserializer=catalog.Entry.deserialize,
@@ -762,7 +852,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ) -> Callable[[catalog.ListEntriesRequest], Awaitable[catalog.ListEntriesResponse]]:
         r"""Return a callable for the list entries method over gRPC.
 
-        Lists entries within an entry group.
+        Lists Entries within an EntryGroup.
 
         Returns:
             Callable[[~.ListEntriesRequest],
@@ -775,7 +865,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_entries" not in self._stubs:
-            self._stubs["list_entries"] = self.grpc_channel.unary_unary(
+            self._stubs["list_entries"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/ListEntries",
                 request_serializer=catalog.ListEntriesRequest.serialize,
                 response_deserializer=catalog.ListEntriesResponse.deserialize,
@@ -788,7 +878,12 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ) -> Callable[[catalog.GetEntryRequest], Awaitable[catalog.Entry]]:
         r"""Return a callable for the get entry method over gRPC.
 
-        Gets a single entry.
+        Gets an Entry.
+
+        **Caution**: The BigQuery metadata that is stored in Dataplex
+        Catalog is changing. For more information, see `Changes to
+        BigQuery metadata stored in Dataplex
+        Catalog <https://cloud.google.com/dataplex/docs/biqquery-metadata-changes>`__.
 
         Returns:
             Callable[[~.GetEntryRequest],
@@ -801,7 +896,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_entry" not in self._stubs:
-            self._stubs["get_entry"] = self.grpc_channel.unary_unary(
+            self._stubs["get_entry"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/GetEntry",
                 request_serializer=catalog.GetEntryRequest.serialize,
                 response_deserializer=catalog.Entry.deserialize,
@@ -814,7 +909,13 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ) -> Callable[[catalog.LookupEntryRequest], Awaitable[catalog.Entry]]:
         r"""Return a callable for the lookup entry method over gRPC.
 
-        Looks up a single entry.
+        Looks up a single Entry by name using the permission on the
+        source system.
+
+        **Caution**: The BigQuery metadata that is stored in Dataplex
+        Catalog is changing. For more information, see `Changes to
+        BigQuery metadata stored in Dataplex
+        Catalog <https://cloud.google.com/dataplex/docs/biqquery-metadata-changes>`__.
 
         Returns:
             Callable[[~.LookupEntryRequest],
@@ -827,7 +928,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "lookup_entry" not in self._stubs:
-            self._stubs["lookup_entry"] = self.grpc_channel.unary_unary(
+            self._stubs["lookup_entry"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/LookupEntry",
                 request_serializer=catalog.LookupEntryRequest.serialize,
                 response_deserializer=catalog.Entry.deserialize,
@@ -842,7 +943,8 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
     ]:
         r"""Return a callable for the search entries method over gRPC.
 
-        Searches for entries matching given query and scope.
+        Searches for Entries matching the given query and
+        scope.
 
         Returns:
             Callable[[~.SearchEntriesRequest],
@@ -855,32 +957,148 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "search_entries" not in self._stubs:
-            self._stubs["search_entries"] = self.grpc_channel.unary_unary(
+            self._stubs["search_entries"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataplex.v1.CatalogService/SearchEntries",
                 request_serializer=catalog.SearchEntriesRequest.serialize,
                 response_deserializer=catalog.SearchEntriesResponse.deserialize,
             )
         return self._stubs["search_entries"]
 
+    @property
+    def create_metadata_job(
+        self,
+    ) -> Callable[
+        [catalog.CreateMetadataJobRequest], Awaitable[operations_pb2.Operation]
+    ]:
+        r"""Return a callable for the create metadata job method over gRPC.
+
+        Creates a metadata job. For example, use a metadata
+        job to import Dataplex Catalog entries and aspects from
+        a third-party system into Dataplex.
+
+        Returns:
+            Callable[[~.CreateMetadataJobRequest],
+                    Awaitable[~.Operation]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "create_metadata_job" not in self._stubs:
+            self._stubs["create_metadata_job"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataplex.v1.CatalogService/CreateMetadataJob",
+                request_serializer=catalog.CreateMetadataJobRequest.serialize,
+                response_deserializer=operations_pb2.Operation.FromString,
+            )
+        return self._stubs["create_metadata_job"]
+
+    @property
+    def get_metadata_job(
+        self,
+    ) -> Callable[[catalog.GetMetadataJobRequest], Awaitable[catalog.MetadataJob]]:
+        r"""Return a callable for the get metadata job method over gRPC.
+
+        Gets a metadata job.
+
+        Returns:
+            Callable[[~.GetMetadataJobRequest],
+                    Awaitable[~.MetadataJob]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "get_metadata_job" not in self._stubs:
+            self._stubs["get_metadata_job"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataplex.v1.CatalogService/GetMetadataJob",
+                request_serializer=catalog.GetMetadataJobRequest.serialize,
+                response_deserializer=catalog.MetadataJob.deserialize,
+            )
+        return self._stubs["get_metadata_job"]
+
+    @property
+    def list_metadata_jobs(
+        self,
+    ) -> Callable[
+        [catalog.ListMetadataJobsRequest], Awaitable[catalog.ListMetadataJobsResponse]
+    ]:
+        r"""Return a callable for the list metadata jobs method over gRPC.
+
+        Lists metadata jobs.
+
+        Returns:
+            Callable[[~.ListMetadataJobsRequest],
+                    Awaitable[~.ListMetadataJobsResponse]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "list_metadata_jobs" not in self._stubs:
+            self._stubs["list_metadata_jobs"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataplex.v1.CatalogService/ListMetadataJobs",
+                request_serializer=catalog.ListMetadataJobsRequest.serialize,
+                response_deserializer=catalog.ListMetadataJobsResponse.deserialize,
+            )
+        return self._stubs["list_metadata_jobs"]
+
+    @property
+    def cancel_metadata_job(
+        self,
+    ) -> Callable[[catalog.CancelMetadataJobRequest], Awaitable[empty_pb2.Empty]]:
+        r"""Return a callable for the cancel metadata job method over gRPC.
+
+        Cancels a metadata job.
+
+        If you cancel a metadata import job that is in progress,
+        the changes in the job might be partially applied. We
+        recommend that you reset the state of the entry groups
+        in your project by running another metadata job that
+        reverts the changes from the canceled job.
+
+        Returns:
+            Callable[[~.CancelMetadataJobRequest],
+                    Awaitable[~.Empty]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "cancel_metadata_job" not in self._stubs:
+            self._stubs["cancel_metadata_job"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataplex.v1.CatalogService/CancelMetadataJob",
+                request_serializer=catalog.CancelMetadataJobRequest.serialize,
+                response_deserializer=empty_pb2.Empty.FromString,
+            )
+        return self._stubs["cancel_metadata_job"]
+
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_entry_type: gapic_v1.method_async.wrap_method(
+            self.create_entry_type: self._wrap_method(
                 self.create_entry_type,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_entry_type: gapic_v1.method_async.wrap_method(
+            self.update_entry_type: self._wrap_method(
                 self.update_entry_type,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_entry_type: gapic_v1.method_async.wrap_method(
+            self.delete_entry_type: self._wrap_method(
                 self.delete_entry_type,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_entry_types: gapic_v1.method_async.wrap_method(
+            self.list_entry_types: self._wrap_method(
                 self.list_entry_types,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -895,7 +1113,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_entry_type: gapic_v1.method_async.wrap_method(
+            self.get_entry_type: self._wrap_method(
                 self.get_entry_type,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -910,22 +1128,22 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_aspect_type: gapic_v1.method_async.wrap_method(
+            self.create_aspect_type: self._wrap_method(
                 self.create_aspect_type,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_aspect_type: gapic_v1.method_async.wrap_method(
+            self.update_aspect_type: self._wrap_method(
                 self.update_aspect_type,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_aspect_type: gapic_v1.method_async.wrap_method(
+            self.delete_aspect_type: self._wrap_method(
                 self.delete_aspect_type,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_aspect_types: gapic_v1.method_async.wrap_method(
+            self.list_aspect_types: self._wrap_method(
                 self.list_aspect_types,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -940,7 +1158,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_aspect_type: gapic_v1.method_async.wrap_method(
+            self.get_aspect_type: self._wrap_method(
                 self.get_aspect_type,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -955,22 +1173,22 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_entry_group: gapic_v1.method_async.wrap_method(
+            self.create_entry_group: self._wrap_method(
                 self.create_entry_group,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_entry_group: gapic_v1.method_async.wrap_method(
+            self.update_entry_group: self._wrap_method(
                 self.update_entry_group,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_entry_group: gapic_v1.method_async.wrap_method(
+            self.delete_entry_group: self._wrap_method(
                 self.delete_entry_group,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_entry_groups: gapic_v1.method_async.wrap_method(
+            self.list_entry_groups: self._wrap_method(
                 self.list_entry_groups,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -985,7 +1203,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_entry_group: gapic_v1.method_async.wrap_method(
+            self.get_entry_group: self._wrap_method(
                 self.get_entry_group,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1000,12 +1218,12 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_entry: gapic_v1.method_async.wrap_method(
+            self.create_entry: self._wrap_method(
                 self.create_entry,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_entry: gapic_v1.method_async.wrap_method(
+            self.update_entry: self._wrap_method(
                 self.update_entry,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1020,12 +1238,12 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_entry: gapic_v1.method_async.wrap_method(
+            self.delete_entry: self._wrap_method(
                 self.delete_entry,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_entries: gapic_v1.method_async.wrap_method(
+            self.list_entries: self._wrap_method(
                 self.list_entries,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1040,7 +1258,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=20.0,
                 client_info=client_info,
             ),
-            self.get_entry: gapic_v1.method_async.wrap_method(
+            self.get_entry: self._wrap_method(
                 self.get_entry,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1055,7 +1273,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=20.0,
                 client_info=client_info,
             ),
-            self.lookup_entry: gapic_v1.method_async.wrap_method(
+            self.lookup_entry: self._wrap_method(
                 self.lookup_entry,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1070,7 +1288,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=20.0,
                 client_info=client_info,
             ),
-            self.search_entries: gapic_v1.method_async.wrap_method(
+            self.search_entries: self._wrap_method(
                 self.search_entries,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -1085,10 +1303,69 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.create_metadata_job: self._wrap_method(
+                self.create_metadata_job,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_metadata_job: self._wrap_method(
+                self.get_metadata_job,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_metadata_jobs: self._wrap_method(
+                self.list_metadata_jobs,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_metadata_job: self._wrap_method(
+                self.cancel_metadata_job,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -1100,7 +1377,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1117,7 +1394,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -1134,7 +1411,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1153,7 +1430,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,
@@ -1172,7 +1449,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -1189,7 +1466,7 @@ class CatalogServiceGrpcAsyncIOTransport(CatalogServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,

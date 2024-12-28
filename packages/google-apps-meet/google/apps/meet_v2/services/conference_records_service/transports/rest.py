@@ -13,38 +13,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.apps.meet_v2.types import resource, service
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseConferenceRecordsServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.apps.meet_v2.types import resource, service
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from .base import ConferenceRecordsServiceTransport
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -168,8 +173,10 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_get_conference_record(
         self,
         request: service.GetConferenceRecordRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.GetConferenceRecordRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.GetConferenceRecordRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_conference_record
 
         Override in a subclass to manipulate the request or metadata
@@ -191,8 +198,8 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_get_participant(
         self,
         request: service.GetParticipantRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.GetParticipantRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.GetParticipantRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for get_participant
 
         Override in a subclass to manipulate the request or metadata
@@ -214,8 +221,10 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_get_participant_session(
         self,
         request: service.GetParticipantSessionRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.GetParticipantSessionRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.GetParticipantSessionRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_participant_session
 
         Override in a subclass to manipulate the request or metadata
@@ -235,8 +244,10 @@ class ConferenceRecordsServiceRestInterceptor:
         return response
 
     def pre_get_recording(
-        self, request: service.GetRecordingRequest, metadata: Sequence[Tuple[str, str]]
-    ) -> Tuple[service.GetRecordingRequest, Sequence[Tuple[str, str]]]:
+        self,
+        request: service.GetRecordingRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.GetRecordingRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for get_recording
 
         Override in a subclass to manipulate the request or metadata
@@ -254,8 +265,10 @@ class ConferenceRecordsServiceRestInterceptor:
         return response
 
     def pre_get_transcript(
-        self, request: service.GetTranscriptRequest, metadata: Sequence[Tuple[str, str]]
-    ) -> Tuple[service.GetTranscriptRequest, Sequence[Tuple[str, str]]]:
+        self,
+        request: service.GetTranscriptRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.GetTranscriptRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for get_transcript
 
         Override in a subclass to manipulate the request or metadata
@@ -275,8 +288,10 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_get_transcript_entry(
         self,
         request: service.GetTranscriptEntryRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.GetTranscriptEntryRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.GetTranscriptEntryRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_transcript_entry
 
         Override in a subclass to manipulate the request or metadata
@@ -298,8 +313,10 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_list_conference_records(
         self,
         request: service.ListConferenceRecordsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.ListConferenceRecordsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ListConferenceRecordsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_conference_records
 
         Override in a subclass to manipulate the request or metadata
@@ -321,8 +338,10 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_list_participants(
         self,
         request: service.ListParticipantsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.ListParticipantsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ListParticipantsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_participants
 
         Override in a subclass to manipulate the request or metadata
@@ -344,8 +363,10 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_list_participant_sessions(
         self,
         request: service.ListParticipantSessionsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.ListParticipantSessionsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ListParticipantSessionsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_participant_sessions
 
         Override in a subclass to manipulate the request or metadata
@@ -367,8 +388,8 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_list_recordings(
         self,
         request: service.ListRecordingsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.ListRecordingsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListRecordingsRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for list_recordings
 
         Override in a subclass to manipulate the request or metadata
@@ -390,8 +411,10 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_list_transcript_entries(
         self,
         request: service.ListTranscriptEntriesRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.ListTranscriptEntriesRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ListTranscriptEntriesRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for list_transcript_entries
 
         Override in a subclass to manipulate the request or metadata
@@ -413,8 +436,8 @@ class ConferenceRecordsServiceRestInterceptor:
     def pre_list_transcripts(
         self,
         request: service.ListTranscriptsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[service.ListTranscriptsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListTranscriptsRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for list_transcripts
 
         Override in a subclass to manipulate the request or metadata
@@ -441,8 +464,8 @@ class ConferenceRecordsServiceRestStub:
     _interceptor: ConferenceRecordsServiceRestInterceptor
 
 
-class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
-    """REST backend transport for ConferenceRecordsService.
+class ConferenceRecordsServiceRestTransport(_BaseConferenceRecordsServiceRestTransport):
+    """REST backend synchronous transport for ConferenceRecordsService.
 
     REST API for services dealing with conference records.
 
@@ -451,7 +474,6 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -505,21 +527,12 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -530,19 +543,34 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
         self._interceptor = interceptor or ConferenceRecordsServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _GetConferenceRecord(ConferenceRecordsServiceRestStub):
+    class _GetConferenceRecord(
+        _BaseConferenceRecordsServiceRestTransport._BaseGetConferenceRecord,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetConferenceRecord")
+            return hash("ConferenceRecordsServiceRestTransport.GetConferenceRecord")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -550,7 +578,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> resource.ConferenceRecord:
             r"""Call the get conference record method over HTTP.
 
@@ -560,8 +588,10 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.resource.ConferenceRecord:
@@ -570,40 +600,57 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{name=conferenceRecords/*}",
-                },
-            ]
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseGetConferenceRecord._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_conference_record(
                 request, metadata
             )
-            pb_request = service.GetConferenceRecordRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseGetConferenceRecord._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseGetConferenceRecord._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.GetConferenceRecord",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetConferenceRecord",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ConferenceRecordsServiceRestTransport._GetConferenceRecord._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -616,22 +663,59 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = resource.ConferenceRecord.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_conference_record(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resource.ConferenceRecord.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.get_conference_record",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetConferenceRecord",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetParticipant(ConferenceRecordsServiceRestStub):
+    class _GetParticipant(
+        _BaseConferenceRecordsServiceRestTransport._BaseGetParticipant,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetParticipant")
+            return hash("ConferenceRecordsServiceRestTransport.GetParticipant")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -639,7 +723,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> resource.Participant:
             r"""Call the get participant method over HTTP.
 
@@ -649,8 +733,10 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.resource.Participant:
@@ -659,38 +745,57 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{name=conferenceRecords/*/participants/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_participant(request, metadata)
-            pb_request = service.GetParticipantRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseGetParticipant._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_participant(request, metadata)
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseGetParticipant._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseGetParticipant._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.GetParticipant",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetParticipant",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ConferenceRecordsServiceRestTransport._GetParticipant._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -703,22 +808,59 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = resource.Participant.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_participant(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resource.Participant.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.get_participant",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetParticipant",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetParticipantSession(ConferenceRecordsServiceRestStub):
+    class _GetParticipantSession(
+        _BaseConferenceRecordsServiceRestTransport._BaseGetParticipantSession,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetParticipantSession")
+            return hash("ConferenceRecordsServiceRestTransport.GetParticipantSession")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -726,7 +868,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> resource.ParticipantSession:
             r"""Call the get participant session method over HTTP.
 
@@ -736,8 +878,10 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.resource.ParticipantSession:
@@ -753,40 +897,57 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{name=conferenceRecords/*/participants/*/participantSessions/*}",
-                },
-            ]
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseGetParticipantSession._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_participant_session(
                 request, metadata
             )
-            pb_request = service.GetParticipantSessionRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseGetParticipantSession._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseGetParticipantSession._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.GetParticipantSession",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetParticipantSession",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ConferenceRecordsServiceRestTransport._GetParticipantSession._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -799,22 +960,59 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = resource.ParticipantSession.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_participant_session(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resource.ParticipantSession.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.get_participant_session",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetParticipantSession",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetRecording(ConferenceRecordsServiceRestStub):
+    class _GetRecording(
+        _BaseConferenceRecordsServiceRestTransport._BaseGetRecording,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetRecording")
+            return hash("ConferenceRecordsServiceRestTransport.GetRecording")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -822,7 +1020,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> resource.Recording:
             r"""Call the get recording method over HTTP.
 
@@ -833,8 +1031,10 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.resource.Recording:
@@ -843,38 +1043,57 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{name=conferenceRecords/*/recordings/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_recording(request, metadata)
-            pb_request = service.GetRecordingRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseGetRecording._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_recording(request, metadata)
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseGetRecording._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseGetRecording._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.GetRecording",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetRecording",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ConferenceRecordsServiceRestTransport._GetRecording._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -887,22 +1106,59 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = resource.Recording.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_recording(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resource.Recording.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.get_recording",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetRecording",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetTranscript(ConferenceRecordsServiceRestStub):
+    class _GetTranscript(
+        _BaseConferenceRecordsServiceRestTransport._BaseGetTranscript,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetTranscript")
+            return hash("ConferenceRecordsServiceRestTransport.GetTranscript")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -910,7 +1166,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> resource.Transcript:
             r"""Call the get transcript method over HTTP.
 
@@ -920,8 +1176,10 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.resource.Transcript:
@@ -932,38 +1190,57 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{name=conferenceRecords/*/transcripts/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_transcript(request, metadata)
-            pb_request = service.GetTranscriptRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseGetTranscript._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_transcript(request, metadata)
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseGetTranscript._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseGetTranscript._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.GetTranscript",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetTranscript",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ConferenceRecordsServiceRestTransport._GetTranscript._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -976,22 +1253,59 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = resource.Transcript.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_transcript(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resource.Transcript.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.get_transcript",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetTranscript",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetTranscriptEntry(ConferenceRecordsServiceRestStub):
+    class _GetTranscriptEntry(
+        _BaseConferenceRecordsServiceRestTransport._BaseGetTranscriptEntry,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetTranscriptEntry")
+            return hash("ConferenceRecordsServiceRestTransport.GetTranscriptEntry")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -999,7 +1313,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> resource.TranscriptEntry:
             r"""Call the get transcript entry method over HTTP.
 
@@ -1010,8 +1324,10 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.resource.TranscriptEntry:
@@ -1020,40 +1336,59 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{name=conferenceRecords/*/transcripts/*/entries/*}",
-                },
-            ]
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseGetTranscriptEntry._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_transcript_entry(
                 request, metadata
             )
-            pb_request = service.GetTranscriptEntryRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseGetTranscriptEntry._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseGetTranscriptEntry._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.GetTranscriptEntry",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetTranscriptEntry",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ConferenceRecordsServiceRestTransport._GetTranscriptEntry._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1066,12 +1401,59 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = resource.TranscriptEntry.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_transcript_entry(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resource.TranscriptEntry.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.get_transcript_entry",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "GetTranscriptEntry",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListConferenceRecords(ConferenceRecordsServiceRestStub):
+    class _ListConferenceRecords(
+        _BaseConferenceRecordsServiceRestTransport._BaseListConferenceRecords,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListConferenceRecords")
+            return hash("ConferenceRecordsServiceRestTransport.ListConferenceRecords")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1079,7 +1461,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> service.ListConferenceRecordsResponse:
             r"""Call the list conference records method over HTTP.
 
@@ -1090,8 +1472,10 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.service.ListConferenceRecordsResponse:
@@ -1100,39 +1484,57 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/conferenceRecords",
-                },
-            ]
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseListConferenceRecords._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_conference_records(
                 request, metadata
             )
-            pb_request = service.ListConferenceRecordsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
-
-            # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseListConferenceRecords._get_transcoded_request(
+                http_options, request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            # Jsonify the query params
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseListConferenceRecords._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.ListConferenceRecords",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListConferenceRecords",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ConferenceRecordsServiceRestTransport._ListConferenceRecords._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1145,22 +1547,61 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = service.ListConferenceRecordsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_conference_records(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = service.ListConferenceRecordsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.list_conference_records",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListConferenceRecords",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListParticipants(ConferenceRecordsServiceRestStub):
+    class _ListParticipants(
+        _BaseConferenceRecordsServiceRestTransport._BaseListParticipants,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListParticipants")
+            return hash("ConferenceRecordsServiceRestTransport.ListParticipants")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1168,7 +1609,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> service.ListParticipantsResponse:
             r"""Call the list participants method over HTTP.
 
@@ -1179,48 +1620,69 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.service.ListParticipantsResponse:
                     Response of ListParticipants method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{parent=conferenceRecords/*}/participants",
-                },
-            ]
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseListParticipants._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_participants(
                 request, metadata
             )
-            pb_request = service.ListParticipantsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseListParticipants._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseListParticipants._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.ListParticipants",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListParticipants",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ConferenceRecordsServiceRestTransport._ListParticipants._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1233,22 +1695,61 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = service.ListParticipantsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_participants(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = service.ListParticipantsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.list_participants",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListParticipants",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListParticipantSessions(ConferenceRecordsServiceRestStub):
+    class _ListParticipantSessions(
+        _BaseConferenceRecordsServiceRestTransport._BaseListParticipantSessions,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListParticipantSessions")
+            return hash("ConferenceRecordsServiceRestTransport.ListParticipantSessions")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1256,7 +1757,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> service.ListParticipantSessionsResponse:
             r"""Call the list participant sessions method over HTTP.
 
@@ -1268,48 +1769,67 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.service.ListParticipantSessionsResponse:
                     Response of ListParticipants method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{parent=conferenceRecords/*/participants/*}/participantSessions",
-                },
-            ]
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseListParticipantSessions._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_participant_sessions(
                 request, metadata
             )
-            pb_request = service.ListParticipantSessionsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseListParticipantSessions._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseListParticipantSessions._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.ListParticipantSessions",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListParticipantSessions",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ConferenceRecordsServiceRestTransport._ListParticipantSessions._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1322,22 +1842,61 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = service.ListParticipantSessionsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_participant_sessions(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = service.ListParticipantSessionsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.list_participant_sessions",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListParticipantSessions",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListRecordings(ConferenceRecordsServiceRestStub):
+    class _ListRecordings(
+        _BaseConferenceRecordsServiceRestTransport._BaseListRecordings,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListRecordings")
+            return hash("ConferenceRecordsServiceRestTransport.ListRecordings")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1345,7 +1904,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> service.ListRecordingsResponse:
             r"""Call the list recordings method over HTTP.
 
@@ -1355,46 +1914,67 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.service.ListRecordingsResponse:
                     Response for ListRecordings method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{parent=conferenceRecords/*}/recordings",
-                },
-            ]
-            request, metadata = self._interceptor.pre_list_recordings(request, metadata)
-            pb_request = service.ListRecordingsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseListRecordings._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_list_recordings(request, metadata)
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseListRecordings._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseListRecordings._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.ListRecordings",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListRecordings",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ConferenceRecordsServiceRestTransport._ListRecordings._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1407,22 +1987,59 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = service.ListRecordingsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_recordings(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = service.ListRecordingsResponse.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.list_recordings",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListRecordings",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListTranscriptEntries(ConferenceRecordsServiceRestStub):
+    class _ListTranscriptEntries(
+        _BaseConferenceRecordsServiceRestTransport._BaseListTranscriptEntries,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListTranscriptEntries")
+            return hash("ConferenceRecordsServiceRestTransport.ListTranscriptEntries")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1430,7 +2047,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> service.ListTranscriptEntriesResponse:
             r"""Call the list transcript entries method over HTTP.
 
@@ -1441,8 +2058,10 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.service.ListTranscriptEntriesResponse:
@@ -1451,40 +2070,57 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{parent=conferenceRecords/*/transcripts/*}/entries",
-                },
-            ]
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseListTranscriptEntries._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_transcript_entries(
                 request, metadata
             )
-            pb_request = service.ListTranscriptEntriesRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseListTranscriptEntries._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseListTranscriptEntries._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.ListTranscriptEntries",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListTranscriptEntries",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = ConferenceRecordsServiceRestTransport._ListTranscriptEntries._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1497,22 +2133,61 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = service.ListTranscriptEntriesResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_transcript_entries(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = service.ListTranscriptEntriesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.list_transcript_entries",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListTranscriptEntries",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListTranscripts(ConferenceRecordsServiceRestStub):
+    class _ListTranscripts(
+        _BaseConferenceRecordsServiceRestTransport._BaseListTranscripts,
+        ConferenceRecordsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListTranscripts")
+            return hash("ConferenceRecordsServiceRestTransport.ListTranscripts")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -1520,7 +2195,7 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> service.ListTranscriptsResponse:
             r"""Call the list transcripts method over HTTP.
 
@@ -1530,48 +2205,69 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.service.ListTranscriptsResponse:
                     Response for ListTranscripts method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v2/{parent=conferenceRecords/*}/transcripts",
-                },
-            ]
+            http_options = (
+                _BaseConferenceRecordsServiceRestTransport._BaseListTranscripts._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_transcripts(
                 request, metadata
             )
-            pb_request = service.ListTranscriptsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseConferenceRecordsServiceRestTransport._BaseListTranscripts._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseConferenceRecordsServiceRestTransport._BaseListTranscripts._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.apps.meet_v2.ConferenceRecordsServiceClient.ListTranscripts",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListTranscripts",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ConferenceRecordsServiceRestTransport._ListTranscripts._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -1584,7 +2280,29 @@ class ConferenceRecordsServiceRestTransport(ConferenceRecordsServiceTransport):
             pb_resp = service.ListTranscriptsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_transcripts(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = service.ListTranscriptsResponse.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.apps.meet_v2.ConferenceRecordsServiceClient.list_transcripts",
+                    extra={
+                        "serviceName": "google.apps.meet.v2.ConferenceRecordsService",
+                        "rpcName": "ListTranscripts",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property

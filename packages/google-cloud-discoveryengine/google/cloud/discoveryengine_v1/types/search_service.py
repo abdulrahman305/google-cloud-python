@@ -92,6 +92,10 @@ class SearchRequest(proto.Message):
 
             If this field is negative, an ``INVALID_ARGUMENT`` is
             returned.
+        one_box_page_size (int):
+            The maximum number of results to return for
+            OneBox. This applies to each OneBox type
+            individually. Default number is 10.
         data_store_specs (MutableSequence[google.cloud.discoveryengine_v1.types.SearchRequest.DataStoreSpec]):
             Specs defining dataStores to filter on in a
             search call and configurations for those
@@ -139,9 +143,12 @@ class SearchRequest(proto.Message):
             Leave it unset if ordered by relevance. ``order_by``
             expression is case-sensitive.
 
-            For more information on ordering for retail search, see
-            `Ordering <https://cloud.google.com/retail/docs/filter-and-order#order>`__
-
+            For more information on ordering the website search results,
+            see `Order web search
+            results <https://cloud.google.com/generative-ai-app-builder/docs/order-web-search-results>`__.
+            For more information on ordering the healthcare search
+            results, see `Order healthcare search
+            results <https://cloud.google.com/generative-ai-app-builder/docs/order-hc-results>`__.
             If this field is unrecognizable, an ``INVALID_ARGUMENT`` is
             returned.
         user_info (google.cloud.discoveryengine_v1.types.UserInfo):
@@ -310,11 +317,20 @@ class SearchRequest(proto.Message):
                 [DataStore][google.cloud.discoveryengine.v1.DataStore], such
                 as
                 ``projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}``.
+            filter (str):
+                Optional. Filter specification to filter documents in the
+                data store specified by data_store field. For more
+                information on filtering, see
+                `Filtering <https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata>`__
         """
 
         data_store: str = proto.Field(
             proto.STRING,
             number=1,
+        )
+        filter: str = proto.Field(
+            proto.STRING,
+            number=5,
         )
 
     class FacetSpec(proto.Message):
@@ -560,7 +576,126 @@ class SearchRequest(proto.Message):
                     combination or the boost_control_spec below are set. If both
                     are set then the global boost is ignored and the more
                     fine-grained boost_control_spec is applied.
+                boost_control_spec (google.cloud.discoveryengine_v1.types.SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec):
+                    Complex specification for custom ranking
+                    based on customer defined attribute value.
             """
+
+            class BoostControlSpec(proto.Message):
+                r"""Specification for custom ranking based on customer specified
+                attribute value. It provides more controls for customized
+                ranking than the simple (condition, boost) combination above.
+
+                Attributes:
+                    field_name (str):
+                        The name of the field whose value will be
+                        used to determine the boost amount.
+                    attribute_type (google.cloud.discoveryengine_v1.types.SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec.AttributeType):
+                        The attribute type to be used to determine the boost amount.
+                        The attribute value can be derived from the field value of
+                        the specified field_name. In the case of numerical it is
+                        straightforward i.e. attribute_value =
+                        numerical_field_value. In the case of freshness however,
+                        attribute_value = (time.now() - datetime_field_value).
+                    interpolation_type (google.cloud.discoveryengine_v1.types.SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec.InterpolationType):
+                        The interpolation type to be applied to
+                        connect the control points listed below.
+                    control_points (MutableSequence[google.cloud.discoveryengine_v1.types.SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec.ControlPoint]):
+                        The control points used to define the curve. The monotonic
+                        function (defined through the interpolation_type above)
+                        passes through the control points listed here.
+                """
+
+                class AttributeType(proto.Enum):
+                    r"""The attribute(or function) for which the custom ranking is to
+                    be applied.
+
+                    Values:
+                        ATTRIBUTE_TYPE_UNSPECIFIED (0):
+                            Unspecified AttributeType.
+                        NUMERICAL (1):
+                            The value of the numerical field will be used to dynamically
+                            update the boost amount. In this case, the attribute_value
+                            (the x value) of the control point will be the actual value
+                            of the numerical field for which the boost_amount is
+                            specified.
+                        FRESHNESS (2):
+                            For the freshness use case the attribute value will be the
+                            duration between the current time and the date in the
+                            datetime field specified. The value must be formatted as an
+                            XSD ``dayTimeDuration`` value (a restricted subset of an ISO
+                            8601 duration value). The pattern for this is:
+                            ``[nD][T[nH][nM][nS]]``. For example, ``5D``, ``3DT12H30M``,
+                            ``T24H``.
+                    """
+                    ATTRIBUTE_TYPE_UNSPECIFIED = 0
+                    NUMERICAL = 1
+                    FRESHNESS = 2
+
+                class InterpolationType(proto.Enum):
+                    r"""The interpolation type to be applied. Default will be linear
+                    (Piecewise Linear).
+
+                    Values:
+                        INTERPOLATION_TYPE_UNSPECIFIED (0):
+                            Interpolation type is unspecified. In this
+                            case, it defaults to Linear.
+                        LINEAR (1):
+                            Piecewise linear interpolation will be
+                            applied.
+                    """
+                    INTERPOLATION_TYPE_UNSPECIFIED = 0
+                    LINEAR = 1
+
+                class ControlPoint(proto.Message):
+                    r"""The control points used to define the curve. The curve
+                    defined through these control points can only be monotonically
+                    increasing or decreasing(constant values are acceptable).
+
+                    Attributes:
+                        attribute_value (str):
+                            Can be one of:
+
+                            1. The numerical field value.
+                            2. The duration spec for freshness: The value must be
+                               formatted as an XSD ``dayTimeDuration`` value (a
+                               restricted subset of an ISO 8601 duration value). The
+                               pattern for this is: ``[nD][T[nH][nM][nS]]``.
+                        boost_amount (float):
+                            The value between -1 to 1 by which to boost the score if the
+                            attribute_value evaluates to the value specified above.
+                    """
+
+                    attribute_value: str = proto.Field(
+                        proto.STRING,
+                        number=1,
+                    )
+                    boost_amount: float = proto.Field(
+                        proto.FLOAT,
+                        number=2,
+                    )
+
+                field_name: str = proto.Field(
+                    proto.STRING,
+                    number=1,
+                )
+                attribute_type: "SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec.AttributeType" = proto.Field(
+                    proto.ENUM,
+                    number=2,
+                    enum="SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec.AttributeType",
+                )
+                interpolation_type: "SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec.InterpolationType" = proto.Field(
+                    proto.ENUM,
+                    number=3,
+                    enum="SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec.InterpolationType",
+                )
+                control_points: MutableSequence[
+                    "SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec.ControlPoint"
+                ] = proto.RepeatedField(
+                    proto.MESSAGE,
+                    number=4,
+                    message="SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec.ControlPoint",
+                )
 
             condition: str = proto.Field(
                 proto.STRING,
@@ -569,6 +704,11 @@ class SearchRequest(proto.Message):
             boost: float = proto.Field(
                 proto.FLOAT,
                 number=2,
+            )
+            boost_control_spec: "SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec" = proto.Field(
+                proto.MESSAGE,
+                number=3,
+                message="SearchRequest.BoostSpec.ConditionBoostSpec.BoostControlSpec",
             )
 
         condition_boost_specs: MutableSequence[
@@ -682,12 +822,7 @@ class SearchRequest(proto.Message):
                 be no extractive answer in the search response.
             search_result_mode (google.cloud.discoveryengine_v1.types.SearchRequest.ContentSearchSpec.SearchResultMode):
                 Specifies the search result mode. If unspecified, the search
-                result mode is based on
-                [DataStore.DocumentProcessingConfig.chunking_config][]:
-
-                -  If [DataStore.DocumentProcessingConfig.chunking_config][]
-                   is specified, it defaults to ``CHUNKS``.
-                -  Otherwise, it defaults to ``DOCUMENTS``.
+                result mode defaults to ``DOCUMENTS``.
             chunk_spec (google.cloud.discoveryengine_v1.types.SearchRequest.ContentSearchSpec.ChunkSpec):
                 Specifies the chunk spec to be returned from the search
                 response. Only available if the
@@ -698,12 +833,7 @@ class SearchRequest(proto.Message):
 
         class SearchResultMode(proto.Enum):
             r"""Specifies the search result mode. If unspecified, the search result
-            mode is based on
-            [DataStore.DocumentProcessingConfig.chunking_config][]:
-
-            -  If [DataStore.DocumentProcessingConfig.chunking_config][] is
-               specified, it defaults to ``CHUNKS``.
-            -  Otherwise, it defaults to ``DOCUMENTS``.
+            mode defaults to ``DOCUMENTS``.
 
             Values:
                 SEARCH_RESULT_MODE_UNSPECIFIED (0):
@@ -815,6 +945,27 @@ class SearchRequest(proto.Message):
                     navigational queries. If this field is set to ``true``, we
                     skip generating summaries for non-summary seeking queries
                     and return fallback messages instead.
+                ignore_low_relevant_content (bool):
+                    Specifies whether to filter out queries that have low
+                    relevance. The default value is ``false``.
+
+                    If this field is set to ``false``, all search results are
+                    used regardless of relevance to generate answers. If set to
+                    ``true``, only queries with high relevance search results
+                    will generate answers.
+                ignore_jail_breaking_query (bool):
+                    Optional. Specifies whether to filter out jail-breaking
+                    queries. The default value is ``false``.
+
+                    Google employs search-query classification to detect
+                    jail-breaking queries. No summary is returned if the search
+                    query is classified as a jail-breaking query. A user might
+                    add instructions to the query to change the tone, style,
+                    language, content of the answer, or ask the model to act as
+                    a different entity, e.g. "Reply in the tone of a competing
+                    company's CEO". If this field is set to ``true``, we skip
+                    generating summaries for jail-breaking queries and return
+                    fallback messages instead.
                 model_prompt_spec (google.cloud.discoveryengine_v1.types.SearchRequest.ContentSearchSpec.SummarySpec.ModelPromptSpec):
                     If specified, the spec will be used to modify
                     the prompt provided to the LLM.
@@ -891,6 +1042,14 @@ class SearchRequest(proto.Message):
             ignore_non_summary_seeking_query: bool = proto.Field(
                 proto.BOOL,
                 number=4,
+            )
+            ignore_low_relevant_content: bool = proto.Field(
+                proto.BOOL,
+                number=9,
+            )
+            ignore_jail_breaking_query: bool = proto.Field(
+                proto.BOOL,
+                number=10,
             )
             model_prompt_spec: "SearchRequest.ContentSearchSpec.SummarySpec.ModelPromptSpec" = proto.Field(
                 proto.MESSAGE,
@@ -1167,6 +1326,10 @@ class SearchRequest(proto.Message):
         proto.INT32,
         number=6,
     )
+    one_box_page_size: int = proto.Field(
+        proto.INT32,
+        number=47,
+    )
     data_store_specs: MutableSequence[DataStoreSpec] = proto.RepeatedField(
         proto.MESSAGE,
         number=32,
@@ -1275,7 +1438,8 @@ class SearchResponse(proto.Message):
             A unique search token. This should be included in the
             [UserEvent][google.cloud.discoveryengine.v1.UserEvent] logs
             resulting from this search, which enables accurate
-            attribution of search model performance.
+            attribution of search model performance. This also helps to
+            identify a request during the customer support scenarios.
         redirect_uri (str):
             The URI of a customer-defined redirect page. If redirect
             action is triggered, no search is performed, and only
@@ -1442,13 +1606,14 @@ class SearchResponse(proto.Message):
                 ADVERSARIAL_QUERY_IGNORED (1):
                     The adversarial query ignored case.
 
-                    Only populated when
+                    Only used when
                     [SummarySpec.ignore_adversarial_query][google.cloud.discoveryengine.v1.SearchRequest.ContentSearchSpec.SummarySpec.ignore_adversarial_query]
                     is set to ``true``.
                 NON_SUMMARY_SEEKING_QUERY_IGNORED (2):
                     The non-summary seeking query ignored case.
 
-                    Only populated when
+                    Google skips the summary if the query is chit chat. Only
+                    used when
                     [SummarySpec.ignore_non_summary_seeking_query][google.cloud.discoveryengine.v1.SearchRequest.ContentSearchSpec.SummarySpec.ignore_non_summary_seeking_query]
                     is set to ``true``.
                 OUT_OF_DOMAIN_QUERY_IGNORED (3):
@@ -1470,6 +1635,31 @@ class SearchResponse(proto.Message):
 
                     Google skips the summary if the LLM addon is not
                     enabled.
+                NO_RELEVANT_CONTENT (6):
+                    The no relevant content case.
+
+                    Google skips the summary if there is no relevant
+                    content in the retrieved search results.
+                JAIL_BREAKING_QUERY_IGNORED (7):
+                    The jail-breaking query ignored case.
+
+                    For example, "Reply in the tone of a competing company's
+                    CEO". Only used when
+                    [SearchRequest.ContentSearchSpec.SummarySpec.ignore_jail_breaking_query]
+                    is set to ``true``.
+                CUSTOMER_POLICY_VIOLATION (8):
+                    The customer policy violation case.
+
+                    Google skips the summary if there is a customer
+                    policy violation detected. The policy is defined
+                    by the customer.
+                NON_SUMMARY_SEEKING_QUERY_IGNORED_V2 (9):
+                    The non-answer seeking query ignored case.
+
+                    Google skips the summary if the query doesn't have clear
+                    intent. Only used when
+                    [SearchRequest.ContentSearchSpec.SummarySpec.ignore_non_answer_seeking_query]
+                    is set to ``true``.
             """
             SUMMARY_SKIPPED_REASON_UNSPECIFIED = 0
             ADVERSARIAL_QUERY_IGNORED = 1
@@ -1477,6 +1667,10 @@ class SearchResponse(proto.Message):
             OUT_OF_DOMAIN_QUERY_IGNORED = 3
             POTENTIAL_POLICY_VIOLATION = 4
             LLM_ADDON_NOT_ENABLED = 5
+            NO_RELEVANT_CONTENT = 6
+            JAIL_BREAKING_QUERY_IGNORED = 7
+            CUSTOMER_POLICY_VIOLATION = 8
+            NON_SUMMARY_SEEKING_QUERY_IGNORED_V2 = 9
 
         class SafetyAttributes(proto.Message):
             r"""Safety Attribute categories and their associated confidence

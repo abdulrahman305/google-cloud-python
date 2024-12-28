@@ -84,6 +84,7 @@ from .jobs import (
     CancelJobRequest,
     DeleteJobRequest,
     DriverSchedulingConfig,
+    FlinkJob,
     GetJobRequest,
     HadoopJob,
     HiveJob,
@@ -137,6 +138,7 @@ from .sessions import (
     ListSessionsRequest,
     ListSessionsResponse,
     Session,
+    SparkConnectConfig,
     TerminateSessionRequest,
 )
 from .shared import (
@@ -248,6 +250,7 @@ __all__ = (
     "CancelJobRequest",
     "DeleteJobRequest",
     "DriverSchedulingConfig",
+    "FlinkJob",
     "GetJobRequest",
     "HadoopJob",
     "HiveJob",
@@ -293,6 +296,7 @@ __all__ = (
     "ListSessionsRequest",
     "ListSessionsResponse",
     "Session",
+    "SparkConnectConfig",
     "TerminateSessionRequest",
     "AutotuningConfig",
     "EnvironmentConfig",

@@ -33,13 +33,20 @@ from .types.places_service import (
     GetPhotoMediaRequest,
     GetPlaceRequest,
     PhotoMedia,
+    RoutingParameters,
     SearchNearbyRequest,
     SearchNearbyResponse,
     SearchTextRequest,
     SearchTextResponse,
 )
+from .types.polyline import Polyline
+from .types.price_range import PriceRange
 from .types.reference import References
 from .types.review import Review
+from .types.route_modifiers import RouteModifiers
+from .types.routing_preference import RoutingPreference
+from .types.routing_summary import RoutingSummary
+from .types.travel_mode import TravelMode
 
 __all__ = (
     "PlacesAsyncClient",
@@ -58,11 +65,18 @@ __all__ = (
     "PhotoMedia",
     "Place",
     "PlacesClient",
+    "Polyline",
     "PriceLevel",
+    "PriceRange",
     "References",
     "Review",
+    "RouteModifiers",
+    "RoutingParameters",
+    "RoutingPreference",
+    "RoutingSummary",
     "SearchNearbyRequest",
     "SearchNearbyResponse",
     "SearchTextRequest",
     "SearchTextResponse",
+    "TravelMode",
 )

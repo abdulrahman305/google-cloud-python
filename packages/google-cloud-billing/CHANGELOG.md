@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-billing-v1.14.1...google-cloud-billing-v1.15.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+* added currency field to billing account message ([89157d6](https://github.com/googleapis/google-cloud-python/commit/89157d677acd4672d65c57ad5ac8f61ae90eaf18))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+## [1.14.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-billing-v1.14.0...google-cloud-billing-v1.14.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([4ed4108](https://github.com/googleapis/google-cloud-python/commit/4ed41088ab3cbadfe4de7fa170f172666015ed24))
+
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-billing-v1.13.6...google-cloud-billing-v1.14.0) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
 ## [1.13.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-billing-v1.13.5...google-cloud-billing-v1.13.6) (2024-07-30)
 
 

@@ -22,21 +22,12 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
-from google.protobuf import field_mask_pb2  # type: ignore
+from google.api_core import api_core_version
 from google.protobuf import json_format
-from google.protobuf import timestamp_pb2  # type: ignore
 import grpc
 from grpc.experimental import aio
 from proto.marshal.rules import wrappers
@@ -44,6 +35,24 @@ from proto.marshal.rules.dates import DurationRule, TimestampRule
 import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
+from google.protobuf import field_mask_pb2  # type: ignore
+from google.protobuf import timestamp_pb2  # type: ignore
 
 from google.cloud.accessapproval_v1.services.access_approval import (
     AccessApprovalAsyncClient,
@@ -54,8 +63,22 @@ from google.cloud.accessapproval_v1.services.access_approval import (
 from google.cloud.accessapproval_v1.types import accessapproval
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -295,86 +318,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         AccessApprovalClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (AccessApprovalClient, transports.AccessApprovalGrpcTransport, "grpc"),
-        (AccessApprovalClient, transports.AccessApprovalRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1157,27 +1100,6 @@ def test_list_approval_requests(request_type, transport: str = "grpc"):
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_approval_requests_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_approval_requests), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_approval_requests()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.ListApprovalRequestsMessage()
-
-
 def test_list_approval_requests_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1253,31 +1175,6 @@ def test_list_approval_requests_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_approval_requests_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_approval_requests), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            accessapproval.ListApprovalRequestsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_approval_requests()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.ListApprovalRequestsMessage()
-
-
-@pytest.mark.asyncio
 async def test_list_approval_requests_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1285,7 +1182,7 @@ async def test_list_approval_requests_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AccessApprovalAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1300,22 +1197,23 @@ async def test_list_approval_requests_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_approval_requests
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_approval_requests(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_approval_requests(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1324,7 +1222,7 @@ async def test_list_approval_requests_async(
     request_type=accessapproval.ListApprovalRequestsMessage,
 ):
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1394,7 +1292,7 @@ def test_list_approval_requests_field_headers():
 @pytest.mark.asyncio
 async def test_list_approval_requests_field_headers_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1468,7 +1366,7 @@ def test_list_approval_requests_flattened_error():
 @pytest.mark.asyncio
 async def test_list_approval_requests_flattened_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1499,7 +1397,7 @@ async def test_list_approval_requests_flattened_async():
 @pytest.mark.asyncio
 async def test_list_approval_requests_flattened_error_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1613,7 +1511,7 @@ def test_list_approval_requests_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_approval_requests_async_pager():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1665,7 +1563,7 @@ async def test_list_approval_requests_async_pager():
 @pytest.mark.asyncio
 async def test_list_approval_requests_async_pages():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1753,27 +1651,6 @@ def test_get_approval_request(request_type, transport: str = "grpc"):
     assert response.requested_resource_name == "requested_resource_name_value"
 
 
-def test_get_approval_request_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_approval_request), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_approval_request()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.GetApprovalRequestMessage()
-
-
 def test_get_approval_request_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1844,32 +1721,6 @@ def test_get_approval_request_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_approval_request_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_approval_request), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            accessapproval.ApprovalRequest(
-                name="name_value",
-                requested_resource_name="requested_resource_name_value",
-            )
-        )
-        response = await client.get_approval_request()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.GetApprovalRequestMessage()
-
-
-@pytest.mark.asyncio
 async def test_get_approval_request_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1877,7 +1728,7 @@ async def test_get_approval_request_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AccessApprovalAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1892,22 +1743,23 @@ async def test_get_approval_request_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_approval_request
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_approval_request(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_approval_request(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1916,7 +1768,7 @@ async def test_get_approval_request_async(
     request_type=accessapproval.GetApprovalRequestMessage,
 ):
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1988,7 +1840,7 @@ def test_get_approval_request_field_headers():
 @pytest.mark.asyncio
 async def test_get_approval_request_field_headers_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2062,7 +1914,7 @@ def test_get_approval_request_flattened_error():
 @pytest.mark.asyncio
 async def test_get_approval_request_flattened_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2093,7 +1945,7 @@ async def test_get_approval_request_flattened_async():
 @pytest.mark.asyncio
 async def test_get_approval_request_flattened_error_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2143,27 +1995,6 @@ def test_approve_approval_request(request_type, transport: str = "grpc"):
     assert isinstance(response, accessapproval.ApprovalRequest)
     assert response.name == "name_value"
     assert response.requested_resource_name == "requested_resource_name_value"
-
-
-def test_approve_approval_request_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.approve_approval_request), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.approve_approval_request()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.ApproveApprovalRequestMessage()
 
 
 def test_approve_approval_request_non_empty_request_with_auto_populated_field():
@@ -2237,32 +2068,6 @@ def test_approve_approval_request_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_approve_approval_request_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.approve_approval_request), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            accessapproval.ApprovalRequest(
-                name="name_value",
-                requested_resource_name="requested_resource_name_value",
-            )
-        )
-        response = await client.approve_approval_request()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.ApproveApprovalRequestMessage()
-
-
-@pytest.mark.asyncio
 async def test_approve_approval_request_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2270,7 +2075,7 @@ async def test_approve_approval_request_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AccessApprovalAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2285,22 +2090,23 @@ async def test_approve_approval_request_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.approve_approval_request
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.approve_approval_request(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.approve_approval_request(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2309,7 +2115,7 @@ async def test_approve_approval_request_async(
     request_type=accessapproval.ApproveApprovalRequestMessage,
 ):
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2381,7 +2187,7 @@ def test_approve_approval_request_field_headers():
 @pytest.mark.asyncio
 async def test_approve_approval_request_field_headers_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2450,27 +2256,6 @@ def test_dismiss_approval_request(request_type, transport: str = "grpc"):
     assert isinstance(response, accessapproval.ApprovalRequest)
     assert response.name == "name_value"
     assert response.requested_resource_name == "requested_resource_name_value"
-
-
-def test_dismiss_approval_request_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.dismiss_approval_request), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.dismiss_approval_request()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.DismissApprovalRequestMessage()
 
 
 def test_dismiss_approval_request_non_empty_request_with_auto_populated_field():
@@ -2544,32 +2329,6 @@ def test_dismiss_approval_request_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_dismiss_approval_request_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.dismiss_approval_request), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            accessapproval.ApprovalRequest(
-                name="name_value",
-                requested_resource_name="requested_resource_name_value",
-            )
-        )
-        response = await client.dismiss_approval_request()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.DismissApprovalRequestMessage()
-
-
-@pytest.mark.asyncio
 async def test_dismiss_approval_request_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2577,7 +2336,7 @@ async def test_dismiss_approval_request_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AccessApprovalAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2592,22 +2351,23 @@ async def test_dismiss_approval_request_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.dismiss_approval_request
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.dismiss_approval_request(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.dismiss_approval_request(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2616,7 +2376,7 @@ async def test_dismiss_approval_request_async(
     request_type=accessapproval.DismissApprovalRequestMessage,
 ):
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2688,7 +2448,7 @@ def test_dismiss_approval_request_field_headers():
 @pytest.mark.asyncio
 async def test_dismiss_approval_request_field_headers_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2757,27 +2517,6 @@ def test_invalidate_approval_request(request_type, transport: str = "grpc"):
     assert isinstance(response, accessapproval.ApprovalRequest)
     assert response.name == "name_value"
     assert response.requested_resource_name == "requested_resource_name_value"
-
-
-def test_invalidate_approval_request_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.invalidate_approval_request), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.invalidate_approval_request()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.InvalidateApprovalRequestMessage()
 
 
 def test_invalidate_approval_request_non_empty_request_with_auto_populated_field():
@@ -2851,32 +2590,6 @@ def test_invalidate_approval_request_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_invalidate_approval_request_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.invalidate_approval_request), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            accessapproval.ApprovalRequest(
-                name="name_value",
-                requested_resource_name="requested_resource_name_value",
-            )
-        )
-        response = await client.invalidate_approval_request()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.InvalidateApprovalRequestMessage()
-
-
-@pytest.mark.asyncio
 async def test_invalidate_approval_request_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2884,7 +2597,7 @@ async def test_invalidate_approval_request_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AccessApprovalAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2899,22 +2612,23 @@ async def test_invalidate_approval_request_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.invalidate_approval_request
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.invalidate_approval_request(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.invalidate_approval_request(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2923,7 +2637,7 @@ async def test_invalidate_approval_request_async(
     request_type=accessapproval.InvalidateApprovalRequestMessage,
 ):
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2995,7 +2709,7 @@ def test_invalidate_approval_request_field_headers():
 @pytest.mark.asyncio
 async def test_invalidate_approval_request_field_headers_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3074,27 +2788,6 @@ def test_get_access_approval_settings(request_type, transport: str = "grpc"):
     assert response.invalid_key_version is True
 
 
-def test_get_access_approval_settings_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_access_approval_settings), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_access_approval_settings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.GetAccessApprovalSettingsMessage()
-
-
 def test_get_access_approval_settings_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3166,36 +2859,6 @@ def test_get_access_approval_settings_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_access_approval_settings_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_access_approval_settings), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            accessapproval.AccessApprovalSettings(
-                name="name_value",
-                notification_emails=["notification_emails_value"],
-                enrolled_ancestor=True,
-                active_key_version="active_key_version_value",
-                ancestor_has_active_key_version=True,
-                invalid_key_version=True,
-            )
-        )
-        response = await client.get_access_approval_settings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.GetAccessApprovalSettingsMessage()
-
-
-@pytest.mark.asyncio
 async def test_get_access_approval_settings_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3203,7 +2866,7 @@ async def test_get_access_approval_settings_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AccessApprovalAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3218,22 +2881,23 @@ async def test_get_access_approval_settings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_access_approval_settings
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_access_approval_settings(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_access_approval_settings(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3242,7 +2906,7 @@ async def test_get_access_approval_settings_async(
     request_type=accessapproval.GetAccessApprovalSettingsMessage,
 ):
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3322,7 +2986,7 @@ def test_get_access_approval_settings_field_headers():
 @pytest.mark.asyncio
 async def test_get_access_approval_settings_field_headers_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3396,7 +3060,7 @@ def test_get_access_approval_settings_flattened_error():
 @pytest.mark.asyncio
 async def test_get_access_approval_settings_flattened_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3427,7 +3091,7 @@ async def test_get_access_approval_settings_flattened_async():
 @pytest.mark.asyncio
 async def test_get_access_approval_settings_flattened_error_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3485,27 +3149,6 @@ def test_update_access_approval_settings(request_type, transport: str = "grpc"):
     assert response.active_key_version == "active_key_version_value"
     assert response.ancestor_has_active_key_version is True
     assert response.invalid_key_version is True
-
-
-def test_update_access_approval_settings_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_access_approval_settings), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_access_approval_settings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.UpdateAccessApprovalSettingsMessage()
 
 
 def test_update_access_approval_settings_non_empty_request_with_auto_populated_field():
@@ -3575,36 +3218,6 @@ def test_update_access_approval_settings_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_access_approval_settings_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_access_approval_settings), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            accessapproval.AccessApprovalSettings(
-                name="name_value",
-                notification_emails=["notification_emails_value"],
-                enrolled_ancestor=True,
-                active_key_version="active_key_version_value",
-                ancestor_has_active_key_version=True,
-                invalid_key_version=True,
-            )
-        )
-        response = await client.update_access_approval_settings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.UpdateAccessApprovalSettingsMessage()
-
-
-@pytest.mark.asyncio
 async def test_update_access_approval_settings_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3612,7 +3225,7 @@ async def test_update_access_approval_settings_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AccessApprovalAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3627,22 +3240,23 @@ async def test_update_access_approval_settings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_access_approval_settings
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_access_approval_settings(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_access_approval_settings(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3651,7 +3265,7 @@ async def test_update_access_approval_settings_async(
     request_type=accessapproval.UpdateAccessApprovalSettingsMessage,
 ):
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3731,7 +3345,7 @@ def test_update_access_approval_settings_field_headers():
 @pytest.mark.asyncio
 async def test_update_access_approval_settings_field_headers_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3810,7 +3424,7 @@ def test_update_access_approval_settings_flattened_error():
 @pytest.mark.asyncio
 async def test_update_access_approval_settings_flattened_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3845,7 +3459,7 @@ async def test_update_access_approval_settings_flattened_async():
 @pytest.mark.asyncio
 async def test_update_access_approval_settings_flattened_error_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3891,27 +3505,6 @@ def test_delete_access_approval_settings(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_access_approval_settings_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_access_approval_settings), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_access_approval_settings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.DeleteAccessApprovalSettingsMessage()
 
 
 def test_delete_access_approval_settings_non_empty_request_with_auto_populated_field():
@@ -3985,27 +3578,6 @@ def test_delete_access_approval_settings_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_access_approval_settings_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_access_approval_settings), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_access_approval_settings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.DeleteAccessApprovalSettingsMessage()
-
-
-@pytest.mark.asyncio
 async def test_delete_access_approval_settings_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4013,7 +3585,7 @@ async def test_delete_access_approval_settings_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AccessApprovalAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4028,22 +3600,23 @@ async def test_delete_access_approval_settings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_access_approval_settings
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_access_approval_settings(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_access_approval_settings(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4052,7 +3625,7 @@ async def test_delete_access_approval_settings_async(
     request_type=accessapproval.DeleteAccessApprovalSettingsMessage,
 ):
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4117,7 +3690,7 @@ def test_delete_access_approval_settings_field_headers():
 @pytest.mark.asyncio
 async def test_delete_access_approval_settings_field_headers_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4189,7 +3762,7 @@ def test_delete_access_approval_settings_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_access_approval_settings_flattened_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4218,7 +3791,7 @@ async def test_delete_access_approval_settings_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_access_approval_settings_flattened_error_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4268,27 +3841,6 @@ def test_get_access_approval_service_account(request_type, transport: str = "grp
     assert isinstance(response, accessapproval.AccessApprovalServiceAccount)
     assert response.name == "name_value"
     assert response.account_email == "account_email_value"
-
-
-def test_get_access_approval_service_account_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_access_approval_service_account), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_access_approval_service_account()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.GetAccessApprovalServiceAccountMessage()
 
 
 def test_get_access_approval_service_account_non_empty_request_with_auto_populated_field():
@@ -4362,32 +3914,6 @@ def test_get_access_approval_service_account_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_access_approval_service_account_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_access_approval_service_account), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            accessapproval.AccessApprovalServiceAccount(
-                name="name_value",
-                account_email="account_email_value",
-            )
-        )
-        response = await client.get_access_approval_service_account()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == accessapproval.GetAccessApprovalServiceAccountMessage()
-
-
-@pytest.mark.asyncio
 async def test_get_access_approval_service_account_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4395,7 +3921,7 @@ async def test_get_access_approval_service_account_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AccessApprovalAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4410,22 +3936,23 @@ async def test_get_access_approval_service_account_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_access_approval_service_account
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_access_approval_service_account(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_access_approval_service_account(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4434,7 +3961,7 @@ async def test_get_access_approval_service_account_async(
     request_type=accessapproval.GetAccessApprovalServiceAccountMessage,
 ):
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4506,7 +4033,7 @@ def test_get_access_approval_service_account_field_headers():
 @pytest.mark.asyncio
 async def test_get_access_approval_service_account_field_headers_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4580,7 +4107,7 @@ def test_get_access_approval_service_account_flattened_error():
 @pytest.mark.asyncio
 async def test_get_access_approval_service_account_flattened_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4611,7 +4138,7 @@ async def test_get_access_approval_service_account_flattened_async():
 @pytest.mark.asyncio
 async def test_get_access_approval_service_account_flattened_error_async():
     client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4621,46 +4148,6 @@ async def test_get_access_approval_service_account_flattened_error_async():
             accessapproval.GetAccessApprovalServiceAccountMessage(),
             name="name_value",
         )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        accessapproval.ListApprovalRequestsMessage,
-        dict,
-    ],
-)
-def test_list_approval_requests_rest(request_type):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = accessapproval.ListApprovalRequestsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = accessapproval.ListApprovalRequestsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_approval_requests(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListApprovalRequestsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_approval_requests_rest_use_cached_wrapped_rpc():
@@ -4704,87 +4191,6 @@ def test_list_approval_requests_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_approval_requests_rest_interceptors(null_interceptor):
-    transport = transports.AccessApprovalRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AccessApprovalRestInterceptor(),
-    )
-    client = AccessApprovalClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "post_list_approval_requests"
-    ) as post, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "pre_list_approval_requests"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = accessapproval.ListApprovalRequestsMessage.pb(
-            accessapproval.ListApprovalRequestsMessage()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = accessapproval.ListApprovalRequestsResponse.to_json(
-            accessapproval.ListApprovalRequestsResponse()
-        )
-
-        request = accessapproval.ListApprovalRequestsMessage()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = accessapproval.ListApprovalRequestsResponse()
-
-        client.list_approval_requests(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_approval_requests_rest_bad_request(
-    transport: str = "rest", request_type=accessapproval.ListApprovalRequestsMessage
-):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_approval_requests(request)
-
-
 def test_list_approval_requests_rest_flattened():
     client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -4813,6 +4219,7 @@ def test_list_approval_requests_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_approval_requests(**mock_args)
 
@@ -4904,48 +4311,6 @@ def test_list_approval_requests_rest_pager(transport: str = "rest"):
             assert page_.raw_page.next_page_token == token
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        accessapproval.GetApprovalRequestMessage,
-        dict,
-    ],
-)
-def test_get_approval_request_rest(request_type):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = accessapproval.ApprovalRequest(
-            name="name_value",
-            requested_resource_name="requested_resource_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = accessapproval.ApprovalRequest.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_approval_request(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, accessapproval.ApprovalRequest)
-    assert response.name == "name_value"
-    assert response.requested_resource_name == "requested_resource_name_value"
-
-
 def test_get_approval_request_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -4986,87 +4351,6 @@ def test_get_approval_request_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_approval_request_rest_interceptors(null_interceptor):
-    transport = transports.AccessApprovalRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AccessApprovalRestInterceptor(),
-    )
-    client = AccessApprovalClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "post_get_approval_request"
-    ) as post, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "pre_get_approval_request"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = accessapproval.GetApprovalRequestMessage.pb(
-            accessapproval.GetApprovalRequestMessage()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = accessapproval.ApprovalRequest.to_json(
-            accessapproval.ApprovalRequest()
-        )
-
-        request = accessapproval.GetApprovalRequestMessage()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = accessapproval.ApprovalRequest()
-
-        client.get_approval_request(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_approval_request_rest_bad_request(
-    transport: str = "rest", request_type=accessapproval.GetApprovalRequestMessage
-):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_approval_request(request)
-
-
 def test_get_approval_request_rest_flattened():
     client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -5095,6 +4379,7 @@ def test_get_approval_request_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_approval_request(**mock_args)
 
@@ -5121,54 +4406,6 @@ def test_get_approval_request_rest_flattened_error(transport: str = "rest"):
             accessapproval.GetApprovalRequestMessage(),
             name="name_value",
         )
-
-
-def test_get_approval_request_rest_error():
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        accessapproval.ApproveApprovalRequestMessage,
-        dict,
-    ],
-)
-def test_approve_approval_request_rest(request_type):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = accessapproval.ApprovalRequest(
-            name="name_value",
-            requested_resource_name="requested_resource_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = accessapproval.ApprovalRequest.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.approve_approval_request(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, accessapproval.ApprovalRequest)
-    assert response.name == "name_value"
-    assert response.requested_resource_name == "requested_resource_name_value"
 
 
 def test_approve_approval_request_rest_use_cached_wrapped_rpc():
@@ -5212,135 +4449,6 @@ def test_approve_approval_request_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_approve_approval_request_rest_interceptors(null_interceptor):
-    transport = transports.AccessApprovalRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AccessApprovalRestInterceptor(),
-    )
-    client = AccessApprovalClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "post_approve_approval_request"
-    ) as post, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "pre_approve_approval_request"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = accessapproval.ApproveApprovalRequestMessage.pb(
-            accessapproval.ApproveApprovalRequestMessage()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = accessapproval.ApprovalRequest.to_json(
-            accessapproval.ApprovalRequest()
-        )
-
-        request = accessapproval.ApproveApprovalRequestMessage()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = accessapproval.ApprovalRequest()
-
-        client.approve_approval_request(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_approve_approval_request_rest_bad_request(
-    transport: str = "rest", request_type=accessapproval.ApproveApprovalRequestMessage
-):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.approve_approval_request(request)
-
-
-def test_approve_approval_request_rest_error():
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        accessapproval.DismissApprovalRequestMessage,
-        dict,
-    ],
-)
-def test_dismiss_approval_request_rest(request_type):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = accessapproval.ApprovalRequest(
-            name="name_value",
-            requested_resource_name="requested_resource_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = accessapproval.ApprovalRequest.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.dismiss_approval_request(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, accessapproval.ApprovalRequest)
-    assert response.name == "name_value"
-    assert response.requested_resource_name == "requested_resource_name_value"
-
-
 def test_dismiss_approval_request_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -5380,135 +4488,6 @@ def test_dismiss_approval_request_rest_use_cached_wrapped_rpc():
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
         assert mock_rpc.call_count == 2
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_dismiss_approval_request_rest_interceptors(null_interceptor):
-    transport = transports.AccessApprovalRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AccessApprovalRestInterceptor(),
-    )
-    client = AccessApprovalClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "post_dismiss_approval_request"
-    ) as post, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "pre_dismiss_approval_request"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = accessapproval.DismissApprovalRequestMessage.pb(
-            accessapproval.DismissApprovalRequestMessage()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = accessapproval.ApprovalRequest.to_json(
-            accessapproval.ApprovalRequest()
-        )
-
-        request = accessapproval.DismissApprovalRequestMessage()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = accessapproval.ApprovalRequest()
-
-        client.dismiss_approval_request(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_dismiss_approval_request_rest_bad_request(
-    transport: str = "rest", request_type=accessapproval.DismissApprovalRequestMessage
-):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.dismiss_approval_request(request)
-
-
-def test_dismiss_approval_request_rest_error():
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        accessapproval.InvalidateApprovalRequestMessage,
-        dict,
-    ],
-)
-def test_invalidate_approval_request_rest(request_type):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = accessapproval.ApprovalRequest(
-            name="name_value",
-            requested_resource_name="requested_resource_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = accessapproval.ApprovalRequest.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.invalidate_approval_request(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, accessapproval.ApprovalRequest)
-    assert response.name == "name_value"
-    assert response.requested_resource_name == "requested_resource_name_value"
 
 
 def test_invalidate_approval_request_rest_use_cached_wrapped_rpc():
@@ -5552,144 +4531,6 @@ def test_invalidate_approval_request_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_invalidate_approval_request_rest_interceptors(null_interceptor):
-    transport = transports.AccessApprovalRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AccessApprovalRestInterceptor(),
-    )
-    client = AccessApprovalClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "post_invalidate_approval_request"
-    ) as post, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "pre_invalidate_approval_request"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = accessapproval.InvalidateApprovalRequestMessage.pb(
-            accessapproval.InvalidateApprovalRequestMessage()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = accessapproval.ApprovalRequest.to_json(
-            accessapproval.ApprovalRequest()
-        )
-
-        request = accessapproval.InvalidateApprovalRequestMessage()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = accessapproval.ApprovalRequest()
-
-        client.invalidate_approval_request(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_invalidate_approval_request_rest_bad_request(
-    transport: str = "rest",
-    request_type=accessapproval.InvalidateApprovalRequestMessage,
-):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.invalidate_approval_request(request)
-
-
-def test_invalidate_approval_request_rest_error():
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        accessapproval.GetAccessApprovalSettingsMessage,
-        dict,
-    ],
-)
-def test_get_access_approval_settings_rest(request_type):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/accessApprovalSettings"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = accessapproval.AccessApprovalSettings(
-            name="name_value",
-            notification_emails=["notification_emails_value"],
-            enrolled_ancestor=True,
-            active_key_version="active_key_version_value",
-            ancestor_has_active_key_version=True,
-            invalid_key_version=True,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = accessapproval.AccessApprovalSettings.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_access_approval_settings(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, accessapproval.AccessApprovalSettings)
-    assert response.name == "name_value"
-    assert response.notification_emails == ["notification_emails_value"]
-    assert response.enrolled_ancestor is True
-    assert response.active_key_version == "active_key_version_value"
-    assert response.ancestor_has_active_key_version is True
-    assert response.invalid_key_version is True
-
-
 def test_get_access_approval_settings_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -5731,88 +4572,6 @@ def test_get_access_approval_settings_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_access_approval_settings_rest_interceptors(null_interceptor):
-    transport = transports.AccessApprovalRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AccessApprovalRestInterceptor(),
-    )
-    client = AccessApprovalClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "post_get_access_approval_settings"
-    ) as post, mock.patch.object(
-        transports.AccessApprovalRestInterceptor, "pre_get_access_approval_settings"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = accessapproval.GetAccessApprovalSettingsMessage.pb(
-            accessapproval.GetAccessApprovalSettingsMessage()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = accessapproval.AccessApprovalSettings.to_json(
-            accessapproval.AccessApprovalSettings()
-        )
-
-        request = accessapproval.GetAccessApprovalSettingsMessage()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = accessapproval.AccessApprovalSettings()
-
-        client.get_access_approval_settings(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_access_approval_settings_rest_bad_request(
-    transport: str = "rest",
-    request_type=accessapproval.GetAccessApprovalSettingsMessage,
-):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/accessApprovalSettings"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_access_approval_settings(request)
-
-
 def test_get_access_approval_settings_rest_flattened():
     client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -5841,6 +4600,7 @@ def test_get_access_approval_settings_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_access_approval_settings(**mock_args)
 
@@ -5869,10 +4629,1695 @@ def test_get_access_approval_settings_rest_flattened_error(transport: str = "res
         )
 
 
-def test_get_access_approval_settings_rest_error():
+def test_update_access_approval_settings_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AccessApprovalClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.update_access_approval_settings
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.update_access_approval_settings
+        ] = mock_rpc
+
+        request = {}
+        client.update_access_approval_settings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.update_access_approval_settings(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_update_access_approval_settings_rest_flattened():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = accessapproval.AccessApprovalSettings()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "settings": {"name": "projects/sample1/accessApprovalSettings"}
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            settings=accessapproval.AccessApprovalSettings(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = accessapproval.AccessApprovalSettings.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.update_access_approval_settings(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{settings.name=projects/*/accessApprovalSettings}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_update_access_approval_settings_rest_flattened_error(transport: str = "rest"):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.update_access_approval_settings(
+            accessapproval.UpdateAccessApprovalSettingsMessage(),
+            settings=accessapproval.AccessApprovalSettings(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+
+def test_delete_access_approval_settings_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AccessApprovalClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.delete_access_approval_settings
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.delete_access_approval_settings
+        ] = mock_rpc
+
+        request = {}
+        client.delete_access_approval_settings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.delete_access_approval_settings(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_delete_access_approval_settings_rest_flattened():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"name": "projects/sample1/accessApprovalSettings"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.delete_access_approval_settings(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{name=projects/*/accessApprovalSettings}" % client.transport._host,
+            args[1],
+        )
+
+
+def test_delete_access_approval_settings_rest_flattened_error(transport: str = "rest"):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.delete_access_approval_settings(
+            accessapproval.DeleteAccessApprovalSettingsMessage(),
+            name="name_value",
+        )
+
+
+def test_get_access_approval_service_account_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AccessApprovalClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_access_approval_service_account
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_access_approval_service_account
+        ] = mock_rpc
+
+        request = {}
+        client.get_access_approval_service_account(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_access_approval_service_account(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_get_access_approval_service_account_rest_flattened():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = accessapproval.AccessApprovalServiceAccount()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"name": "projects/sample1/serviceAccount"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = accessapproval.AccessApprovalServiceAccount.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.get_access_approval_service_account(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{name=projects/*/serviceAccount}" % client.transport._host, args[1]
+        )
+
+
+def test_get_access_approval_service_account_rest_flattened_error(
+    transport: str = "rest",
+):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_access_approval_service_account(
+            accessapproval.GetAccessApprovalServiceAccountMessage(),
+            name="name_value",
+        )
+
+
+def test_credentials_transport_error():
+    # It is an error to provide credentials and a transport instance.
+    transport = transports.AccessApprovalGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = AccessApprovalClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport=transport,
+        )
+
+    # It is an error to provide a credentials file and a transport instance.
+    transport = transports.AccessApprovalGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = AccessApprovalClient(
+            client_options={"credentials_file": "credentials.json"},
+            transport=transport,
+        )
+
+    # It is an error to provide an api_key and a transport instance.
+    transport = transports.AccessApprovalGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    options = client_options.ClientOptions()
+    options.api_key = "api_key"
+    with pytest.raises(ValueError):
+        client = AccessApprovalClient(
+            client_options=options,
+            transport=transport,
+        )
+
+    # It is an error to provide an api_key and a credential.
+    options = client_options.ClientOptions()
+    options.api_key = "api_key"
+    with pytest.raises(ValueError):
+        client = AccessApprovalClient(
+            client_options=options, credentials=ga_credentials.AnonymousCredentials()
+        )
+
+    # It is an error to provide scopes and a transport instance.
+    transport = transports.AccessApprovalGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = AccessApprovalClient(
+            client_options={"scopes": ["1", "2"]},
+            transport=transport,
+        )
+
+
+def test_transport_instance():
+    # A client may be instantiated with a custom transport instance.
+    transport = transports.AccessApprovalGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    client = AccessApprovalClient(transport=transport)
+    assert client.transport is transport
+
+
+def test_transport_get_channel():
+    # A client may be instantiated with a custom transport instance.
+    transport = transports.AccessApprovalGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    channel = transport.grpc_channel
+    assert channel
+
+    transport = transports.AccessApprovalGrpcAsyncIOTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    channel = transport.grpc_channel
+    assert channel
+
+
+@pytest.mark.parametrize(
+    "transport_class",
+    [
+        transports.AccessApprovalGrpcTransport,
+        transports.AccessApprovalGrpcAsyncIOTransport,
+        transports.AccessApprovalRestTransport,
+    ],
+)
+def test_transport_adc(transport_class):
+    # Test default credentials are used if not provided.
+    with mock.patch.object(google.auth, "default") as adc:
+        adc.return_value = (ga_credentials.AnonymousCredentials(), None)
+        transport_class()
+        adc.assert_called_once()
+
+
+def test_transport_kind_grpc():
+    transport = AccessApprovalClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_approval_requests_empty_call_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_approval_requests), "__call__"
+    ) as call:
+        call.return_value = accessapproval.ListApprovalRequestsResponse()
+        client.list_approval_requests(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.ListApprovalRequestsMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_approval_request_empty_call_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_approval_request), "__call__"
+    ) as call:
+        call.return_value = accessapproval.ApprovalRequest()
+        client.get_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.GetApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_approve_approval_request_empty_call_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.approve_approval_request), "__call__"
+    ) as call:
+        call.return_value = accessapproval.ApprovalRequest()
+        client.approve_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.ApproveApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_dismiss_approval_request_empty_call_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.dismiss_approval_request), "__call__"
+    ) as call:
+        call.return_value = accessapproval.ApprovalRequest()
+        client.dismiss_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.DismissApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_invalidate_approval_request_empty_call_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.invalidate_approval_request), "__call__"
+    ) as call:
+        call.return_value = accessapproval.ApprovalRequest()
+        client.invalidate_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.InvalidateApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_access_approval_settings_empty_call_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_access_approval_settings), "__call__"
+    ) as call:
+        call.return_value = accessapproval.AccessApprovalSettings()
+        client.get_access_approval_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.GetAccessApprovalSettingsMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_access_approval_settings_empty_call_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_access_approval_settings), "__call__"
+    ) as call:
+        call.return_value = accessapproval.AccessApprovalSettings()
+        client.update_access_approval_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.UpdateAccessApprovalSettingsMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_access_approval_settings_empty_call_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_access_approval_settings), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_access_approval_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.DeleteAccessApprovalSettingsMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_access_approval_service_account_empty_call_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_access_approval_service_account), "__call__"
+    ) as call:
+        call.return_value = accessapproval.AccessApprovalServiceAccount()
+        client.get_access_approval_service_account(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.GetAccessApprovalServiceAccountMessage()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = AccessApprovalAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_approval_requests_empty_call_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_approval_requests), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            accessapproval.ListApprovalRequestsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_approval_requests(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.ListApprovalRequestsMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_approval_request_empty_call_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_approval_request), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            accessapproval.ApprovalRequest(
+                name="name_value",
+                requested_resource_name="requested_resource_name_value",
+            )
+        )
+        await client.get_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.GetApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_approve_approval_request_empty_call_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.approve_approval_request), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            accessapproval.ApprovalRequest(
+                name="name_value",
+                requested_resource_name="requested_resource_name_value",
+            )
+        )
+        await client.approve_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.ApproveApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_dismiss_approval_request_empty_call_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.dismiss_approval_request), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            accessapproval.ApprovalRequest(
+                name="name_value",
+                requested_resource_name="requested_resource_name_value",
+            )
+        )
+        await client.dismiss_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.DismissApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_invalidate_approval_request_empty_call_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.invalidate_approval_request), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            accessapproval.ApprovalRequest(
+                name="name_value",
+                requested_resource_name="requested_resource_name_value",
+            )
+        )
+        await client.invalidate_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.InvalidateApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_access_approval_settings_empty_call_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_access_approval_settings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            accessapproval.AccessApprovalSettings(
+                name="name_value",
+                notification_emails=["notification_emails_value"],
+                enrolled_ancestor=True,
+                active_key_version="active_key_version_value",
+                ancestor_has_active_key_version=True,
+                invalid_key_version=True,
+            )
+        )
+        await client.get_access_approval_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.GetAccessApprovalSettingsMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_access_approval_settings_empty_call_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_access_approval_settings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            accessapproval.AccessApprovalSettings(
+                name="name_value",
+                notification_emails=["notification_emails_value"],
+                enrolled_ancestor=True,
+                active_key_version="active_key_version_value",
+                ancestor_has_active_key_version=True,
+                invalid_key_version=True,
+            )
+        )
+        await client.update_access_approval_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.UpdateAccessApprovalSettingsMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_access_approval_settings_empty_call_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_access_approval_settings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_access_approval_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.DeleteAccessApprovalSettingsMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_access_approval_service_account_empty_call_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_access_approval_service_account), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            accessapproval.AccessApprovalServiceAccount(
+                name="name_value",
+                account_email="account_email_value",
+            )
+        )
+        await client.get_access_approval_service_account(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.GetAccessApprovalServiceAccountMessage()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = AccessApprovalClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_list_approval_requests_rest_bad_request(
+    request_type=accessapproval.ListApprovalRequestsMessage,
+):
     client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_approval_requests(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        accessapproval.ListApprovalRequestsMessage,
+        dict,
+    ],
+)
+def test_list_approval_requests_rest_call_success(request_type):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = accessapproval.ListApprovalRequestsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = accessapproval.ListApprovalRequestsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_approval_requests(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListApprovalRequestsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_approval_requests_rest_interceptors(null_interceptor):
+    transport = transports.AccessApprovalRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AccessApprovalRestInterceptor(),
+    )
+    client = AccessApprovalClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "post_list_approval_requests"
+    ) as post, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "pre_list_approval_requests"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = accessapproval.ListApprovalRequestsMessage.pb(
+            accessapproval.ListApprovalRequestsMessage()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = accessapproval.ListApprovalRequestsResponse.to_json(
+            accessapproval.ListApprovalRequestsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = accessapproval.ListApprovalRequestsMessage()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = accessapproval.ListApprovalRequestsResponse()
+
+        client.list_approval_requests(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_approval_request_rest_bad_request(
+    request_type=accessapproval.GetApprovalRequestMessage,
+):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_approval_request(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        accessapproval.GetApprovalRequestMessage,
+        dict,
+    ],
+)
+def test_get_approval_request_rest_call_success(request_type):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = accessapproval.ApprovalRequest(
+            name="name_value",
+            requested_resource_name="requested_resource_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = accessapproval.ApprovalRequest.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_approval_request(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, accessapproval.ApprovalRequest)
+    assert response.name == "name_value"
+    assert response.requested_resource_name == "requested_resource_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_approval_request_rest_interceptors(null_interceptor):
+    transport = transports.AccessApprovalRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AccessApprovalRestInterceptor(),
+    )
+    client = AccessApprovalClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "post_get_approval_request"
+    ) as post, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "pre_get_approval_request"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = accessapproval.GetApprovalRequestMessage.pb(
+            accessapproval.GetApprovalRequestMessage()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = accessapproval.ApprovalRequest.to_json(
+            accessapproval.ApprovalRequest()
+        )
+        req.return_value.content = return_value
+
+        request = accessapproval.GetApprovalRequestMessage()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = accessapproval.ApprovalRequest()
+
+        client.get_approval_request(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_approve_approval_request_rest_bad_request(
+    request_type=accessapproval.ApproveApprovalRequestMessage,
+):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.approve_approval_request(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        accessapproval.ApproveApprovalRequestMessage,
+        dict,
+    ],
+)
+def test_approve_approval_request_rest_call_success(request_type):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = accessapproval.ApprovalRequest(
+            name="name_value",
+            requested_resource_name="requested_resource_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = accessapproval.ApprovalRequest.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.approve_approval_request(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, accessapproval.ApprovalRequest)
+    assert response.name == "name_value"
+    assert response.requested_resource_name == "requested_resource_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_approve_approval_request_rest_interceptors(null_interceptor):
+    transport = transports.AccessApprovalRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AccessApprovalRestInterceptor(),
+    )
+    client = AccessApprovalClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "post_approve_approval_request"
+    ) as post, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "pre_approve_approval_request"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = accessapproval.ApproveApprovalRequestMessage.pb(
+            accessapproval.ApproveApprovalRequestMessage()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = accessapproval.ApprovalRequest.to_json(
+            accessapproval.ApprovalRequest()
+        )
+        req.return_value.content = return_value
+
+        request = accessapproval.ApproveApprovalRequestMessage()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = accessapproval.ApprovalRequest()
+
+        client.approve_approval_request(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_dismiss_approval_request_rest_bad_request(
+    request_type=accessapproval.DismissApprovalRequestMessage,
+):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.dismiss_approval_request(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        accessapproval.DismissApprovalRequestMessage,
+        dict,
+    ],
+)
+def test_dismiss_approval_request_rest_call_success(request_type):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = accessapproval.ApprovalRequest(
+            name="name_value",
+            requested_resource_name="requested_resource_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = accessapproval.ApprovalRequest.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.dismiss_approval_request(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, accessapproval.ApprovalRequest)
+    assert response.name == "name_value"
+    assert response.requested_resource_name == "requested_resource_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_dismiss_approval_request_rest_interceptors(null_interceptor):
+    transport = transports.AccessApprovalRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AccessApprovalRestInterceptor(),
+    )
+    client = AccessApprovalClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "post_dismiss_approval_request"
+    ) as post, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "pre_dismiss_approval_request"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = accessapproval.DismissApprovalRequestMessage.pb(
+            accessapproval.DismissApprovalRequestMessage()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = accessapproval.ApprovalRequest.to_json(
+            accessapproval.ApprovalRequest()
+        )
+        req.return_value.content = return_value
+
+        request = accessapproval.DismissApprovalRequestMessage()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = accessapproval.ApprovalRequest()
+
+        client.dismiss_approval_request(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_invalidate_approval_request_rest_bad_request(
+    request_type=accessapproval.InvalidateApprovalRequestMessage,
+):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.invalidate_approval_request(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        accessapproval.InvalidateApprovalRequestMessage,
+        dict,
+    ],
+)
+def test_invalidate_approval_request_rest_call_success(request_type):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/approvalRequests/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = accessapproval.ApprovalRequest(
+            name="name_value",
+            requested_resource_name="requested_resource_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = accessapproval.ApprovalRequest.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.invalidate_approval_request(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, accessapproval.ApprovalRequest)
+    assert response.name == "name_value"
+    assert response.requested_resource_name == "requested_resource_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_invalidate_approval_request_rest_interceptors(null_interceptor):
+    transport = transports.AccessApprovalRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AccessApprovalRestInterceptor(),
+    )
+    client = AccessApprovalClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "post_invalidate_approval_request"
+    ) as post, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "pre_invalidate_approval_request"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = accessapproval.InvalidateApprovalRequestMessage.pb(
+            accessapproval.InvalidateApprovalRequestMessage()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = accessapproval.ApprovalRequest.to_json(
+            accessapproval.ApprovalRequest()
+        )
+        req.return_value.content = return_value
+
+        request = accessapproval.InvalidateApprovalRequestMessage()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = accessapproval.ApprovalRequest()
+
+        client.invalidate_approval_request(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_access_approval_settings_rest_bad_request(
+    request_type=accessapproval.GetAccessApprovalSettingsMessage,
+):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/accessApprovalSettings"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_access_approval_settings(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        accessapproval.GetAccessApprovalSettingsMessage,
+        dict,
+    ],
+)
+def test_get_access_approval_settings_rest_call_success(request_type):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/accessApprovalSettings"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = accessapproval.AccessApprovalSettings(
+            name="name_value",
+            notification_emails=["notification_emails_value"],
+            enrolled_ancestor=True,
+            active_key_version="active_key_version_value",
+            ancestor_has_active_key_version=True,
+            invalid_key_version=True,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = accessapproval.AccessApprovalSettings.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_access_approval_settings(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, accessapproval.AccessApprovalSettings)
+    assert response.name == "name_value"
+    assert response.notification_emails == ["notification_emails_value"]
+    assert response.enrolled_ancestor is True
+    assert response.active_key_version == "active_key_version_value"
+    assert response.ancestor_has_active_key_version is True
+    assert response.invalid_key_version is True
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_access_approval_settings_rest_interceptors(null_interceptor):
+    transport = transports.AccessApprovalRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AccessApprovalRestInterceptor(),
+    )
+    client = AccessApprovalClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "post_get_access_approval_settings"
+    ) as post, mock.patch.object(
+        transports.AccessApprovalRestInterceptor, "pre_get_access_approval_settings"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = accessapproval.GetAccessApprovalSettingsMessage.pb(
+            accessapproval.GetAccessApprovalSettingsMessage()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = accessapproval.AccessApprovalSettings.to_json(
+            accessapproval.AccessApprovalSettings()
+        )
+        req.return_value.content = return_value
+
+        request = accessapproval.GetAccessApprovalSettingsMessage()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = accessapproval.AccessApprovalSettings()
+
+        client.get_access_approval_settings(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_access_approval_settings_rest_bad_request(
+    request_type=accessapproval.UpdateAccessApprovalSettingsMessage,
+):
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"settings": {"name": "projects/sample1/accessApprovalSettings"}}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_access_approval_settings(request)
 
 
 @pytest.mark.parametrize(
@@ -5882,10 +6327,9 @@ def test_get_access_approval_settings_rest_error():
         dict,
     ],
 )
-def test_update_access_approval_settings_rest(request_type):
+def test_update_access_approval_settings_rest_call_success(request_type):
     client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -5988,14 +6432,15 @@ def test_update_access_approval_settings_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = accessapproval.AccessApprovalSettings.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.update_access_approval_settings(request)
 
     # Establish that the response is the type that we expect.
@@ -6008,47 +6453,6 @@ def test_update_access_approval_settings_rest(request_type):
     assert response.invalid_key_version is True
 
 
-def test_update_access_approval_settings_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = AccessApprovalClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.update_access_approval_settings
-            in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.update_access_approval_settings
-        ] = mock_rpc
-
-        request = {}
-        client.update_access_approval_settings(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.update_access_approval_settings(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_update_access_approval_settings_rest_interceptors(null_interceptor):
     transport = transports.AccessApprovalRestTransport(
@@ -6058,6 +6462,7 @@ def test_update_access_approval_settings_rest_interceptors(null_interceptor):
         else transports.AccessApprovalRestInterceptor(),
     )
     client = AccessApprovalClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -6079,12 +6484,13 @@ def test_update_access_approval_settings_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = accessapproval.AccessApprovalSettings.to_json(
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = accessapproval.AccessApprovalSettings.to_json(
             accessapproval.AccessApprovalSettings()
         )
+        req.return_value.content = return_value
 
         request = accessapproval.UpdateAccessApprovalSettingsMessage()
         metadata = [
@@ -6106,17 +6512,14 @@ def test_update_access_approval_settings_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_update_access_approval_settings_rest_bad_request(
-    transport: str = "rest",
-    request_type=accessapproval.UpdateAccessApprovalSettingsMessage,
+def test_delete_access_approval_settings_rest_bad_request(
+    request_type=accessapproval.DeleteAccessApprovalSettingsMessage,
 ):
     client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"settings": {"name": "projects/sample1/accessApprovalSettings"}}
+    request_init = {"name": "projects/sample1/accessApprovalSettings"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -6124,78 +6527,14 @@ def test_update_access_approval_settings_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.update_access_approval_settings(request)
-
-
-def test_update_access_approval_settings_rest_flattened():
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = accessapproval.AccessApprovalSettings()
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {
-            "settings": {"name": "projects/sample1/accessApprovalSettings"}
-        }
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            settings=accessapproval.AccessApprovalSettings(name="name_value"),
-            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = accessapproval.AccessApprovalSettings.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.update_access_approval_settings(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/v1/{settings.name=projects/*/accessApprovalSettings}"
-            % client.transport._host,
-            args[1],
-        )
-
-
-def test_update_access_approval_settings_rest_flattened_error(transport: str = "rest"):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.update_access_approval_settings(
-            accessapproval.UpdateAccessApprovalSettingsMessage(),
-            settings=accessapproval.AccessApprovalSettings(name="name_value"),
-            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
-        )
-
-
-def test_update_access_approval_settings_rest_error():
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_access_approval_settings(request)
 
 
 @pytest.mark.parametrize(
@@ -6205,10 +6544,9 @@ def test_update_access_approval_settings_rest_error():
         dict,
     ],
 )
-def test_delete_access_approval_settings_rest(request_type):
+def test_delete_access_approval_settings_rest_call_success(request_type):
     client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -6221,57 +6559,16 @@ def test_delete_access_approval_settings_rest(request_type):
         return_value = None
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
         json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.delete_access_approval_settings(request)
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_access_approval_settings_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = AccessApprovalClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.delete_access_approval_settings
-            in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.delete_access_approval_settings
-        ] = mock_rpc
-
-        request = {}
-        client.delete_access_approval_settings(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.delete_access_approval_settings(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -6283,6 +6580,7 @@ def test_delete_access_approval_settings_rest_interceptors(null_interceptor):
         else transports.AccessApprovalRestInterceptor(),
     )
     client = AccessApprovalClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -6301,9 +6599,9 @@ def test_delete_access_approval_settings_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         request = accessapproval.DeleteAccessApprovalSettingsMessage()
         metadata = [
@@ -6323,17 +6621,14 @@ def test_delete_access_approval_settings_rest_interceptors(null_interceptor):
         pre.assert_called_once()
 
 
-def test_delete_access_approval_settings_rest_bad_request(
-    transport: str = "rest",
-    request_type=accessapproval.DeleteAccessApprovalSettingsMessage,
+def test_get_access_approval_service_account_rest_bad_request(
+    request_type=accessapproval.GetAccessApprovalServiceAccountMessage,
 ):
     client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/accessApprovalSettings"}
+    request_init = {"name": "projects/sample1/serviceAccount"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -6341,71 +6636,14 @@ def test_delete_access_approval_settings_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_access_approval_settings(request)
-
-
-def test_delete_access_approval_settings_rest_flattened():
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"name": "projects/sample1/accessApprovalSettings"}
-
-        # get truthy value for each flattened field
-        mock_args = dict(
-            name="name_value",
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
+        response_value = mock.Mock()
         json_return_value = ""
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
         req.return_value = response_value
-
-        client.delete_access_approval_settings(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/v1/{name=projects/*/accessApprovalSettings}" % client.transport._host,
-            args[1],
-        )
-
-
-def test_delete_access_approval_settings_rest_flattened_error(transport: str = "rest"):
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.delete_access_approval_settings(
-            accessapproval.DeleteAccessApprovalSettingsMessage(),
-            name="name_value",
-        )
-
-
-def test_delete_access_approval_settings_rest_error():
-    client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_access_approval_service_account(request)
 
 
 @pytest.mark.parametrize(
@@ -6415,10 +6653,9 @@ def test_delete_access_approval_settings_rest_error():
         dict,
     ],
 )
-def test_get_access_approval_service_account_rest(request_type):
+def test_get_access_approval_service_account_rest_call_success(request_type):
     client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -6434,61 +6671,21 @@ def test_get_access_approval_service_account_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = accessapproval.AccessApprovalServiceAccount.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.get_access_approval_service_account(request)
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, accessapproval.AccessApprovalServiceAccount)
     assert response.name == "name_value"
     assert response.account_email == "account_email_value"
-
-
-def test_get_access_approval_service_account_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = AccessApprovalClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.get_access_approval_service_account
-            in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.get_access_approval_service_account
-        ] = mock_rpc
-
-        request = {}
-        client.get_access_approval_service_account(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.get_access_approval_service_account(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -6500,6 +6697,7 @@ def test_get_access_approval_service_account_rest_interceptors(null_interceptor)
         else transports.AccessApprovalRestInterceptor(),
     )
     client = AccessApprovalClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -6523,12 +6721,13 @@ def test_get_access_approval_service_account_rest_interceptors(null_interceptor)
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = accessapproval.AccessApprovalServiceAccount.to_json(
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = accessapproval.AccessApprovalServiceAccount.to_json(
             accessapproval.AccessApprovalServiceAccount()
         )
+        req.return_value.content = return_value
 
         request = accessapproval.GetAccessApprovalServiceAccountMessage()
         metadata = [
@@ -6550,198 +6749,209 @@ def test_get_access_approval_service_account_rest_interceptors(null_interceptor)
         post.assert_called_once()
 
 
-def test_get_access_approval_service_account_rest_bad_request(
-    transport: str = "rest",
-    request_type=accessapproval.GetAccessApprovalServiceAccountMessage,
-):
+def test_initialize_client_w_rest():
     client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/serviceAccount"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_access_approval_service_account(request)
+    assert client is not None
 
 
-def test_get_access_approval_service_account_rest_flattened():
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_approval_requests_empty_call_rest():
     client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
         transport="rest",
     )
 
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = accessapproval.AccessApprovalServiceAccount()
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_approval_requests), "__call__"
+    ) as call:
+        client.list_approval_requests(request=None)
 
-        # get arguments that satisfy an http rule for this method
-        sample_request = {"name": "projects/sample1/serviceAccount"}
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.ListApprovalRequestsMessage()
 
-        # get truthy value for each flattened field
-        mock_args = dict(
-            name="name_value",
-        )
-        mock_args.update(sample_request)
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = accessapproval.AccessApprovalServiceAccount.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        client.get_access_approval_service_account(**mock_args)
-
-        # Establish that the underlying call was made with the expected
-        # request object values.
-        assert len(req.mock_calls) == 1
-        _, args, _ = req.mock_calls[0]
-        assert path_template.validate(
-            "%s/v1/{name=projects/*/serviceAccount}" % client.transport._host, args[1]
-        )
+        assert args[0] == request_msg
 
 
-def test_get_access_approval_service_account_rest_flattened_error(
-    transport: str = "rest",
-):
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_approval_request_empty_call_rest():
     client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        transport="rest",
     )
 
-    # Attempting to call a method with both a request object and flattened
-    # fields is an error.
-    with pytest.raises(ValueError):
-        client.get_access_approval_service_account(
-            accessapproval.GetAccessApprovalServiceAccountMessage(),
-            name="name_value",
-        )
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_approval_request), "__call__"
+    ) as call:
+        client.get_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.GetApprovalRequestMessage()
+
+        assert args[0] == request_msg
 
 
-def test_get_access_approval_service_account_rest_error():
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_approve_approval_request_empty_call_rest():
     client = AccessApprovalClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-def test_credentials_transport_error():
-    # It is an error to provide credentials and a transport instance.
-    transport = transports.AccessApprovalGrpcTransport(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = AccessApprovalClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport=transport,
-        )
 
-    # It is an error to provide a credentials file and a transport instance.
-    transport = transports.AccessApprovalGrpcTransport(
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.approve_approval_request), "__call__"
+    ) as call:
+        client.approve_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.ApproveApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_dismiss_approval_request_empty_call_rest():
+    client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = AccessApprovalClient(
-            client_options={"credentials_file": "credentials.json"},
-            transport=transport,
-        )
 
-    # It is an error to provide an api_key and a transport instance.
-    transport = transports.AccessApprovalGrpcTransport(
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.dismiss_approval_request), "__call__"
+    ) as call:
+        client.dismiss_approval_request(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.DismissApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_invalidate_approval_request_empty_call_rest():
+    client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    options = client_options.ClientOptions()
-    options.api_key = "api_key"
-    with pytest.raises(ValueError):
-        client = AccessApprovalClient(
-            client_options=options,
-            transport=transport,
-        )
 
-    # It is an error to provide an api_key and a credential.
-    options = client_options.ClientOptions()
-    options.api_key = "api_key"
-    with pytest.raises(ValueError):
-        client = AccessApprovalClient(
-            client_options=options, credentials=ga_credentials.AnonymousCredentials()
-        )
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.invalidate_approval_request), "__call__"
+    ) as call:
+        client.invalidate_approval_request(request=None)
 
-    # It is an error to provide scopes and a transport instance.
-    transport = transports.AccessApprovalGrpcTransport(
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.InvalidateApprovalRequestMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_access_approval_settings_empty_call_rest():
+    client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = AccessApprovalClient(
-            client_options={"scopes": ["1", "2"]},
-            transport=transport,
-        )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_access_approval_settings), "__call__"
+    ) as call:
+        client.get_access_approval_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.GetAccessApprovalSettingsMessage()
+
+        assert args[0] == request_msg
 
 
-def test_transport_instance():
-    # A client may be instantiated with a custom transport instance.
-    transport = transports.AccessApprovalGrpcTransport(
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_access_approval_settings_empty_call_rest():
+    client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    client = AccessApprovalClient(transport=transport)
-    assert client.transport is transport
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_access_approval_settings), "__call__"
+    ) as call:
+        client.update_access_approval_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.UpdateAccessApprovalSettingsMessage()
+
+        assert args[0] == request_msg
 
 
-def test_transport_get_channel():
-    # A client may be instantiated with a custom transport instance.
-    transport = transports.AccessApprovalGrpcTransport(
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_access_approval_settings_empty_call_rest():
+    client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    channel = transport.grpc_channel
-    assert channel
 
-    transport = transports.AccessApprovalGrpcAsyncIOTransport(
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_access_approval_settings), "__call__"
+    ) as call:
+        client.delete_access_approval_settings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.DeleteAccessApprovalSettingsMessage()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_access_approval_service_account_empty_call_rest():
+    client = AccessApprovalClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    channel = transport.grpc_channel
-    assert channel
 
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_access_approval_service_account), "__call__"
+    ) as call:
+        client.get_access_approval_service_account(request=None)
 
-@pytest.mark.parametrize(
-    "transport_class",
-    [
-        transports.AccessApprovalGrpcTransport,
-        transports.AccessApprovalGrpcAsyncIOTransport,
-        transports.AccessApprovalRestTransport,
-    ],
-)
-def test_transport_adc(transport_class):
-    # Test default credentials are used if not provided.
-    with mock.patch.object(google.auth, "default") as adc:
-        adc.return_value = (ga_credentials.AnonymousCredentials(), None)
-        transport_class()
-        adc.assert_called_once()
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = accessapproval.GetAccessApprovalServiceAccountMessage()
 
-
-@pytest.mark.parametrize(
-    "transport_name",
-    [
-        "grpc",
-        "rest",
-    ],
-)
-def test_transport_kind(transport_name):
-    transport = AccessApprovalClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
-    )
-    assert transport.kind == transport_name
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -7388,36 +7598,41 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = AccessApprovalAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+def test_transport_close_grpc():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = AccessApprovalAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
         async with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = AccessApprovalClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = AccessApprovalClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

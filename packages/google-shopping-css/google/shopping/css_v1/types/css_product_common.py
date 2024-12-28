@@ -24,14 +24,36 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.shopping.css.v1",
     manifest={
+        "SubscriptionPeriod",
         "Attributes",
         "Certification",
         "ProductDetail",
         "ProductDimension",
         "ProductWeight",
         "CssProductStatus",
+        "HeadlineOfferSubscriptionCost",
+        "HeadlineOfferInstallment",
     },
 )
+
+
+class SubscriptionPeriod(proto.Enum):
+    r"""The subscription period of the product.
+
+    Values:
+        SUBSCRIPTION_PERIOD_UNSPECIFIED (0):
+            Indicates that the subscription period is
+            unspecified.
+        MONTH (1):
+            Indicates that the subscription period is
+            month.
+        YEAR (2):
+            Indicates that the subscription period is
+            year.
+    """
+    SUBSCRIPTION_PERIOD_UNSPECIFIED = 0
+    MONTH = 1
+    YEAR = 2
 
 
 class Attributes(proto.Message):
@@ -57,11 +79,11 @@ class Attributes(proto.Message):
 
             This field is a member of `oneof`_ ``_cpp_ads_redirect``.
         low_price (google.shopping.type.types.Price):
-            Low Price of the aggregate offer.
+            Low Price of the CSS Product.
         high_price (google.shopping.type.types.Price):
-            High Price of the aggregate offer.
+            High Price of the CSS Product.
         number_of_offers (int):
-            The number of aggregate offers.
+            The number of CSS Products.
 
             This field is a member of `oneof`_ ``_number_of_offers``.
         headline_offer_condition (str):
@@ -69,7 +91,7 @@ class Attributes(proto.Message):
 
             This field is a member of `oneof`_ ``_headline_offer_condition``.
         headline_offer_price (google.shopping.type.types.Price):
-            Headline Price of the aggregate offer.
+            Headline Price of the CSS Product.
         headline_offer_link (str):
             Link to the headline offer.
 
@@ -79,7 +101,7 @@ class Attributes(proto.Message):
 
             This field is a member of `oneof`_ ``_headline_offer_mobile_link``.
         headline_offer_shipping_price (google.shopping.type.types.Price):
-            Headline Price of the aggregate offer.
+            Headline Price of the CSS Product.
         title (str):
             Title of the item.
 
@@ -255,6 +277,13 @@ class Attributes(proto.Message):
             in a Shopping campaign.
 
             This field is a member of `oneof`_ ``_custom_label_4``.
+        headline_offer_installment (google.shopping.css_v1.types.HeadlineOfferInstallment):
+            Number and amount of installments to pay for
+            an item.
+        headline_offer_subscription_cost (google.shopping.css_v1.types.HeadlineOfferSubscriptionCost):
+            Number of periods (months or years) and
+            amount of payment per period for an item with an
+            associated subscription contract.
     """
 
     cpp_link: str = proto.Field(
@@ -491,18 +520,40 @@ class Attributes(proto.Message):
         number=50,
         optional=True,
     )
+    headline_offer_installment: "HeadlineOfferInstallment" = proto.Field(
+        proto.MESSAGE,
+        number=51,
+        message="HeadlineOfferInstallment",
+    )
+    headline_offer_subscription_cost: "HeadlineOfferSubscriptionCost" = proto.Field(
+        proto.MESSAGE,
+        number=52,
+        message="HeadlineOfferSubscriptionCost",
+    )
 
 
 class Certification(proto.Message):
-    r"""The certification for the product.
+    r"""The certification for the product. Use the this attribute to
+    describe certifications, such as energy efficiency ratings,
+    associated with a product.
 
     Attributes:
         name (str):
-            Name of the certification.
+            The name of the certification. At this time,
+            the most common value is "EPREL", which
+            represents energy efficiency certifications in
+            the EU European Registry for Energy Labeling
+            (EPREL) database.
         authority (str):
-            Name of the certification body.
+            The authority or certification body responsible for issuing
+            the certification. At this time, the most common value is
+            "EC" or “European_Commission” for energy labels in the EU.
         code (str):
-            A unique code to identify the certification.
+            The code of the certification. For example,
+            for the EPREL certificate with the link
+            https://eprel.ec.europa.eu/screen/product/dishwashers2019/123456
+            the code is 123456. The code is required for
+            European Energy Labels.
     """
 
     name: str = proto.Field(
@@ -627,13 +678,13 @@ class CssProductStatus(proto.Message):
                 The name of the destination
             approved_countries (MutableSequence[str]):
                 List of country codes (ISO 3166-1 alpha-2)
-                where the aggregate offer is approved.
+                where the CSS Product is approved.
             pending_countries (MutableSequence[str]):
                 List of country codes (ISO 3166-1 alpha-2)
-                where the aggregate offer is pending approval.
+                where the CSS Product is pending approval.
             disapproved_countries (MutableSequence[str]):
                 List of country codes (ISO 3166-1 alpha-2)
-                where the aggregate offer is disapproved.
+                where the CSS Product is disapproved.
         """
 
         destination: str = proto.Field(
@@ -660,8 +711,8 @@ class CssProductStatus(proto.Message):
             code (str):
                 The error code of the issue.
             servability (str):
-                How this issue affects serving of the
-                aggregate offer.
+                How this issue affects serving of the CSS
+                Product.
             resolution (str):
                 Whether the issue can be resolved by the
                 merchant.
@@ -679,7 +730,7 @@ class CssProductStatus(proto.Message):
                 this issue.
             applicable_countries (MutableSequence[str]):
                 List of country codes (ISO 3166-1 alpha-2)
-                where issue applies to the aggregate offer.
+                where issue applies to the CSS Product.
         """
 
         code: str = proto.Field(
@@ -743,6 +794,69 @@ class CssProductStatus(proto.Message):
         proto.MESSAGE,
         number=7,
         message=timestamp_pb2.Timestamp,
+    )
+
+
+class HeadlineOfferSubscriptionCost(proto.Message):
+    r"""The SubscriptionCost of the product.
+
+    Attributes:
+        period (google.shopping.css_v1.types.SubscriptionPeriod):
+            The type of subscription period. Supported values are:
+
+            -  "``month``"
+            -  "``year``".
+        period_length (int):
+            The number of subscription periods the buyer
+            has to pay.
+        amount (google.shopping.type.types.Price):
+            The amount the buyer has to pay per
+            subscription period.
+    """
+
+    period: "SubscriptionPeriod" = proto.Field(
+        proto.ENUM,
+        number=1,
+        enum="SubscriptionPeriod",
+    )
+    period_length: int = proto.Field(
+        proto.INT64,
+        number=2,
+    )
+    amount: types.Price = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=types.Price,
+    )
+
+
+class HeadlineOfferInstallment(proto.Message):
+    r"""A message that represents installment.
+
+    Attributes:
+        months (int):
+            The number of installments the buyer has to
+            pay.
+        amount (google.shopping.type.types.Price):
+            The amount the buyer has to pay per month.
+        downpayment (google.shopping.type.types.Price):
+            The up-front down payment amount the buyer
+            has to pay.
+    """
+
+    months: int = proto.Field(
+        proto.INT64,
+        number=1,
+    )
+    amount: types.Price = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=types.Price,
+    )
+    downpayment: types.Price = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=types.Price,
     )
 
 

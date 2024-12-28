@@ -1,5 +1,80 @@
 # Changelog
 
+## [0.17.32](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.31...google-cloud-batch-v0.17.32) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([b1358ba](https://github.com/googleapis/google-cloud-python/commit/b1358ba4fb17713ab9f637dd6e698b8ec788fd92))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([b1358ba](https://github.com/googleapis/google-cloud-python/commit/b1358ba4fb17713ab9f637dd6e698b8ec788fd92))
+
+
+### Documentation
+
+* [google-cloud-batch] Rephrase reservation field doc ([#13311](https://github.com/googleapis/google-cloud-python/issues/13311)) ([bcf230c](https://github.com/googleapis/google-cloud-python/commit/bcf230c24d0a2ac158606a7c7176ea87be8ad592))
+* clarify options for logs ([b1358ba](https://github.com/googleapis/google-cloud-python/commit/b1358ba4fb17713ab9f637dd6e698b8ec788fd92))
+* clarify that user provided labels will also be applied to Cloud Logging ([90a49b2](https://github.com/googleapis/google-cloud-python/commit/90a49b2b5a4c9d0f197162b272ef097e990cd97b))
+* Clarify the custom instance template needs to be in the same project ([b1358ba](https://github.com/googleapis/google-cloud-python/commit/b1358ba4fb17713ab9f637dd6e698b8ec788fd92))
+* Rephrase reservation field doc ([b1358ba](https://github.com/googleapis/google-cloud-python/commit/b1358ba4fb17713ab9f637dd6e698b8ec788fd92))
+* Update reservation field to include NO_RESERVATION ([90a49b2](https://github.com/googleapis/google-cloud-python/commit/90a49b2b5a4c9d0f197162b272ef097e990cd97b))
+
+## [0.17.31](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.30...google-cloud-batch-v0.17.31) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([4ed4108](https://github.com/googleapis/google-cloud-python/commit/4ed41088ab3cbadfe4de7fa170f172666015ed24))
+
+## [0.17.30](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.29...google-cloud-batch-v0.17.30) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13200](https://github.com/googleapis/google-cloud-python/issues/13200)) ([19dc048](https://github.com/googleapis/google-cloud-python/commit/19dc0485852406b90743297bcf257020e6012593))
+
+## [0.17.29](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.28...google-cloud-batch-v0.17.29) (2024-10-08)
+
+
+### Documentation
+
+* Clarify Batch only supports global custom instance template now ([023d099](https://github.com/googleapis/google-cloud-python/commit/023d09955a2b4e013a3506d2dbed45c3e7e4a696))
+
+## [0.17.28](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.27...google-cloud-batch-v0.17.28) (2024-09-16)
+
+
+### Features
+
+* [google-cloud-batch] A new value `CANCELLATION_IN_PROGRESS` is added to enum `State` ([#13074](https://github.com/googleapis/google-cloud-python/issues/13074)) ([76267b2](https://github.com/googleapis/google-cloud-python/commit/76267b2b8998fd2a3602ebf4d12d2aaa30a90cde))
+
+## [0.17.27](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.26...google-cloud-batch-v0.17.27) (2024-09-03)
+
+
+### Features
+
+* **v1:** promote block_project_ssh_keys support to batch v1 API ([63a6de0](https://github.com/googleapis/google-cloud-python/commit/63a6de00b1c6e2b6289b4fa76468859c828cb363))
+
+## [0.17.26](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.25...google-cloud-batch-v0.17.26) (2024-08-20)
+
+
+### Documentation
+
+* [google-cloud-batch] clarify tasks success criteria for background ([e3a6b17](https://github.com/googleapis/google-cloud-python/commit/e3a6b17c8b05ef23da801e81598ce2d75e18b6bb))
+* [google-cloud-batch] clarify tasks success criteria for background runnable ([#13023](https://github.com/googleapis/google-cloud-python/issues/13023)) ([e3a6b17](https://github.com/googleapis/google-cloud-python/commit/e3a6b17c8b05ef23da801e81598ce2d75e18b6bb))
+
+## [0.17.25](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.24...google-cloud-batch-v0.17.25) (2024-08-19)
+
+
+### Documentation
+
+* Batch CentOS images and HPC CentOS images are EOS ([5f179b9](https://github.com/googleapis/google-cloud-python/commit/5f179b98744808c33b07768f44efdfb3551fda03))
+* Clarify required fields for Runnable.Container ([5f179b9](https://github.com/googleapis/google-cloud-python/commit/5f179b98744808c33b07768f44efdfb3551fda03))
+* Clarify required oneof fields for Runnable.Script ([5f179b9](https://github.com/googleapis/google-cloud-python/commit/5f179b98744808c33b07768f44efdfb3551fda03))
+* Clarify TaskSpec requires one or more runnables ([5f179b9](https://github.com/googleapis/google-cloud-python/commit/5f179b98744808c33b07768f44efdfb3551fda03))
+
 ## [0.17.24](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.23...google-cloud-batch-v0.17.24) (2024-08-08)
 
 

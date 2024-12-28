@@ -8,7 +8,7 @@
     ],
     "language": "PYTHON",
     "name": "google-cloud-retail",
-    "version": "1.21.2"
+    "version": "1.24.0"
   },
   "snippets": [
     {
@@ -43,7 +43,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -119,7 +119,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -196,7 +196,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -272,7 +272,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -349,7 +349,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.BatchRemoveCatalogAttributesResponse",
@@ -425,7 +425,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.BatchRemoveCatalogAttributesResponse",
@@ -506,7 +506,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -586,7 +586,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -667,7 +667,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.CompletionConfig",
@@ -747,7 +747,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.CompletionConfig",
@@ -828,7 +828,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.GetDefaultBranchResponse",
@@ -908,7 +908,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.GetDefaultBranchResponse",
@@ -989,7 +989,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.catalog_service.pagers.ListCatalogsAsyncPager",
@@ -1069,7 +1069,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.catalog_service.pagers.ListCatalogsPager",
@@ -1146,7 +1146,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -1222,7 +1222,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -1299,7 +1299,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -1375,7 +1375,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -1456,7 +1456,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "set_default_branch"
@@ -1533,7 +1533,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "set_default_branch"
@@ -1615,7 +1615,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -1699,7 +1699,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.AttributesConfig",
@@ -1784,7 +1784,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Catalog",
@@ -1868,7 +1868,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Catalog",
@@ -1953,7 +1953,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.CompletionConfig",
@@ -2037,7 +2037,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.CompletionConfig",
@@ -2114,7 +2114,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.CompleteQueryResponse",
@@ -2190,7 +2190,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.CompleteQueryResponse",
@@ -2267,7 +2267,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -2343,7 +2343,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -2432,7 +2432,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Control",
@@ -2520,7 +2520,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Control",
@@ -2601,7 +2601,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "delete_control"
@@ -2678,7 +2678,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "delete_control"
@@ -2756,7 +2756,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Control",
@@ -2836,7 +2836,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Control",
@@ -2917,7 +2917,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.control_service.pagers.ListControlsAsyncPager",
@@ -2997,7 +2997,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.control_service.pagers.ListControlsPager",
@@ -3082,7 +3082,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Control",
@@ -3166,7 +3166,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Control",
@@ -3216,6 +3216,835 @@
       "clientMethod": {
         "async": true,
         "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient",
+          "shortName": "GenerativeQuestionServiceAsyncClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient.batch_update_generative_question_configs",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.BatchUpdateGenerativeQuestionConfigs",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "BatchUpdateGenerativeQuestionConfigs"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.BatchUpdateGenerativeQuestionConfigsRequest"
+          },
+          {
+            "name": "parent",
+            "type": "str"
+          },
+          {
+            "name": "requests",
+            "type": "MutableSequence[google.cloud.retail_v2beta.types.UpdateGenerativeQuestionConfigRequest]"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.BatchUpdateGenerativeQuestionConfigsResponse",
+        "shortName": "batch_update_generative_question_configs"
+      },
+      "description": "Sample for BatchUpdateGenerativeQuestionConfigs",
+      "file": "retail_v2beta_generated_generative_question_service_batch_update_generative_question_configs_async.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_BatchUpdateGenerativeQuestionConfigs_async",
+      "segments": [
+        {
+          "end": 55,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 55,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 49,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 52,
+          "start": 50,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 56,
+          "start": 53,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_batch_update_generative_question_configs_async.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient",
+          "shortName": "GenerativeQuestionServiceClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient.batch_update_generative_question_configs",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.BatchUpdateGenerativeQuestionConfigs",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "BatchUpdateGenerativeQuestionConfigs"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.BatchUpdateGenerativeQuestionConfigsRequest"
+          },
+          {
+            "name": "parent",
+            "type": "str"
+          },
+          {
+            "name": "requests",
+            "type": "MutableSequence[google.cloud.retail_v2beta.types.UpdateGenerativeQuestionConfigRequest]"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.BatchUpdateGenerativeQuestionConfigsResponse",
+        "shortName": "batch_update_generative_question_configs"
+      },
+      "description": "Sample for BatchUpdateGenerativeQuestionConfigs",
+      "file": "retail_v2beta_generated_generative_question_service_batch_update_generative_question_configs_sync.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_BatchUpdateGenerativeQuestionConfigs_sync",
+      "segments": [
+        {
+          "end": 55,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 55,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 49,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 52,
+          "start": 50,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 56,
+          "start": 53,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_batch_update_generative_question_configs_sync.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "async": true,
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient",
+          "shortName": "GenerativeQuestionServiceAsyncClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient.get_generative_questions_feature_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.GetGenerativeQuestionsFeatureConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "GetGenerativeQuestionsFeatureConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.GetGenerativeQuestionsFeatureConfigRequest"
+          },
+          {
+            "name": "catalog",
+            "type": "str"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.GenerativeQuestionsFeatureConfig",
+        "shortName": "get_generative_questions_feature_config"
+      },
+      "description": "Sample for GetGenerativeQuestionsFeatureConfig",
+      "file": "retail_v2beta_generated_generative_question_service_get_generative_questions_feature_config_async.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_GetGenerativeQuestionsFeatureConfig_async",
+      "segments": [
+        {
+          "end": 51,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 51,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 45,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 46,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 52,
+          "start": 49,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_get_generative_questions_feature_config_async.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient",
+          "shortName": "GenerativeQuestionServiceClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient.get_generative_questions_feature_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.GetGenerativeQuestionsFeatureConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "GetGenerativeQuestionsFeatureConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.GetGenerativeQuestionsFeatureConfigRequest"
+          },
+          {
+            "name": "catalog",
+            "type": "str"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.GenerativeQuestionsFeatureConfig",
+        "shortName": "get_generative_questions_feature_config"
+      },
+      "description": "Sample for GetGenerativeQuestionsFeatureConfig",
+      "file": "retail_v2beta_generated_generative_question_service_get_generative_questions_feature_config_sync.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_GetGenerativeQuestionsFeatureConfig_sync",
+      "segments": [
+        {
+          "end": 51,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 51,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 45,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 46,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 52,
+          "start": 49,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_get_generative_questions_feature_config_sync.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "async": true,
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient",
+          "shortName": "GenerativeQuestionServiceAsyncClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient.list_generative_question_configs",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.ListGenerativeQuestionConfigs",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "ListGenerativeQuestionConfigs"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.ListGenerativeQuestionConfigsRequest"
+          },
+          {
+            "name": "parent",
+            "type": "str"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.ListGenerativeQuestionConfigsResponse",
+        "shortName": "list_generative_question_configs"
+      },
+      "description": "Sample for ListGenerativeQuestionConfigs",
+      "file": "retail_v2beta_generated_generative_question_service_list_generative_question_configs_async.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_ListGenerativeQuestionConfigs_async",
+      "segments": [
+        {
+          "end": 51,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 51,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 45,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 46,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 52,
+          "start": 49,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_list_generative_question_configs_async.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient",
+          "shortName": "GenerativeQuestionServiceClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient.list_generative_question_configs",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.ListGenerativeQuestionConfigs",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "ListGenerativeQuestionConfigs"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.ListGenerativeQuestionConfigsRequest"
+          },
+          {
+            "name": "parent",
+            "type": "str"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.ListGenerativeQuestionConfigsResponse",
+        "shortName": "list_generative_question_configs"
+      },
+      "description": "Sample for ListGenerativeQuestionConfigs",
+      "file": "retail_v2beta_generated_generative_question_service_list_generative_question_configs_sync.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_ListGenerativeQuestionConfigs_sync",
+      "segments": [
+        {
+          "end": 51,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 51,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 45,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 46,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 52,
+          "start": 49,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_list_generative_question_configs_sync.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "async": true,
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient",
+          "shortName": "GenerativeQuestionServiceAsyncClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient.update_generative_question_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.UpdateGenerativeQuestionConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "UpdateGenerativeQuestionConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.UpdateGenerativeQuestionConfigRequest"
+          },
+          {
+            "name": "generative_question_config",
+            "type": "google.cloud.retail_v2beta.types.GenerativeQuestionConfig"
+          },
+          {
+            "name": "update_mask",
+            "type": "google.protobuf.field_mask_pb2.FieldMask"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.GenerativeQuestionConfig",
+        "shortName": "update_generative_question_config"
+      },
+      "description": "Sample for UpdateGenerativeQuestionConfig",
+      "file": "retail_v2beta_generated_generative_question_service_update_generative_question_config_async.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_UpdateGenerativeQuestionConfig_async",
+      "segments": [
+        {
+          "end": 55,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 55,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 49,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 52,
+          "start": 50,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 56,
+          "start": 53,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_update_generative_question_config_async.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient",
+          "shortName": "GenerativeQuestionServiceClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient.update_generative_question_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.UpdateGenerativeQuestionConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "UpdateGenerativeQuestionConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.UpdateGenerativeQuestionConfigRequest"
+          },
+          {
+            "name": "generative_question_config",
+            "type": "google.cloud.retail_v2beta.types.GenerativeQuestionConfig"
+          },
+          {
+            "name": "update_mask",
+            "type": "google.protobuf.field_mask_pb2.FieldMask"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.GenerativeQuestionConfig",
+        "shortName": "update_generative_question_config"
+      },
+      "description": "Sample for UpdateGenerativeQuestionConfig",
+      "file": "retail_v2beta_generated_generative_question_service_update_generative_question_config_sync.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_UpdateGenerativeQuestionConfig_sync",
+      "segments": [
+        {
+          "end": 55,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 55,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 49,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 52,
+          "start": 50,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 56,
+          "start": 53,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_update_generative_question_config_sync.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "async": true,
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient",
+          "shortName": "GenerativeQuestionServiceAsyncClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceAsyncClient.update_generative_questions_feature_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.UpdateGenerativeQuestionsFeatureConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "UpdateGenerativeQuestionsFeatureConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.UpdateGenerativeQuestionsFeatureConfigRequest"
+          },
+          {
+            "name": "generative_questions_feature_config",
+            "type": "google.cloud.retail_v2beta.types.GenerativeQuestionsFeatureConfig"
+          },
+          {
+            "name": "update_mask",
+            "type": "google.protobuf.field_mask_pb2.FieldMask"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.GenerativeQuestionsFeatureConfig",
+        "shortName": "update_generative_questions_feature_config"
+      },
+      "description": "Sample for UpdateGenerativeQuestionsFeatureConfig",
+      "file": "retail_v2beta_generated_generative_question_service_update_generative_questions_feature_config_async.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_UpdateGenerativeQuestionsFeatureConfig_async",
+      "segments": [
+        {
+          "end": 54,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 54,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 51,
+          "start": 49,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 55,
+          "start": 52,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_update_generative_questions_feature_config_async.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient",
+          "shortName": "GenerativeQuestionServiceClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.GenerativeQuestionServiceClient.update_generative_questions_feature_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService.UpdateGenerativeQuestionsFeatureConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.GenerativeQuestionService",
+            "shortName": "GenerativeQuestionService"
+          },
+          "shortName": "UpdateGenerativeQuestionsFeatureConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.UpdateGenerativeQuestionsFeatureConfigRequest"
+          },
+          {
+            "name": "generative_questions_feature_config",
+            "type": "google.cloud.retail_v2beta.types.GenerativeQuestionsFeatureConfig"
+          },
+          {
+            "name": "update_mask",
+            "type": "google.protobuf.field_mask_pb2.FieldMask"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.GenerativeQuestionsFeatureConfig",
+        "shortName": "update_generative_questions_feature_config"
+      },
+      "description": "Sample for UpdateGenerativeQuestionsFeatureConfig",
+      "file": "retail_v2beta_generated_generative_question_service_update_generative_questions_feature_config_sync.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_GenerativeQuestionService_UpdateGenerativeQuestionsFeatureConfig_sync",
+      "segments": [
+        {
+          "end": 54,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 54,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 51,
+          "start": 49,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 55,
+          "start": 52,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_generative_question_service_update_generative_questions_feature_config_sync.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "async": true,
+        "client": {
           "fullName": "google.cloud.retail_v2beta.ModelServiceAsyncClient",
           "shortName": "ModelServiceAsyncClient"
         },
@@ -3251,7 +4080,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -3335,7 +4164,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -3416,7 +4245,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "delete_model"
@@ -3493,7 +4322,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "delete_model"
@@ -3571,7 +4400,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Model",
@@ -3651,7 +4480,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Model",
@@ -3732,7 +4561,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.model_service.pagers.ListModelsAsyncPager",
@@ -3812,7 +4641,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.model_service.pagers.ListModelsPager",
@@ -3893,7 +4722,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Model",
@@ -3973,7 +4802,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Model",
@@ -4054,7 +4883,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Model",
@@ -4134,7 +4963,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Model",
@@ -4215,7 +5044,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -4295,7 +5124,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -4380,7 +5209,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Model",
@@ -4464,7 +5293,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Model",
@@ -4541,7 +5370,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.PredictResponse",
@@ -4617,7 +5446,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.PredictResponse",
@@ -4698,7 +5527,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -4778,7 +5607,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -4859,7 +5688,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -4939,7 +5768,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -5028,7 +5857,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Product",
@@ -5116,7 +5945,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Product",
@@ -5197,7 +6026,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "delete_product"
@@ -5274,7 +6103,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "delete_product"
@@ -5324,6 +6153,159 @@
           "fullName": "google.cloud.retail_v2beta.ProductServiceAsyncClient",
           "shortName": "ProductServiceAsyncClient"
         },
+        "fullName": "google.cloud.retail_v2beta.ProductServiceAsyncClient.export_products",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.ProductService.ExportProducts",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.ProductService",
+            "shortName": "ProductService"
+          },
+          "shortName": "ExportProducts"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.ExportProductsRequest"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.api_core.operation_async.AsyncOperation",
+        "shortName": "export_products"
+      },
+      "description": "Sample for ExportProducts",
+      "file": "retail_v2beta_generated_product_service_export_products_async.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_ProductService_ExportProducts_async",
+      "segments": [
+        {
+          "end": 59,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 59,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 49,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 56,
+          "start": 50,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 60,
+          "start": 57,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_product_service_export_products_async.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.ProductServiceClient",
+          "shortName": "ProductServiceClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.ProductServiceClient.export_products",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.ProductService.ExportProducts",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.ProductService",
+            "shortName": "ProductService"
+          },
+          "shortName": "ExportProducts"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.ExportProductsRequest"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.api_core.operation.Operation",
+        "shortName": "export_products"
+      },
+      "description": "Sample for ExportProducts",
+      "file": "retail_v2beta_generated_product_service_export_products_sync.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_ProductService_ExportProducts_sync",
+      "segments": [
+        {
+          "end": 59,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 59,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 49,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 56,
+          "start": 50,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 60,
+          "start": 57,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_product_service_export_products_sync.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "async": true,
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.ProductServiceAsyncClient",
+          "shortName": "ProductServiceAsyncClient"
+        },
         "fullName": "google.cloud.retail_v2beta.ProductServiceAsyncClient.get_product",
         "method": {
           "fullName": "google.cloud.retail.v2beta.ProductService.GetProduct",
@@ -5352,7 +6334,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Product",
@@ -5432,7 +6414,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Product",
@@ -5509,7 +6491,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -5585,7 +6567,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -5666,7 +6648,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.product_service.pagers.ListProductsAsyncPager",
@@ -5746,7 +6728,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.product_service.pagers.ListProductsPager",
@@ -5823,7 +6805,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -5899,7 +6881,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -5980,7 +6962,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -6060,7 +7042,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -6141,7 +7123,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -6221,7 +7203,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -6306,7 +7288,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -6390,7 +7372,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -6475,7 +7457,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Product",
@@ -6559,7 +7541,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.Product",
@@ -6609,6 +7591,336 @@
       "clientMethod": {
         "async": true,
         "client": {
+          "fullName": "google.cloud.retail_v2beta.ProjectServiceAsyncClient",
+          "shortName": "ProjectServiceAsyncClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.ProjectServiceAsyncClient.get_alert_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.ProjectService.GetAlertConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.ProjectService",
+            "shortName": "ProjectService"
+          },
+          "shortName": "GetAlertConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.GetAlertConfigRequest"
+          },
+          {
+            "name": "name",
+            "type": "str"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.AlertConfig",
+        "shortName": "get_alert_config"
+      },
+      "description": "Sample for GetAlertConfig",
+      "file": "retail_v2beta_generated_project_service_get_alert_config_async.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_ProjectService_GetAlertConfig_async",
+      "segments": [
+        {
+          "end": 51,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 51,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 45,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 46,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 52,
+          "start": 49,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_project_service_get_alert_config_async.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.ProjectServiceClient",
+          "shortName": "ProjectServiceClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.ProjectServiceClient.get_alert_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.ProjectService.GetAlertConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.ProjectService",
+            "shortName": "ProjectService"
+          },
+          "shortName": "GetAlertConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.GetAlertConfigRequest"
+          },
+          {
+            "name": "name",
+            "type": "str"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.AlertConfig",
+        "shortName": "get_alert_config"
+      },
+      "description": "Sample for GetAlertConfig",
+      "file": "retail_v2beta_generated_project_service_get_alert_config_sync.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_ProjectService_GetAlertConfig_sync",
+      "segments": [
+        {
+          "end": 51,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 51,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 45,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 46,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 52,
+          "start": 49,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_project_service_get_alert_config_sync.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "async": true,
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.ProjectServiceAsyncClient",
+          "shortName": "ProjectServiceAsyncClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.ProjectServiceAsyncClient.update_alert_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.ProjectService.UpdateAlertConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.ProjectService",
+            "shortName": "ProjectService"
+          },
+          "shortName": "UpdateAlertConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.UpdateAlertConfigRequest"
+          },
+          {
+            "name": "alert_config",
+            "type": "google.cloud.retail_v2beta.types.AlertConfig"
+          },
+          {
+            "name": "update_mask",
+            "type": "google.protobuf.field_mask_pb2.FieldMask"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.AlertConfig",
+        "shortName": "update_alert_config"
+      },
+      "description": "Sample for UpdateAlertConfig",
+      "file": "retail_v2beta_generated_project_service_update_alert_config_async.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_ProjectService_UpdateAlertConfig_async",
+      "segments": [
+        {
+          "end": 54,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 54,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 51,
+          "start": 49,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 55,
+          "start": 52,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_project_service_update_alert_config_async.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.ProjectServiceClient",
+          "shortName": "ProjectServiceClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.ProjectServiceClient.update_alert_config",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.ProjectService.UpdateAlertConfig",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.ProjectService",
+            "shortName": "ProjectService"
+          },
+          "shortName": "UpdateAlertConfig"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.UpdateAlertConfigRequest"
+          },
+          {
+            "name": "alert_config",
+            "type": "google.cloud.retail_v2beta.types.AlertConfig"
+          },
+          {
+            "name": "update_mask",
+            "type": "google.protobuf.field_mask_pb2.FieldMask"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.cloud.retail_v2beta.types.AlertConfig",
+        "shortName": "update_alert_config"
+      },
+      "description": "Sample for UpdateAlertConfig",
+      "file": "retail_v2beta_generated_project_service_update_alert_config_sync.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_ProjectService_UpdateAlertConfig_sync",
+      "segments": [
+        {
+          "end": 54,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 54,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 48,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 51,
+          "start": 49,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 55,
+          "start": 52,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_project_service_update_alert_config_sync.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "async": true,
+        "client": {
           "fullName": "google.cloud.retail_v2beta.SearchServiceAsyncClient",
           "shortName": "SearchServiceAsyncClient"
         },
@@ -6636,7 +7948,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.search_service.pagers.SearchAsyncPager",
@@ -6712,7 +8024,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.search_service.pagers.SearchPager",
@@ -6793,7 +8105,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -6873,7 +8185,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -6962,7 +8274,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -7050,7 +8362,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -7131,7 +8443,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "delete_serving_config"
@@ -7208,7 +8520,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "shortName": "delete_serving_config"
@@ -7286,7 +8598,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -7366,7 +8678,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -7447,7 +8759,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.serving_config_service.pagers.ListServingConfigsAsyncPager",
@@ -7527,7 +8839,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.services.serving_config_service.pagers.ListServingConfigsPager",
@@ -7608,7 +8920,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -7688,7 +9000,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -7773,7 +9085,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -7857,7 +9169,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.ServingConfig",
@@ -7934,7 +9246,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api.httpbody_pb2.HttpBody",
@@ -8010,7 +9322,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api.httpbody_pb2.HttpBody",
@@ -8063,6 +9375,159 @@
           "fullName": "google.cloud.retail_v2beta.UserEventServiceAsyncClient",
           "shortName": "UserEventServiceAsyncClient"
         },
+        "fullName": "google.cloud.retail_v2beta.UserEventServiceAsyncClient.export_user_events",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.UserEventService.ExportUserEvents",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.UserEventService",
+            "shortName": "UserEventService"
+          },
+          "shortName": "ExportUserEvents"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.ExportUserEventsRequest"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.api_core.operation_async.AsyncOperation",
+        "shortName": "export_user_events"
+      },
+      "description": "Sample for ExportUserEvents",
+      "file": "retail_v2beta_generated_user_event_service_export_user_events_async.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_UserEventService_ExportUserEvents_async",
+      "segments": [
+        {
+          "end": 59,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 59,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 49,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 56,
+          "start": 50,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 60,
+          "start": 57,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_user_event_service_export_user_events_async.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.UserEventServiceClient",
+          "shortName": "UserEventServiceClient"
+        },
+        "fullName": "google.cloud.retail_v2beta.UserEventServiceClient.export_user_events",
+        "method": {
+          "fullName": "google.cloud.retail.v2beta.UserEventService.ExportUserEvents",
+          "service": {
+            "fullName": "google.cloud.retail.v2beta.UserEventService",
+            "shortName": "UserEventService"
+          },
+          "shortName": "ExportUserEvents"
+        },
+        "parameters": [
+          {
+            "name": "request",
+            "type": "google.cloud.retail_v2beta.types.ExportUserEventsRequest"
+          },
+          {
+            "name": "retry",
+            "type": "google.api_core.retry.Retry"
+          },
+          {
+            "name": "timeout",
+            "type": "float"
+          },
+          {
+            "name": "metadata",
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
+          }
+        ],
+        "resultType": "google.api_core.operation.Operation",
+        "shortName": "export_user_events"
+      },
+      "description": "Sample for ExportUserEvents",
+      "file": "retail_v2beta_generated_user_event_service_export_user_events_sync.py",
+      "language": "PYTHON",
+      "origin": "API_DEFINITION",
+      "regionTag": "retail_v2beta_generated_UserEventService_ExportUserEvents_sync",
+      "segments": [
+        {
+          "end": 59,
+          "start": 27,
+          "type": "FULL"
+        },
+        {
+          "end": 59,
+          "start": 27,
+          "type": "SHORT"
+        },
+        {
+          "end": 40,
+          "start": 38,
+          "type": "CLIENT_INITIALIZATION"
+        },
+        {
+          "end": 49,
+          "start": 41,
+          "type": "REQUEST_INITIALIZATION"
+        },
+        {
+          "end": 56,
+          "start": 50,
+          "type": "REQUEST_EXECUTION"
+        },
+        {
+          "end": 60,
+          "start": 57,
+          "type": "RESPONSE_HANDLING"
+        }
+      ],
+      "title": "retail_v2beta_generated_user_event_service_export_user_events_sync.py"
+    },
+    {
+      "canonical": true,
+      "clientMethod": {
+        "async": true,
+        "client": {
+          "fullName": "google.cloud.retail_v2beta.UserEventServiceAsyncClient",
+          "shortName": "UserEventServiceAsyncClient"
+        },
         "fullName": "google.cloud.retail_v2beta.UserEventServiceAsyncClient.import_user_events",
         "method": {
           "fullName": "google.cloud.retail.v2beta.UserEventService.ImportUserEvents",
@@ -8087,7 +9552,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -8163,7 +9628,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -8240,7 +9705,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -8316,7 +9781,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -8393,7 +9858,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation_async.AsyncOperation",
@@ -8469,7 +9934,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.api_core.operation.Operation",
@@ -8546,7 +10011,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.UserEvent",
@@ -8622,7 +10087,7 @@
           },
           {
             "name": "metadata",
-            "type": "Sequence[Tuple[str, str]"
+            "type": "Sequence[Tuple[str, Union[str, bytes]]]"
           }
         ],
         "resultType": "google.cloud.retail_v2beta.types.UserEvent",

@@ -506,6 +506,11 @@
         "grpc": {
           "libraryClient": "DocumentServiceClient",
           "rpcs": {
+            "BatchGetDocumentsMetadata": {
+              "methods": [
+                "batch_get_documents_metadata"
+              ]
+            },
             "CreateDocument": {
               "methods": [
                 "create_document"
@@ -546,6 +551,11 @@
         "grpc-async": {
           "libraryClient": "DocumentServiceAsyncClient",
           "rpcs": {
+            "BatchGetDocumentsMetadata": {
+              "methods": [
+                "batch_get_documents_metadata"
+              ]
+            },
             "CreateDocument": {
               "methods": [
                 "create_document"
@@ -586,6 +596,11 @@
         "rest": {
           "libraryClient": "DocumentServiceClient",
           "rpcs": {
+            "BatchGetDocumentsMetadata": {
+              "methods": [
+                "batch_get_documents_metadata"
+              ]
+            },
             "CreateDocument": {
               "methods": [
                 "create_document"
@@ -728,6 +743,16 @@
               "methods": [
                 "check_grounding"
               ]
+            },
+            "GenerateGroundedContent": {
+              "methods": [
+                "generate_grounded_content"
+              ]
+            },
+            "StreamGenerateGroundedContent": {
+              "methods": [
+                "stream_generate_grounded_content"
+              ]
             }
           }
         },
@@ -738,6 +763,16 @@
               "methods": [
                 "check_grounding"
               ]
+            },
+            "GenerateGroundedContent": {
+              "methods": [
+                "generate_grounded_content"
+              ]
+            },
+            "StreamGenerateGroundedContent": {
+              "methods": [
+                "stream_generate_grounded_content"
+              ]
             }
           }
         },
@@ -747,6 +782,16 @@
             "CheckGrounding": {
               "methods": [
                 "check_grounding"
+              ]
+            },
+            "GenerateGroundedContent": {
+              "methods": [
+                "generate_grounded_content"
+              ]
+            },
+            "StreamGenerateGroundedContent": {
+              "methods": [
+                "stream_generate_grounded_content"
               ]
             }
           }
@@ -958,6 +1003,11 @@
               "methods": [
                 "search"
               ]
+            },
+            "SearchLite": {
+              "methods": [
+                "search_lite"
+              ]
             }
           }
         },
@@ -968,6 +1018,11 @@
               "methods": [
                 "search"
               ]
+            },
+            "SearchLite": {
+              "methods": [
+                "search_lite"
+              ]
             }
           }
         },
@@ -977,6 +1032,60 @@
             "Search": {
               "methods": [
                 "search"
+              ]
+            },
+            "SearchLite": {
+              "methods": [
+                "search_lite"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "SearchTuningService": {
+      "clients": {
+        "grpc": {
+          "libraryClient": "SearchTuningServiceClient",
+          "rpcs": {
+            "ListCustomModels": {
+              "methods": [
+                "list_custom_models"
+              ]
+            },
+            "TrainCustomModel": {
+              "methods": [
+                "train_custom_model"
+              ]
+            }
+          }
+        },
+        "grpc-async": {
+          "libraryClient": "SearchTuningServiceAsyncClient",
+          "rpcs": {
+            "ListCustomModels": {
+              "methods": [
+                "list_custom_models"
+              ]
+            },
+            "TrainCustomModel": {
+              "methods": [
+                "train_custom_model"
+              ]
+            }
+          }
+        },
+        "rest": {
+          "libraryClient": "SearchTuningServiceClient",
+          "rpcs": {
+            "ListCustomModels": {
+              "methods": [
+                "list_custom_models"
+              ]
+            },
+            "TrainCustomModel": {
+              "methods": [
+                "train_custom_model"
               ]
             }
           }
@@ -1197,6 +1306,11 @@
                 "import_user_events"
               ]
             },
+            "PurgeUserEvents": {
+              "methods": [
+                "purge_user_events"
+              ]
+            },
             "WriteUserEvent": {
               "methods": [
                 "write_user_event"
@@ -1217,6 +1331,11 @@
                 "import_user_events"
               ]
             },
+            "PurgeUserEvents": {
+              "methods": [
+                "purge_user_events"
+              ]
+            },
             "WriteUserEvent": {
               "methods": [
                 "write_user_event"
@@ -1235,6 +1354,11 @@
             "ImportUserEvents": {
               "methods": [
                 "import_user_events"
+              ]
+            },
+            "PurgeUserEvents": {
+              "methods": [
+                "purge_user_events"
               ]
             },
             "WriteUserEvent": {

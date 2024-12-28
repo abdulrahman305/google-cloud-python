@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.13.1...google-cloud-artifact-registry-v1.14.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([b1dfc55](https://github.com/googleapis/google-cloud-python/commit/b1dfc556d4652a48564ff37becb31d5a06ee2b5b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([b1dfc55](https://github.com/googleapis/google-cloud-python/commit/b1dfc556d4652a48564ff37becb31d5a06ee2b5b))
+
+## [1.13.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.13.0...google-cloud-artifact-registry-v1.13.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.12.0...google-cloud-artifact-registry-v1.13.0) (2024-10-28)
+
+
+### Features
+
+* Add Artifact Registry attachment API ([c2d1df7](https://github.com/googleapis/google-cloud-python/commit/c2d1df74b7284f96ab60be091ae8d8139dd777c6))
+* Add Artifact Registry custom remote support ([c2d1df7](https://github.com/googleapis/google-cloud-python/commit/c2d1df74b7284f96ab60be091ae8d8139dd777c6))
+* Add Artifact Registry generic repository support ([c2d1df7](https://github.com/googleapis/google-cloud-python/commit/c2d1df74b7284f96ab60be091ae8d8139dd777c6))
+* Add Artifact Registry rule APIs ([c2d1df7](https://github.com/googleapis/google-cloud-python/commit/c2d1df74b7284f96ab60be091ae8d8139dd777c6))
+* Add Artifact Registry server side resource filtering and sorting ([c2d1df7](https://github.com/googleapis/google-cloud-python/commit/c2d1df74b7284f96ab60be091ae8d8139dd777c6))
+* Add Artifact Registry UpdateFile and DeleteFile APIs ([c2d1df7](https://github.com/googleapis/google-cloud-python/commit/c2d1df74b7284f96ab60be091ae8d8139dd777c6))
+
+
+### Documentation
+
+* Include max page size for all Artifact Registry APIs ([c2d1df7](https://github.com/googleapis/google-cloud-python/commit/c2d1df74b7284f96ab60be091ae8d8139dd777c6))
+
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.11.5...google-cloud-artifact-registry-v1.12.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
 ## [1.11.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.11.4...google-cloud-artifact-registry-v1.11.5) (2024-07-30)
 
 

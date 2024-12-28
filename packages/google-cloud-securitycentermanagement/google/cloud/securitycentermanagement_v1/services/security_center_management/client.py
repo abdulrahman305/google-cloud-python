@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+import logging as std_logging
 import os
 import re
 from typing import (
@@ -47,6 +48,15 @@ try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 from google.cloud.location import locations_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
@@ -586,36 +596,6 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             raise ValueError("Universe Domain cannot be an empty string.")
         return universe_domain
 
-    @staticmethod
-    def _compare_universes(
-        client_universe: str, credentials: ga_credentials.Credentials
-    ) -> bool:
-        """Returns True iff the universe domains used by the client and credentials match.
-
-        Args:
-            client_universe (str): The universe domain configured via the client options.
-            credentials (ga_credentials.Credentials): The credentials being used in the client.
-
-        Returns:
-            bool: True iff client_universe matches the universe in credentials.
-
-        Raises:
-            ValueError: when client_universe does not match the universe in credentials.
-        """
-
-        default_universe = SecurityCenterManagementClient._DEFAULT_UNIVERSE
-        credentials_universe = getattr(credentials, "universe_domain", default_universe)
-
-        if client_universe != credentials_universe:
-            raise ValueError(
-                "The configured universe domain "
-                f"({client_universe}) does not match the universe domain "
-                f"found in the credentials ({credentials_universe}). "
-                "If you haven't configured the universe domain explicitly, "
-                f"`{default_universe}` is the default."
-            )
-        return True
-
     def _validate_universe_domain(self):
         """Validates client's and credentials' universe domains are consistent.
 
@@ -625,13 +605,9 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         Raises:
             ValueError: If the configured universe domain is not valid.
         """
-        self._is_universe_domain_valid = (
-            self._is_universe_domain_valid
-            or SecurityCenterManagementClient._compare_universes(
-                self.universe_domain, self.transport._credentials
-            )
-        )
-        return self._is_universe_domain_valid
+
+        # NOTE (b/349488459): universe validation is disabled until further notice.
+        return True
 
     @property
     def api_endpoint(self):
@@ -743,6 +719,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         # Initialize the universe domain validation.
         self._is_universe_domain_valid = False
 
+        if CLIENT_LOGGING_SUPPORTED:  # pragma: NO COVER
+            # Setup logging.
+            client_logging.initialize_logging()
+
         api_key_value = getattr(self._client_options, "api_key", None)
         if api_key_value and credentials:
             raise ValueError(
@@ -792,7 +772,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
                 Type[SecurityCenterManagementTransport],
                 Callable[..., SecurityCenterManagementTransport],
             ] = (
-                type(self).get_transport_class(transport)
+                SecurityCenterManagementClient.get_transport_class(transport)
                 if isinstance(transport, str) or transport is None
                 else cast(Callable[..., SecurityCenterManagementTransport], transport)
             )
@@ -809,6 +789,29 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
                 api_audience=self._client_options.api_audience,
             )
 
+        if "async" not in str(self._transport):
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                std_logging.DEBUG
+            ):  # pragma: NO COVER
+                _LOGGER.debug(
+                    "Created client `google.cloud.securitycentermanagement_v1.SecurityCenterManagementClient`.",
+                    extra={
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "universeDomain": getattr(
+                            self._transport._credentials, "universe_domain", ""
+                        ),
+                        "credentialsType": f"{type(self._transport._credentials).__module__}.{type(self._transport._credentials).__qualname__}",
+                        "credentialsInfo": getattr(
+                            self.transport._credentials, "get_cred_info", lambda: None
+                        )(),
+                    }
+                    if hasattr(self._transport, "_credentials")
+                    else {
+                        "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                        "credentialsType": None,
+                    },
+                )
+
     def list_effective_security_health_analytics_custom_modules(
         self,
         request: Optional[
@@ -821,13 +824,14 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListEffectiveSecurityHealthAnalyticsCustomModulesPager:
         r"""Returns a list of all
-        EffectiveSecurityHealthAnalyticsCustomModules for the
-        given parent. This includes resident modules defined at
-        the scope of the parent, and inherited modules,
-        inherited from CRM ancestors (no descendants).
+        [EffectiveSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.EffectiveSecurityHealthAnalyticsCustomModule]
+        resources for the given parent. This includes resident modules
+        defined at the scope of the parent, and inherited modules,
+        inherited from ancestor organizations, folders, and projects (no
+        descendants).
 
         .. code-block:: python
 
@@ -858,16 +862,15 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.ListEffectiveSecurityHealthAnalyticsCustomModulesRequest, dict]):
-                The request object. Request message for listing effective
-                Security Health Analytics custom
-                modules.
+                The request object. Request message for
+                [SecurityCenterManagement.ListEffectiveSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEffectiveSecurityHealthAnalyticsCustomModules].
             parent (str):
                 Required. Name of parent to list effective custom
-                modules. specified in one of the following formats:
+                modules, in one of the following formats:
 
                 -  ``organizations/{organization}/locations/{location}``
-                -  ``folders/{folder}/locations/{location}`` or
-                   ``projects/{project}/locations/{location}``
+                -  ``folders/{folder}/locations/{location}``
+                -  ``projects/{project}/locations/{location}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -875,18 +878,18 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.services.security_center_management.pagers.ListEffectiveSecurityHealthAnalyticsCustomModulesPager:
-                Response message for listing
-                effective Security Health Analytics
-                custom modules.
+                Response message for
+                   [SecurityCenterManagement.ListEffectiveSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEffectiveSecurityHealthAnalyticsCustomModules].
 
-                Iterating over this object will yield
-                results and resolve additional pages
-                automatically.
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
 
         """
         # Create or coerce a protobuf request object.
@@ -962,10 +965,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.EffectiveSecurityHealthAnalyticsCustomModule:
         r"""Gets details of a single
-        EffectiveSecurityHealthAnalyticsCustomModule.
+        [EffectiveSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.EffectiveSecurityHealthAnalyticsCustomModule].
 
         .. code-block:: python
 
@@ -995,15 +998,15 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.GetEffectiveSecurityHealthAnalyticsCustomModuleRequest, dict]):
-                The request object. Message for getting a
-                EffectiveSecurityHealthAnalyticsCustomModule
+                The request object. Request message for
+                [SecurityCenterManagement.GetEffectiveSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetEffectiveSecurityHealthAnalyticsCustomModule].
             name (str):
                 Required. The full resource name of the custom module,
                 specified in one of the following formats:
 
-                -  ``organizations/organization/{location}/effectiveSecurityHealthAnalyticsCustomModules/{effective_security_health_analytics_custom_module}``
-                -  ``folders/folder/{location}/effectiveSecurityHealthAnalyticsCustomModules/{effective_security_health_analytics_custom_module}``
-                -  ``projects/project/{location}/effectiveSecurityHealthAnalyticsCustomModules/{effective_security_health_analytics_custom_module}``
+                -  ``organizations/organization/{location}/effectiveSecurityHealthAnalyticsCustomModules/{custom_module}``
+                -  ``folders/folder/{location}/effectiveSecurityHealthAnalyticsCustomModules/{custom_module}``
+                -  ``projects/project/{location}/effectiveSecurityHealthAnalyticsCustomModules/{custom_module}``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1011,25 +1014,23 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.EffectiveSecurityHealthAnalyticsCustomModule:
-                An EffectiveSecurityHealthAnalyticsCustomModule is the representation of
-                   a Security Health Analytics custom module at a
+                The representation of a Security Health Analytics custom module at a
                    specified level of the resource hierarchy:
                    organization, folder, or project. If a custom module
-                   is inherited from a parent organization or folder,
-                   the value of the enablementState property in
-                   EffectiveSecurityHealthAnalyticsCustomModule is set
-                   to the value that is effective in the parent, instead
-                   of INHERITED. For example, if the module is enabled
-                   in a parent organization or folder, the effective
-                   enablement_state for the module in all child folders
-                   or projects is also enabled.
-                   EffectiveSecurityHealthAnalyticsCustomModule is
-                   read-only.
+                   is inherited from an ancestor organization or folder,
+                   then the enablement state is set to the value that is
+                   effective in the parent, not to INHERITED. For
+                   example, if the module is enabled in an organization
+                   or folder, then the effective enablement state for
+                   the module is ENABLED in all descendant folders or
+                   projects.
 
         """
         # Create or coerce a protobuf request object.
@@ -1094,13 +1095,14 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListSecurityHealthAnalyticsCustomModulesPager:
         r"""Returns a list of all
-        SecurityHealthAnalyticsCustomModules for the given
-        parent. This includes resident modules defined at the
-        scope of the parent, and inherited modules, inherited
-        from CRM ancestors (no descendants).
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        resources for the given parent. This includes resident modules
+        defined at the scope of the parent, and inherited modules,
+        inherited from ancestor organizations, folders, and projects (no
+        descendants).
 
         .. code-block:: python
 
@@ -1131,12 +1133,12 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.ListSecurityHealthAnalyticsCustomModulesRequest, dict]):
-                The request object. Request message for listing Security
-                Health Analytics custom modules.
+                The request object. Request message for
+                [SecurityCenterManagement.ListSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListSecurityHealthAnalyticsCustomModules].
             parent (str):
-                Required. Name of parent organization, folder, or
-                project in which to list custom modules, specified in
-                one of the following formats:
+                Required. Name of the parent organization, folder, or
+                project in which to list custom modules, in one of the
+                following formats:
 
                 -  ``organizations/{organization}/locations/{location}``
                 -  ``folders/{folder}/locations/{location}``
@@ -1148,16 +1150,18 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.services.security_center_management.pagers.ListSecurityHealthAnalyticsCustomModulesPager:
-                Response message for listing Security
-                Health Analytics custom modules.
-                Iterating over this object will yield
-                results and resolve additional pages
-                automatically.
+                Response message for
+                   [SecurityCenterManagement.ListSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListSecurityHealthAnalyticsCustomModules].
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
 
         """
         # Create or coerce a protobuf request object.
@@ -1233,11 +1237,12 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListDescendantSecurityHealthAnalyticsCustomModulesPager:
         r"""Returns a list of all resident
-        SecurityHealthAnalyticsCustomModules under the given CRM
-        parent and all of the parent's CRM descendants.
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        resources under the given organization, folder, or project and
+        all of its descendants.
 
         .. code-block:: python
 
@@ -1268,13 +1273,12 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.ListDescendantSecurityHealthAnalyticsCustomModulesRequest, dict]):
-                The request object. Request message for listing
-                descendant Security Health Analytics
-                custom modules.
+                The request object. Request message for
+                [SecurityCenterManagement.ListDescendantSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListDescendantSecurityHealthAnalyticsCustomModules].
             parent (str):
                 Required. Name of the parent organization, folder, or
-                project in which to list custom modules, specified in
-                one of the following formats:
+                project in which to list custom modules, in one of the
+                following formats:
 
                 -  ``organizations/{organization}/locations/{location}``
                 -  ``folders/{folder}/locations/{location}``
@@ -1286,18 +1290,18 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.services.security_center_management.pagers.ListDescendantSecurityHealthAnalyticsCustomModulesPager:
-                Response message for listing
-                descendant Security Health Analytics
-                custom modules.
+                Response message for
+                   [SecurityCenterManagement.ListDescendantSecurityHealthAnalyticsCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListDescendantSecurityHealthAnalyticsCustomModules].
 
-                Iterating over this object will yield
-                results and resolve additional pages
-                automatically.
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
 
         """
         # Create or coerce a protobuf request object.
@@ -1373,9 +1377,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.SecurityHealthAnalyticsCustomModule:
-        r"""Retrieves a SecurityHealthAnalyticsCustomModule.
+        r"""Retrieves a
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule].
 
         .. code-block:: python
 
@@ -1405,18 +1410,22 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.GetSecurityHealthAnalyticsCustomModuleRequest, dict]):
-                The request object. Message for getting a
-                SecurityHealthAnalyticsCustomModule
+                The request object. Request message for
+                [SecurityCenterManagement.GetSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetSecurityHealthAnalyticsCustomModule].
             name (str):
-                Required. Name of the resource
+                Required. Name of the resource, in the format
+                ``projects/{project}/locations/{location}/securityHealthAnalyticsCustomModules/{custom_module}``.
+
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.SecurityHealthAnalyticsCustomModule:
@@ -1428,7 +1437,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
                 the organization, folder, or project
                 level. Custom modules that you create at
                 the organization or folder level are
-                inherited by the child folders and
+                inherited by the descendant folders and
                 projects.
 
         """
@@ -1497,14 +1506,14 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.SecurityHealthAnalyticsCustomModule:
         r"""Creates a resident
-        SecurityHealthAnalyticsCustomModule at the scope of the
-        given CRM parent, and also creates inherited
-        SecurityHealthAnalyticsCustomModules for all CRM
-        descendants of the given parent. These modules are
-        enabled by default.
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        at the scope of the given organization, folder, or project, and
+        also creates inherited ``SecurityHealthAnalyticsCustomModule``
+        resources for all folders and projects that are descendants of
+        the given parent. These modules are enabled by default.
 
         .. code-block:: python
 
@@ -1534,12 +1543,11 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.CreateSecurityHealthAnalyticsCustomModuleRequest, dict]):
-                The request object. Message for creating a
-                SecurityHealthAnalyticsCustomModule
+                The request object. Request message for
+                [SecurityCenterManagement.CreateSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.CreateSecurityHealthAnalyticsCustomModule].
             parent (str):
                 Required. Name of the parent organization, folder, or
-                project of the module, specified in one of the following
-                formats:
+                project of the module, in one of the following formats:
 
                 -  ``organizations/{organization}/locations/{location}``
                 -  ``folders/{folder}/locations/{location}``
@@ -1549,15 +1557,17 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             security_health_analytics_custom_module (google.cloud.securitycentermanagement_v1.types.SecurityHealthAnalyticsCustomModule):
-                Required. The resource being created
+                Required. The resource being created.
                 This corresponds to the ``security_health_analytics_custom_module`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.SecurityHealthAnalyticsCustomModule:
@@ -1569,7 +1579,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
                 the organization, folder, or project
                 level. Custom modules that you create at
                 the organization or folder level are
-                inherited by the child folders and
+                inherited by the descendant folders and
                 projects.
 
         """
@@ -1642,15 +1652,15 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.SecurityHealthAnalyticsCustomModule:
-        r"""Updates the SecurityHealthAnalyticsCustomModule under
-        the given name based on the given update mask. Updating
-        the enablement state is supported on both resident and
-        inherited modules (though resident modules cannot have
-        an enablement state of "inherited"). Updating the
-        display name and custom config of a module is supported
-        on resident modules only.
+        r"""Updates the
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        under the given name based on the given update mask. Updating
+        the enablement state is supported on both resident and inherited
+        modules (though resident modules cannot have an enablement state
+        of "inherited"). Updating the display name and custom
+        configuration of a module is supported on resident modules only.
 
         .. code-block:: python
 
@@ -1679,19 +1689,22 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.UpdateSecurityHealthAnalyticsCustomModuleRequest, dict]):
-                The request object. Message for updating a
-                SecurityHealthAnalyticsCustomModule
+                The request object. Request message for
+                [SecurityCenterManagement.UpdateSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.UpdateSecurityHealthAnalyticsCustomModule].
             security_health_analytics_custom_module (google.cloud.securitycentermanagement_v1.types.SecurityHealthAnalyticsCustomModule):
-                Required. The resource being updated
+                Required. The resource being updated.
                 This corresponds to the ``security_health_analytics_custom_module`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             update_mask (google.protobuf.field_mask_pb2.FieldMask):
-                Required. The list of fields to be updated. The only
-                fields that can be updated are ``enablement_state`` and
-                ``custom_config``. If empty or set to the wildcard value
-                ``*``, both ``enablement_state`` and ``custom_config``
-                are updated.
+                Required. The fields to update. The following values are
+                valid:
+
+                -  ``custom_config``
+                -  ``enablement_state``
+
+                If you omit this field or set it to the wildcard value
+                ``*``, then all eligible fields are updated.
 
                 This corresponds to the ``update_mask`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1699,8 +1712,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.SecurityHealthAnalyticsCustomModule:
@@ -1712,7 +1727,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
                 the organization, folder, or project
                 level. Custom modules that you create at
                 the organization or folder level are
-                inherited by the child folders and
+                inherited by the descendant folders and
                 projects.
 
         """
@@ -1791,12 +1806,12 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Deletes the specified
-        SecurityHealthAnalyticsCustomModule and all of its
-        descendants in the CRM hierarchy. This method is only
-        supported for resident custom modules.
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        and all of its descendants in the resource hierarchy. This
+        method is only supported for resident custom modules.
 
         .. code-block:: python
 
@@ -1823,16 +1838,15 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.DeleteSecurityHealthAnalyticsCustomModuleRequest, dict]):
-                The request object. Message for deleting a
-                SecurityHealthAnalyticsCustomModule
+                The request object. Request message for
+                [SecurityCenterManagement.DeleteSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.DeleteSecurityHealthAnalyticsCustomModule].
             name (str):
-                Required. The resource name of the SHA custom module.
+                Required. The resource name of the SHA custom module, in
+                one of the following formats:
 
-                Its format is:
-
-                -  ``organizations/{organization}/locations/{location}/securityHealthAnalyticsCustomModules/{security_health_analytics_custom_module}``.
-                -  ``folders/{folder}/locations/{location}/securityHealthAnalyticsCustomModules/{security_health_analytics_custom_module}``.
-                -  ``projects/{project}/locations/{location}/securityHealthAnalyticsCustomModules/{security_health_analytics_custom_module}``.
+                -  ``organizations/{organization}/locations/{location}/securityHealthAnalyticsCustomModules/{custom_module}``
+                -  ``folders/{folder}/locations/{location}/securityHealthAnalyticsCustomModules/{custom_module}``
+                -  ``projects/{project}/locations/{location}/securityHealthAnalyticsCustomModules/{custom_module}``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1840,8 +1854,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
@@ -1906,10 +1922,11 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.SimulateSecurityHealthAnalyticsCustomModuleResponse:
-        r"""Simulates a given SecurityHealthAnalyticsCustomModule
-        and Resource.
+        r"""Simulates the result of using a
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        to check a resource.
 
         .. code-block:: python
 
@@ -1943,16 +1960,15 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.SimulateSecurityHealthAnalyticsCustomModuleRequest, dict]):
-                The request object. Request message to simulate a
-                CustomConfig against a given test
-                resource. Maximum size of the request is
-                4 MB by default.
+                The request object. Request message for
+                [SecurityCenterManagement.SimulateSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.SimulateSecurityHealthAnalyticsCustomModule].
+                The maximum size of the request is 4 MiB.
             parent (str):
                 Required. The relative resource name of the
                 organization, project, or folder. For more information
-                about relative resource names, see `Relative Resource
-                Name <https://cloud.google.com/apis/design/resource_names#relative_resource_name>`__
-                Example: ``organizations/{organization_id}``.
+                about relative resource names, see `AIP-122: Resource
+                names <https://google.aip.dev/122>`__. Example:
+                ``organizations/{organization_id}``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1974,13 +1990,15 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.SimulateSecurityHealthAnalyticsCustomModuleResponse:
-                Response message for simulating a SecurityHealthAnalyticsCustomModule
-                   against a given resource.
+                Response message for
+                   [SecurityCenterManagement.SimulateSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.SimulateSecurityHealthAnalyticsCustomModule].
 
         """
         # Create or coerce a protobuf request object.
@@ -2049,7 +2067,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListEffectiveEventThreatDetectionCustomModulesPager:
         r"""Lists all effective Event Threat Detection custom
         modules for the given parent. This includes resident
@@ -2085,14 +2103,15 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.ListEffectiveEventThreatDetectionCustomModulesRequest, dict]):
-                The request object. Request message for listing effective
-                Event Threat Detection custom modules.
+                The request object. Request message for
+                [SecurityCenterManagement.ListEffectiveEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEffectiveEventThreatDetectionCustomModules].
             parent (str):
                 Required. Name of parent to list effective custom
-                modules. Its format is
-                ``organizations/{organization}/locations/{location}``,
-                ``folders/{folder}/locations/{location}``, or
-                ``projects/{project}/locations/{location}``
+                modules, in one of the following formats:
+
+                -  ``organizations/{organization}/locations/{location}``
+                -  ``folders/{folder}/locations/{location}``
+                -  ``projects/{project}/locations/{location}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2100,18 +2119,18 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.services.security_center_management.pagers.ListEffectiveEventThreatDetectionCustomModulesPager:
-                Response message for listing
-                effective Event Threat Detection custom
-                modules.
+                Response message for
+                   [SecurityCenterManagement.ListEffectiveEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEffectiveEventThreatDetectionCustomModules].
 
-                Iterating over this object will yield
-                results and resolve additional pages
-                automatically.
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
 
         """
         # Create or coerce a protobuf request object.
@@ -2187,16 +2206,22 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.EffectiveEventThreatDetectionCustomModule:
-        r"""Gets an effective ETD custom module. Retrieves the effective
-        module at the given level. The difference between an
-        EffectiveCustomModule and a CustomModule is that the fields for
-        an EffectiveCustomModule are computed from ancestors if needed.
-        For example, the enablement_state for a CustomModule can be
-        either ENABLED, DISABLED, or INHERITED. Where as the
-        enablement_state for an EffectiveCustomModule is always computed
-        to ENABLED or DISABLED (the effective enablement_state).
+        r"""Gets the effective Event Threat Detection custom module at the
+        given level.
+
+        The difference between an
+        [EffectiveEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.EffectiveEventThreatDetectionCustomModule]
+        and an
+        [EventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.EventThreatDetectionCustomModule]
+        is that the fields for an
+        ``EffectiveEventThreatDetectionCustomModule`` are computed from
+        ancestors if needed. For example, the enablement state for an
+        ``EventThreatDetectionCustomModule`` can be ``ENABLED``,
+        ``DISABLED``, or ``INHERITED``. In contrast, the enablement
+        state for an ``EffectiveEventThreatDetectionCustomModule`` is
+        always computed as ``ENABLED`` or ``DISABLED``.
 
         .. code-block:: python
 
@@ -2226,16 +2251,16 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.GetEffectiveEventThreatDetectionCustomModuleRequest, dict]):
-                The request object. Message for getting a
-                EffectiveEventThreatDetectionCustomModule
+                The request object. Request message for
+                [SecurityCenterManagement.GetEffectiveEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetEffectiveEventThreatDetectionCustomModule].
             name (str):
-                Required. The resource name of the ETD custom module.
+                Required. The resource name of the Event Threat
+                Detection custom module, in one of the following
+                formats:
 
-                Its format is:
-
-                -  ``organizations/{organization}/locations/{location}/effectiveEventThreatDetectionCustomModules/{effective_event_threat_detection_custom_module}``.
-                -  ``folders/{folder}/locations/{location}/effectiveEventThreatDetectionCustomModules/{effective_event_threat_detection_custom_module}``.
-                -  ``projects/{project}/locations/{location}/effectiveEventThreatDetectionCustomModules/{effective_event_threat_detection_custom_module}``.
+                -  ``organizations/{organization}/locations/{location}/effectiveEventThreatDetectionCustomModules/{custom_module}``
+                -  ``folders/{folder}/locations/{location}/effectiveEventThreatDetectionCustomModules/{custom_module}``
+                -  ``projects/{project}/locations/{location}/effectiveEventThreatDetectionCustomModules/{custom_module}``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2243,22 +2268,23 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.EffectiveEventThreatDetectionCustomModule:
-                An EffectiveEventThreatDetectionCustomModule is the representation of
-                   EventThreatDetectionCustomModule at a given level
-                   taking hierarchy into account and resolving various
-                   fields accordingly. e.g. if the module is enabled at
-                   the ancestor level, effective modules at all
-                   descendant levels will have enablement_state set to
-                   ENABLED. Similarly, if module.inherited is set, then
-                   effective module's config will contain the ancestor's
-                   config details.
-                   EffectiveEventThreatDetectionCustomModule is
-                   read-only.
+                The representation of an
+                   [EventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.EventThreatDetectionCustomModule]
+                   at a given level, taking hierarchy into account and
+                   resolving various fields accordingly. For example, if
+                   the module is enabled at the ancestor level, then
+                   effective modules at all descendant levels will have
+                   their enablement state set to ENABLED. Similarly, if
+                   module.inherited is set, then the effective module's
+                   configuration will reflect the ancestor's
+                   configuration.
 
         """
         # Create or coerce a protobuf request object.
@@ -2323,12 +2349,12 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListEventThreatDetectionCustomModulesPager:
         r"""Lists all Event Threat Detection custom modules for
-        the given Resource Manager parent. This includes
-        resident modules defined at the scope of the parent
-        along with modules inherited from ancestors.
+        the given organization, folder, or project. This
+        includes resident modules defined at the scope of the
+        parent along with modules inherited from ancestors.
 
         .. code-block:: python
 
@@ -2359,14 +2385,15 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.ListEventThreatDetectionCustomModulesRequest, dict]):
-                The request object. Request message for listing Event
-                Threat Detection custom modules.
+                The request object. Request message for
+                [SecurityCenterManagement.ListEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEventThreatDetectionCustomModules].
             parent (str):
-                Required. Name of parent to list custom modules. Its
-                format is
-                ``organizations/{organization}/locations/{location}``,
-                ``folders/{folder}/locations/{location}``, or
-                ``projects/{project}/locations/{location}``
+                Required. Name of parent to list custom modules, in one
+                of the following formats:
+
+                -  ``organizations/{organization}/locations/{location}``
+                -  ``folders/{folder}/locations/{location}``
+                -  ``projects/{project}/locations/{location}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2374,16 +2401,18 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.services.security_center_management.pagers.ListEventThreatDetectionCustomModulesPager:
-                Response message for listing Event
-                Threat Detection custom modules.
-                Iterating over this object will yield
-                results and resolve additional pages
-                automatically.
+                Response message for
+                   [SecurityCenterManagement.ListEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListEventThreatDetectionCustomModules].
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
 
         """
         # Create or coerce a protobuf request object.
@@ -2461,11 +2490,11 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListDescendantEventThreatDetectionCustomModulesPager:
         r"""Lists all resident Event Threat Detection custom
-        modules under the given Resource Manager parent and its
-        descendants.
+        modules for the given organization, folder, or project
+        and its descendants.
 
         .. code-block:: python
 
@@ -2496,15 +2525,15 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.ListDescendantEventThreatDetectionCustomModulesRequest, dict]):
-                The request object. Request message for listing
-                descendant Event Threat Detection custom
-                modules.
+                The request object. Request message for
+                [SecurityCenterManagement.ListDescendantEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListDescendantEventThreatDetectionCustomModules].
             parent (str):
-                Required. Name of parent to list custom modules. Its
-                format is
-                ``organizations/{organization}/locations/{location}``,
-                ``folders/{folder}/locations/{location}``, or
-                ``projects/{project}/locations/{location}``
+                Required. Name of parent to list custom modules, in one
+                of the following formats:
+
+                -  ``organizations/{organization}/locations/{location}``
+                -  ``folders/{folder}/locations/{location}``
+                -  ``projects/{project}/locations/{location}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2512,18 +2541,18 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.services.security_center_management.pagers.ListDescendantEventThreatDetectionCustomModulesPager:
-                Response message for listing
-                descendant Event Threat Detection custom
-                modules.
+                Response message for
+                   [SecurityCenterManagement.ListDescendantEventThreatDetectionCustomModules][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListDescendantEventThreatDetectionCustomModules].
 
-                Iterating over this object will yield
-                results and resolve additional pages
-                automatically.
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
 
         """
         # Create or coerce a protobuf request object.
@@ -2599,7 +2628,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.EventThreatDetectionCustomModule:
         r"""Gets an Event Threat Detection custom module.
 
@@ -2631,16 +2660,16 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.GetEventThreatDetectionCustomModuleRequest, dict]):
-                The request object. Message for getting a
-                EventThreatDetectionCustomModule
+                The request object. Request message for
+                [SecurityCenterManagement.GetEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetEventThreatDetectionCustomModule].
             name (str):
-                Required. The resource name of the ETD custom module.
+                Required. The resource name of the Event Threat
+                Detection custom module, in one of the following
+                formats:
 
-                Its format is:
-
-                -  ``organizations/{organization}/locations/{location}/eventThreatDetectionCustomModules/{event_threat_detection_custom_module}``.
-                -  ``folders/{folder}/locations/{location}/eventThreatDetectionCustomModules/{event_threat_detection_custom_module}``.
-                -  ``projects/{project}/locations/{location}/eventThreatDetectionCustomModules/{event_threat_detection_custom_module}``.
+                -  ``organizations/{organization}/locations/{location}/eventThreatDetectionCustomModules/{custom_module}``
+                -  ``folders/{folder}/locations/{location}/eventThreatDetectionCustomModules/{custom_module}``
+                -  ``projects/{project}/locations/{location}/eventThreatDetectionCustomModules/{custom_module}``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2648,17 +2677,19 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.EventThreatDetectionCustomModule:
-                An event threat detection custom
-                module is a Cloud SCC resource that
-                contains the configuration and
+                A Security Command Center resource
+                that contains the configuration and
                 enablement state of a custom module,
-                which enables ETD to write certain
-                findings to Cloud SCC.
+                which enables Event Threat Detection to
+                write certain findings to Security
+                Command Center.
 
         """
         # Create or coerce a protobuf request object.
@@ -2728,12 +2759,12 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.EventThreatDetectionCustomModule:
         r"""Creates a resident Event Threat Detection custom
-        module at the scope of the given Resource Manager
-        parent, and also creates inherited custom modules for
-        all descendants of the given parent. These modules are
+        module at the scope of the given organization, folder,
+        or project, and creates inherited custom modules for all
+        descendants of the given parent. These modules are
         enabled by default.
 
         .. code-block:: python
@@ -2764,21 +2795,24 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.CreateEventThreatDetectionCustomModuleRequest, dict]):
-                The request object. Message for creating a
-                EventThreatDetectionCustomModule
+                The request object. Request message for
+                [SecurityCenterManagement.CreateEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.CreateEventThreatDetectionCustomModule].
             parent (str):
-                Required. Name of parent for the module. Its format is
-                ``organizations/{organization}/locations/{location}``,
-                ``folders/{folder}/locations/{location}``, or
-                ``projects/{project}/locations/{location}``
+                Required. Name of parent for the module, in one of the
+                following formats:
+
+                -  ``organizations/{organization}/locations/{location}``
+                -  ``folders/{folder}/locations/{location}``
+                -  ``projects/{project}/locations/{location}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             event_threat_detection_custom_module (google.cloud.securitycentermanagement_v1.types.EventThreatDetectionCustomModule):
                 Required. The module to create. The
-                event_threat_detection_custom_module.name will be
-                ignored and server generated.
+                [EventThreatDetectionCustomModule.name][google.cloud.securitycentermanagement.v1.EventThreatDetectionCustomModule.name]
+                field is ignored; Security Command Center generates the
+                name.
 
                 This corresponds to the ``event_threat_detection_custom_module`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2786,17 +2820,19 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.EventThreatDetectionCustomModule:
-                An event threat detection custom
-                module is a Cloud SCC resource that
-                contains the configuration and
+                A Security Command Center resource
+                that contains the configuration and
                 enablement state of a custom module,
-                which enables ETD to write certain
-                findings to Cloud SCC.
+                which enables Event Threat Detection to
+                write certain findings to Security
+                Command Center.
 
         """
         # Create or coerce a protobuf request object.
@@ -2868,7 +2904,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.EventThreatDetectionCustomModule:
         r"""Updates the Event Threat Detection custom module with
         the given name based on the given update mask. Updating
@@ -2909,18 +2945,13 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
                 The request object. Message for updating a
                 EventThreatDetectionCustomModule
             event_threat_detection_custom_module (google.cloud.securitycentermanagement_v1.types.EventThreatDetectionCustomModule):
-                Required. The module being updated
+                Required. The module being updated.
                 This corresponds to the ``event_threat_detection_custom_module`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             update_mask (google.protobuf.field_mask_pb2.FieldMask):
-                Required. Field mask is used to specify the fields to be
-                overwritten in the EventThreatDetectionCustomModule
-                resource by the update. The fields specified in the
-                update_mask are relative to the resource, not the full
-                request. A field will be overwritten if it is in the
-                mask. If the user does not provide a mask then all
-                fields will be overwritten.
+                Required. The fields to update. If
+                omitted, then all fields are updated.
 
                 This corresponds to the ``update_mask`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2928,17 +2959,19 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.EventThreatDetectionCustomModule:
-                An event threat detection custom
-                module is a Cloud SCC resource that
-                contains the configuration and
+                A Security Command Center resource
+                that contains the configuration and
                 enablement state of a custom module,
-                which enables ETD to write certain
-                findings to Cloud SCC.
+                which enables Event Threat Detection to
+                write certain findings to Security
+                Command Center.
 
         """
         # Create or coerce a protobuf request object.
@@ -3014,12 +3047,12 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Deletes the specified Event Threat Detection custom
-        module and all of its descendants in the Resource
-        Manager hierarchy. This method is only supported for
-        resident custom modules.
+        module and all of its descendants in the resource
+        hierarchy. This method is only supported for resident
+        custom modules.
 
         .. code-block:: python
 
@@ -3046,16 +3079,16 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.DeleteEventThreatDetectionCustomModuleRequest, dict]):
-                The request object. Message for deleting a
-                EventThreatDetectionCustomModule
+                The request object. Request message for
+                [SecurityCenterManagement.DeleteEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.DeleteEventThreatDetectionCustomModule].
             name (str):
-                Required. The resource name of the ETD custom module.
+                Required. The resource name of the Event Threat
+                Detection custom module, in one of the following
+                formats:
 
-                Its format is:
-
-                -  ``organizations/{organization}/locations/{location}/eventThreatDetectionCustomModules/{event_threat_detection_custom_module}``.
-                -  ``folders/{folder}/locations/{location}/eventThreatDetectionCustomModules/{event_threat_detection_custom_module}``.
-                -  ``projects/{project}/locations/{location}/eventThreatDetectionCustomModules/{event_threat_detection_custom_module}``.
+                -  ``organizations/{organization}/locations/{location}/eventThreatDetectionCustomModules/{custom_module}``
+                -  ``folders/{folder}/locations/{location}/eventThreatDetectionCustomModules/{custom_module}``
+                -  ``projects/{project}/locations/{location}/eventThreatDetectionCustomModules/{custom_module}``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3063,8 +3096,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
@@ -3124,7 +3159,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.ValidateEventThreatDetectionCustomModuleResponse:
         r"""Validates the given Event Threat Detection custom
         module.
@@ -3159,18 +3194,20 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.ValidateEventThreatDetectionCustomModuleRequest, dict]):
-                The request object. Request to validate an Event Threat
-                Detection custom module.
+                The request object. Request message for
+                [SecurityCenterManagement.ValidateEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ValidateEventThreatDetectionCustomModule].
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.ValidateEventThreatDetectionCustomModuleResponse:
-                Response to validating an Event
-                Threat Detection custom module.
+                Response message for
+                   [SecurityCenterManagement.ValidateEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ValidateEventThreatDetectionCustomModule].
 
         """
         # Create or coerce a protobuf request object.
@@ -3219,7 +3256,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.SecurityCenterService:
         r"""Gets service settings for the specified Security
         Command Center service.
@@ -3252,25 +3289,23 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.GetSecurityCenterServiceRequest, dict]):
-                The request object. Request message for getting a
-                Security Command Center service.
+                The request object. Request message for
+                [SecurityCenterManagement.GetSecurityCenterService][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.GetSecurityCenterService].
             name (str):
                 Required. The Security Command Center service to
-                retrieve.
-
-                Formats:
+                retrieve, in one of the following formats:
 
                 -  organizations/{organization}/locations/{location}/securityCenterServices/{service}
                 -  folders/{folder}/locations/{location}/securityCenterServices/{service}
                 -  projects/{project}/locations/{location}/securityCenterServices/{service}
 
-                The possible values for id {service} are:
+                The following values are valid for ``{service}``:
 
-                -  container-threat-detection
-                -  event-threat-detection
-                -  security-health-analytics
-                -  vm-threat-detection
-                -  web-security-scanner
+                -  ``container-threat-detection``
+                -  ``event-threat-detection``
+                -  ``security-health-analytics``
+                -  ``vm-threat-detection``
+                -  ``web-security-scanner``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3278,8 +3313,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.SecurityCenterService:
@@ -3291,8 +3328,8 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
                 configured at the organization, folder,
                 or project level. Service settings at
                 the organization or folder level are
-                inherited by those in child folders and
-                projects.
+                inherited by those in descendant folders
+                and projects.
 
         """
         # Create or coerce a protobuf request object.
@@ -3353,7 +3390,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListSecurityCenterServicesPager:
         r"""Returns a list of all Security Command Center
         services for the given parent.
@@ -3387,17 +3424,16 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.ListSecurityCenterServicesRequest, dict]):
-                The request object. Request message for listing Security
-                Command Center services.
+                The request object. Request message for
+                [SecurityCenterManagement.ListSecurityCenterServices][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListSecurityCenterServices].
             parent (str):
                 Required. The name of the parent to list Security
-                Command Center services.
+                Command Center services, in one of the following
+                formats:
 
-                Formats:
-
-                -  organizations/{organization}/locations/{location}
-                -  folders/{folder}/locations/{location}
-                -  projects/{project}/locations/{location}
+                -  ``organizations/{organization}/locations/{location}``
+                -  ``folders/{folder}/locations/{location}``
+                -  ``projects/{project}/locations/{location}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3405,16 +3441,18 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.services.security_center_management.pagers.ListSecurityCenterServicesPager:
-                Response message for listing Security
-                Command Center services.
-                Iterating over this object will yield
-                results and resolve additional pages
-                automatically.
+                Response message for
+                   [SecurityCenterManagement.ListSecurityCenterServices][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.ListSecurityCenterServices].
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
 
         """
         # Create or coerce a protobuf request object.
@@ -3489,7 +3527,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> security_center_management.SecurityCenterService:
         r"""Updates a Security Command Center service using the
         given update mask.
@@ -3521,19 +3559,21 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         Args:
             request (Union[google.cloud.securitycentermanagement_v1.types.UpdateSecurityCenterServiceRequest, dict]):
-                The request object. Request message for updating a
-                Security Command Center service.
+                The request object. Request message for
+                [SecurityCenterManagement.UpdateSecurityCenterService][google.cloud.securitycentermanagement.v1.SecurityCenterManagement.UpdateSecurityCenterService].
             security_center_service (google.cloud.securitycentermanagement_v1.types.SecurityCenterService):
                 Required. The updated service.
                 This corresponds to the ``security_center_service`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             update_mask (google.protobuf.field_mask_pb2.FieldMask):
-                Required. The list of fields to be updated. Possible
+                Required. The fields to update. Accepts the following
                 values:
 
-                -  "intended_enablement_state"
-                -  "modules"
+                -  ``intended_enablement_state``
+                -  ``modules``
+
+                If omitted, then all eligible fields are updated.
 
                 This corresponds to the ``update_mask`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3541,8 +3581,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.securitycentermanagement_v1.types.SecurityCenterService:
@@ -3554,8 +3596,8 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
                 configured at the organization, folder,
                 or project level. Service settings at
                 the organization or folder level are
-                inherited by those in child folders and
-                projects.
+                inherited by those in descendant folders
+                and projects.
 
         """
         # Create or coerce a protobuf request object.
@@ -3635,7 +3677,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.Location:
         r"""Gets information about a location.
 
@@ -3646,8 +3688,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.Location:
                 Location object.
@@ -3660,11 +3704,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.get_location,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.get_location]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3692,7 +3732,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.ListLocationsResponse:
         r"""Lists information about the supported locations for this service.
 
@@ -3703,8 +3743,10 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
             retry (google.api_core.retry.Retry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.ListLocationsResponse:
                 Response message for ``ListLocations`` method.
@@ -3717,11 +3759,7 @@ class SecurityCenterManagementClient(metaclass=SecurityCenterManagementClientMet
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.list_locations,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.list_locations]
 
         # Certain fields should be provided within the metadata header;
         # add these here.

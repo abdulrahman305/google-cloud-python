@@ -24,8 +24,22 @@ except ImportError:  # pragma: NO COVER
 
 import math
 
+from google.api_core import api_core_version
+import grpc
+from grpc.experimental import aio
+from proto.marshal.rules import wrappers
+from proto.marshal.rules.dates import DurationRule, TimestampRule
+import pytest
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
 from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
+from google.api_core import client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import retry as retries
 import google.auth
@@ -36,11 +50,6 @@ from google.protobuf import any_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import timestamp_pb2  # type: ignore
 from google.rpc import status_pb2  # type: ignore
-import grpc
-from grpc.experimental import aio
-from proto.marshal.rules import wrappers
-from proto.marshal.rules.dates import DurationRule, TimestampRule
-import pytest
 
 from google.cloud.recaptchaenterprise_v1.services.recaptcha_enterprise_service import (
     RecaptchaEnterpriseServiceAsyncClient,
@@ -51,8 +60,22 @@ from google.cloud.recaptchaenterprise_v1.services.recaptcha_enterprise_service i
 from google.cloud.recaptchaenterprise_v1.types import recaptchaenterprise
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -313,89 +336,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         RecaptchaEnterpriseServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            RecaptchaEnterpriseServiceClient,
-            transports.RecaptchaEnterpriseServiceGrpcTransport,
-            "grpc",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1193,27 +1133,6 @@ def test_create_assessment(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
 
 
-def test_create_assessment_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_assessment), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_assessment()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.CreateAssessmentRequest()
-
-
 def test_create_assessment_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1282,31 +1201,6 @@ def test_create_assessment_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_assessment_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_assessment), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.Assessment(
-                name="name_value",
-            )
-        )
-        response = await client.create_assessment()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.CreateAssessmentRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_assessment_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1314,7 +1208,7 @@ async def test_create_assessment_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1329,22 +1223,23 @@ async def test_create_assessment_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_assessment
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_assessment(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_assessment(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1353,7 +1248,7 @@ async def test_create_assessment_async(
     request_type=recaptchaenterprise.CreateAssessmentRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1423,7 +1318,7 @@ def test_create_assessment_field_headers():
 @pytest.mark.asyncio
 async def test_create_assessment_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1502,7 +1397,7 @@ def test_create_assessment_flattened_error():
 @pytest.mark.asyncio
 async def test_create_assessment_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1537,7 +1432,7 @@ async def test_create_assessment_flattened_async():
 @pytest.mark.asyncio
 async def test_create_assessment_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1583,27 +1478,6 @@ def test_annotate_assessment(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, recaptchaenterprise.AnnotateAssessmentResponse)
-
-
-def test_annotate_assessment_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.annotate_assessment), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.annotate_assessment()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.AnnotateAssessmentRequest()
 
 
 def test_annotate_assessment_non_empty_request_with_auto_populated_field():
@@ -1678,29 +1552,6 @@ def test_annotate_assessment_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_annotate_assessment_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.annotate_assessment), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.AnnotateAssessmentResponse()
-        )
-        response = await client.annotate_assessment()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.AnnotateAssessmentRequest()
-
-
-@pytest.mark.asyncio
 async def test_annotate_assessment_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1708,7 +1559,7 @@ async def test_annotate_assessment_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1723,22 +1574,23 @@ async def test_annotate_assessment_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.annotate_assessment
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.annotate_assessment(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.annotate_assessment(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1747,7 +1599,7 @@ async def test_annotate_assessment_async(
     request_type=recaptchaenterprise.AnnotateAssessmentRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1814,7 +1666,7 @@ def test_annotate_assessment_field_headers():
 @pytest.mark.asyncio
 async def test_annotate_assessment_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1893,7 +1745,7 @@ def test_annotate_assessment_flattened_error():
 @pytest.mark.asyncio
 async def test_annotate_assessment_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1928,7 +1780,7 @@ async def test_annotate_assessment_flattened_async():
 @pytest.mark.asyncio
 async def test_annotate_assessment_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1977,25 +1829,6 @@ def test_create_key(request_type, transport: str = "grpc"):
     assert isinstance(response, recaptchaenterprise.Key)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
-
-
-def test_create_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_key), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.CreateKeyRequest()
 
 
 def test_create_key_non_empty_request_with_auto_populated_field():
@@ -2062,36 +1895,12 @@ def test_create_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_key), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.Key(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.create_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.CreateKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_key_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2106,22 +1915,23 @@ async def test_create_key_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2129,7 +1939,7 @@ async def test_create_key_async(
     transport: str = "grpc_asyncio", request_type=recaptchaenterprise.CreateKeyRequest
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2197,7 +2007,7 @@ def test_create_key_field_headers():
 @pytest.mark.asyncio
 async def test_create_key_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2272,7 +2082,7 @@ def test_create_key_flattened_error():
 @pytest.mark.asyncio
 async def test_create_key_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2305,7 +2115,7 @@ async def test_create_key_flattened_async():
 @pytest.mark.asyncio
 async def test_create_key_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2352,25 +2162,6 @@ def test_list_keys(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListKeysPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_keys_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_keys), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_keys()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.ListKeysRequest()
 
 
 def test_list_keys_non_empty_request_with_auto_populated_field():
@@ -2439,35 +2230,12 @@ def test_list_keys_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_keys_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_keys), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.ListKeysResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_keys()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.ListKeysRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_keys_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2482,22 +2250,23 @@ async def test_list_keys_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_keys
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_keys(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_keys(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2505,7 +2274,7 @@ async def test_list_keys_async(
     transport: str = "grpc_asyncio", request_type=recaptchaenterprise.ListKeysRequest
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2571,7 +2340,7 @@ def test_list_keys_field_headers():
 @pytest.mark.asyncio
 async def test_list_keys_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2641,7 +2410,7 @@ def test_list_keys_flattened_error():
 @pytest.mark.asyncio
 async def test_list_keys_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2670,7 +2439,7 @@ async def test_list_keys_flattened_async():
 @pytest.mark.asyncio
 async def test_list_keys_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2780,7 +2549,7 @@ def test_list_keys_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_keys_async_pager():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2830,7 +2599,7 @@ async def test_list_keys_async_pager():
 @pytest.mark.asyncio
 async def test_list_keys_async_pages():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2914,27 +2683,6 @@ def test_retrieve_legacy_secret_key(request_type, transport: str = "grpc"):
     assert response.legacy_secret_key == "legacy_secret_key_value"
 
 
-def test_retrieve_legacy_secret_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.retrieve_legacy_secret_key), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.retrieve_legacy_secret_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.RetrieveLegacySecretKeyRequest()
-
-
 def test_retrieve_legacy_secret_key_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3006,31 +2754,6 @@ def test_retrieve_legacy_secret_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_retrieve_legacy_secret_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.retrieve_legacy_secret_key), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.RetrieveLegacySecretKeyResponse(
-                legacy_secret_key="legacy_secret_key_value",
-            )
-        )
-        response = await client.retrieve_legacy_secret_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.RetrieveLegacySecretKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_retrieve_legacy_secret_key_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3038,7 +2761,7 @@ async def test_retrieve_legacy_secret_key_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3053,22 +2776,23 @@ async def test_retrieve_legacy_secret_key_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.retrieve_legacy_secret_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.retrieve_legacy_secret_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.retrieve_legacy_secret_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3077,7 +2801,7 @@ async def test_retrieve_legacy_secret_key_async(
     request_type=recaptchaenterprise.RetrieveLegacySecretKeyRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3147,7 +2871,7 @@ def test_retrieve_legacy_secret_key_field_headers():
 @pytest.mark.asyncio
 async def test_retrieve_legacy_secret_key_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3221,7 +2945,7 @@ def test_retrieve_legacy_secret_key_flattened_error():
 @pytest.mark.asyncio
 async def test_retrieve_legacy_secret_key_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3252,7 +2976,7 @@ async def test_retrieve_legacy_secret_key_flattened_async():
 @pytest.mark.asyncio
 async def test_retrieve_legacy_secret_key_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3300,25 +3024,6 @@ def test_get_key(request_type, transport: str = "grpc"):
     assert isinstance(response, recaptchaenterprise.Key)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
-
-
-def test_get_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_key), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.GetKeyRequest()
 
 
 def test_get_key_non_empty_request_with_auto_populated_field():
@@ -3385,36 +3090,12 @@ def test_get_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_key), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.Key(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.get_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.GetKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_key_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3429,22 +3110,23 @@ async def test_get_key_async_use_cached_wrapped_rpc(transport: str = "grpc_async
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3452,7 +3134,7 @@ async def test_get_key_async(
     transport: str = "grpc_asyncio", request_type=recaptchaenterprise.GetKeyRequest
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3520,7 +3202,7 @@ def test_get_key_field_headers():
 @pytest.mark.asyncio
 async def test_get_key_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3590,7 +3272,7 @@ def test_get_key_flattened_error():
 @pytest.mark.asyncio
 async def test_get_key_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3619,7 +3301,7 @@ async def test_get_key_flattened_async():
 @pytest.mark.asyncio
 async def test_get_key_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3667,25 +3349,6 @@ def test_update_key(request_type, transport: str = "grpc"):
     assert isinstance(response, recaptchaenterprise.Key)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
-
-
-def test_update_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_key), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.UpdateKeyRequest()
 
 
 def test_update_key_non_empty_request_with_auto_populated_field():
@@ -3748,36 +3411,12 @@ def test_update_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_key), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.Key(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.update_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.UpdateKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_key_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3792,22 +3431,23 @@ async def test_update_key_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3815,7 +3455,7 @@ async def test_update_key_async(
     transport: str = "grpc_asyncio", request_type=recaptchaenterprise.UpdateKeyRequest
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3883,7 +3523,7 @@ def test_update_key_field_headers():
 @pytest.mark.asyncio
 async def test_update_key_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3958,7 +3598,7 @@ def test_update_key_flattened_error():
 @pytest.mark.asyncio
 async def test_update_key_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3991,7 +3631,7 @@ async def test_update_key_flattened_async():
 @pytest.mark.asyncio
 async def test_update_key_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4035,25 +3675,6 @@ def test_delete_key(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_key), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.DeleteKeyRequest()
 
 
 def test_delete_key_non_empty_request_with_auto_populated_field():
@@ -4120,31 +3741,12 @@ def test_delete_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_key), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.DeleteKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_key_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4159,22 +3761,23 @@ async def test_delete_key_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4182,7 +3785,7 @@ async def test_delete_key_async(
     transport: str = "grpc_asyncio", request_type=recaptchaenterprise.DeleteKeyRequest
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4243,7 +3846,7 @@ def test_delete_key_field_headers():
 @pytest.mark.asyncio
 async def test_delete_key_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4311,7 +3914,7 @@ def test_delete_key_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_key_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4338,7 +3941,7 @@ async def test_delete_key_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_key_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4386,25 +3989,6 @@ def test_migrate_key(request_type, transport: str = "grpc"):
     assert isinstance(response, recaptchaenterprise.Key)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
-
-
-def test_migrate_key_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.migrate_key), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.migrate_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.MigrateKeyRequest()
 
 
 def test_migrate_key_non_empty_request_with_auto_populated_field():
@@ -4471,30 +4055,6 @@ def test_migrate_key_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_migrate_key_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.migrate_key), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.Key(
-                name="name_value",
-                display_name="display_name_value",
-            )
-        )
-        response = await client.migrate_key()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.MigrateKeyRequest()
-
-
-@pytest.mark.asyncio
 async def test_migrate_key_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4502,7 +4062,7 @@ async def test_migrate_key_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4517,22 +4077,23 @@ async def test_migrate_key_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.migrate_key
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.migrate_key(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.migrate_key(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4540,7 +4101,7 @@ async def test_migrate_key_async(
     transport: str = "grpc_asyncio", request_type=recaptchaenterprise.MigrateKeyRequest
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4608,7 +4169,7 @@ def test_migrate_key_field_headers():
 @pytest.mark.asyncio
 async def test_migrate_key_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4635,6 +4196,1224 @@ async def test_migrate_key_field_headers_async():
         "x-goog-request-params",
         "name=name_value",
     ) in kw["metadata"]
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        recaptchaenterprise.AddIpOverrideRequest,
+        dict,
+    ],
+)
+def test_add_ip_override(request_type, transport: str = "grpc"):
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.add_ip_override), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = recaptchaenterprise.AddIpOverrideResponse()
+        response = client.add_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = recaptchaenterprise.AddIpOverrideRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, recaptchaenterprise.AddIpOverrideResponse)
+
+
+def test_add_ip_override_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = recaptchaenterprise.AddIpOverrideRequest(
+        name="name_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.add_ip_override), "__call__") as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.add_ip_override(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == recaptchaenterprise.AddIpOverrideRequest(
+            name="name_value",
+        )
+
+
+def test_add_ip_override_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RecaptchaEnterpriseServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.add_ip_override in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.add_ip_override] = mock_rpc
+        request = {}
+        client.add_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.add_ip_override(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_add_ip_override_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = RecaptchaEnterpriseServiceAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.add_ip_override
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.add_ip_override
+        ] = mock_rpc
+
+        request = {}
+        await client.add_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.add_ip_override(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_add_ip_override_async(
+    transport: str = "grpc_asyncio",
+    request_type=recaptchaenterprise.AddIpOverrideRequest,
+):
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.add_ip_override), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.AddIpOverrideResponse()
+        )
+        response = await client.add_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = recaptchaenterprise.AddIpOverrideRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, recaptchaenterprise.AddIpOverrideResponse)
+
+
+@pytest.mark.asyncio
+async def test_add_ip_override_async_from_dict():
+    await test_add_ip_override_async(request_type=dict)
+
+
+def test_add_ip_override_field_headers():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = recaptchaenterprise.AddIpOverrideRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.add_ip_override), "__call__") as call:
+        call.return_value = recaptchaenterprise.AddIpOverrideResponse()
+        client.add_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_add_ip_override_field_headers_async():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = recaptchaenterprise.AddIpOverrideRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.add_ip_override), "__call__") as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.AddIpOverrideResponse()
+        )
+        await client.add_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_add_ip_override_flattened():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.add_ip_override), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = recaptchaenterprise.AddIpOverrideResponse()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.add_ip_override(
+            name="name_value",
+            ip_override_data=recaptchaenterprise.IpOverrideData(ip="ip_value"),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+        arg = args[0].ip_override_data
+        mock_val = recaptchaenterprise.IpOverrideData(ip="ip_value")
+        assert arg == mock_val
+
+
+def test_add_ip_override_flattened_error():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.add_ip_override(
+            recaptchaenterprise.AddIpOverrideRequest(),
+            name="name_value",
+            ip_override_data=recaptchaenterprise.IpOverrideData(ip="ip_value"),
+        )
+
+
+@pytest.mark.asyncio
+async def test_add_ip_override_flattened_async():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.add_ip_override), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = recaptchaenterprise.AddIpOverrideResponse()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.AddIpOverrideResponse()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.add_ip_override(
+            name="name_value",
+            ip_override_data=recaptchaenterprise.IpOverrideData(ip="ip_value"),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+        arg = args[0].ip_override_data
+        mock_val = recaptchaenterprise.IpOverrideData(ip="ip_value")
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_add_ip_override_flattened_error_async():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.add_ip_override(
+            recaptchaenterprise.AddIpOverrideRequest(),
+            name="name_value",
+            ip_override_data=recaptchaenterprise.IpOverrideData(ip="ip_value"),
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        recaptchaenterprise.RemoveIpOverrideRequest,
+        dict,
+    ],
+)
+def test_remove_ip_override(request_type, transport: str = "grpc"):
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_ip_override), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = recaptchaenterprise.RemoveIpOverrideResponse()
+        response = client.remove_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = recaptchaenterprise.RemoveIpOverrideRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, recaptchaenterprise.RemoveIpOverrideResponse)
+
+
+def test_remove_ip_override_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = recaptchaenterprise.RemoveIpOverrideRequest(
+        name="name_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_ip_override), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.remove_ip_override(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == recaptchaenterprise.RemoveIpOverrideRequest(
+            name="name_value",
+        )
+
+
+def test_remove_ip_override_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RecaptchaEnterpriseServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.remove_ip_override in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.remove_ip_override
+        ] = mock_rpc
+        request = {}
+        client.remove_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.remove_ip_override(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_remove_ip_override_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = RecaptchaEnterpriseServiceAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.remove_ip_override
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.remove_ip_override
+        ] = mock_rpc
+
+        request = {}
+        await client.remove_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.remove_ip_override(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_remove_ip_override_async(
+    transport: str = "grpc_asyncio",
+    request_type=recaptchaenterprise.RemoveIpOverrideRequest,
+):
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_ip_override), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.RemoveIpOverrideResponse()
+        )
+        response = await client.remove_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = recaptchaenterprise.RemoveIpOverrideRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, recaptchaenterprise.RemoveIpOverrideResponse)
+
+
+@pytest.mark.asyncio
+async def test_remove_ip_override_async_from_dict():
+    await test_remove_ip_override_async(request_type=dict)
+
+
+def test_remove_ip_override_field_headers():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = recaptchaenterprise.RemoveIpOverrideRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_ip_override), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.RemoveIpOverrideResponse()
+        client.remove_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_remove_ip_override_field_headers_async():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = recaptchaenterprise.RemoveIpOverrideRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_ip_override), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.RemoveIpOverrideResponse()
+        )
+        await client.remove_ip_override(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_remove_ip_override_flattened():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_ip_override), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = recaptchaenterprise.RemoveIpOverrideResponse()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.remove_ip_override(
+            name="name_value",
+            ip_override_data=recaptchaenterprise.IpOverrideData(ip="ip_value"),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+        arg = args[0].ip_override_data
+        mock_val = recaptchaenterprise.IpOverrideData(ip="ip_value")
+        assert arg == mock_val
+
+
+def test_remove_ip_override_flattened_error():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.remove_ip_override(
+            recaptchaenterprise.RemoveIpOverrideRequest(),
+            name="name_value",
+            ip_override_data=recaptchaenterprise.IpOverrideData(ip="ip_value"),
+        )
+
+
+@pytest.mark.asyncio
+async def test_remove_ip_override_flattened_async():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_ip_override), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = recaptchaenterprise.RemoveIpOverrideResponse()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.RemoveIpOverrideResponse()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.remove_ip_override(
+            name="name_value",
+            ip_override_data=recaptchaenterprise.IpOverrideData(ip="ip_value"),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+        arg = args[0].ip_override_data
+        mock_val = recaptchaenterprise.IpOverrideData(ip="ip_value")
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_remove_ip_override_flattened_error_async():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.remove_ip_override(
+            recaptchaenterprise.RemoveIpOverrideRequest(),
+            name="name_value",
+            ip_override_data=recaptchaenterprise.IpOverrideData(ip="ip_value"),
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        recaptchaenterprise.ListIpOverridesRequest,
+        dict,
+    ],
+)
+def test_list_ip_overrides(request_type, transport: str = "grpc"):
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = recaptchaenterprise.ListIpOverridesResponse(
+            next_page_token="next_page_token_value",
+        )
+        response = client.list_ip_overrides(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = recaptchaenterprise.ListIpOverridesRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListIpOverridesPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+def test_list_ip_overrides_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = recaptchaenterprise.ListIpOverridesRequest(
+        parent="parent_value",
+        page_token="page_token_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.list_ip_overrides(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == recaptchaenterprise.ListIpOverridesRequest(
+            parent="parent_value",
+            page_token="page_token_value",
+        )
+
+
+def test_list_ip_overrides_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = RecaptchaEnterpriseServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.list_ip_overrides in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_ip_overrides
+        ] = mock_rpc
+        request = {}
+        client.list_ip_overrides(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_ip_overrides(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_ip_overrides_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = RecaptchaEnterpriseServiceAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.list_ip_overrides
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.list_ip_overrides
+        ] = mock_rpc
+
+        request = {}
+        await client.list_ip_overrides(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.list_ip_overrides(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_ip_overrides_async(
+    transport: str = "grpc_asyncio",
+    request_type=recaptchaenterprise.ListIpOverridesRequest,
+):
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.ListIpOverridesResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        response = await client.list_ip_overrides(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = recaptchaenterprise.ListIpOverridesRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListIpOverridesAsyncPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.asyncio
+async def test_list_ip_overrides_async_from_dict():
+    await test_list_ip_overrides_async(request_type=dict)
+
+
+def test_list_ip_overrides_field_headers():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = recaptchaenterprise.ListIpOverridesRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.ListIpOverridesResponse()
+        client.list_ip_overrides(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_list_ip_overrides_field_headers_async():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = recaptchaenterprise.ListIpOverridesRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.ListIpOverridesResponse()
+        )
+        await client.list_ip_overrides(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+def test_list_ip_overrides_flattened():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = recaptchaenterprise.ListIpOverridesResponse()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.list_ip_overrides(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+def test_list_ip_overrides_flattened_error():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_ip_overrides(
+            recaptchaenterprise.ListIpOverridesRequest(),
+            parent="parent_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_ip_overrides_flattened_async():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = recaptchaenterprise.ListIpOverridesResponse()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.ListIpOverridesResponse()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.list_ip_overrides(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_list_ip_overrides_flattened_error_async():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.list_ip_overrides(
+            recaptchaenterprise.ListIpOverridesRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_ip_overrides_pager(transport_name: str = "grpc"):
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+                next_page_token="abc",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[],
+                next_page_token="def",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+                next_page_token="ghi",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+            ),
+            RuntimeError,
+        )
+
+        expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
+        expected_metadata = tuple(expected_metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
+        )
+        pager = client.list_ip_overrides(request={}, retry=retry, timeout=timeout)
+
+        assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, recaptchaenterprise.IpOverrideData) for i in results)
+
+
+def test_list_ip_overrides_pages(transport_name: str = "grpc"):
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+                next_page_token="abc",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[],
+                next_page_token="def",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+                next_page_token="ghi",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = list(client.list_ip_overrides(request={}).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.asyncio
+async def test_list_ip_overrides_async_pager():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+                next_page_token="abc",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[],
+                next_page_token="def",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+                next_page_token="ghi",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+            ),
+            RuntimeError,
+        )
+        async_pager = await client.list_ip_overrides(
+            request={},
+        )
+        assert async_pager.next_page_token == "abc"
+        responses = []
+        async for response in async_pager:  # pragma: no branch
+            responses.append(response)
+
+        assert len(responses) == 6
+        assert all(isinstance(i, recaptchaenterprise.IpOverrideData) for i in responses)
+
+
+@pytest.mark.asyncio
+async def test_list_ip_overrides_async_pages():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+                next_page_token="abc",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[],
+                next_page_token="def",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+                next_page_token="ghi",
+            ),
+            recaptchaenterprise.ListIpOverridesResponse(
+                ip_overrides=[
+                    recaptchaenterprise.IpOverrideData(),
+                    recaptchaenterprise.IpOverrideData(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = []
+        # Workaround issue in python 3.9 related to code coverage by adding `# pragma: no branch`
+        # See https://github.com/googleapis/gapic-generator-python/pull/1174#issuecomment-1025132372
+        async for page_ in (  # pragma: no branch
+            await client.list_ip_overrides(request={})
+        ).pages:
+            pages.append(page_)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
 
 
 @pytest.mark.parametrize(
@@ -4671,25 +5450,6 @@ def test_get_metrics(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, recaptchaenterprise.Metrics)
     assert response.name == "name_value"
-
-
-def test_get_metrics_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_metrics), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_metrics()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.GetMetricsRequest()
 
 
 def test_get_metrics_non_empty_request_with_auto_populated_field():
@@ -4756,29 +5516,6 @@ def test_get_metrics_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_metrics_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_metrics), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.Metrics(
-                name="name_value",
-            )
-        )
-        response = await client.get_metrics()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.GetMetricsRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_metrics_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4786,7 +5523,7 @@ async def test_get_metrics_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4801,22 +5538,23 @@ async def test_get_metrics_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_metrics
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_metrics(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_metrics(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4824,7 +5562,7 @@ async def test_get_metrics_async(
     transport: str = "grpc_asyncio", request_type=recaptchaenterprise.GetMetricsRequest
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4890,7 +5628,7 @@ def test_get_metrics_field_headers():
 @pytest.mark.asyncio
 async def test_get_metrics_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4960,7 +5698,7 @@ def test_get_metrics_flattened_error():
 @pytest.mark.asyncio
 async def test_get_metrics_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4989,7 +5727,7 @@ async def test_get_metrics_flattened_async():
 @pytest.mark.asyncio
 async def test_get_metrics_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5043,27 +5781,6 @@ def test_create_firewall_policy(request_type, transport: str = "grpc"):
     assert response.description == "description_value"
     assert response.path == "path_value"
     assert response.condition == "condition_value"
-
-
-def test_create_firewall_policy_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_firewall_policy), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_firewall_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.CreateFirewallPolicyRequest()
 
 
 def test_create_firewall_policy_non_empty_request_with_auto_populated_field():
@@ -5137,34 +5854,6 @@ def test_create_firewall_policy_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_firewall_policy_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_firewall_policy), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.FirewallPolicy(
-                name="name_value",
-                description="description_value",
-                path="path_value",
-                condition="condition_value",
-            )
-        )
-        response = await client.create_firewall_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.CreateFirewallPolicyRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_firewall_policy_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5172,7 +5861,7 @@ async def test_create_firewall_policy_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5187,22 +5876,23 @@ async def test_create_firewall_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_firewall_policy
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_firewall_policy(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_firewall_policy(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5211,7 +5901,7 @@ async def test_create_firewall_policy_async(
     request_type=recaptchaenterprise.CreateFirewallPolicyRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5287,7 +5977,7 @@ def test_create_firewall_policy_field_headers():
 @pytest.mark.asyncio
 async def test_create_firewall_policy_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5366,7 +6056,7 @@ def test_create_firewall_policy_flattened_error():
 @pytest.mark.asyncio
 async def test_create_firewall_policy_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5401,7 +6091,7 @@ async def test_create_firewall_policy_flattened_async():
 @pytest.mark.asyncio
 async def test_create_firewall_policy_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5450,27 +6140,6 @@ def test_list_firewall_policies(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListFirewallPoliciesPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_firewall_policies_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_firewall_policies), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_firewall_policies()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.ListFirewallPoliciesRequest()
 
 
 def test_list_firewall_policies_non_empty_request_with_auto_populated_field():
@@ -5546,31 +6215,6 @@ def test_list_firewall_policies_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_firewall_policies_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_firewall_policies), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.ListFirewallPoliciesResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_firewall_policies()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.ListFirewallPoliciesRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_firewall_policies_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5578,7 +6222,7 @@ async def test_list_firewall_policies_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5593,22 +6237,23 @@ async def test_list_firewall_policies_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_firewall_policies
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_firewall_policies(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_firewall_policies(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5617,7 +6262,7 @@ async def test_list_firewall_policies_async(
     request_type=recaptchaenterprise.ListFirewallPoliciesRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5687,7 +6332,7 @@ def test_list_firewall_policies_field_headers():
 @pytest.mark.asyncio
 async def test_list_firewall_policies_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5761,7 +6406,7 @@ def test_list_firewall_policies_flattened_error():
 @pytest.mark.asyncio
 async def test_list_firewall_policies_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5792,7 +6437,7 @@ async def test_list_firewall_policies_flattened_async():
 @pytest.mark.asyncio
 async def test_list_firewall_policies_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5906,7 +6551,7 @@ def test_list_firewall_policies_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_firewall_policies_async_pager():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5958,7 +6603,7 @@ async def test_list_firewall_policies_async_pager():
 @pytest.mark.asyncio
 async def test_list_firewall_policies_async_pages():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6050,27 +6695,6 @@ def test_get_firewall_policy(request_type, transport: str = "grpc"):
     assert response.condition == "condition_value"
 
 
-def test_get_firewall_policy_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_firewall_policy), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_firewall_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.GetFirewallPolicyRequest()
-
-
 def test_get_firewall_policy_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -6141,34 +6765,6 @@ def test_get_firewall_policy_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_firewall_policy_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_firewall_policy), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.FirewallPolicy(
-                name="name_value",
-                description="description_value",
-                path="path_value",
-                condition="condition_value",
-            )
-        )
-        response = await client.get_firewall_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.GetFirewallPolicyRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_firewall_policy_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6176,7 +6772,7 @@ async def test_get_firewall_policy_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6191,22 +6787,23 @@ async def test_get_firewall_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_firewall_policy
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_firewall_policy(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_firewall_policy(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6215,7 +6812,7 @@ async def test_get_firewall_policy_async(
     request_type=recaptchaenterprise.GetFirewallPolicyRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6291,7 +6888,7 @@ def test_get_firewall_policy_field_headers():
 @pytest.mark.asyncio
 async def test_get_firewall_policy_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6365,7 +6962,7 @@ def test_get_firewall_policy_flattened_error():
 @pytest.mark.asyncio
 async def test_get_firewall_policy_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6396,7 +6993,7 @@ async def test_get_firewall_policy_flattened_async():
 @pytest.mark.asyncio
 async def test_get_firewall_policy_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6450,27 +7047,6 @@ def test_update_firewall_policy(request_type, transport: str = "grpc"):
     assert response.description == "description_value"
     assert response.path == "path_value"
     assert response.condition == "condition_value"
-
-
-def test_update_firewall_policy_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_firewall_policy), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_firewall_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.UpdateFirewallPolicyRequest()
 
 
 def test_update_firewall_policy_non_empty_request_with_auto_populated_field():
@@ -6540,34 +7116,6 @@ def test_update_firewall_policy_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_firewall_policy_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_firewall_policy), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.FirewallPolicy(
-                name="name_value",
-                description="description_value",
-                path="path_value",
-                condition="condition_value",
-            )
-        )
-        response = await client.update_firewall_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.UpdateFirewallPolicyRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_firewall_policy_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6575,7 +7123,7 @@ async def test_update_firewall_policy_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6590,22 +7138,23 @@ async def test_update_firewall_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_firewall_policy
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_firewall_policy(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_firewall_policy(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6614,7 +7163,7 @@ async def test_update_firewall_policy_async(
     request_type=recaptchaenterprise.UpdateFirewallPolicyRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6690,7 +7239,7 @@ def test_update_firewall_policy_field_headers():
 @pytest.mark.asyncio
 async def test_update_firewall_policy_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6769,7 +7318,7 @@ def test_update_firewall_policy_flattened_error():
 @pytest.mark.asyncio
 async def test_update_firewall_policy_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6804,7 +7353,7 @@ async def test_update_firewall_policy_flattened_async():
 @pytest.mark.asyncio
 async def test_update_firewall_policy_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6850,27 +7399,6 @@ def test_delete_firewall_policy(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_firewall_policy_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_firewall_policy), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_firewall_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.DeleteFirewallPolicyRequest()
 
 
 def test_delete_firewall_policy_non_empty_request_with_auto_populated_field():
@@ -6944,27 +7472,6 @@ def test_delete_firewall_policy_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_firewall_policy_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_firewall_policy), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_firewall_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.DeleteFirewallPolicyRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_firewall_policy_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6972,7 +7479,7 @@ async def test_delete_firewall_policy_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6987,22 +7494,23 @@ async def test_delete_firewall_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_firewall_policy
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_firewall_policy(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_firewall_policy(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7011,7 +7519,7 @@ async def test_delete_firewall_policy_async(
     request_type=recaptchaenterprise.DeleteFirewallPolicyRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7076,7 +7584,7 @@ def test_delete_firewall_policy_field_headers():
 @pytest.mark.asyncio
 async def test_delete_firewall_policy_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7148,7 +7656,7 @@ def test_delete_firewall_policy_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_firewall_policy_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7177,7 +7685,7 @@ async def test_delete_firewall_policy_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_firewall_policy_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7222,27 +7730,6 @@ def test_reorder_firewall_policies(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, recaptchaenterprise.ReorderFirewallPoliciesResponse)
-
-
-def test_reorder_firewall_policies_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.reorder_firewall_policies), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.reorder_firewall_policies()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.ReorderFirewallPoliciesRequest()
 
 
 def test_reorder_firewall_policies_non_empty_request_with_auto_populated_field():
@@ -7316,29 +7803,6 @@ def test_reorder_firewall_policies_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_reorder_firewall_policies_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.reorder_firewall_policies), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.ReorderFirewallPoliciesResponse()
-        )
-        response = await client.reorder_firewall_policies()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.ReorderFirewallPoliciesRequest()
-
-
-@pytest.mark.asyncio
 async def test_reorder_firewall_policies_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7346,7 +7810,7 @@ async def test_reorder_firewall_policies_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7361,22 +7825,23 @@ async def test_reorder_firewall_policies_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.reorder_firewall_policies
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.reorder_firewall_policies(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.reorder_firewall_policies(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7385,7 +7850,7 @@ async def test_reorder_firewall_policies_async(
     request_type=recaptchaenterprise.ReorderFirewallPoliciesRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7452,7 +7917,7 @@ def test_reorder_firewall_policies_field_headers():
 @pytest.mark.asyncio
 async def test_reorder_firewall_policies_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7531,7 +7996,7 @@ def test_reorder_firewall_policies_flattened_error():
 @pytest.mark.asyncio
 async def test_reorder_firewall_policies_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7566,7 +8031,7 @@ async def test_reorder_firewall_policies_flattened_async():
 @pytest.mark.asyncio
 async def test_reorder_firewall_policies_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7615,27 +8080,6 @@ def test_list_related_account_groups(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListRelatedAccountGroupsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_related_account_groups_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_related_account_groups), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_related_account_groups()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.ListRelatedAccountGroupsRequest()
 
 
 def test_list_related_account_groups_non_empty_request_with_auto_populated_field():
@@ -7711,31 +8155,6 @@ def test_list_related_account_groups_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_related_account_groups_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_related_account_groups), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.ListRelatedAccountGroupsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_related_account_groups()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == recaptchaenterprise.ListRelatedAccountGroupsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_related_account_groups_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7743,7 +8162,7 @@ async def test_list_related_account_groups_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7758,22 +8177,23 @@ async def test_list_related_account_groups_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_related_account_groups
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_related_account_groups(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_related_account_groups(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7782,7 +8202,7 @@ async def test_list_related_account_groups_async(
     request_type=recaptchaenterprise.ListRelatedAccountGroupsRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7852,7 +8272,7 @@ def test_list_related_account_groups_field_headers():
 @pytest.mark.asyncio
 async def test_list_related_account_groups_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7926,7 +8346,7 @@ def test_list_related_account_groups_flattened_error():
 @pytest.mark.asyncio
 async def test_list_related_account_groups_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7957,7 +8377,7 @@ async def test_list_related_account_groups_flattened_async():
 @pytest.mark.asyncio
 async def test_list_related_account_groups_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8075,7 +8495,7 @@ def test_list_related_account_groups_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_related_account_groups_async_pager():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8129,7 +8549,7 @@ async def test_list_related_account_groups_async_pager():
 @pytest.mark.asyncio
 async def test_list_related_account_groups_async_pages():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8217,29 +8637,6 @@ def test_list_related_account_group_memberships(request_type, transport: str = "
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_list_related_account_group_memberships_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_related_account_group_memberships), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_related_account_group_memberships()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert (
-            args[0] == recaptchaenterprise.ListRelatedAccountGroupMembershipsRequest()
-        )
-
-
 def test_list_related_account_group_memberships_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -8313,33 +8710,6 @@ def test_list_related_account_group_memberships_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_related_account_group_memberships_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_related_account_group_memberships), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.ListRelatedAccountGroupMembershipsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_related_account_group_memberships()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert (
-            args[0] == recaptchaenterprise.ListRelatedAccountGroupMembershipsRequest()
-        )
-
-
-@pytest.mark.asyncio
 async def test_list_related_account_group_memberships_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8347,7 +8717,7 @@ async def test_list_related_account_group_memberships_async_use_cached_wrapped_r
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8362,22 +8732,23 @@ async def test_list_related_account_group_memberships_async_use_cached_wrapped_r
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_related_account_group_memberships
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_related_account_group_memberships(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_related_account_group_memberships(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8386,7 +8757,7 @@ async def test_list_related_account_group_memberships_async(
     request_type=recaptchaenterprise.ListRelatedAccountGroupMembershipsRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8458,7 +8829,7 @@ def test_list_related_account_group_memberships_field_headers():
 @pytest.mark.asyncio
 async def test_list_related_account_group_memberships_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8534,7 +8905,7 @@ def test_list_related_account_group_memberships_flattened_error():
 @pytest.mark.asyncio
 async def test_list_related_account_group_memberships_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8567,7 +8938,7 @@ async def test_list_related_account_group_memberships_flattened_async():
 @pytest.mark.asyncio
 async def test_list_related_account_group_memberships_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8686,7 +9057,7 @@ def test_list_related_account_group_memberships_pages(transport_name: str = "grp
 @pytest.mark.asyncio
 async def test_list_related_account_group_memberships_async_pager():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8741,7 +9112,7 @@ async def test_list_related_account_group_memberships_async_pager():
 @pytest.mark.asyncio
 async def test_list_related_account_group_memberships_async_pages():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8831,29 +9202,6 @@ def test_search_related_account_group_memberships(
     assert response.next_page_token == "next_page_token_value"
 
 
-def test_search_related_account_group_memberships_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.search_related_account_group_memberships), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.search_related_account_group_memberships()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert (
-            args[0] == recaptchaenterprise.SearchRelatedAccountGroupMembershipsRequest()
-        )
-
-
 def test_search_related_account_group_memberships_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -8931,33 +9279,6 @@ def test_search_related_account_group_memberships_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_search_related_account_group_memberships_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.search_related_account_group_memberships), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            recaptchaenterprise.SearchRelatedAccountGroupMembershipsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.search_related_account_group_memberships()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert (
-            args[0] == recaptchaenterprise.SearchRelatedAccountGroupMembershipsRequest()
-        )
-
-
-@pytest.mark.asyncio
 async def test_search_related_account_group_memberships_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8965,7 +9286,7 @@ async def test_search_related_account_group_memberships_async_use_cached_wrapped
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = RecaptchaEnterpriseServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8980,22 +9301,23 @@ async def test_search_related_account_group_memberships_async_use_cached_wrapped
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.search_related_account_group_memberships
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.search_related_account_group_memberships(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.search_related_account_group_memberships(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9004,7 +9326,7 @@ async def test_search_related_account_group_memberships_async(
     request_type=recaptchaenterprise.SearchRelatedAccountGroupMembershipsRequest,
 ):
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9076,7 +9398,7 @@ def test_search_related_account_group_memberships_field_headers():
 @pytest.mark.asyncio
 async def test_search_related_account_group_memberships_field_headers_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9157,7 +9479,7 @@ def test_search_related_account_group_memberships_flattened_error():
 @pytest.mark.asyncio
 async def test_search_related_account_group_memberships_flattened_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9194,7 +9516,7 @@ async def test_search_related_account_group_memberships_flattened_async():
 @pytest.mark.asyncio
 async def test_search_related_account_group_memberships_flattened_error_async():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -9314,7 +9636,7 @@ def test_search_related_account_group_memberships_pages(transport_name: str = "g
 @pytest.mark.asyncio
 async def test_search_related_account_group_memberships_async_pager():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9369,7 +9691,7 @@ async def test_search_related_account_group_memberships_async_pager():
 @pytest.mark.asyncio
 async def test_search_related_account_group_memberships_async_pages():
     client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9508,17 +9830,1145 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "transport_name",
-    [
-        "grpc",
-    ],
-)
-def test_transport_kind(transport_name):
-    transport = RecaptchaEnterpriseServiceClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_transport_kind_grpc():
+    transport = RecaptchaEnterpriseServiceClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
     )
-    assert transport.kind == transport_name
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_assessment_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_assessment), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.Assessment()
+        client.create_assessment(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.CreateAssessmentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_annotate_assessment_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.annotate_assessment), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.AnnotateAssessmentResponse()
+        client.annotate_assessment(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.AnnotateAssessmentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_key_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_key), "__call__") as call:
+        call.return_value = recaptchaenterprise.Key()
+        client.create_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.CreateKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_keys_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_keys), "__call__") as call:
+        call.return_value = recaptchaenterprise.ListKeysResponse()
+        client.list_keys(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListKeysRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_retrieve_legacy_secret_key_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.retrieve_legacy_secret_key), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.RetrieveLegacySecretKeyResponse()
+        client.retrieve_legacy_secret_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.RetrieveLegacySecretKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_key_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_key), "__call__") as call:
+        call.return_value = recaptchaenterprise.Key()
+        client.get_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.GetKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_key_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_key), "__call__") as call:
+        call.return_value = recaptchaenterprise.Key()
+        client.update_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.UpdateKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_key_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_key), "__call__") as call:
+        call.return_value = None
+        client.delete_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.DeleteKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_migrate_key_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.migrate_key), "__call__") as call:
+        call.return_value = recaptchaenterprise.Key()
+        client.migrate_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.MigrateKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_add_ip_override_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.add_ip_override), "__call__") as call:
+        call.return_value = recaptchaenterprise.AddIpOverrideResponse()
+        client.add_ip_override(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.AddIpOverrideRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_remove_ip_override_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_ip_override), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.RemoveIpOverrideResponse()
+        client.remove_ip_override(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.RemoveIpOverrideRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_ip_overrides_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.ListIpOverridesResponse()
+        client.list_ip_overrides(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListIpOverridesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_metrics_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_metrics), "__call__") as call:
+        call.return_value = recaptchaenterprise.Metrics()
+        client.get_metrics(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.GetMetricsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_firewall_policy_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_firewall_policy), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.FirewallPolicy()
+        client.create_firewall_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.CreateFirewallPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_firewall_policies_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_firewall_policies), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.ListFirewallPoliciesResponse()
+        client.list_firewall_policies(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListFirewallPoliciesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_firewall_policy_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_firewall_policy), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.FirewallPolicy()
+        client.get_firewall_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.GetFirewallPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_firewall_policy_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_firewall_policy), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.FirewallPolicy()
+        client.update_firewall_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.UpdateFirewallPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_firewall_policy_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_firewall_policy), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_firewall_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.DeleteFirewallPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_reorder_firewall_policies_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.reorder_firewall_policies), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.ReorderFirewallPoliciesResponse()
+        client.reorder_firewall_policies(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ReorderFirewallPoliciesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_related_account_groups_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_related_account_groups), "__call__"
+    ) as call:
+        call.return_value = recaptchaenterprise.ListRelatedAccountGroupsResponse()
+        client.list_related_account_groups(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListRelatedAccountGroupsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_related_account_group_memberships_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_related_account_group_memberships), "__call__"
+    ) as call:
+        call.return_value = (
+            recaptchaenterprise.ListRelatedAccountGroupMembershipsResponse()
+        )
+        client.list_related_account_group_memberships(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListRelatedAccountGroupMembershipsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_search_related_account_group_memberships_empty_call_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.search_related_account_group_memberships), "__call__"
+    ) as call:
+        call.return_value = (
+            recaptchaenterprise.SearchRelatedAccountGroupMembershipsResponse()
+        )
+        client.search_related_account_group_memberships(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.SearchRelatedAccountGroupMembershipsRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = RecaptchaEnterpriseServiceAsyncClient.get_transport_class(
+        "grpc_asyncio"
+    )(credentials=async_anonymous_credentials())
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_assessment_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_assessment), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.Assessment(
+                name="name_value",
+            )
+        )
+        await client.create_assessment(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.CreateAssessmentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_annotate_assessment_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.annotate_assessment), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.AnnotateAssessmentResponse()
+        )
+        await client.annotate_assessment(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.AnnotateAssessmentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_key_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_key), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.Key(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.create_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.CreateKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_keys_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_keys), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.ListKeysResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_keys(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListKeysRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_retrieve_legacy_secret_key_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.retrieve_legacy_secret_key), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.RetrieveLegacySecretKeyResponse(
+                legacy_secret_key="legacy_secret_key_value",
+            )
+        )
+        await client.retrieve_legacy_secret_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.RetrieveLegacySecretKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_key_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_key), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.Key(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.get_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.GetKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_key_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_key), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.Key(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.update_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.UpdateKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_key_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_key), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.DeleteKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_migrate_key_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.migrate_key), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.Key(
+                name="name_value",
+                display_name="display_name_value",
+            )
+        )
+        await client.migrate_key(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.MigrateKeyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_add_ip_override_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.add_ip_override), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.AddIpOverrideResponse()
+        )
+        await client.add_ip_override(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.AddIpOverrideRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_remove_ip_override_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.remove_ip_override), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.RemoveIpOverrideResponse()
+        )
+        await client.remove_ip_override(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.RemoveIpOverrideRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_ip_overrides_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ip_overrides), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.ListIpOverridesResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_ip_overrides(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListIpOverridesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_metrics_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_metrics), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.Metrics(
+                name="name_value",
+            )
+        )
+        await client.get_metrics(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.GetMetricsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_firewall_policy_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_firewall_policy), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.FirewallPolicy(
+                name="name_value",
+                description="description_value",
+                path="path_value",
+                condition="condition_value",
+            )
+        )
+        await client.create_firewall_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.CreateFirewallPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_firewall_policies_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_firewall_policies), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.ListFirewallPoliciesResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_firewall_policies(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListFirewallPoliciesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_firewall_policy_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_firewall_policy), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.FirewallPolicy(
+                name="name_value",
+                description="description_value",
+                path="path_value",
+                condition="condition_value",
+            )
+        )
+        await client.get_firewall_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.GetFirewallPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_firewall_policy_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_firewall_policy), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.FirewallPolicy(
+                name="name_value",
+                description="description_value",
+                path="path_value",
+                condition="condition_value",
+            )
+        )
+        await client.update_firewall_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.UpdateFirewallPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_firewall_policy_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_firewall_policy), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_firewall_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.DeleteFirewallPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_reorder_firewall_policies_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.reorder_firewall_policies), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.ReorderFirewallPoliciesResponse()
+        )
+        await client.reorder_firewall_policies(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ReorderFirewallPoliciesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_related_account_groups_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_related_account_groups), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.ListRelatedAccountGroupsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_related_account_groups(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListRelatedAccountGroupsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_related_account_group_memberships_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_related_account_group_memberships), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.ListRelatedAccountGroupMembershipsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_related_account_group_memberships(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.ListRelatedAccountGroupMembershipsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_search_related_account_group_memberships_empty_call_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.search_related_account_group_memberships), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            recaptchaenterprise.SearchRelatedAccountGroupMembershipsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.search_related_account_group_memberships(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = recaptchaenterprise.SearchRelatedAccountGroupMembershipsRequest()
+
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -9563,6 +11013,9 @@ def test_recaptcha_enterprise_service_base_transport():
         "update_key",
         "delete_key",
         "migrate_key",
+        "add_ip_override",
+        "remove_ip_override",
+        "list_ip_overrides",
         "get_metrics",
         "create_firewall_policy",
         "list_firewall_policies",
@@ -10203,35 +11656,29 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = RecaptchaEnterpriseServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+def test_transport_close_grpc():
+    client = RecaptchaEnterpriseServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
-        async with client:
+        with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = RecaptchaEnterpriseServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = RecaptchaEnterpriseServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        async with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

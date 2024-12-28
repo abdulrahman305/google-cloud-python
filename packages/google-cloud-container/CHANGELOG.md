@@ -4,6 +4,77 @@
 
 [1]: https://pypi.org/project/google-cloud-container/#history
 
+## [2.55.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.54.0...google-cloud-container-v2.55.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [2.54.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.53.0...google-cloud-container-v2.54.0) (2024-11-11)
+
+
+### Features
+
+* add desired_enterprise_config,desired_node_pool_auto_config_linux_node_config to ClusterUpdate. ([4fdf249](https://github.com/googleapis/google-cloud-python/commit/4fdf24960b3966193516d6f16900df1409165376))
+* add desired_tier to EnterpriseConfig. ([4fdf249](https://github.com/googleapis/google-cloud-python/commit/4fdf24960b3966193516d6f16900df1409165376))
+* add DesiredEnterpriseConfig proto message ([4fdf249](https://github.com/googleapis/google-cloud-python/commit/4fdf24960b3966193516d6f16900df1409165376))
+* add LinuxNodeConfig in NodePoolAutoConfig ([4fdf249](https://github.com/googleapis/google-cloud-python/commit/4fdf24960b3966193516d6f16900df1409165376))
+* add LocalSsdEncryptionMode in NodeConfig ([4fdf249](https://github.com/googleapis/google-cloud-python/commit/4fdf24960b3966193516d6f16900df1409165376))
+* add UpgradeInfoEvent proto message ([4fdf249](https://github.com/googleapis/google-cloud-python/commit/4fdf24960b3966193516d6f16900df1409165376))
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+
+### Documentation
+
+* Minor documentation updates ([4fdf249](https://github.com/googleapis/google-cloud-python/commit/4fdf24960b3966193516d6f16900df1409165376))
+
+## [2.53.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.52.0...google-cloud-container-v2.53.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
+## [2.52.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.51.0...google-cloud-container-v2.52.0) (2024-10-10)
+
+
+### Features
+
+* Add an effective_cgroup_mode field in node config ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* add API to enable/disable secret manager csi component on GKE clusters ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* Add CompliancePosture field for configuration of GKE Compliance Posture product ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* Add CompliancePosture field for configuration of GKE Compliance Posture product ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* Add ControlPlaneEndpointsConfig message to consolidate control plane isolation options ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* Add DNSEndpointConfig for new DNS-based control plane access ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* Add KCP_SSHD and KCP_CONNECTION to the supported values for the --logging flag for the create and update cluster commands ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* Add RBACBindingConfig to API ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* add storage pools field to NodePool API ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* Added support for Parallelstore CSI Driver ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+* Surface upgrade_target_version in GetServerConfig for all supported release channels ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+
+
+### Documentation
+
+* Minor documentation updates ([da74af6](https://github.com/googleapis/google-cloud-python/commit/da74af6f7f60cdeb9a09b54371a8608170ed8c0f))
+
+## [2.51.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.50.0...google-cloud-container-v2.51.0) (2024-09-03)
+
+
+### Features
+
+* add `EXTENDED` enum value for `ReleaseChannel.Channel` ([ea71725](https://github.com/googleapis/google-cloud-python/commit/ea71725d3fe3bde0afd775d20127bed958e8eb8e))
+* add ReleaseChannel EXTENDED value ([ea71725](https://github.com/googleapis/google-cloud-python/commit/ea71725d3fe3bde0afd775d20127bed958e8eb8e))
+
 ## [2.50.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.49.0...google-cloud-container-v2.50.0) (2024-07-30)
 
 

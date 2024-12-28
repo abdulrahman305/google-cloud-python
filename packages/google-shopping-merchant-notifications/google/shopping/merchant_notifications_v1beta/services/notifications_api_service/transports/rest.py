@@ -13,40 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.shopping.merchant_notifications_v1beta.types import notificationsapi
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseNotificationsApiServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.protobuf import empty_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.shopping.merchant_notifications_v1beta.types import notificationsapi
-
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import NotificationsApiServiceTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -110,10 +114,10 @@ class NotificationsApiServiceRestInterceptor:
     def pre_create_notification_subscription(
         self,
         request: notificationsapi.CreateNotificationSubscriptionRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         notificationsapi.CreateNotificationSubscriptionRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for create_notification_subscription
 
@@ -136,10 +140,10 @@ class NotificationsApiServiceRestInterceptor:
     def pre_delete_notification_subscription(
         self,
         request: notificationsapi.DeleteNotificationSubscriptionRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         notificationsapi.DeleteNotificationSubscriptionRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for delete_notification_subscription
 
@@ -151,9 +155,10 @@ class NotificationsApiServiceRestInterceptor:
     def pre_get_notification_subscription(
         self,
         request: notificationsapi.GetNotificationSubscriptionRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        notificationsapi.GetNotificationSubscriptionRequest, Sequence[Tuple[str, str]]
+        notificationsapi.GetNotificationSubscriptionRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for get_notification_subscription
 
@@ -176,9 +181,10 @@ class NotificationsApiServiceRestInterceptor:
     def pre_list_notification_subscriptions(
         self,
         request: notificationsapi.ListNotificationSubscriptionsRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        notificationsapi.ListNotificationSubscriptionsRequest, Sequence[Tuple[str, str]]
+        notificationsapi.ListNotificationSubscriptionsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for list_notification_subscriptions
 
@@ -201,10 +207,10 @@ class NotificationsApiServiceRestInterceptor:
     def pre_update_notification_subscription(
         self,
         request: notificationsapi.UpdateNotificationSubscriptionRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
         notificationsapi.UpdateNotificationSubscriptionRequest,
-        Sequence[Tuple[str, str]],
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for update_notification_subscription
 
@@ -232,8 +238,8 @@ class NotificationsApiServiceRestStub:
     _interceptor: NotificationsApiServiceRestInterceptor
 
 
-class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
-    """REST backend transport for NotificationsApiService.
+class NotificationsApiServiceRestTransport(_BaseNotificationsApiServiceRestTransport):
+    """REST backend synchronous transport for NotificationsApiService.
 
     Service to manage notification subscriptions for merchants
 
@@ -242,7 +248,6 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -296,21 +301,12 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -321,19 +317,37 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
         self._interceptor = interceptor or NotificationsApiServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _CreateNotificationSubscription(NotificationsApiServiceRestStub):
+    class _CreateNotificationSubscription(
+        _BaseNotificationsApiServiceRestTransport._BaseCreateNotificationSubscription,
+        NotificationsApiServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateNotificationSubscription")
+            return hash(
+                "NotificationsApiServiceRestTransport.CreateNotificationSubscription"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -341,7 +355,7 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> notificationsapi.NotificationSubscription:
             r"""Call the create notification
             subscription method over HTTP.
@@ -353,8 +367,10 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.notificationsapi.NotificationSubscription:
@@ -364,49 +380,62 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/notifications/v1beta/{parent=accounts/*}/notificationsubscriptions",
-                    "body": "notification_subscription",
-                },
-            ]
+            http_options = (
+                _BaseNotificationsApiServiceRestTransport._BaseCreateNotificationSubscription._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_notification_subscription(
                 request, metadata
             )
-            pb_request = notificationsapi.CreateNotificationSubscriptionRequest.pb(
-                request
+            transcoded_request = _BaseNotificationsApiServiceRestTransport._BaseCreateNotificationSubscription._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseNotificationsApiServiceRestTransport._BaseCreateNotificationSubscription._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseNotificationsApiServiceRestTransport._BaseCreateNotificationSubscription._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.notifications_v1beta.NotificationsApiServiceClient.CreateNotificationSubscription",
+                    extra={
+                        "serviceName": "google.shopping.merchant.notifications.v1beta.NotificationsApiService",
+                        "rpcName": "CreateNotificationSubscription",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = NotificationsApiServiceRestTransport._CreateNotificationSubscription._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -419,22 +448,63 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             pb_resp = notificationsapi.NotificationSubscription.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_notification_subscription(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        notificationsapi.NotificationSubscription.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.merchant.notifications_v1beta.NotificationsApiServiceClient.create_notification_subscription",
+                    extra={
+                        "serviceName": "google.shopping.merchant.notifications.v1beta.NotificationsApiService",
+                        "rpcName": "CreateNotificationSubscription",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _DeleteNotificationSubscription(NotificationsApiServiceRestStub):
+    class _DeleteNotificationSubscription(
+        _BaseNotificationsApiServiceRestTransport._BaseDeleteNotificationSubscription,
+        NotificationsApiServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("DeleteNotificationSubscription")
+            return hash(
+                "NotificationsApiServiceRestTransport.DeleteNotificationSubscription"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -442,7 +512,7 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete notification
             subscription method over HTTP.
@@ -454,46 +524,63 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/notifications/v1beta/{name=accounts/*/notificationsubscriptions/*}",
-                },
-            ]
+            http_options = (
+                _BaseNotificationsApiServiceRestTransport._BaseDeleteNotificationSubscription._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_notification_subscription(
                 request, metadata
             )
-            pb_request = notificationsapi.DeleteNotificationSubscriptionRequest.pb(
-                request
+            transcoded_request = _BaseNotificationsApiServiceRestTransport._BaseDeleteNotificationSubscription._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseNotificationsApiServiceRestTransport._BaseDeleteNotificationSubscription._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.notifications_v1beta.NotificationsApiServiceClient.DeleteNotificationSubscription",
+                    extra={
+                        "serviceName": "google.shopping.merchant.notifications.v1beta.NotificationsApiService",
+                        "rpcName": "DeleteNotificationSubscription",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = NotificationsApiServiceRestTransport._DeleteNotificationSubscription._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -501,19 +588,36 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _GetNotificationSubscription(NotificationsApiServiceRestStub):
+    class _GetNotificationSubscription(
+        _BaseNotificationsApiServiceRestTransport._BaseGetNotificationSubscription,
+        NotificationsApiServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetNotificationSubscription")
+            return hash(
+                "NotificationsApiServiceRestTransport.GetNotificationSubscription"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -521,7 +625,7 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> notificationsapi.NotificationSubscription:
             r"""Call the get notification
             subscription method over HTTP.
@@ -533,8 +637,10 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.notificationsapi.NotificationSubscription:
@@ -544,40 +650,57 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/notifications/v1beta/{name=accounts/*/notificationsubscriptions/*}",
-                },
-            ]
+            http_options = (
+                _BaseNotificationsApiServiceRestTransport._BaseGetNotificationSubscription._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_notification_subscription(
                 request, metadata
             )
-            pb_request = notificationsapi.GetNotificationSubscriptionRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseNotificationsApiServiceRestTransport._BaseGetNotificationSubscription._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseNotificationsApiServiceRestTransport._BaseGetNotificationSubscription._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.notifications_v1beta.NotificationsApiServiceClient.GetNotificationSubscription",
+                    extra={
+                        "serviceName": "google.shopping.merchant.notifications.v1beta.NotificationsApiService",
+                        "rpcName": "GetNotificationSubscription",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = NotificationsApiServiceRestTransport._GetNotificationSubscription._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -590,22 +713,63 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             pb_resp = notificationsapi.NotificationSubscription.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_notification_subscription(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        notificationsapi.NotificationSubscription.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.merchant.notifications_v1beta.NotificationsApiServiceClient.get_notification_subscription",
+                    extra={
+                        "serviceName": "google.shopping.merchant.notifications.v1beta.NotificationsApiService",
+                        "rpcName": "GetNotificationSubscription",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListNotificationSubscriptions(NotificationsApiServiceRestStub):
+    class _ListNotificationSubscriptions(
+        _BaseNotificationsApiServiceRestTransport._BaseListNotificationSubscriptions,
+        NotificationsApiServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("ListNotificationSubscriptions")
+            return hash(
+                "NotificationsApiServiceRestTransport.ListNotificationSubscriptions"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -613,7 +777,7 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> notificationsapi.ListNotificationSubscriptionsResponse:
             r"""Call the list notification
             subscriptions method over HTTP.
@@ -625,8 +789,10 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.notificationsapi.ListNotificationSubscriptionsResponse:
@@ -635,42 +801,57 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/notifications/v1beta/{parent=accounts/*}/notificationsubscriptions",
-                },
-            ]
+            http_options = (
+                _BaseNotificationsApiServiceRestTransport._BaseListNotificationSubscriptions._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_list_notification_subscriptions(
                 request, metadata
             )
-            pb_request = notificationsapi.ListNotificationSubscriptionsRequest.pb(
-                request
+            transcoded_request = _BaseNotificationsApiServiceRestTransport._BaseListNotificationSubscriptions._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseNotificationsApiServiceRestTransport._BaseListNotificationSubscriptions._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.notifications_v1beta.NotificationsApiServiceClient.ListNotificationSubscriptions",
+                    extra={
+                        "serviceName": "google.shopping.merchant.notifications.v1beta.NotificationsApiService",
+                        "rpcName": "ListNotificationSubscriptions",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = NotificationsApiServiceRestTransport._ListNotificationSubscriptions._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -683,22 +864,66 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             pb_resp = notificationsapi.ListNotificationSubscriptionsResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_notification_subscriptions(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        notificationsapi.ListNotificationSubscriptionsResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.merchant.notifications_v1beta.NotificationsApiServiceClient.list_notification_subscriptions",
+                    extra={
+                        "serviceName": "google.shopping.merchant.notifications.v1beta.NotificationsApiService",
+                        "rpcName": "ListNotificationSubscriptions",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateNotificationSubscription(NotificationsApiServiceRestStub):
+    class _UpdateNotificationSubscription(
+        _BaseNotificationsApiServiceRestTransport._BaseUpdateNotificationSubscription,
+        NotificationsApiServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("UpdateNotificationSubscription")
+            return hash(
+                "NotificationsApiServiceRestTransport.UpdateNotificationSubscription"
+            )
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -706,7 +931,7 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> notificationsapi.NotificationSubscription:
             r"""Call the update notification
             subscription method over HTTP.
@@ -718,8 +943,10 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
                     retry (google.api_core.retry.Retry): Designation of what errors, if any,
                         should be retried.
                     timeout (float): The timeout for this request.
-                    metadata (Sequence[Tuple[str, str]]): Strings which should be
-                        sent along with the request as metadata.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
 
                 Returns:
                     ~.notificationsapi.NotificationSubscription:
@@ -729,49 +956,62 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/notifications/v1beta/{notification_subscription.name=accounts/*/notificationsubscriptions/*}",
-                    "body": "notification_subscription",
-                },
-            ]
+            http_options = (
+                _BaseNotificationsApiServiceRestTransport._BaseUpdateNotificationSubscription._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_update_notification_subscription(
                 request, metadata
             )
-            pb_request = notificationsapi.UpdateNotificationSubscriptionRequest.pb(
-                request
+            transcoded_request = _BaseNotificationsApiServiceRestTransport._BaseUpdateNotificationSubscription._get_transcoded_request(
+                http_options, request
             )
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            body = _BaseNotificationsApiServiceRestTransport._BaseUpdateNotificationSubscription._get_request_body_json(
+                transcoded_request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseNotificationsApiServiceRestTransport._BaseUpdateNotificationSubscription._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.notifications_v1beta.NotificationsApiServiceClient.UpdateNotificationSubscription",
+                    extra={
+                        "serviceName": "google.shopping.merchant.notifications.v1beta.NotificationsApiService",
+                        "rpcName": "UpdateNotificationSubscription",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = NotificationsApiServiceRestTransport._UpdateNotificationSubscription._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -784,7 +1024,31 @@ class NotificationsApiServiceRestTransport(NotificationsApiServiceTransport):
             pb_resp = notificationsapi.NotificationSubscription.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_notification_subscription(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        notificationsapi.NotificationSubscription.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.merchant.notifications_v1beta.NotificationsApiServiceClient.update_notification_subscription",
+                    extra={
+                        "serviceName": "google.shopping.merchant.notifications.v1beta.NotificationsApiService",
+                        "rpcName": "UpdateNotificationSubscription",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property

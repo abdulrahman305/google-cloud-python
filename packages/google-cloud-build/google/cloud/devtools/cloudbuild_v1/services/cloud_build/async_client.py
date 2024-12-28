@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -57,6 +57,15 @@ from .client import CloudBuildClient
 from .transports.base import DEFAULT_CLIENT_INFO, CloudBuildTransport
 from .transports.grpc_asyncio import CloudBuildGrpcAsyncIOTransport
 
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
 
 class CloudBuildAsyncClient:
     """Creates and manages builds on Google Cloud Platform.
@@ -92,6 +101,10 @@ class CloudBuildAsyncClient:
     )
     network_path = staticmethod(CloudBuildClient.network_path)
     parse_network_path = staticmethod(CloudBuildClient.parse_network_path)
+    network_attachment_path = staticmethod(CloudBuildClient.network_attachment_path)
+    parse_network_attachment_path = staticmethod(
+        CloudBuildClient.parse_network_attachment_path
+    )
     repository_path = staticmethod(CloudBuildClient.repository_path)
     parse_repository_path = staticmethod(CloudBuildClient.parse_repository_path)
     secret_version_path = staticmethod(CloudBuildClient.secret_version_path)
@@ -222,9 +235,7 @@ class CloudBuildAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(CloudBuildClient).get_transport_class, type(CloudBuildClient)
-    )
+    get_transport_class = CloudBuildClient.get_transport_class
 
     def __init__(
         self,
@@ -292,6 +303,28 @@ class CloudBuildAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.devtools.cloudbuild_v1.CloudBuildAsyncClient`.",
+                extra={
+                    "serviceName": "google.devtools.cloudbuild.v1.CloudBuild",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.devtools.cloudbuild.v1.CloudBuild",
+                    "credentialsType": None,
+                },
+            )
+
     async def create_build(
         self,
         request: Optional[Union[cloudbuild.CreateBuildRequest, dict]] = None,
@@ -300,7 +333,7 @@ class CloudBuildAsyncClient:
         build: Optional[cloudbuild.Build] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Starts a build with the specified configuration.
 
@@ -354,8 +387,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -417,13 +452,19 @@ class CloudBuildAsyncClient:
             self._client._transport.create_build
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (("project_id", request.project_id),)
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)$"
         )
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -455,7 +496,7 @@ class CloudBuildAsyncClient:
         id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> cloudbuild.Build:
         r"""Returns information about a previously requested build.
 
@@ -506,8 +547,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.types.Build:
@@ -565,16 +608,19 @@ class CloudBuildAsyncClient:
             self._client._transport.get_build
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (
-                    ("project_id", request.project_id),
-                    ("id", request.id),
-                )
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/builds/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -598,7 +644,7 @@ class CloudBuildAsyncClient:
         filter: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListBuildsAsyncPager:
         r"""Lists previously requested builds.
 
@@ -650,8 +696,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.services.cloud_build.pagers.ListBuildsAsyncPager:
@@ -690,13 +738,19 @@ class CloudBuildAsyncClient:
             self._client._transport.list_builds
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (("project_id", request.project_id),)
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)$"
         )
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -731,7 +785,7 @@ class CloudBuildAsyncClient:
         id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> cloudbuild.Build:
         r"""Cancels a build in progress.
 
@@ -778,8 +832,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.types.Build:
@@ -837,16 +893,19 @@ class CloudBuildAsyncClient:
             self._client._transport.cancel_build
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (
-                    ("project_id", request.project_id),
-                    ("id", request.id),
-                )
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/builds/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -870,7 +929,7 @@ class CloudBuildAsyncClient:
         id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Creates a new build based on the specified build.
 
@@ -952,8 +1011,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -1015,16 +1076,19 @@ class CloudBuildAsyncClient:
             self._client._transport.retry_build
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (
-                    ("project_id", request.project_id),
-                    ("id", request.id),
-                )
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/builds/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1056,7 +1120,7 @@ class CloudBuildAsyncClient:
         approval_result: Optional[cloudbuild.ApprovalResult] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Approves or rejects a pending build.
 
@@ -1114,8 +1178,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -1177,11 +1243,19 @@ class CloudBuildAsyncClient:
             self._client._transport.approve_build
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/builds/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1213,7 +1287,7 @@ class CloudBuildAsyncClient:
         trigger: Optional[cloudbuild.BuildTrigger] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> cloudbuild.BuildTrigger:
         r"""Creates a new ``BuildTrigger``.
 
@@ -1267,8 +1341,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.types.BuildTrigger:
@@ -1305,13 +1381,19 @@ class CloudBuildAsyncClient:
             self._client._transport.create_build_trigger
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (("project_id", request.project_id),)
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)$"
         )
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1335,7 +1417,7 @@ class CloudBuildAsyncClient:
         trigger_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> cloudbuild.BuildTrigger:
         r"""Returns information about a ``BuildTrigger``.
 
@@ -1388,8 +1470,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.types.BuildTrigger:
@@ -1426,16 +1510,19 @@ class CloudBuildAsyncClient:
             self._client._transport.get_build_trigger
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (
-                    ("project_id", request.project_id),
-                    ("trigger_id", request.trigger_id),
-                )
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/triggers/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1458,7 +1545,7 @@ class CloudBuildAsyncClient:
         project_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListBuildTriggersAsyncPager:
         r"""Lists existing ``BuildTrigger``\ s.
 
@@ -1504,8 +1591,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.services.cloud_build.pagers.ListBuildTriggersAsyncPager:
@@ -1541,13 +1630,19 @@ class CloudBuildAsyncClient:
             self._client._transport.list_build_triggers
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (("project_id", request.project_id),)
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)$"
         )
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1582,7 +1677,7 @@ class CloudBuildAsyncClient:
         trigger_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Deletes a ``BuildTrigger`` by its project ID and trigger ID.
 
@@ -1630,8 +1725,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
@@ -1661,16 +1758,19 @@ class CloudBuildAsyncClient:
             self._client._transport.delete_build_trigger
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (
-                    ("project_id", request.project_id),
-                    ("trigger_id", request.trigger_id),
-                )
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/triggers/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1692,7 +1792,7 @@ class CloudBuildAsyncClient:
         trigger: Optional[cloudbuild.BuildTrigger] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> cloudbuild.BuildTrigger:
         r"""Updates a ``BuildTrigger`` by its project ID and trigger ID.
 
@@ -1752,8 +1852,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.types.BuildTrigger:
@@ -1792,16 +1894,19 @@ class CloudBuildAsyncClient:
             self._client._transport.update_build_trigger
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (
-                    ("project_id", request.project_id),
-                    ("trigger_id", request.trigger_id),
-                )
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/triggers/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.trigger.resource_name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1826,7 +1931,7 @@ class CloudBuildAsyncClient:
         source: Optional[cloudbuild.RepoSource] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Runs a ``BuildTrigger`` at a particular source revision.
 
@@ -1892,8 +1997,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -1957,16 +2064,19 @@ class CloudBuildAsyncClient:
             self._client._transport.run_build_trigger
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (
-                    ("project_id", request.project_id),
-                    ("trigger_id", request.trigger_id),
-                )
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/triggers/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -1996,7 +2106,7 @@ class CloudBuildAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> cloudbuild.ReceiveTriggerWebhookResponse:
         r"""ReceiveTriggerWebhook [Experimental] is called when the API
         receives a webhook request targeted at a specific trigger.
@@ -2034,8 +2144,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.types.ReceiveTriggerWebhookResponse:
@@ -2089,7 +2201,7 @@ class CloudBuildAsyncClient:
         worker_pool_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Creates a ``WorkerPool``.
 
@@ -2154,8 +2266,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -2210,11 +2324,19 @@ class CloudBuildAsyncClient:
             self._client._transport.create_worker_pool
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)$"
         )
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -2245,7 +2367,7 @@ class CloudBuildAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> cloudbuild.WorkerPool:
         r"""Returns details of a ``WorkerPool``.
 
@@ -2289,8 +2411,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.types.WorkerPool:
@@ -2337,11 +2461,19 @@ class CloudBuildAsyncClient:
             self._client._transport.get_worker_pool
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/workerPools/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -2364,7 +2496,7 @@ class CloudBuildAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Deletes a ``WorkerPool``.
 
@@ -2412,8 +2544,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -2457,11 +2591,19 @@ class CloudBuildAsyncClient:
             self._client._transport.delete_worker_pool
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/workerPools/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -2493,7 +2635,7 @@ class CloudBuildAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Updates a ``WorkerPool``.
 
@@ -2549,8 +2691,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -2603,13 +2747,19 @@ class CloudBuildAsyncClient:
             self._client._transport.update_worker_pool
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata(
-                (("worker_pool.name", request.worker_pool.name),)
-            ),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)/workerPools/[^/]+$"
         )
+        regex_match = routing_param_regex.match(request.worker_pool.name)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -2640,7 +2790,7 @@ class CloudBuildAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListWorkerPoolsAsyncPager:
         r"""Lists ``WorkerPool``\ s.
 
@@ -2685,8 +2835,10 @@ class CloudBuildAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.devtools.cloudbuild_v1.services.cloud_build.pagers.ListWorkerPoolsAsyncPager:
@@ -2722,11 +2874,19 @@ class CloudBuildAsyncClient:
             self._client._transport.list_worker_pools
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        header_params = {}
+
+        routing_param_regex = re.compile(
+            "^projects/[^/]+/locations/(?P<location>[^/]+)$"
         )
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("location"):
+            header_params["location"] = regex_match.group("location")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()

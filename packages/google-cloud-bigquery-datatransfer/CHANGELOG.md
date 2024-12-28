@@ -4,6 +4,53 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery-datatransfer/#history
 
+## [3.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.17.1...google-cloud-bigquery-datatransfer-v3.18.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+## [3.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.17.0...google-cloud-bigquery-datatransfer-v3.17.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([4ed4108](https://github.com/googleapis/google-cloud-python/commit/4ed41088ab3cbadfe4de7fa170f172666015ed24))
+
+## [3.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.16.0...google-cloud-bigquery-datatransfer-v3.17.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13200](https://github.com/googleapis/google-cloud-python/issues/13200)) ([19dc048](https://github.com/googleapis/google-cloud-python/commit/19dc0485852406b90743297bcf257020e6012593))
+
+## [3.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.15.7...google-cloud-bigquery-datatransfer-v3.16.0) (2024-10-08)
+
+
+### Features
+
+* Add scheduleOptionsV2 and Error fields for TransferConfig ([052585c](https://github.com/googleapis/google-cloud-python/commit/052585c63dfa172b7f88fdb5882eda446fc47bfe))
+
+## [3.15.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.15.6...google-cloud-bigquery-datatransfer-v3.15.7) (2024-09-04)
+
+
+### Documentation
+
+* [google-cloud-bigquery-datatransfer] add a note to the CreateTransferConfigRequest and UpdateTransferConfigRequest to disable restricting service account usage ([#13051](https://github.com/googleapis/google-cloud-python/issues/13051)) ([4136c10](https://github.com/googleapis/google-cloud-python/commit/4136c10fabc1df012b028a5d407aaec326e448b6))
+
+## [3.15.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.15.5...google-cloud-bigquery-datatransfer-v3.15.6) (2024-08-20)
+
+
+### Documentation
+
+* [google-cloud-bigquery-datatransfer] deprecate `authorization_code` ([#13021](https://github.com/googleapis/google-cloud-python/issues/13021)) ([78bd284](https://github.com/googleapis/google-cloud-python/commit/78bd284bbaa89ef26ce60c20beb6445212c8b27b))
+
 ## [3.15.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.15.4...google-cloud-bigquery-datatransfer-v3.15.5) (2024-07-30)
 
 

@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -54,6 +54,15 @@ from google.cloud.recaptchaenterprise_v1.types import recaptchaenterprise
 from .client import RecaptchaEnterpriseServiceClient
 from .transports.base import DEFAULT_CLIENT_INFO, RecaptchaEnterpriseServiceTransport
 from .transports.grpc_asyncio import RecaptchaEnterpriseServiceGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class RecaptchaEnterpriseServiceAsyncClient:
@@ -226,10 +235,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(RecaptchaEnterpriseServiceClient).get_transport_class,
-        type(RecaptchaEnterpriseServiceClient),
-    )
+    get_transport_class = RecaptchaEnterpriseServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -301,6 +307,28 @@ class RecaptchaEnterpriseServiceAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.cloud.recaptchaenterprise_v1.RecaptchaEnterpriseServiceAsyncClient`.",
+                extra={
+                    "serviceName": "google.cloud.recaptchaenterprise.v1.RecaptchaEnterpriseService",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.cloud.recaptchaenterprise.v1.RecaptchaEnterpriseService",
+                    "credentialsType": None,
+                },
+            )
+
     async def create_assessment(
         self,
         request: Optional[
@@ -311,7 +339,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         assessment: Optional[recaptchaenterprise.Assessment] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.Assessment:
         r"""Creates an Assessment of the likelihood an event is
         legitimate.
@@ -348,7 +376,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
                 message.
             parent (:class:`str`):
                 Required. The name of the project in which the
-                assessment will be created, in the format
+                assessment is created, in the format
                 ``projects/{project}``.
 
                 This corresponds to the ``parent`` field
@@ -362,8 +390,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.Assessment:
@@ -431,7 +461,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.AnnotateAssessmentResponse:
         r"""Annotates a previously created Assessment to provide
         additional information on whether the event turned out
@@ -475,7 +505,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             annotation (:class:`google.cloud.recaptchaenterprise_v1.types.AnnotateAssessmentRequest.Annotation`):
-                Optional. The annotation that will be
+                Optional. The annotation that is
                 assigned to the Event. This field can be
                 left empty to provide reasons that apply
                 to an event without concluding whether
@@ -487,8 +517,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.AnnotateAssessmentResponse:
@@ -552,7 +584,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         key: Optional[recaptchaenterprise.Key] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.Key:
         r"""Creates a new reCAPTCHA Enterprise key.
 
@@ -591,8 +623,8 @@ class RecaptchaEnterpriseServiceAsyncClient:
             request (Optional[Union[google.cloud.recaptchaenterprise_v1.types.CreateKeyRequest, dict]]):
                 The request object. The create key request message.
             parent (:class:`str`):
-                Required. The name of the project in which the key will
-                be created, in the format ``projects/{project}``.
+                Required. The name of the project in which the key is
+                created, in the format ``projects/{project}``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -607,8 +639,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.Key:
@@ -672,7 +706,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListKeysAsyncPager:
         r"""Returns the list of all keys that belong to a
         project.
@@ -709,8 +743,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
                 The request object. The list keys request message.
             parent (:class:`str`):
                 Required. The name of the project that contains the keys
-                that will be listed, in the format
-                ``projects/{project}``.
+                that is listed, in the format ``projects/{project}``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -718,8 +751,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.services.recaptcha_enterprise_service.pagers.ListKeysAsyncPager:
@@ -796,7 +831,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         key: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.RetrieveLegacySecretKeyResponse:
         r"""Returns the secret key related to the specified
         public key. You must use the legacy secret key only in a
@@ -843,8 +878,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.RetrieveLegacySecretKeyResponse:
@@ -906,7 +943,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.Key:
         r"""Returns the specified key.
 
@@ -949,8 +986,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.Key:
@@ -1011,7 +1050,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.Key:
         r"""Updates the specified key.
 
@@ -1056,7 +1095,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
             update_mask (:class:`google.protobuf.field_mask_pb2.FieldMask`):
                 Optional. The mask to control which
                 fields of the key get updated. If the
-                mask is not present, all fields will be
+                mask is not present, all fields are
                 updated.
 
                 This corresponds to the ``update_mask`` field
@@ -1065,8 +1104,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.Key:
@@ -1130,7 +1171,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Deletes the specified key.
 
@@ -1170,8 +1211,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
@@ -1222,7 +1265,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.Key:
         r"""Migrates an existing key from reCAPTCHA to reCAPTCHA
         Enterprise. Once a key is migrated, it can be used from
@@ -1264,8 +1307,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.Key:
@@ -1306,6 +1351,385 @@ class RecaptchaEnterpriseServiceAsyncClient:
         # Done; return the response.
         return response
 
+    async def add_ip_override(
+        self,
+        request: Optional[Union[recaptchaenterprise.AddIpOverrideRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        ip_override_data: Optional[recaptchaenterprise.IpOverrideData] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> recaptchaenterprise.AddIpOverrideResponse:
+        r"""Adds an IP override to a key. The following restrictions hold:
+
+        -  The maximum number of IP overrides per key is 100.
+        -  For any conflict (such as IP already exists or IP part of an
+           existing IP range), an error is returned.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import recaptchaenterprise_v1
+
+            async def sample_add_ip_override():
+                # Create a client
+                client = recaptchaenterprise_v1.RecaptchaEnterpriseServiceAsyncClient()
+
+                # Initialize request argument(s)
+                ip_override_data = recaptchaenterprise_v1.IpOverrideData()
+                ip_override_data.ip = "ip_value"
+                ip_override_data.override_type = "ALLOW"
+
+                request = recaptchaenterprise_v1.AddIpOverrideRequest(
+                    name="name_value",
+                    ip_override_data=ip_override_data,
+                )
+
+                # Make the request
+                response = await client.add_ip_override(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.recaptchaenterprise_v1.types.AddIpOverrideRequest, dict]]):
+                The request object. The AddIpOverride request message.
+            name (:class:`str`):
+                Required. The name of the key to which the IP override
+                is added, in the format
+                ``projects/{project}/keys/{key}``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            ip_override_data (:class:`google.cloud.recaptchaenterprise_v1.types.IpOverrideData`):
+                Required. IP override added to the
+                key.
+
+                This corresponds to the ``ip_override_data`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.recaptchaenterprise_v1.types.AddIpOverrideResponse:
+                Response for AddIpOverride.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name, ip_override_data])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, recaptchaenterprise.AddIpOverrideRequest):
+            request = recaptchaenterprise.AddIpOverrideRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if name is not None:
+            request.name = name
+        if ip_override_data is not None:
+            request.ip_override_data = ip_override_data
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.add_ip_override
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def remove_ip_override(
+        self,
+        request: Optional[
+            Union[recaptchaenterprise.RemoveIpOverrideRequest, dict]
+        ] = None,
+        *,
+        name: Optional[str] = None,
+        ip_override_data: Optional[recaptchaenterprise.IpOverrideData] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> recaptchaenterprise.RemoveIpOverrideResponse:
+        r"""Removes an IP override from a key. The following restrictions
+        hold:
+
+        -  If the IP isn't found in an existing IP override, a
+           ``NOT_FOUND`` error is returned.
+        -  If the IP is found in an existing IP override, but the
+           override type does not match, a ``NOT_FOUND`` error is
+           returned.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import recaptchaenterprise_v1
+
+            async def sample_remove_ip_override():
+                # Create a client
+                client = recaptchaenterprise_v1.RecaptchaEnterpriseServiceAsyncClient()
+
+                # Initialize request argument(s)
+                ip_override_data = recaptchaenterprise_v1.IpOverrideData()
+                ip_override_data.ip = "ip_value"
+                ip_override_data.override_type = "ALLOW"
+
+                request = recaptchaenterprise_v1.RemoveIpOverrideRequest(
+                    name="name_value",
+                    ip_override_data=ip_override_data,
+                )
+
+                # Make the request
+                response = await client.remove_ip_override(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.recaptchaenterprise_v1.types.RemoveIpOverrideRequest, dict]]):
+                The request object. The RemoveIpOverride request message.
+            name (:class:`str`):
+                Required. The name of the key from which the IP override
+                is removed, in the format
+                ``projects/{project}/keys/{key}``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            ip_override_data (:class:`google.cloud.recaptchaenterprise_v1.types.IpOverrideData`):
+                Required. IP override to be removed
+                from the key.
+
+                This corresponds to the ``ip_override_data`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.recaptchaenterprise_v1.types.RemoveIpOverrideResponse:
+                Response for RemoveIpOverride.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name, ip_override_data])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, recaptchaenterprise.RemoveIpOverrideRequest):
+            request = recaptchaenterprise.RemoveIpOverrideRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if name is not None:
+            request.name = name
+        if ip_override_data is not None:
+            request.ip_override_data = ip_override_data
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.remove_ip_override
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def list_ip_overrides(
+        self,
+        request: Optional[
+            Union[recaptchaenterprise.ListIpOverridesRequest, dict]
+        ] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListIpOverridesAsyncPager:
+        r"""Lists all IP overrides for a key.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import recaptchaenterprise_v1
+
+            async def sample_list_ip_overrides():
+                # Create a client
+                client = recaptchaenterprise_v1.RecaptchaEnterpriseServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = recaptchaenterprise_v1.ListIpOverridesRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_ip_overrides(request=request)
+
+                # Handle the response
+                async for response in page_result:
+                    print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.recaptchaenterprise_v1.types.ListIpOverridesRequest, dict]]):
+                The request object. The ListIpOverrides request message.
+            parent (:class:`str`):
+                Required. The parent key for which the IP overrides are
+                listed, in the format ``projects/{project}/keys/{key}``.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.recaptchaenterprise_v1.services.recaptcha_enterprise_service.pagers.ListIpOverridesAsyncPager:
+                Response for ListIpOverrides.
+
+                Iterating over this object will yield
+                results and resolve additional pages
+                automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, recaptchaenterprise.ListIpOverridesRequest):
+            request = recaptchaenterprise.ListIpOverridesRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if parent is not None:
+            request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.list_ip_overrides
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__aiter__` convenience method.
+        response = pagers.ListIpOverridesAsyncPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
     async def get_metrics(
         self,
         request: Optional[Union[recaptchaenterprise.GetMetricsRequest, dict]] = None,
@@ -1313,7 +1737,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.Metrics:
         r"""Get some aggregated metrics for a Key. This data can
         be used to build dashboards.
@@ -1357,8 +1781,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.Metrics:
@@ -1420,7 +1846,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         firewall_policy: Optional[recaptchaenterprise.FirewallPolicy] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.FirewallPolicy:
         r"""Creates a new FirewallPolicy, specifying conditions
         at which reCAPTCHA Enterprise actions can be executed. A
@@ -1457,7 +1883,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
                 The request object. The create firewall policy request
                 message.
             parent (:class:`str`):
-                Required. The name of the project this policy will apply
+                Required. The name of the project this policy applies
                 to, in the format ``projects/{project}``.
 
                 This corresponds to the ``parent`` field
@@ -1473,8 +1899,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.FirewallPolicy:
@@ -1540,7 +1968,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListFirewallPoliciesAsyncPager:
         r"""Returns the list of all firewall policies that belong
         to a project.
@@ -1586,8 +2014,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.services.recaptcha_enterprise_service.pagers.ListFirewallPoliciesAsyncPager:
@@ -1664,7 +2094,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.FirewallPolicy:
         r"""Returns the specified firewall policy.
 
@@ -1709,8 +2139,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.FirewallPolicy:
@@ -1775,7 +2207,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.FirewallPolicy:
         r"""Updates the specified firewall policy.
 
@@ -1816,7 +2248,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
             update_mask (:class:`google.protobuf.field_mask_pb2.FieldMask`):
                 Optional. The mask to control which
                 fields of the policy get updated. If the
-                mask is not present, all fields will be
+                mask is not present, all fields are
                 updated.
 
                 This corresponds to the ``update_mask`` field
@@ -1825,8 +2257,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.FirewallPolicy:
@@ -1894,7 +2328,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Deletes the specified firewall policy.
 
@@ -1936,8 +2370,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
@@ -1992,7 +2428,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         names: Optional[MutableSequence[str]] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> recaptchaenterprise.ReorderFirewallPoliciesResponse:
         r"""Reorders all firewall policies.
 
@@ -2045,8 +2481,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.types.ReorderFirewallPoliciesResponse:
@@ -2111,7 +2549,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListRelatedAccountGroupsAsyncPager:
         r"""List groups of related accounts.
 
@@ -2157,8 +2595,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.services.recaptcha_enterprise_service.pagers.ListRelatedAccountGroupsAsyncPager:
@@ -2234,7 +2674,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListRelatedAccountGroupMembershipsAsyncPager:
         r"""Get memberships in a group of related accounts.
 
@@ -2280,8 +2720,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.services.recaptcha_enterprise_service.pagers.ListRelatedAccountGroupMembershipsAsyncPager:
@@ -2363,7 +2805,7 @@ class RecaptchaEnterpriseServiceAsyncClient:
         hashed_account_id: Optional[bytes] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.SearchRelatedAccountGroupMembershipsAsyncPager:
         r"""Search group memberships related to a given account.
 
@@ -2421,8 +2863,10 @@ class RecaptchaEnterpriseServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.recaptchaenterprise_v1.services.recaptcha_enterprise_service.pagers.SearchRelatedAccountGroupMembershipsAsyncPager:

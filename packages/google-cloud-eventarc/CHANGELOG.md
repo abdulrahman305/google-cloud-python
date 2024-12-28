@@ -1,5 +1,50 @@
 # Changelog
 
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-eventarc-v1.13.2...google-cloud-eventarc-v1.14.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([819e8fb](https://github.com/googleapis/google-cloud-python/commit/819e8fb3159c39f6c8eb6d7c0b75927134d6ceb2))
+
+## [1.13.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-eventarc-v1.13.1...google-cloud-eventarc-v1.13.2) (2024-11-14)
+
+
+### Documentation
+
+* Fixed typo in comments in Eventarc protos ([#13271](https://github.com/googleapis/google-cloud-python/issues/13271)) ([0dc1fc9](https://github.com/googleapis/google-cloud-python/commit/0dc1fc9a71a7f7ba3fe62abc7a13386e6b6c3be2))
+
+## [1.13.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-eventarc-v1.13.0...google-cloud-eventarc-v1.13.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13242](https://github.com/googleapis/google-cloud-python/issues/13242)) ([b479ff8](https://github.com/googleapis/google-cloud-python/commit/b479ff841ed93a18393a188ee1d72edf9fb729ec))
+
+## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-eventarc-v1.12.0...google-cloud-eventarc-v1.13.0) (2024-10-31)
+
+
+### Features
+
+* Publish Eventarc Advanced protos ([e90120b](https://github.com/googleapis/google-cloud-python/commit/e90120b0661c17acfdeec5f3edb37c4155c19aa6))
+
+
+### Documentation
+
+* Clarified multiple comments in Eventarc Standard protos ([e90120b](https://github.com/googleapis/google-cloud-python/commit/e90120b0661c17acfdeec5f3edb37c4155c19aa6))
+
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-eventarc-v1.11.5...google-cloud-eventarc-v1.12.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13206](https://github.com/googleapis/google-cloud-python/issues/13206)) ([eb980d5](https://github.com/googleapis/google-cloud-python/commit/eb980d55b2d01d776fa94c3ce408a11f6d366c8a))
+
 ## [1.11.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-eventarc-v1.11.4...google-cloud-eventarc-v1.11.5) (2024-07-30)
 
 

@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -52,6 +52,15 @@ from google.maps.fleetengine_v1.types import fleetengine, vehicle_api, vehicles
 from .client import VehicleServiceClient
 from .transports.base import DEFAULT_CLIENT_INFO, VehicleServiceTransport
 from .transports.grpc_asyncio import VehicleServiceGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class VehicleServiceAsyncClient:
@@ -190,9 +199,7 @@ class VehicleServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(VehicleServiceClient).get_transport_class, type(VehicleServiceClient)
-    )
+    get_transport_class = VehicleServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -260,13 +267,35 @@ class VehicleServiceAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `maps.fleetengine_v1.VehicleServiceAsyncClient`.",
+                extra={
+                    "serviceName": "maps.fleetengine.v1.VehicleService",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "maps.fleetengine.v1.VehicleService",
+                    "credentialsType": None,
+                },
+            )
+
     async def create_vehicle(
         self,
         request: Optional[Union[vehicle_api.CreateVehicleRequest, dict]] = None,
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> vehicles.Vehicle:
         r"""Instantiates a new vehicle associated with an on-demand
         rideshare or deliveries provider. Each ``Vehicle`` must have a
@@ -333,8 +362,10 @@ class VehicleServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_v1.types.Vehicle:
@@ -352,11 +383,17 @@ class VehicleServiceAsyncClient:
             self._client._transport.create_vehicle
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -378,7 +415,7 @@ class VehicleServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> vehicles.Vehicle:
         r"""Returns a vehicle from the Fleet Engine.
 
@@ -414,8 +451,10 @@ class VehicleServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_v1.types.Vehicle:
@@ -433,11 +472,17 @@ class VehicleServiceAsyncClient:
             self._client._transport.get_vehicle
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -459,7 +504,7 @@ class VehicleServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> vehicles.Vehicle:
         r"""Writes updated vehicle data to the Fleet Engine.
 
@@ -512,8 +557,10 @@ class VehicleServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_v1.types.Vehicle:
@@ -531,11 +578,17 @@ class VehicleServiceAsyncClient:
             self._client._transport.update_vehicle
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -559,7 +612,7 @@ class VehicleServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> vehicle_api.UpdateVehicleAttributesResponse:
         r"""Partially updates a vehicle's attributes. Only the attributes
         mentioned in the request will be updated, other attributes will
@@ -604,8 +657,10 @@ class VehicleServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_v1.types.UpdateVehicleAttributesResponse:
@@ -623,11 +678,17 @@ class VehicleServiceAsyncClient:
             self._client._transport.update_vehicle_attributes
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.name)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -649,7 +710,7 @@ class VehicleServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListVehiclesAsyncPager:
         r"""Returns a paginated list of vehicles associated with
         a provider that match the request options.
@@ -688,8 +749,10 @@ class VehicleServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_v1.services.vehicle_service.pagers.ListVehiclesAsyncPager:
@@ -711,11 +774,17 @@ class VehicleServiceAsyncClient:
             self._client._transport.list_vehicles
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()
@@ -748,7 +817,7 @@ class VehicleServiceAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> vehicle_api.SearchVehiclesResponse:
         r"""Returns a list of vehicles that match the request
         options.
@@ -790,8 +859,10 @@ class VehicleServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.maps.fleetengine_v1.types.SearchVehiclesResponse:
@@ -809,11 +880,17 @@ class VehicleServiceAsyncClient:
             self._client._transport.search_vehicles
         ]
 
-        # Certain fields should be provided within the metadata header;
-        # add these here.
-        metadata = tuple(metadata) + (
-            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
-        )
+        header_params = {}
+
+        routing_param_regex = re.compile("^(?P<provider_id>providers/[^/]+)$")
+        regex_match = routing_param_regex.match(request.parent)
+        if regex_match and regex_match.group("provider_id"):
+            header_params["provider_id"] = regex_match.group("provider_id")
+
+        if header_params:
+            metadata = tuple(metadata) + (
+                gapic_v1.routing_header.to_grpc_metadata(header_params),
+            )
 
         # Validate the universe domain.
         self._client._validate_universe_domain()

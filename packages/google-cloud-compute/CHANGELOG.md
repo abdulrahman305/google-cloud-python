@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1.22.0...google-cloud-compute-v1.23.0) (2024-12-12)
+
+
+### Features
+
+* [google-cloud-compute] Update Compute Engine API to revision 20241201 (https://github.com/googleapis/google-cloud-python/issues/966) ([dfe5518](https://github.com/googleapis/google-cloud-python/commit/dfe5518bf0c5ef8a26681625d36c6e325b59feda))
+* Add support for opt-in debug logging ([dfe5518](https://github.com/googleapis/google-cloud-python/commit/dfe5518bf0c5ef8a26681625d36c6e325b59feda))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([dfe5518](https://github.com/googleapis/google-cloud-python/commit/dfe5518bf0c5ef8a26681625d36c6e325b59feda))
+
+## [1.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1.21.0...google-cloud-compute-v1.22.0) (2024-11-14)
+
+
+### Features
+
+* [google-cloud-compute] Update Compute Engine API to revision 20241105 ([#954](https://github.com/googleapis/google-cloud-python/issues/954)) ([#13276](https://github.com/googleapis/google-cloud-python/issues/13276)) ([131af55](https://github.com/googleapis/google-cloud-python/commit/131af55feaf8934f3dd0c4971ce0c50eb4d07f64))
+
+## [1.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1.20.1...google-cloud-compute-v1.21.0) (2024-11-11)
+
+
+### Features
+
+* Update Compute Engine API to revision 20241015 ([#13252](https://github.com/googleapis/google-cloud-python/issues/13252)) ([c0351dd](https://github.com/googleapis/google-cloud-python/commit/c0351dd6a6726bca6c0eb6e995d7889f3956e03b))
+
+## [1.20.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1.20.0...google-cloud-compute-v1.20.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [1.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1.19.2...google-cloud-compute-v1.20.0) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
 ## [1.19.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1.19.1...google-cloud-compute-v1.19.2) (2024-07-30)
 
 

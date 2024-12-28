@@ -86,6 +86,18 @@ class ConversationProfile(proto.Message):
             Configuration for publishing new message events. Event will
             be sent in format of
             [ConversationEvent][google.cloud.dialogflow.v2.ConversationEvent]
+        new_recognition_result_notification_config (google.cloud.dialogflow_v2.types.NotificationConfig):
+            Optional. Configuration for publishing transcription
+            intermediate results. Event will be sent in format of
+            [ConversationEvent][google.cloud.dialogflow.v2.ConversationEvent].
+            If configured, the following information will be populated
+            as
+            [ConversationEvent][google.cloud.dialogflow.v2.ConversationEvent]
+            Pub/Sub message attributes:
+
+            -  "participant_id"
+            -  "participant_role"
+            -  "message_id".
         stt_config (google.cloud.dialogflow_v2.types.SpeechToTextConfig):
             Settings for speech transcription.
         language_code (str):
@@ -159,6 +171,11 @@ class ConversationProfile(proto.Message):
     new_message_event_notification_config: "NotificationConfig" = proto.Field(
         proto.MESSAGE,
         number=8,
+        message="NotificationConfig",
+    )
+    new_recognition_result_notification_config: "NotificationConfig" = proto.Field(
+        proto.MESSAGE,
+        number=21,
         message="NotificationConfig",
     )
     stt_config: audio_config.SpeechToTextConfig = proto.Field(
@@ -615,6 +632,9 @@ class HumanAgentAssistantConfig(proto.Message):
                 Optional. The customized sections chosen to
                 return when requesting a summary of a
                 conversation.
+            context_size (int):
+                Optional. The number of recent messages to include in the
+                context. Supported features: KNOWLEDGE_ASSIST.
         """
 
         class KnowledgeBaseQuerySource(proto.Message):
@@ -828,6 +848,10 @@ class HumanAgentAssistantConfig(proto.Message):
                 number=8,
                 message="HumanAgentAssistantConfig.SuggestionQueryConfig.Sections",
             )
+        )
+        context_size: int = proto.Field(
+            proto.INT32,
+            number=9,
         )
 
     class ConversationModelConfig(proto.Message):
@@ -1149,7 +1173,7 @@ class SuggestionFeature(proto.Message):
 
 class SetSuggestionFeatureConfigRequest(proto.Message):
     r"""The request message for
-    [ConversationProfiles.SetSuggestionFeature][].
+    [ConversationProfiles.SetSuggestionFeatureConfig][google.cloud.dialogflow.v2.ConversationProfiles.SetSuggestionFeatureConfig].
 
     Attributes:
         conversation_profile (str):
@@ -1184,7 +1208,8 @@ class SetSuggestionFeatureConfigRequest(proto.Message):
 
 
 class ClearSuggestionFeatureConfigRequest(proto.Message):
-    r"""The request message for [ConversationProfiles.ClearFeature][].
+    r"""The request message for
+    [ConversationProfiles.ClearSuggestionFeatureConfig][google.cloud.dialogflow.v2.ConversationProfiles.ClearSuggestionFeatureConfig].
 
     Attributes:
         conversation_profile (str):
@@ -1216,7 +1241,8 @@ class ClearSuggestionFeatureConfigRequest(proto.Message):
 
 
 class SetSuggestionFeatureConfigOperationMetadata(proto.Message):
-    r"""Metadata for a [ConversationProfile.SetSuggestionFeatureConfig][]
+    r"""Metadata for a
+    [ConversationProfiles.SetSuggestionFeatureConfig][google.cloud.dialogflow.v2.ConversationProfiles.SetSuggestionFeatureConfig]
     operation.
 
     Attributes:
@@ -1257,7 +1283,8 @@ class SetSuggestionFeatureConfigOperationMetadata(proto.Message):
 
 
 class ClearSuggestionFeatureConfigOperationMetadata(proto.Message):
-    r"""Metadata for a [ConversationProfile.ClearSuggestionFeatureConfig][]
+    r"""Metadata for a
+    [ConversationProfiles.ClearSuggestionFeatureConfig][google.cloud.dialogflow.v2.ConversationProfiles.ClearSuggestionFeatureConfig]
     operation.
 
     Attributes:

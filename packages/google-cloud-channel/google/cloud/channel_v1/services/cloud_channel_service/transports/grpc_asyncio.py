@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -23,8 +27,11 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.channel_v1.types import (
     channel_partner_links,
@@ -37,6 +44,82 @@ from google.cloud.channel_v1.types import (
 
 from .base import DEFAULT_CLIENT_INFO, CloudChannelServiceTransport
 from .grpc import CloudChannelServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.channel.v1.CloudChannelService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.channel.v1.CloudChannelService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
@@ -257,7 +340,13 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -280,7 +369,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -318,7 +407,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_customers" not in self._stubs:
-            self._stubs["list_customers"] = self.grpc_channel.unary_unary(
+            self._stubs["list_customers"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListCustomers",
                 request_serializer=service.ListCustomersRequest.serialize,
                 response_deserializer=service.ListCustomersResponse.deserialize,
@@ -357,7 +446,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_customer" not in self._stubs:
-            self._stubs["get_customer"] = self.grpc_channel.unary_unary(
+            self._stubs["get_customer"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/GetCustomer",
                 request_serializer=service.GetCustomerRequest.serialize,
                 response_deserializer=customers.Customer.deserialize,
@@ -408,7 +497,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "check_cloud_identity_accounts_exist" not in self._stubs:
             self._stubs[
                 "check_cloud_identity_accounts_exist"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/CheckCloudIdentityAccountsExist",
                 request_serializer=service.CheckCloudIdentityAccountsExistRequest.serialize,
                 response_deserializer=service.CheckCloudIdentityAccountsExistResponse.deserialize,
@@ -452,7 +541,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_customer" not in self._stubs:
-            self._stubs["create_customer"] = self.grpc_channel.unary_unary(
+            self._stubs["create_customer"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/CreateCustomer",
                 request_serializer=service.CreateCustomerRequest.serialize,
                 response_deserializer=customers.Customer.deserialize,
@@ -491,7 +580,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_customer" not in self._stubs:
-            self._stubs["update_customer"] = self.grpc_channel.unary_unary(
+            self._stubs["update_customer"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/UpdateCustomer",
                 request_serializer=service.UpdateCustomerRequest.serialize,
                 response_deserializer=customers.Customer.deserialize,
@@ -528,7 +617,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_customer" not in self._stubs:
-            self._stubs["delete_customer"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_customer"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/DeleteCustomer",
                 request_serializer=service.DeleteCustomerRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -575,7 +664,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "import_customer" not in self._stubs:
-            self._stubs["import_customer"] = self.grpc_channel.unary_unary(
+            self._stubs["import_customer"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ImportCustomer",
                 request_serializer=service.ImportCustomerRequest.serialize,
                 response_deserializer=customers.Customer.deserialize,
@@ -629,7 +718,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "provision_cloud_identity" not in self._stubs:
-            self._stubs["provision_cloud_identity"] = self.grpc_channel.unary_unary(
+            self._stubs["provision_cloud_identity"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ProvisionCloudIdentity",
                 request_serializer=service.ProvisionCloudIdentityRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -668,7 +757,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_entitlements" not in self._stubs:
-            self._stubs["list_entitlements"] = self.grpc_channel.unary_unary(
+            self._stubs["list_entitlements"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListEntitlements",
                 request_serializer=service.ListEntitlementsRequest.serialize,
                 response_deserializer=service.ListEntitlementsResponse.deserialize,
@@ -719,7 +808,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_transferable_skus" not in self._stubs:
-            self._stubs["list_transferable_skus"] = self.grpc_channel.unary_unary(
+            self._stubs["list_transferable_skus"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListTransferableSkus",
                 request_serializer=service.ListTransferableSkusRequest.serialize,
                 response_deserializer=service.ListTransferableSkusResponse.deserialize,
@@ -776,7 +865,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_transferable_offers" not in self._stubs:
-            self._stubs["list_transferable_offers"] = self.grpc_channel.unary_unary(
+            self._stubs["list_transferable_offers"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListTransferableOffers",
                 request_serializer=service.ListTransferableOffersRequest.serialize,
                 response_deserializer=service.ListTransferableOffersResponse.deserialize,
@@ -814,7 +903,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_entitlement" not in self._stubs:
-            self._stubs["get_entitlement"] = self.grpc_channel.unary_unary(
+            self._stubs["get_entitlement"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/GetEntitlement",
                 request_serializer=service.GetEntitlementRequest.serialize,
                 response_deserializer=entitlements.Entitlement.deserialize,
@@ -891,7 +980,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_entitlement" not in self._stubs:
-            self._stubs["create_entitlement"] = self.grpc_channel.unary_unary(
+            self._stubs["create_entitlement"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/CreateEntitlement",
                 request_serializer=service.CreateEntitlementRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -943,7 +1032,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "change_parameters" not in self._stubs:
-            self._stubs["change_parameters"] = self.grpc_channel.unary_unary(
+            self._stubs["change_parameters"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ChangeParameters",
                 request_serializer=service.ChangeParametersRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -997,7 +1086,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "change_renewal_settings" not in self._stubs:
-            self._stubs["change_renewal_settings"] = self.grpc_channel.unary_unary(
+            self._stubs["change_renewal_settings"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ChangeRenewalSettings",
                 request_serializer=service.ChangeRenewalSettingsRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1045,7 +1134,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "change_offer" not in self._stubs:
-            self._stubs["change_offer"] = self.grpc_channel.unary_unary(
+            self._stubs["change_offer"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ChangeOffer",
                 request_serializer=service.ChangeOfferRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1098,7 +1187,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "start_paid_service" not in self._stubs:
-            self._stubs["start_paid_service"] = self.grpc_channel.unary_unary(
+            self._stubs["start_paid_service"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/StartPaidService",
                 request_serializer=service.StartPaidServiceRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1148,7 +1237,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "suspend_entitlement" not in self._stubs:
-            self._stubs["suspend_entitlement"] = self.grpc_channel.unary_unary(
+            self._stubs["suspend_entitlement"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/SuspendEntitlement",
                 request_serializer=service.SuspendEntitlementRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1203,7 +1292,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_entitlement" not in self._stubs:
-            self._stubs["cancel_entitlement"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_entitlement"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/CancelEntitlement",
                 request_serializer=service.CancelEntitlementRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1260,7 +1349,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "activate_entitlement" not in self._stubs:
-            self._stubs["activate_entitlement"] = self.grpc_channel.unary_unary(
+            self._stubs["activate_entitlement"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ActivateEntitlement",
                 request_serializer=service.ActivateEntitlementRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1328,7 +1417,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "transfer_entitlements" not in self._stubs:
-            self._stubs["transfer_entitlements"] = self.grpc_channel.unary_unary(
+            self._stubs["transfer_entitlements"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/TransferEntitlements",
                 request_serializer=service.TransferEntitlementsRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1395,7 +1484,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "transfer_entitlements_to_google" not in self._stubs:
             self._stubs[
                 "transfer_entitlements_to_google"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/TransferEntitlementsToGoogle",
                 request_serializer=service.TransferEntitlementsToGoogleRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -1438,7 +1527,9 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_channel_partner_links" not in self._stubs:
-            self._stubs["list_channel_partner_links"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "list_channel_partner_links"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListChannelPartnerLinks",
                 request_serializer=service.ListChannelPartnerLinksRequest.serialize,
                 response_deserializer=service.ListChannelPartnerLinksResponse.deserialize,
@@ -1482,7 +1573,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_channel_partner_link" not in self._stubs:
-            self._stubs["get_channel_partner_link"] = self.grpc_channel.unary_unary(
+            self._stubs["get_channel_partner_link"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/GetChannelPartnerLink",
                 request_serializer=service.GetChannelPartnerLinkRequest.serialize,
                 response_deserializer=channel_partner_links.ChannelPartnerLink.deserialize,
@@ -1535,7 +1626,9 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_channel_partner_link" not in self._stubs:
-            self._stubs["create_channel_partner_link"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "create_channel_partner_link"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/CreateChannelPartnerLink",
                 request_serializer=service.CreateChannelPartnerLinkRequest.serialize,
                 response_deserializer=channel_partner_links.ChannelPartnerLink.deserialize,
@@ -1588,7 +1681,9 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_channel_partner_link" not in self._stubs:
-            self._stubs["update_channel_partner_link"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "update_channel_partner_link"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/UpdateChannelPartnerLink",
                 request_serializer=service.UpdateChannelPartnerLinkRequest.serialize,
                 response_deserializer=channel_partner_links.ChannelPartnerLink.deserialize,
@@ -1634,7 +1729,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "get_customer_repricing_config" not in self._stubs:
             self._stubs[
                 "get_customer_repricing_config"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/GetCustomerRepricingConfig",
                 request_serializer=service.GetCustomerRepricingConfigRequest.serialize,
                 response_deserializer=repricing.CustomerRepricingConfig.deserialize,
@@ -1690,7 +1785,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "list_customer_repricing_configs" not in self._stubs:
             self._stubs[
                 "list_customer_repricing_configs"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListCustomerRepricingConfigs",
                 request_serializer=service.ListCustomerRepricingConfigsRequest.serialize,
                 response_deserializer=service.ListCustomerRepricingConfigsResponse.deserialize,
@@ -1768,7 +1863,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "create_customer_repricing_config" not in self._stubs:
             self._stubs[
                 "create_customer_repricing_config"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/CreateCustomerRepricingConfig",
                 request_serializer=service.CreateCustomerRepricingConfigRequest.serialize,
                 response_deserializer=repricing.CustomerRepricingConfig.deserialize,
@@ -1832,7 +1927,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "update_customer_repricing_config" not in self._stubs:
             self._stubs[
                 "update_customer_repricing_config"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/UpdateCustomerRepricingConfig",
                 request_serializer=service.UpdateCustomerRepricingConfigRequest.serialize,
                 response_deserializer=repricing.CustomerRepricingConfig.deserialize,
@@ -1880,7 +1975,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "delete_customer_repricing_config" not in self._stubs:
             self._stubs[
                 "delete_customer_repricing_config"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/DeleteCustomerRepricingConfig",
                 request_serializer=service.DeleteCustomerRepricingConfigRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -1927,7 +2022,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "get_channel_partner_repricing_config" not in self._stubs:
             self._stubs[
                 "get_channel_partner_repricing_config"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/GetChannelPartnerRepricingConfig",
                 request_serializer=service.GetChannelPartnerRepricingConfigRequest.serialize,
                 response_deserializer=repricing.ChannelPartnerRepricingConfig.deserialize,
@@ -1982,7 +2077,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "list_channel_partner_repricing_configs" not in self._stubs:
             self._stubs[
                 "list_channel_partner_repricing_configs"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListChannelPartnerRepricingConfigs",
                 request_serializer=service.ListChannelPartnerRepricingConfigsRequest.serialize,
                 response_deserializer=service.ListChannelPartnerRepricingConfigsResponse.deserialize,
@@ -2059,7 +2154,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "create_channel_partner_repricing_config" not in self._stubs:
             self._stubs[
                 "create_channel_partner_repricing_config"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/CreateChannelPartnerRepricingConfig",
                 request_serializer=service.CreateChannelPartnerRepricingConfigRequest.serialize,
                 response_deserializer=repricing.ChannelPartnerRepricingConfig.deserialize,
@@ -2123,7 +2218,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "update_channel_partner_repricing_config" not in self._stubs:
             self._stubs[
                 "update_channel_partner_repricing_config"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/UpdateChannelPartnerRepricingConfig",
                 request_serializer=service.UpdateChannelPartnerRepricingConfigRequest.serialize,
                 response_deserializer=repricing.ChannelPartnerRepricingConfig.deserialize,
@@ -2171,7 +2266,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "delete_channel_partner_repricing_config" not in self._stubs:
             self._stubs[
                 "delete_channel_partner_repricing_config"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/DeleteChannelPartnerRepricingConfig",
                 request_serializer=service.DeleteChannelPartnerRepricingConfigRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -2218,7 +2313,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_sku_groups" not in self._stubs:
-            self._stubs["list_sku_groups"] = self.grpc_channel.unary_unary(
+            self._stubs["list_sku_groups"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListSkuGroups",
                 request_serializer=service.ListSkuGroupsRequest.serialize,
                 response_deserializer=service.ListSkuGroupsResponse.deserialize,
@@ -2264,7 +2359,9 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_sku_group_billable_skus" not in self._stubs:
-            self._stubs["list_sku_group_billable_skus"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "list_sku_group_billable_skus"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListSkuGroupBillableSkus",
                 request_serializer=service.ListSkuGroupBillableSkusRequest.serialize,
                 response_deserializer=service.ListSkuGroupBillableSkusResponse.deserialize,
@@ -2302,7 +2399,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "lookup_offer" not in self._stubs:
-            self._stubs["lookup_offer"] = self.grpc_channel.unary_unary(
+            self._stubs["lookup_offer"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/LookupOffer",
                 request_serializer=service.LookupOfferRequest.serialize,
                 response_deserializer=offers.Offer.deserialize,
@@ -2335,7 +2432,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_products" not in self._stubs:
-            self._stubs["list_products"] = self.grpc_channel.unary_unary(
+            self._stubs["list_products"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListProducts",
                 request_serializer=service.ListProductsRequest.serialize,
                 response_deserializer=service.ListProductsResponse.deserialize,
@@ -2366,7 +2463,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_skus" not in self._stubs:
-            self._stubs["list_skus"] = self.grpc_channel.unary_unary(
+            self._stubs["list_skus"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListSkus",
                 request_serializer=service.ListSkusRequest.serialize,
                 response_deserializer=service.ListSkusResponse.deserialize,
@@ -2397,7 +2494,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_offers" not in self._stubs:
-            self._stubs["list_offers"] = self.grpc_channel.unary_unary(
+            self._stubs["list_offers"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListOffers",
                 request_serializer=service.ListOffersRequest.serialize,
                 response_deserializer=service.ListOffersResponse.deserialize,
@@ -2436,7 +2533,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_purchasable_skus" not in self._stubs:
-            self._stubs["list_purchasable_skus"] = self.grpc_channel.unary_unary(
+            self._stubs["list_purchasable_skus"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListPurchasableSkus",
                 request_serializer=service.ListPurchasableSkusRequest.serialize,
                 response_deserializer=service.ListPurchasableSkusResponse.deserialize,
@@ -2480,7 +2577,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_purchasable_offers" not in self._stubs:
-            self._stubs["list_purchasable_offers"] = self.grpc_channel.unary_unary(
+            self._stubs["list_purchasable_offers"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListPurchasableOffers",
                 request_serializer=service.ListPurchasableOffersRequest.serialize,
                 response_deserializer=service.ListPurchasableOffersResponse.deserialize,
@@ -2525,7 +2622,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         if "query_eligible_billing_accounts" not in self._stubs:
             self._stubs[
                 "query_eligible_billing_accounts"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/QueryEligibleBillingAccounts",
                 request_serializer=service.QueryEligibleBillingAccountsRequest.serialize,
                 response_deserializer=service.QueryEligibleBillingAccountsResponse.deserialize,
@@ -2572,7 +2669,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "register_subscriber" not in self._stubs:
-            self._stubs["register_subscriber"] = self.grpc_channel.unary_unary(
+            self._stubs["register_subscriber"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/RegisterSubscriber",
                 request_serializer=service.RegisterSubscriberRequest.serialize,
                 response_deserializer=service.RegisterSubscriberResponse.deserialize,
@@ -2622,7 +2719,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "unregister_subscriber" not in self._stubs:
-            self._stubs["unregister_subscriber"] = self.grpc_channel.unary_unary(
+            self._stubs["unregister_subscriber"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/UnregisterSubscriber",
                 request_serializer=service.UnregisterSubscriberRequest.serialize,
                 response_deserializer=service.UnregisterSubscriberResponse.deserialize,
@@ -2666,7 +2763,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_subscribers" not in self._stubs:
-            self._stubs["list_subscribers"] = self.grpc_channel.unary_unary(
+            self._stubs["list_subscribers"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListSubscribers",
                 request_serializer=service.ListSubscribersRequest.serialize,
                 response_deserializer=service.ListSubscribersResponse.deserialize,
@@ -2711,7 +2808,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_entitlement_changes" not in self._stubs:
-            self._stubs["list_entitlement_changes"] = self.grpc_channel.unary_unary(
+            self._stubs["list_entitlement_changes"] = self._logged_channel.unary_unary(
                 "/google.cloud.channel.v1.CloudChannelService/ListEntitlementChanges",
                 request_serializer=service.ListEntitlementChangesRequest.serialize,
                 response_deserializer=service.ListEntitlementChangesResponse.deserialize,
@@ -2721,255 +2818,284 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.list_customers: gapic_v1.method_async.wrap_method(
+            self.list_customers: self._wrap_method(
                 self.list_customers,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_customer: gapic_v1.method_async.wrap_method(
+            self.get_customer: self._wrap_method(
                 self.get_customer,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.check_cloud_identity_accounts_exist: gapic_v1.method_async.wrap_method(
+            self.check_cloud_identity_accounts_exist: self._wrap_method(
                 self.check_cloud_identity_accounts_exist,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_customer: gapic_v1.method_async.wrap_method(
+            self.create_customer: self._wrap_method(
                 self.create_customer,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_customer: gapic_v1.method_async.wrap_method(
+            self.update_customer: self._wrap_method(
                 self.update_customer,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_customer: gapic_v1.method_async.wrap_method(
+            self.delete_customer: self._wrap_method(
                 self.delete_customer,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.import_customer: gapic_v1.method_async.wrap_method(
+            self.import_customer: self._wrap_method(
                 self.import_customer,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.provision_cloud_identity: gapic_v1.method_async.wrap_method(
+            self.provision_cloud_identity: self._wrap_method(
                 self.provision_cloud_identity,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_entitlements: gapic_v1.method_async.wrap_method(
+            self.list_entitlements: self._wrap_method(
                 self.list_entitlements,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_transferable_skus: gapic_v1.method_async.wrap_method(
+            self.list_transferable_skus: self._wrap_method(
                 self.list_transferable_skus,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_transferable_offers: gapic_v1.method_async.wrap_method(
+            self.list_transferable_offers: self._wrap_method(
                 self.list_transferable_offers,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_entitlement: gapic_v1.method_async.wrap_method(
+            self.get_entitlement: self._wrap_method(
                 self.get_entitlement,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_entitlement: gapic_v1.method_async.wrap_method(
+            self.create_entitlement: self._wrap_method(
                 self.create_entitlement,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.change_parameters: gapic_v1.method_async.wrap_method(
+            self.change_parameters: self._wrap_method(
                 self.change_parameters,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.change_renewal_settings: gapic_v1.method_async.wrap_method(
+            self.change_renewal_settings: self._wrap_method(
                 self.change_renewal_settings,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.change_offer: gapic_v1.method_async.wrap_method(
+            self.change_offer: self._wrap_method(
                 self.change_offer,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.start_paid_service: gapic_v1.method_async.wrap_method(
+            self.start_paid_service: self._wrap_method(
                 self.start_paid_service,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.suspend_entitlement: gapic_v1.method_async.wrap_method(
+            self.suspend_entitlement: self._wrap_method(
                 self.suspend_entitlement,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.cancel_entitlement: gapic_v1.method_async.wrap_method(
+            self.cancel_entitlement: self._wrap_method(
                 self.cancel_entitlement,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.activate_entitlement: gapic_v1.method_async.wrap_method(
+            self.activate_entitlement: self._wrap_method(
                 self.activate_entitlement,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.transfer_entitlements: gapic_v1.method_async.wrap_method(
+            self.transfer_entitlements: self._wrap_method(
                 self.transfer_entitlements,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.transfer_entitlements_to_google: gapic_v1.method_async.wrap_method(
+            self.transfer_entitlements_to_google: self._wrap_method(
                 self.transfer_entitlements_to_google,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_channel_partner_links: gapic_v1.method_async.wrap_method(
+            self.list_channel_partner_links: self._wrap_method(
                 self.list_channel_partner_links,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_channel_partner_link: gapic_v1.method_async.wrap_method(
+            self.get_channel_partner_link: self._wrap_method(
                 self.get_channel_partner_link,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_channel_partner_link: gapic_v1.method_async.wrap_method(
+            self.create_channel_partner_link: self._wrap_method(
                 self.create_channel_partner_link,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_channel_partner_link: gapic_v1.method_async.wrap_method(
+            self.update_channel_partner_link: self._wrap_method(
                 self.update_channel_partner_link,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_customer_repricing_config: gapic_v1.method_async.wrap_method(
+            self.get_customer_repricing_config: self._wrap_method(
                 self.get_customer_repricing_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_customer_repricing_configs: gapic_v1.method_async.wrap_method(
+            self.list_customer_repricing_configs: self._wrap_method(
                 self.list_customer_repricing_configs,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_customer_repricing_config: gapic_v1.method_async.wrap_method(
+            self.create_customer_repricing_config: self._wrap_method(
                 self.create_customer_repricing_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_customer_repricing_config: gapic_v1.method_async.wrap_method(
+            self.update_customer_repricing_config: self._wrap_method(
                 self.update_customer_repricing_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_customer_repricing_config: gapic_v1.method_async.wrap_method(
+            self.delete_customer_repricing_config: self._wrap_method(
                 self.delete_customer_repricing_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.get_channel_partner_repricing_config: gapic_v1.method_async.wrap_method(
+            self.get_channel_partner_repricing_config: self._wrap_method(
                 self.get_channel_partner_repricing_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_channel_partner_repricing_configs: gapic_v1.method_async.wrap_method(
+            self.list_channel_partner_repricing_configs: self._wrap_method(
                 self.list_channel_partner_repricing_configs,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.create_channel_partner_repricing_config: gapic_v1.method_async.wrap_method(
+            self.create_channel_partner_repricing_config: self._wrap_method(
                 self.create_channel_partner_repricing_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_channel_partner_repricing_config: gapic_v1.method_async.wrap_method(
+            self.update_channel_partner_repricing_config: self._wrap_method(
                 self.update_channel_partner_repricing_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.delete_channel_partner_repricing_config: gapic_v1.method_async.wrap_method(
+            self.delete_channel_partner_repricing_config: self._wrap_method(
                 self.delete_channel_partner_repricing_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_sku_groups: gapic_v1.method_async.wrap_method(
+            self.list_sku_groups: self._wrap_method(
                 self.list_sku_groups,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_sku_group_billable_skus: gapic_v1.method_async.wrap_method(
+            self.list_sku_group_billable_skus: self._wrap_method(
                 self.list_sku_group_billable_skus,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.lookup_offer: gapic_v1.method_async.wrap_method(
+            self.lookup_offer: self._wrap_method(
                 self.lookup_offer,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_products: gapic_v1.method_async.wrap_method(
+            self.list_products: self._wrap_method(
                 self.list_products,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_skus: gapic_v1.method_async.wrap_method(
+            self.list_skus: self._wrap_method(
                 self.list_skus,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_offers: gapic_v1.method_async.wrap_method(
+            self.list_offers: self._wrap_method(
                 self.list_offers,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_purchasable_skus: gapic_v1.method_async.wrap_method(
+            self.list_purchasable_skus: self._wrap_method(
                 self.list_purchasable_skus,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_purchasable_offers: gapic_v1.method_async.wrap_method(
+            self.list_purchasable_offers: self._wrap_method(
                 self.list_purchasable_offers,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.query_eligible_billing_accounts: gapic_v1.method_async.wrap_method(
+            self.query_eligible_billing_accounts: self._wrap_method(
                 self.query_eligible_billing_accounts,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.register_subscriber: gapic_v1.method_async.wrap_method(
+            self.register_subscriber: self._wrap_method(
                 self.register_subscriber,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.unregister_subscriber: gapic_v1.method_async.wrap_method(
+            self.unregister_subscriber: self._wrap_method(
                 self.unregister_subscriber,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_subscribers: gapic_v1.method_async.wrap_method(
+            self.list_subscribers: self._wrap_method(
                 self.list_subscribers,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_entitlement_changes: gapic_v1.method_async.wrap_method(
+            self.list_entitlement_changes: self._wrap_method(
                 self.list_entitlement_changes,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -2981,7 +3107,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -2998,7 +3124,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -3015,7 +3141,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -3034,7 +3160,7 @@ class CloudChannelServiceGrpcAsyncIOTransport(CloudChannelServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,

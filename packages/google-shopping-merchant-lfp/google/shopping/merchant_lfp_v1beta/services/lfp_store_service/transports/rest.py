@@ -13,40 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.shopping.merchant_lfp_v1beta.types import lfpstore
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseLfpStoreServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.protobuf import empty_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.shopping.merchant_lfp_v1beta.types import lfpstore
-
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import LfpStoreServiceTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -102,8 +106,8 @@ class LfpStoreServiceRestInterceptor:
     def pre_delete_lfp_store(
         self,
         request: lfpstore.DeleteLfpStoreRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[lfpstore.DeleteLfpStoreRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lfpstore.DeleteLfpStoreRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for delete_lfp_store
 
         Override in a subclass to manipulate the request or metadata
@@ -112,8 +116,10 @@ class LfpStoreServiceRestInterceptor:
         return request, metadata
 
     def pre_get_lfp_store(
-        self, request: lfpstore.GetLfpStoreRequest, metadata: Sequence[Tuple[str, str]]
-    ) -> Tuple[lfpstore.GetLfpStoreRequest, Sequence[Tuple[str, str]]]:
+        self,
+        request: lfpstore.GetLfpStoreRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lfpstore.GetLfpStoreRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for get_lfp_store
 
         Override in a subclass to manipulate the request or metadata
@@ -133,8 +139,8 @@ class LfpStoreServiceRestInterceptor:
     def pre_insert_lfp_store(
         self,
         request: lfpstore.InsertLfpStoreRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[lfpstore.InsertLfpStoreRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lfpstore.InsertLfpStoreRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for insert_lfp_store
 
         Override in a subclass to manipulate the request or metadata
@@ -154,8 +160,8 @@ class LfpStoreServiceRestInterceptor:
     def pre_list_lfp_stores(
         self,
         request: lfpstore.ListLfpStoresRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[lfpstore.ListLfpStoresRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lfpstore.ListLfpStoresRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for list_lfp_stores
 
         Override in a subclass to manipulate the request or metadata
@@ -182,8 +188,8 @@ class LfpStoreServiceRestStub:
     _interceptor: LfpStoreServiceRestInterceptor
 
 
-class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
-    """REST backend transport for LfpStoreService.
+class LfpStoreServiceRestTransport(_BaseLfpStoreServiceRestTransport):
+    """REST backend synchronous transport for LfpStoreService.
 
     Service for a `LFP
     partner <https://support.google.com/merchants/answer/7676652>`__ to
@@ -194,7 +200,6 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -248,21 +253,12 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -273,19 +269,33 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
         self._interceptor = interceptor or LfpStoreServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _DeleteLfpStore(LfpStoreServiceRestStub):
+    class _DeleteLfpStore(
+        _BaseLfpStoreServiceRestTransport._BaseDeleteLfpStore, LfpStoreServiceRestStub
+    ):
         def __hash__(self):
-            return hash("DeleteLfpStore")
+            return hash("LfpStoreServiceRestTransport.DeleteLfpStore")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -293,7 +303,7 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete lfp store method over HTTP.
 
@@ -304,44 +314,63 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/lfp/v1beta/{name=accounts/*/lfpStores/*}",
-                },
-            ]
+            http_options = (
+                _BaseLfpStoreServiceRestTransport._BaseDeleteLfpStore._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_lfp_store(
                 request, metadata
             )
-            pb_request = lfpstore.DeleteLfpStoreRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseLfpStoreServiceRestTransport._BaseDeleteLfpStore._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseLfpStoreServiceRestTransport._BaseDeleteLfpStore._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.lfp_v1beta.LfpStoreServiceClient.DeleteLfpStore",
+                    extra={
+                        "serviceName": "google.shopping.merchant.lfp.v1beta.LfpStoreService",
+                        "rpcName": "DeleteLfpStore",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = LfpStoreServiceRestTransport._DeleteLfpStore._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -349,19 +378,33 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _GetLfpStore(LfpStoreServiceRestStub):
+    class _GetLfpStore(
+        _BaseLfpStoreServiceRestTransport._BaseGetLfpStore, LfpStoreServiceRestStub
+    ):
         def __hash__(self):
-            return hash("GetLfpStore")
+            return hash("LfpStoreServiceRestTransport.GetLfpStore")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -369,7 +412,7 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> lfpstore.LfpStore:
             r"""Call the get lfp store method over HTTP.
 
@@ -379,8 +422,10 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.lfpstore.LfpStore:
@@ -394,38 +439,55 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/lfp/v1beta/{name=accounts/*/lfpStores/*}",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_lfp_store(request, metadata)
-            pb_request = lfpstore.GetLfpStoreRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseLfpStoreServiceRestTransport._BaseGetLfpStore._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_get_lfp_store(request, metadata)
+            transcoded_request = _BaseLfpStoreServiceRestTransport._BaseGetLfpStore._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseLfpStoreServiceRestTransport._BaseGetLfpStore._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.lfp_v1beta.LfpStoreServiceClient.GetLfpStore",
+                    extra={
+                        "serviceName": "google.shopping.merchant.lfp.v1beta.LfpStoreService",
+                        "rpcName": "GetLfpStore",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = LfpStoreServiceRestTransport._GetLfpStore._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -438,22 +500,59 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
             pb_resp = lfpstore.LfpStore.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_lfp_store(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = lfpstore.LfpStore.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.merchant.lfp_v1beta.LfpStoreServiceClient.get_lfp_store",
+                    extra={
+                        "serviceName": "google.shopping.merchant.lfp.v1beta.LfpStoreService",
+                        "rpcName": "GetLfpStore",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _InsertLfpStore(LfpStoreServiceRestStub):
+    class _InsertLfpStore(
+        _BaseLfpStoreServiceRestTransport._BaseInsertLfpStore, LfpStoreServiceRestStub
+    ):
         def __hash__(self):
-            return hash("InsertLfpStore")
+            return hash("LfpStoreServiceRestTransport.InsertLfpStore")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -461,7 +560,7 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> lfpstore.LfpStore:
             r"""Call the insert lfp store method over HTTP.
 
@@ -472,8 +571,10 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.lfpstore.LfpStore:
@@ -487,47 +588,62 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/lfp/v1beta/{parent=accounts/*}/lfpStores:insert",
-                    "body": "lfp_store",
-                },
-            ]
+            http_options = (
+                _BaseLfpStoreServiceRestTransport._BaseInsertLfpStore._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_insert_lfp_store(
                 request, metadata
             )
-            pb_request = lfpstore.InsertLfpStoreRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseLfpStoreServiceRestTransport._BaseInsertLfpStore._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseLfpStoreServiceRestTransport._BaseInsertLfpStore._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseLfpStoreServiceRestTransport._BaseInsertLfpStore._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.lfp_v1beta.LfpStoreServiceClient.InsertLfpStore",
+                    extra={
+                        "serviceName": "google.shopping.merchant.lfp.v1beta.LfpStoreService",
+                        "rpcName": "InsertLfpStore",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = LfpStoreServiceRestTransport._InsertLfpStore._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -540,24 +656,58 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
             pb_resp = lfpstore.LfpStore.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_insert_lfp_store(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = lfpstore.LfpStore.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.merchant.lfp_v1beta.LfpStoreServiceClient.insert_lfp_store",
+                    extra={
+                        "serviceName": "google.shopping.merchant.lfp.v1beta.LfpStoreService",
+                        "rpcName": "InsertLfpStore",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ListLfpStores(LfpStoreServiceRestStub):
+    class _ListLfpStores(
+        _BaseLfpStoreServiceRestTransport._BaseListLfpStores, LfpStoreServiceRestStub
+    ):
         def __hash__(self):
-            return hash("ListLfpStores")
+            return hash("LfpStoreServiceRestTransport.ListLfpStores")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {
-            "targetAccount": 0,
-        }
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -565,7 +715,7 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> lfpstore.ListLfpStoresResponse:
             r"""Call the list lfp stores method over HTTP.
 
@@ -576,8 +726,10 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.lfpstore.ListLfpStoresResponse:
@@ -586,38 +738,55 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/lfp/v1beta/{parent=accounts/*}/lfpStores",
-                },
-            ]
-            request, metadata = self._interceptor.pre_list_lfp_stores(request, metadata)
-            pb_request = lfpstore.ListLfpStoresRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
+            http_options = (
+                _BaseLfpStoreServiceRestTransport._BaseListLfpStores._get_http_options()
+            )
 
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            request, metadata = self._interceptor.pre_list_lfp_stores(request, metadata)
+            transcoded_request = _BaseLfpStoreServiceRestTransport._BaseListLfpStores._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseLfpStoreServiceRestTransport._BaseListLfpStores._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.lfp_v1beta.LfpStoreServiceClient.ListLfpStores",
+                    extra={
+                        "serviceName": "google.shopping.merchant.lfp.v1beta.LfpStoreService",
+                        "rpcName": "ListLfpStores",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = LfpStoreServiceRestTransport._ListLfpStores._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -630,7 +799,29 @@ class LfpStoreServiceRestTransport(LfpStoreServiceTransport):
             pb_resp = lfpstore.ListLfpStoresResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_list_lfp_stores(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = lfpstore.ListLfpStoresResponse.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.merchant.lfp_v1beta.LfpStoreServiceClient.list_lfp_stores",
+                    extra={
+                        "serviceName": "google.shopping.merchant.lfp.v1beta.LfpStoreService",
+                        "rpcName": "ListLfpStores",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property

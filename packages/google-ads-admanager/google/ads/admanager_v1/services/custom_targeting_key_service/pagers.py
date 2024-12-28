@@ -38,7 +38,10 @@ except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
     OptionalAsyncRetry = Union[retries_async.AsyncRetry, object, None]  # type: ignore
 
-from google.ads.admanager_v1.types import custom_targeting_key_service
+from google.ads.admanager_v1.types import (
+    custom_targeting_key_messages,
+    custom_targeting_key_service,
+)
 
 
 class ListCustomTargetingKeysPager:
@@ -69,7 +72,7 @@ class ListCustomTargetingKeysPager:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = ()
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = ()
     ):
         """Instantiate the pager.
 
@@ -83,8 +86,10 @@ class ListCustomTargetingKeysPager:
             retry (google.api_core.retry.Retry): Designation of what errors,
                 if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         """
         self._method = method
         self._request = custom_targeting_key_service.ListCustomTargetingKeysRequest(
@@ -113,7 +118,7 @@ class ListCustomTargetingKeysPager:
             )
             yield self._response
 
-    def __iter__(self) -> Iterator[custom_targeting_key_service.CustomTargetingKey]:
+    def __iter__(self) -> Iterator[custom_targeting_key_messages.CustomTargetingKey]:
         for page in self.pages:
             yield from page.custom_targeting_keys
 

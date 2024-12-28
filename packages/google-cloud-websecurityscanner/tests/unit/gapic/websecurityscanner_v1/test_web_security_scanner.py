@@ -22,21 +22,12 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
-from google.protobuf import field_mask_pb2  # type: ignore
+from google.api_core import api_core_version
 from google.protobuf import json_format
-from google.protobuf import timestamp_pb2  # type: ignore
 import grpc
 from grpc.experimental import aio
 from proto.marshal.rules import wrappers
@@ -44,6 +35,24 @@ from proto.marshal.rules.dates import DurationRule, TimestampRule
 import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
+from google.protobuf import field_mask_pb2  # type: ignore
+from google.protobuf import timestamp_pb2  # type: ignore
 
 from google.cloud.websecurityscanner_v1.services.web_security_scanner import (
     WebSecurityScannerAsyncClient,
@@ -64,8 +73,22 @@ from google.cloud.websecurityscanner_v1.types import (
 )
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -318,86 +341,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         WebSecurityScannerClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (WebSecurityScannerClient, transports.WebSecurityScannerGrpcTransport, "grpc"),
-        (WebSecurityScannerClient, transports.WebSecurityScannerRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1232,27 +1175,6 @@ def test_create_scan_config(request_type, transport: str = "grpc"):
     assert response.ignore_http_status_errors is True
 
 
-def test_create_scan_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_scan_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_scan_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.CreateScanConfigRequest()
-
-
 def test_create_scan_config_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1323,41 +1245,6 @@ def test_create_scan_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_scan_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_scan_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            scan_config.ScanConfig(
-                name="name_value",
-                display_name="display_name_value",
-                max_qps=761,
-                starting_urls=["starting_urls_value"],
-                user_agent=scan_config.ScanConfig.UserAgent.CHROME_LINUX,
-                blacklist_patterns=["blacklist_patterns_value"],
-                export_to_security_command_center=scan_config.ScanConfig.ExportToSecurityCommandCenter.ENABLED,
-                risk_level=scan_config.ScanConfig.RiskLevel.NORMAL,
-                managed_scan=True,
-                static_ip_scan=True,
-                ignore_http_status_errors=True,
-            )
-        )
-        response = await client.create_scan_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.CreateScanConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_scan_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1365,7 +1252,7 @@ async def test_create_scan_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1380,22 +1267,23 @@ async def test_create_scan_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_scan_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_scan_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_scan_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1404,7 +1292,7 @@ async def test_create_scan_config_async(
     request_type=web_security_scanner.CreateScanConfigRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1497,7 +1385,7 @@ def test_create_scan_config_field_headers():
 @pytest.mark.asyncio
 async def test_create_scan_config_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1561,27 +1449,6 @@ def test_delete_scan_config(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_scan_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_scan_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_scan_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.DeleteScanConfigRequest()
 
 
 def test_delete_scan_config_non_empty_request_with_auto_populated_field():
@@ -1654,27 +1521,6 @@ def test_delete_scan_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_scan_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_scan_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.delete_scan_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.DeleteScanConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_scan_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1682,7 +1528,7 @@ async def test_delete_scan_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1697,22 +1543,23 @@ async def test_delete_scan_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_scan_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_scan_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_scan_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1721,7 +1568,7 @@ async def test_delete_scan_config_async(
     request_type=web_security_scanner.DeleteScanConfigRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1786,7 +1633,7 @@ def test_delete_scan_config_field_headers():
 @pytest.mark.asyncio
 async def test_delete_scan_config_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1874,25 +1721,6 @@ def test_get_scan_config(request_type, transport: str = "grpc"):
     assert response.ignore_http_status_errors is True
 
 
-def test_get_scan_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_scan_config), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_scan_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.GetScanConfigRequest()
-
-
 def test_get_scan_config_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1957,39 +1785,6 @@ def test_get_scan_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_scan_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_scan_config), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            scan_config.ScanConfig(
-                name="name_value",
-                display_name="display_name_value",
-                max_qps=761,
-                starting_urls=["starting_urls_value"],
-                user_agent=scan_config.ScanConfig.UserAgent.CHROME_LINUX,
-                blacklist_patterns=["blacklist_patterns_value"],
-                export_to_security_command_center=scan_config.ScanConfig.ExportToSecurityCommandCenter.ENABLED,
-                risk_level=scan_config.ScanConfig.RiskLevel.NORMAL,
-                managed_scan=True,
-                static_ip_scan=True,
-                ignore_http_status_errors=True,
-            )
-        )
-        response = await client.get_scan_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.GetScanConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_scan_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1997,7 +1792,7 @@ async def test_get_scan_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2012,22 +1807,23 @@ async def test_get_scan_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_scan_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_scan_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_scan_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2036,7 +1832,7 @@ async def test_get_scan_config_async(
     request_type=web_security_scanner.GetScanConfigRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2125,7 +1921,7 @@ def test_get_scan_config_field_headers():
 @pytest.mark.asyncio
 async def test_get_scan_config_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2190,27 +1986,6 @@ def test_list_scan_configs(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListScanConfigsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_scan_configs_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_scan_configs), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_scan_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListScanConfigsRequest()
 
 
 def test_list_scan_configs_non_empty_request_with_auto_populated_field():
@@ -2283,31 +2058,6 @@ def test_list_scan_configs_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_scan_configs_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_scan_configs), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            web_security_scanner.ListScanConfigsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_scan_configs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListScanConfigsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_scan_configs_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2315,7 +2065,7 @@ async def test_list_scan_configs_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2330,22 +2080,23 @@ async def test_list_scan_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_scan_configs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_scan_configs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_scan_configs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2354,7 +2105,7 @@ async def test_list_scan_configs_async(
     request_type=web_security_scanner.ListScanConfigsRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2424,7 +2175,7 @@ def test_list_scan_configs_field_headers():
 @pytest.mark.asyncio
 async def test_list_scan_configs_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2557,7 +2308,7 @@ def test_list_scan_configs_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_scan_configs_async_pager():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2609,7 +2360,7 @@ async def test_list_scan_configs_async_pager():
 @pytest.mark.asyncio
 async def test_list_scan_configs_async_pages():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2718,27 +2469,6 @@ def test_update_scan_config(request_type, transport: str = "grpc"):
     assert response.ignore_http_status_errors is True
 
 
-def test_update_scan_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_scan_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_scan_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.UpdateScanConfigRequest()
-
-
 def test_update_scan_config_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2805,41 +2535,6 @@ def test_update_scan_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_scan_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.update_scan_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            scan_config.ScanConfig(
-                name="name_value",
-                display_name="display_name_value",
-                max_qps=761,
-                starting_urls=["starting_urls_value"],
-                user_agent=scan_config.ScanConfig.UserAgent.CHROME_LINUX,
-                blacklist_patterns=["blacklist_patterns_value"],
-                export_to_security_command_center=scan_config.ScanConfig.ExportToSecurityCommandCenter.ENABLED,
-                risk_level=scan_config.ScanConfig.RiskLevel.NORMAL,
-                managed_scan=True,
-                static_ip_scan=True,
-                ignore_http_status_errors=True,
-            )
-        )
-        response = await client.update_scan_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.UpdateScanConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_scan_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2847,7 +2542,7 @@ async def test_update_scan_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2862,22 +2557,23 @@ async def test_update_scan_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_scan_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_scan_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_scan_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2886,7 +2582,7 @@ async def test_update_scan_config_async(
     request_type=web_security_scanner.UpdateScanConfigRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2979,7 +2675,7 @@ def test_update_scan_config_field_headers():
 @pytest.mark.asyncio
 async def test_update_scan_config_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3058,25 +2754,6 @@ def test_start_scan_run(request_type, transport: str = "grpc"):
     assert response.progress_percent == 1733
 
 
-def test_start_scan_run_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.start_scan_run), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.start_scan_run()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.StartScanRunRequest()
-
-
 def test_start_scan_run_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3141,35 +2818,6 @@ def test_start_scan_run_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_start_scan_run_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.start_scan_run), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            scan_run.ScanRun(
-                name="name_value",
-                execution_state=scan_run.ScanRun.ExecutionState.QUEUED,
-                result_state=scan_run.ScanRun.ResultState.SUCCESS,
-                urls_crawled_count=1935,
-                urls_tested_count=1846,
-                has_vulnerabilities=True,
-                progress_percent=1733,
-            )
-        )
-        response = await client.start_scan_run()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.StartScanRunRequest()
-
-
-@pytest.mark.asyncio
 async def test_start_scan_run_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3177,7 +2825,7 @@ async def test_start_scan_run_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3192,22 +2840,23 @@ async def test_start_scan_run_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.start_scan_run
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.start_scan_run(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.start_scan_run(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3216,7 +2865,7 @@ async def test_start_scan_run_async(
     request_type=web_security_scanner.StartScanRunRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3294,7 +2943,7 @@ def test_start_scan_run_field_headers():
 @pytest.mark.asyncio
 async def test_start_scan_run_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3369,25 +3018,6 @@ def test_get_scan_run(request_type, transport: str = "grpc"):
     assert response.progress_percent == 1733
 
 
-def test_get_scan_run_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_scan_run), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_scan_run()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.GetScanRunRequest()
-
-
 def test_get_scan_run_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3452,35 +3082,6 @@ def test_get_scan_run_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_scan_run_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_scan_run), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            scan_run.ScanRun(
-                name="name_value",
-                execution_state=scan_run.ScanRun.ExecutionState.QUEUED,
-                result_state=scan_run.ScanRun.ResultState.SUCCESS,
-                urls_crawled_count=1935,
-                urls_tested_count=1846,
-                has_vulnerabilities=True,
-                progress_percent=1733,
-            )
-        )
-        response = await client.get_scan_run()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.GetScanRunRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_scan_run_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3488,7 +3089,7 @@ async def test_get_scan_run_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3503,22 +3104,23 @@ async def test_get_scan_run_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_scan_run
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_scan_run(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_scan_run(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3526,7 +3128,7 @@ async def test_get_scan_run_async(
     transport: str = "grpc_asyncio", request_type=web_security_scanner.GetScanRunRequest
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3604,7 +3206,7 @@ def test_get_scan_run_field_headers():
 @pytest.mark.asyncio
 async def test_get_scan_run_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3665,25 +3267,6 @@ def test_list_scan_runs(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListScanRunsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_scan_runs_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_scan_runs), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_scan_runs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListScanRunsRequest()
 
 
 def test_list_scan_runs_non_empty_request_with_auto_populated_field():
@@ -3752,29 +3335,6 @@ def test_list_scan_runs_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_scan_runs_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_scan_runs), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            web_security_scanner.ListScanRunsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_scan_runs()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListScanRunsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_scan_runs_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3782,7 +3342,7 @@ async def test_list_scan_runs_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3797,22 +3357,23 @@ async def test_list_scan_runs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_scan_runs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_scan_runs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_scan_runs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3821,7 +3382,7 @@ async def test_list_scan_runs_async(
     request_type=web_security_scanner.ListScanRunsRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3887,7 +3448,7 @@ def test_list_scan_runs_field_headers():
 @pytest.mark.asyncio
 async def test_list_scan_runs_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4014,7 +3575,7 @@ def test_list_scan_runs_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_scan_runs_async_pager():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4064,7 +3625,7 @@ async def test_list_scan_runs_async_pager():
 @pytest.mark.asyncio
 async def test_list_scan_runs_async_pages():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4158,25 +3719,6 @@ def test_stop_scan_run(request_type, transport: str = "grpc"):
     assert response.progress_percent == 1733
 
 
-def test_stop_scan_run_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.stop_scan_run), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.stop_scan_run()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.StopScanRunRequest()
-
-
 def test_stop_scan_run_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -4241,35 +3783,6 @@ def test_stop_scan_run_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_stop_scan_run_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.stop_scan_run), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            scan_run.ScanRun(
-                name="name_value",
-                execution_state=scan_run.ScanRun.ExecutionState.QUEUED,
-                result_state=scan_run.ScanRun.ResultState.SUCCESS,
-                urls_crawled_count=1935,
-                urls_tested_count=1846,
-                has_vulnerabilities=True,
-                progress_percent=1733,
-            )
-        )
-        response = await client.stop_scan_run()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.StopScanRunRequest()
-
-
-@pytest.mark.asyncio
 async def test_stop_scan_run_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4277,7 +3790,7 @@ async def test_stop_scan_run_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4292,22 +3805,23 @@ async def test_stop_scan_run_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.stop_scan_run
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.stop_scan_run(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.stop_scan_run(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4316,7 +3830,7 @@ async def test_stop_scan_run_async(
     request_type=web_security_scanner.StopScanRunRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4394,7 +3908,7 @@ def test_stop_scan_run_field_headers():
 @pytest.mark.asyncio
 async def test_stop_scan_run_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4457,27 +3971,6 @@ def test_list_crawled_urls(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListCrawledUrlsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_crawled_urls_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_crawled_urls), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_crawled_urls()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListCrawledUrlsRequest()
 
 
 def test_list_crawled_urls_non_empty_request_with_auto_populated_field():
@@ -4550,31 +4043,6 @@ def test_list_crawled_urls_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_crawled_urls_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_crawled_urls), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            web_security_scanner.ListCrawledUrlsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_crawled_urls()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListCrawledUrlsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_crawled_urls_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4582,7 +4050,7 @@ async def test_list_crawled_urls_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4597,22 +4065,23 @@ async def test_list_crawled_urls_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_crawled_urls
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_crawled_urls(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_crawled_urls(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4621,7 +4090,7 @@ async def test_list_crawled_urls_async(
     request_type=web_security_scanner.ListCrawledUrlsRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4691,7 +4160,7 @@ def test_list_crawled_urls_field_headers():
 @pytest.mark.asyncio
 async def test_list_crawled_urls_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4824,7 +4293,7 @@ def test_list_crawled_urls_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_crawled_urls_async_pager():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4876,7 +4345,7 @@ async def test_list_crawled_urls_async_pager():
 @pytest.mark.asyncio
 async def test_list_crawled_urls_async_pages():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4980,25 +4449,6 @@ def test_get_finding(request_type, transport: str = "grpc"):
     assert response.tracking_id == "tracking_id_value"
 
 
-def test_get_finding_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_finding), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_finding()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.GetFindingRequest()
-
-
 def test_get_finding_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5063,39 +4513,6 @@ def test_get_finding_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_finding_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_finding), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            finding.Finding(
-                name="name_value",
-                finding_type="finding_type_value",
-                severity=finding.Finding.Severity.CRITICAL,
-                http_method="http_method_value",
-                fuzzed_url="fuzzed_url_value",
-                body="body_value",
-                description="description_value",
-                reproduction_url="reproduction_url_value",
-                frame_url="frame_url_value",
-                final_url="final_url_value",
-                tracking_id="tracking_id_value",
-            )
-        )
-        response = await client.get_finding()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.GetFindingRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_finding_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5103,7 +4520,7 @@ async def test_get_finding_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5118,22 +4535,23 @@ async def test_get_finding_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_finding
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_finding(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_finding(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5141,7 +4559,7 @@ async def test_get_finding_async(
     transport: str = "grpc_asyncio", request_type=web_security_scanner.GetFindingRequest
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5227,7 +4645,7 @@ def test_get_finding_field_headers():
 @pytest.mark.asyncio
 async def test_get_finding_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5288,25 +4706,6 @@ def test_list_findings(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListFindingsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_findings_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_findings), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_findings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListFindingsRequest()
 
 
 def test_list_findings_non_empty_request_with_auto_populated_field():
@@ -5377,29 +4776,6 @@ def test_list_findings_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_findings_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_findings), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            web_security_scanner.ListFindingsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_findings()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListFindingsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_findings_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5407,7 +4783,7 @@ async def test_list_findings_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5422,22 +4798,23 @@ async def test_list_findings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_findings
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_findings(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_findings(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5446,7 +4823,7 @@ async def test_list_findings_async(
     request_type=web_security_scanner.ListFindingsRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5512,7 +4889,7 @@ def test_list_findings_field_headers():
 @pytest.mark.asyncio
 async def test_list_findings_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5639,7 +5016,7 @@ def test_list_findings_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_findings_async_pager():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5689,7 +5066,7 @@ async def test_list_findings_async_pager():
 @pytest.mark.asyncio
 async def test_list_findings_async_pages():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5770,27 +5147,6 @@ def test_list_finding_type_stats(request_type, transport: str = "grpc"):
     assert isinstance(response, web_security_scanner.ListFindingTypeStatsResponse)
 
 
-def test_list_finding_type_stats_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_finding_type_stats), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_finding_type_stats()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListFindingTypeStatsRequest()
-
-
 def test_list_finding_type_stats_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5862,29 +5218,6 @@ def test_list_finding_type_stats_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_finding_type_stats_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_finding_type_stats), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            web_security_scanner.ListFindingTypeStatsResponse()
-        )
-        response = await client.list_finding_type_stats()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == web_security_scanner.ListFindingTypeStatsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_finding_type_stats_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5892,7 +5225,7 @@ async def test_list_finding_type_stats_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = WebSecurityScannerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5907,22 +5240,23 @@ async def test_list_finding_type_stats_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_finding_type_stats
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_finding_type_stats(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_finding_type_stats(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5931,7 +5265,7 @@ async def test_list_finding_type_stats_async(
     request_type=web_security_scanner.ListFindingTypeStatsRequest,
 ):
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5998,7 +5332,7 @@ def test_list_finding_type_stats_field_headers():
 @pytest.mark.asyncio
 async def test_list_finding_type_stats_field_headers_async():
     client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6029,6 +5363,1603 @@ async def test_list_finding_type_stats_field_headers_async():
     ) in kw["metadata"]
 
 
+def test_create_scan_config_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.create_scan_config in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.create_scan_config
+        ] = mock_rpc
+
+        request = {}
+        client.create_scan_config(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.create_scan_config(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_delete_scan_config_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.delete_scan_config in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.delete_scan_config
+        ] = mock_rpc
+
+        request = {}
+        client.delete_scan_config(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.delete_scan_config(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_get_scan_config_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.get_scan_config in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.get_scan_config] = mock_rpc
+
+        request = {}
+        client.get_scan_config(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_scan_config(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_scan_configs_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.list_scan_configs in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_scan_configs
+        ] = mock_rpc
+
+        request = {}
+        client.list_scan_configs(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_scan_configs(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_scan_configs_rest_pager(transport: str = "rest"):
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            web_security_scanner.ListScanConfigsResponse(
+                scan_configs=[
+                    scan_config.ScanConfig(),
+                    scan_config.ScanConfig(),
+                    scan_config.ScanConfig(),
+                ],
+                next_page_token="abc",
+            ),
+            web_security_scanner.ListScanConfigsResponse(
+                scan_configs=[],
+                next_page_token="def",
+            ),
+            web_security_scanner.ListScanConfigsResponse(
+                scan_configs=[
+                    scan_config.ScanConfig(),
+                ],
+                next_page_token="ghi",
+            ),
+            web_security_scanner.ListScanConfigsResponse(
+                scan_configs=[
+                    scan_config.ScanConfig(),
+                    scan_config.ScanConfig(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            web_security_scanner.ListScanConfigsResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {"parent": "projects/sample1"}
+
+        pager = client.list_scan_configs(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, scan_config.ScanConfig) for i in results)
+
+        pages = list(client.list_scan_configs(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+def test_update_scan_config_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.update_scan_config in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.update_scan_config
+        ] = mock_rpc
+
+        request = {}
+        client.update_scan_config(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.update_scan_config(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_start_scan_run_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.start_scan_run in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.start_scan_run] = mock_rpc
+
+        request = {}
+        client.start_scan_run(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.start_scan_run(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_get_scan_run_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.get_scan_run in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.get_scan_run] = mock_rpc
+
+        request = {}
+        client.get_scan_run(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_scan_run(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_scan_runs_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.list_scan_runs in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.list_scan_runs] = mock_rpc
+
+        request = {}
+        client.list_scan_runs(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_scan_runs(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_scan_runs_rest_pager(transport: str = "rest"):
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            web_security_scanner.ListScanRunsResponse(
+                scan_runs=[
+                    scan_run.ScanRun(),
+                    scan_run.ScanRun(),
+                    scan_run.ScanRun(),
+                ],
+                next_page_token="abc",
+            ),
+            web_security_scanner.ListScanRunsResponse(
+                scan_runs=[],
+                next_page_token="def",
+            ),
+            web_security_scanner.ListScanRunsResponse(
+                scan_runs=[
+                    scan_run.ScanRun(),
+                ],
+                next_page_token="ghi",
+            ),
+            web_security_scanner.ListScanRunsResponse(
+                scan_runs=[
+                    scan_run.ScanRun(),
+                    scan_run.ScanRun(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            web_security_scanner.ListScanRunsResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {"parent": "projects/sample1/scanConfigs/sample2"}
+
+        pager = client.list_scan_runs(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, scan_run.ScanRun) for i in results)
+
+        pages = list(client.list_scan_runs(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+def test_stop_scan_run_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.stop_scan_run in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.stop_scan_run] = mock_rpc
+
+        request = {}
+        client.stop_scan_run(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.stop_scan_run(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_crawled_urls_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.list_crawled_urls in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_crawled_urls
+        ] = mock_rpc
+
+        request = {}
+        client.list_crawled_urls(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_crawled_urls(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_crawled_urls_rest_pager(transport: str = "rest"):
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            web_security_scanner.ListCrawledUrlsResponse(
+                crawled_urls=[
+                    crawled_url.CrawledUrl(),
+                    crawled_url.CrawledUrl(),
+                    crawled_url.CrawledUrl(),
+                ],
+                next_page_token="abc",
+            ),
+            web_security_scanner.ListCrawledUrlsResponse(
+                crawled_urls=[],
+                next_page_token="def",
+            ),
+            web_security_scanner.ListCrawledUrlsResponse(
+                crawled_urls=[
+                    crawled_url.CrawledUrl(),
+                ],
+                next_page_token="ghi",
+            ),
+            web_security_scanner.ListCrawledUrlsResponse(
+                crawled_urls=[
+                    crawled_url.CrawledUrl(),
+                    crawled_url.CrawledUrl(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            web_security_scanner.ListCrawledUrlsResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {
+            "parent": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"
+        }
+
+        pager = client.list_crawled_urls(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, crawled_url.CrawledUrl) for i in results)
+
+        pages = list(client.list_crawled_urls(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+def test_get_finding_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.get_finding in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.get_finding] = mock_rpc
+
+        request = {}
+        client.get_finding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_finding(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_findings_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.list_findings in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.list_findings] = mock_rpc
+
+        request = {}
+        client.list_findings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_findings(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_findings_rest_pager(transport: str = "rest"):
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            web_security_scanner.ListFindingsResponse(
+                findings=[
+                    finding.Finding(),
+                    finding.Finding(),
+                    finding.Finding(),
+                ],
+                next_page_token="abc",
+            ),
+            web_security_scanner.ListFindingsResponse(
+                findings=[],
+                next_page_token="def",
+            ),
+            web_security_scanner.ListFindingsResponse(
+                findings=[
+                    finding.Finding(),
+                ],
+                next_page_token="ghi",
+            ),
+            web_security_scanner.ListFindingsResponse(
+                findings=[
+                    finding.Finding(),
+                    finding.Finding(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            web_security_scanner.ListFindingsResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {
+            "parent": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"
+        }
+
+        pager = client.list_findings(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, finding.Finding) for i in results)
+
+        pages = list(client.list_findings(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+def test_list_finding_type_stats_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_finding_type_stats
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_finding_type_stats
+        ] = mock_rpc
+
+        request = {}
+        client.list_finding_type_stats(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_finding_type_stats(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_credentials_transport_error():
+    # It is an error to provide credentials and a transport instance.
+    transport = transports.WebSecurityScannerGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = WebSecurityScannerClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport=transport,
+        )
+
+    # It is an error to provide a credentials file and a transport instance.
+    transport = transports.WebSecurityScannerGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = WebSecurityScannerClient(
+            client_options={"credentials_file": "credentials.json"},
+            transport=transport,
+        )
+
+    # It is an error to provide an api_key and a transport instance.
+    transport = transports.WebSecurityScannerGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    options = client_options.ClientOptions()
+    options.api_key = "api_key"
+    with pytest.raises(ValueError):
+        client = WebSecurityScannerClient(
+            client_options=options,
+            transport=transport,
+        )
+
+    # It is an error to provide an api_key and a credential.
+    options = client_options.ClientOptions()
+    options.api_key = "api_key"
+    with pytest.raises(ValueError):
+        client = WebSecurityScannerClient(
+            client_options=options, credentials=ga_credentials.AnonymousCredentials()
+        )
+
+    # It is an error to provide scopes and a transport instance.
+    transport = transports.WebSecurityScannerGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    with pytest.raises(ValueError):
+        client = WebSecurityScannerClient(
+            client_options={"scopes": ["1", "2"]},
+            transport=transport,
+        )
+
+
+def test_transport_instance():
+    # A client may be instantiated with a custom transport instance.
+    transport = transports.WebSecurityScannerGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    client = WebSecurityScannerClient(transport=transport)
+    assert client.transport is transport
+
+
+def test_transport_get_channel():
+    # A client may be instantiated with a custom transport instance.
+    transport = transports.WebSecurityScannerGrpcTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    channel = transport.grpc_channel
+    assert channel
+
+    transport = transports.WebSecurityScannerGrpcAsyncIOTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+    channel = transport.grpc_channel
+    assert channel
+
+
+@pytest.mark.parametrize(
+    "transport_class",
+    [
+        transports.WebSecurityScannerGrpcTransport,
+        transports.WebSecurityScannerGrpcAsyncIOTransport,
+        transports.WebSecurityScannerRestTransport,
+    ],
+)
+def test_transport_adc(transport_class):
+    # Test default credentials are used if not provided.
+    with mock.patch.object(google.auth, "default") as adc:
+        adc.return_value = (ga_credentials.AnonymousCredentials(), None)
+        transport_class()
+        adc.assert_called_once()
+
+
+def test_transport_kind_grpc():
+    transport = WebSecurityScannerClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_scan_config_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_scan_config), "__call__"
+    ) as call:
+        call.return_value = scan_config.ScanConfig()
+        client.create_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.CreateScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_scan_config_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_scan_config), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.DeleteScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_scan_config_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_scan_config), "__call__") as call:
+        call.return_value = scan_config.ScanConfig()
+        client.get_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.GetScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_scan_configs_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_scan_configs), "__call__"
+    ) as call:
+        call.return_value = web_security_scanner.ListScanConfigsResponse()
+        client.list_scan_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListScanConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_scan_config_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_scan_config), "__call__"
+    ) as call:
+        call.return_value = scan_config.ScanConfig()
+        client.update_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.UpdateScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_start_scan_run_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.start_scan_run), "__call__") as call:
+        call.return_value = scan_run.ScanRun()
+        client.start_scan_run(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.StartScanRunRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_scan_run_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_scan_run), "__call__") as call:
+        call.return_value = scan_run.ScanRun()
+        client.get_scan_run(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.GetScanRunRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_scan_runs_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_scan_runs), "__call__") as call:
+        call.return_value = web_security_scanner.ListScanRunsResponse()
+        client.list_scan_runs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListScanRunsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_stop_scan_run_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.stop_scan_run), "__call__") as call:
+        call.return_value = scan_run.ScanRun()
+        client.stop_scan_run(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.StopScanRunRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_crawled_urls_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_crawled_urls), "__call__"
+    ) as call:
+        call.return_value = web_security_scanner.ListCrawledUrlsResponse()
+        client.list_crawled_urls(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListCrawledUrlsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_finding_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_finding), "__call__") as call:
+        call.return_value = finding.Finding()
+        client.get_finding(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.GetFindingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_findings_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_findings), "__call__") as call:
+        call.return_value = web_security_scanner.ListFindingsResponse()
+        client.list_findings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListFindingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_finding_type_stats_empty_call_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_finding_type_stats), "__call__"
+    ) as call:
+        call.return_value = web_security_scanner.ListFindingTypeStatsResponse()
+        client.list_finding_type_stats(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListFindingTypeStatsRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = WebSecurityScannerAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_scan_config_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_scan_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            scan_config.ScanConfig(
+                name="name_value",
+                display_name="display_name_value",
+                max_qps=761,
+                starting_urls=["starting_urls_value"],
+                user_agent=scan_config.ScanConfig.UserAgent.CHROME_LINUX,
+                blacklist_patterns=["blacklist_patterns_value"],
+                export_to_security_command_center=scan_config.ScanConfig.ExportToSecurityCommandCenter.ENABLED,
+                risk_level=scan_config.ScanConfig.RiskLevel.NORMAL,
+                managed_scan=True,
+                static_ip_scan=True,
+                ignore_http_status_errors=True,
+            )
+        )
+        await client.create_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.CreateScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_scan_config_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_scan_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.DeleteScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_scan_config_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_scan_config), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            scan_config.ScanConfig(
+                name="name_value",
+                display_name="display_name_value",
+                max_qps=761,
+                starting_urls=["starting_urls_value"],
+                user_agent=scan_config.ScanConfig.UserAgent.CHROME_LINUX,
+                blacklist_patterns=["blacklist_patterns_value"],
+                export_to_security_command_center=scan_config.ScanConfig.ExportToSecurityCommandCenter.ENABLED,
+                risk_level=scan_config.ScanConfig.RiskLevel.NORMAL,
+                managed_scan=True,
+                static_ip_scan=True,
+                ignore_http_status_errors=True,
+            )
+        )
+        await client.get_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.GetScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_scan_configs_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_scan_configs), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            web_security_scanner.ListScanConfigsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_scan_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListScanConfigsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_scan_config_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_scan_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            scan_config.ScanConfig(
+                name="name_value",
+                display_name="display_name_value",
+                max_qps=761,
+                starting_urls=["starting_urls_value"],
+                user_agent=scan_config.ScanConfig.UserAgent.CHROME_LINUX,
+                blacklist_patterns=["blacklist_patterns_value"],
+                export_to_security_command_center=scan_config.ScanConfig.ExportToSecurityCommandCenter.ENABLED,
+                risk_level=scan_config.ScanConfig.RiskLevel.NORMAL,
+                managed_scan=True,
+                static_ip_scan=True,
+                ignore_http_status_errors=True,
+            )
+        )
+        await client.update_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.UpdateScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_start_scan_run_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.start_scan_run), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            scan_run.ScanRun(
+                name="name_value",
+                execution_state=scan_run.ScanRun.ExecutionState.QUEUED,
+                result_state=scan_run.ScanRun.ResultState.SUCCESS,
+                urls_crawled_count=1935,
+                urls_tested_count=1846,
+                has_vulnerabilities=True,
+                progress_percent=1733,
+            )
+        )
+        await client.start_scan_run(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.StartScanRunRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_scan_run_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_scan_run), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            scan_run.ScanRun(
+                name="name_value",
+                execution_state=scan_run.ScanRun.ExecutionState.QUEUED,
+                result_state=scan_run.ScanRun.ResultState.SUCCESS,
+                urls_crawled_count=1935,
+                urls_tested_count=1846,
+                has_vulnerabilities=True,
+                progress_percent=1733,
+            )
+        )
+        await client.get_scan_run(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.GetScanRunRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_scan_runs_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_scan_runs), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            web_security_scanner.ListScanRunsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_scan_runs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListScanRunsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_stop_scan_run_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.stop_scan_run), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            scan_run.ScanRun(
+                name="name_value",
+                execution_state=scan_run.ScanRun.ExecutionState.QUEUED,
+                result_state=scan_run.ScanRun.ResultState.SUCCESS,
+                urls_crawled_count=1935,
+                urls_tested_count=1846,
+                has_vulnerabilities=True,
+                progress_percent=1733,
+            )
+        )
+        await client.stop_scan_run(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.StopScanRunRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_crawled_urls_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_crawled_urls), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            web_security_scanner.ListCrawledUrlsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_crawled_urls(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListCrawledUrlsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_finding_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_finding), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            finding.Finding(
+                name="name_value",
+                finding_type="finding_type_value",
+                severity=finding.Finding.Severity.CRITICAL,
+                http_method="http_method_value",
+                fuzzed_url="fuzzed_url_value",
+                body="body_value",
+                description="description_value",
+                reproduction_url="reproduction_url_value",
+                frame_url="frame_url_value",
+                final_url="final_url_value",
+                tracking_id="tracking_id_value",
+            )
+        )
+        await client.get_finding(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.GetFindingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_findings_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_findings), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            web_security_scanner.ListFindingsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_findings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListFindingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_finding_type_stats_empty_call_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_finding_type_stats), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            web_security_scanner.ListFindingTypeStatsResponse()
+        )
+        await client.list_finding_type_stats(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListFindingTypeStatsRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = WebSecurityScannerClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_create_scan_config_rest_bad_request(
+    request_type=web_security_scanner.CreateScanConfigRequest,
+):
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_scan_config(request)
+
+
 @pytest.mark.parametrize(
     "request_type",
     [
@@ -6036,10 +6967,9 @@ async def test_list_finding_type_stats_field_headers_async():
         dict,
     ],
 )
-def test_create_scan_config_rest(request_type):
+def test_create_scan_config_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -6167,14 +7097,15 @@ def test_create_scan_config_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = scan_config.ScanConfig.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.create_scan_config(request)
 
     # Establish that the response is the type that we expect.
@@ -6195,46 +7126,6 @@ def test_create_scan_config_rest(request_type):
     assert response.ignore_http_status_errors is True
 
 
-def test_create_scan_config_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.create_scan_config in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.create_scan_config
-        ] = mock_rpc
-
-        request = {}
-        client.create_scan_config(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.create_scan_config(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_create_scan_config_rest_interceptors(null_interceptor):
     transport = transports.WebSecurityScannerRestTransport(
@@ -6244,6 +7135,7 @@ def test_create_scan_config_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -6265,12 +7157,11 @@ def test_create_scan_config_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = scan_config.ScanConfig.to_json(
-            scan_config.ScanConfig()
-        )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = scan_config.ScanConfig.to_json(scan_config.ScanConfig())
+        req.return_value.content = return_value
 
         request = web_security_scanner.CreateScanConfigRequest()
         metadata = [
@@ -6292,16 +7183,14 @@ def test_create_scan_config_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_create_scan_config_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.CreateScanConfigRequest
+def test_delete_scan_config_rest_bad_request(
+    request_type=web_security_scanner.DeleteScanConfigRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
+    request_init = {"name": "projects/sample1/scanConfigs/sample2"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -6309,17 +7198,14 @@ def test_create_scan_config_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.create_scan_config(request)
-
-
-def test_create_scan_config_rest_error():
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_scan_config(request)
 
 
 @pytest.mark.parametrize(
@@ -6329,10 +7215,9 @@ def test_create_scan_config_rest_error():
         dict,
     ],
 )
-def test_delete_scan_config_rest(request_type):
+def test_delete_scan_config_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -6345,56 +7230,16 @@ def test_delete_scan_config_rest(request_type):
         return_value = None
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
         json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.delete_scan_config(request)
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_delete_scan_config_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.delete_scan_config in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.delete_scan_config
-        ] = mock_rpc
-
-        request = {}
-        client.delete_scan_config(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.delete_scan_config(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -6406,6 +7251,7 @@ def test_delete_scan_config_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -6424,9 +7270,9 @@ def test_delete_scan_config_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         request = web_security_scanner.DeleteScanConfigRequest()
         metadata = [
@@ -6446,14 +7292,12 @@ def test_delete_scan_config_rest_interceptors(null_interceptor):
         pre.assert_called_once()
 
 
-def test_delete_scan_config_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.DeleteScanConfigRequest
+def test_get_scan_config_rest_bad_request(
+    request_type=web_security_scanner.GetScanConfigRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
     request_init = {"name": "projects/sample1/scanConfigs/sample2"}
     request = request_type(**request_init)
@@ -6463,17 +7307,14 @@ def test_delete_scan_config_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.delete_scan_config(request)
-
-
-def test_delete_scan_config_rest_error():
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_scan_config(request)
 
 
 @pytest.mark.parametrize(
@@ -6483,10 +7324,9 @@ def test_delete_scan_config_rest_error():
         dict,
     ],
 )
-def test_get_scan_config_rest(request_type):
+def test_get_scan_config_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -6511,14 +7351,15 @@ def test_get_scan_config_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = scan_config.ScanConfig.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.get_scan_config(request)
 
     # Establish that the response is the type that we expect.
@@ -6539,42 +7380,6 @@ def test_get_scan_config_rest(request_type):
     assert response.ignore_http_status_errors is True
 
 
-def test_get_scan_config_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.get_scan_config in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[client._transport.get_scan_config] = mock_rpc
-
-        request = {}
-        client.get_scan_config(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.get_scan_config(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_get_scan_config_rest_interceptors(null_interceptor):
     transport = transports.WebSecurityScannerRestTransport(
@@ -6584,6 +7389,7 @@ def test_get_scan_config_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -6605,12 +7411,11 @@ def test_get_scan_config_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = scan_config.ScanConfig.to_json(
-            scan_config.ScanConfig()
-        )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = scan_config.ScanConfig.to_json(scan_config.ScanConfig())
+        req.return_value.content = return_value
 
         request = web_security_scanner.GetScanConfigRequest()
         metadata = [
@@ -6632,16 +7437,14 @@ def test_get_scan_config_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_get_scan_config_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.GetScanConfigRequest
+def test_list_scan_configs_rest_bad_request(
+    request_type=web_security_scanner.ListScanConfigsRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/scanConfigs/sample2"}
+    request_init = {"parent": "projects/sample1"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -6649,17 +7452,14 @@ def test_get_scan_config_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.get_scan_config(request)
-
-
-def test_get_scan_config_rest_error():
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_scan_configs(request)
 
 
 @pytest.mark.parametrize(
@@ -6669,10 +7469,9 @@ def test_get_scan_config_rest_error():
         dict,
     ],
 )
-def test_list_scan_configs_rest(request_type):
+def test_list_scan_configs_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -6687,57 +7486,20 @@ def test_list_scan_configs_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = web_security_scanner.ListScanConfigsResponse.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.list_scan_configs(request)
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListScanConfigsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_scan_configs_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.list_scan_configs in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.list_scan_configs
-        ] = mock_rpc
-
-        request = {}
-        client.list_scan_configs(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.list_scan_configs(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -6749,6 +7511,7 @@ def test_list_scan_configs_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -6770,14 +7533,13 @@ def test_list_scan_configs_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            web_security_scanner.ListScanConfigsResponse.to_json(
-                web_security_scanner.ListScanConfigsResponse()
-            )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = web_security_scanner.ListScanConfigsResponse.to_json(
+            web_security_scanner.ListScanConfigsResponse()
         )
+        req.return_value.content = return_value
 
         request = web_security_scanner.ListScanConfigsRequest()
         metadata = [
@@ -6799,16 +7561,14 @@ def test_list_scan_configs_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_list_scan_configs_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.ListScanConfigsRequest
+def test_update_scan_config_rest_bad_request(
+    request_type=web_security_scanner.UpdateScanConfigRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
+    request_init = {"scan_config": {"name": "projects/sample1/scanConfigs/sample2"}}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -6816,74 +7576,14 @@ def test_list_scan_configs_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.list_scan_configs(request)
-
-
-def test_list_scan_configs_rest_pager(transport: str = "rest"):
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # TODO(kbandes): remove this mock unless there's a good reason for it.
-        # with mock.patch.object(path_template, 'transcode') as transcode:
-        # Set the response as a series of pages
-        response = (
-            web_security_scanner.ListScanConfigsResponse(
-                scan_configs=[
-                    scan_config.ScanConfig(),
-                    scan_config.ScanConfig(),
-                    scan_config.ScanConfig(),
-                ],
-                next_page_token="abc",
-            ),
-            web_security_scanner.ListScanConfigsResponse(
-                scan_configs=[],
-                next_page_token="def",
-            ),
-            web_security_scanner.ListScanConfigsResponse(
-                scan_configs=[
-                    scan_config.ScanConfig(),
-                ],
-                next_page_token="ghi",
-            ),
-            web_security_scanner.ListScanConfigsResponse(
-                scan_configs=[
-                    scan_config.ScanConfig(),
-                    scan_config.ScanConfig(),
-                ],
-            ),
-        )
-        # Two responses for two calls
-        response = response + response
-
-        # Wrap the values into proper Response objs
-        response = tuple(
-            web_security_scanner.ListScanConfigsResponse.to_json(x) for x in response
-        )
-        return_values = tuple(Response() for i in response)
-        for return_val, response_val in zip(return_values, response):
-            return_val._content = response_val.encode("UTF-8")
-            return_val.status_code = 200
-        req.side_effect = return_values
-
-        sample_request = {"parent": "projects/sample1"}
-
-        pager = client.list_scan_configs(request=sample_request)
-
-        results = list(pager)
-        assert len(results) == 6
-        assert all(isinstance(i, scan_config.ScanConfig) for i in results)
-
-        pages = list(client.list_scan_configs(request=sample_request).pages)
-        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
-            assert page_.raw_page.next_page_token == token
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_scan_config(request)
 
 
 @pytest.mark.parametrize(
@@ -6893,10 +7593,9 @@ def test_list_scan_configs_rest_pager(transport: str = "rest"):
         dict,
     ],
 )
-def test_update_scan_config_rest(request_type):
+def test_update_scan_config_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -7024,14 +7723,15 @@ def test_update_scan_config_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = scan_config.ScanConfig.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.update_scan_config(request)
 
     # Establish that the response is the type that we expect.
@@ -7052,46 +7752,6 @@ def test_update_scan_config_rest(request_type):
     assert response.ignore_http_status_errors is True
 
 
-def test_update_scan_config_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.update_scan_config in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.update_scan_config
-        ] = mock_rpc
-
-        request = {}
-        client.update_scan_config(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.update_scan_config(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_update_scan_config_rest_interceptors(null_interceptor):
     transport = transports.WebSecurityScannerRestTransport(
@@ -7101,6 +7761,7 @@ def test_update_scan_config_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -7122,12 +7783,11 @@ def test_update_scan_config_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = scan_config.ScanConfig.to_json(
-            scan_config.ScanConfig()
-        )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = scan_config.ScanConfig.to_json(scan_config.ScanConfig())
+        req.return_value.content = return_value
 
         request = web_security_scanner.UpdateScanConfigRequest()
         metadata = [
@@ -7149,16 +7809,14 @@ def test_update_scan_config_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_update_scan_config_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.UpdateScanConfigRequest
+def test_start_scan_run_rest_bad_request(
+    request_type=web_security_scanner.StartScanRunRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"scan_config": {"name": "projects/sample1/scanConfigs/sample2"}}
+    request_init = {"name": "projects/sample1/scanConfigs/sample2"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -7166,17 +7824,14 @@ def test_update_scan_config_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.update_scan_config(request)
-
-
-def test_update_scan_config_rest_error():
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.start_scan_run(request)
 
 
 @pytest.mark.parametrize(
@@ -7186,10 +7841,9 @@ def test_update_scan_config_rest_error():
         dict,
     ],
 )
-def test_start_scan_run_rest(request_type):
+def test_start_scan_run_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -7210,14 +7864,15 @@ def test_start_scan_run_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = scan_run.ScanRun.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.start_scan_run(request)
 
     # Establish that the response is the type that we expect.
@@ -7231,42 +7886,6 @@ def test_start_scan_run_rest(request_type):
     assert response.progress_percent == 1733
 
 
-def test_start_scan_run_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.start_scan_run in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[client._transport.start_scan_run] = mock_rpc
-
-        request = {}
-        client.start_scan_run(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.start_scan_run(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_start_scan_run_rest_interceptors(null_interceptor):
     transport = transports.WebSecurityScannerRestTransport(
@@ -7276,6 +7895,7 @@ def test_start_scan_run_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -7297,10 +7917,11 @@ def test_start_scan_run_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = scan_run.ScanRun.to_json(scan_run.ScanRun())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = scan_run.ScanRun.to_json(scan_run.ScanRun())
+        req.return_value.content = return_value
 
         request = web_security_scanner.StartScanRunRequest()
         metadata = [
@@ -7322,16 +7943,14 @@ def test_start_scan_run_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_start_scan_run_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.StartScanRunRequest
+def test_get_scan_run_rest_bad_request(
+    request_type=web_security_scanner.GetScanRunRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/scanConfigs/sample2"}
+    request_init = {"name": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -7339,17 +7958,14 @@ def test_start_scan_run_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.start_scan_run(request)
-
-
-def test_start_scan_run_rest_error():
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_scan_run(request)
 
 
 @pytest.mark.parametrize(
@@ -7359,10 +7975,9 @@ def test_start_scan_run_rest_error():
         dict,
     ],
 )
-def test_get_scan_run_rest(request_type):
+def test_get_scan_run_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -7383,14 +7998,15 @@ def test_get_scan_run_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = scan_run.ScanRun.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.get_scan_run(request)
 
     # Establish that the response is the type that we expect.
@@ -7404,42 +8020,6 @@ def test_get_scan_run_rest(request_type):
     assert response.progress_percent == 1733
 
 
-def test_get_scan_run_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.get_scan_run in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[client._transport.get_scan_run] = mock_rpc
-
-        request = {}
-        client.get_scan_run(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.get_scan_run(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_get_scan_run_rest_interceptors(null_interceptor):
     transport = transports.WebSecurityScannerRestTransport(
@@ -7449,6 +8029,7 @@ def test_get_scan_run_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -7470,10 +8051,11 @@ def test_get_scan_run_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = scan_run.ScanRun.to_json(scan_run.ScanRun())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = scan_run.ScanRun.to_json(scan_run.ScanRun())
+        req.return_value.content = return_value
 
         request = web_security_scanner.GetScanRunRequest()
         metadata = [
@@ -7495,16 +8077,14 @@ def test_get_scan_run_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_get_scan_run_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.GetScanRunRequest
+def test_list_scan_runs_rest_bad_request(
+    request_type=web_security_scanner.ListScanRunsRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"}
+    request_init = {"parent": "projects/sample1/scanConfigs/sample2"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -7512,17 +8092,14 @@ def test_get_scan_run_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.get_scan_run(request)
-
-
-def test_get_scan_run_rest_error():
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_scan_runs(request)
 
 
 @pytest.mark.parametrize(
@@ -7532,10 +8109,9 @@ def test_get_scan_run_rest_error():
         dict,
     ],
 )
-def test_list_scan_runs_rest(request_type):
+def test_list_scan_runs_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -7550,55 +8126,20 @@ def test_list_scan_runs_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = web_security_scanner.ListScanRunsResponse.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.list_scan_runs(request)
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListScanRunsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_scan_runs_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.list_scan_runs in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[client._transport.list_scan_runs] = mock_rpc
-
-        request = {}
-        client.list_scan_runs(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.list_scan_runs(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -7610,6 +8151,7 @@ def test_list_scan_runs_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -7631,12 +8173,13 @@ def test_list_scan_runs_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = web_security_scanner.ListScanRunsResponse.to_json(
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = web_security_scanner.ListScanRunsResponse.to_json(
             web_security_scanner.ListScanRunsResponse()
         )
+        req.return_value.content = return_value
 
         request = web_security_scanner.ListScanRunsRequest()
         metadata = [
@@ -7658,16 +8201,14 @@ def test_list_scan_runs_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_list_scan_runs_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.ListScanRunsRequest
+def test_stop_scan_run_rest_bad_request(
+    request_type=web_security_scanner.StopScanRunRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/scanConfigs/sample2"}
+    request_init = {"name": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -7675,74 +8216,14 @@ def test_list_scan_runs_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.list_scan_runs(request)
-
-
-def test_list_scan_runs_rest_pager(transport: str = "rest"):
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # TODO(kbandes): remove this mock unless there's a good reason for it.
-        # with mock.patch.object(path_template, 'transcode') as transcode:
-        # Set the response as a series of pages
-        response = (
-            web_security_scanner.ListScanRunsResponse(
-                scan_runs=[
-                    scan_run.ScanRun(),
-                    scan_run.ScanRun(),
-                    scan_run.ScanRun(),
-                ],
-                next_page_token="abc",
-            ),
-            web_security_scanner.ListScanRunsResponse(
-                scan_runs=[],
-                next_page_token="def",
-            ),
-            web_security_scanner.ListScanRunsResponse(
-                scan_runs=[
-                    scan_run.ScanRun(),
-                ],
-                next_page_token="ghi",
-            ),
-            web_security_scanner.ListScanRunsResponse(
-                scan_runs=[
-                    scan_run.ScanRun(),
-                    scan_run.ScanRun(),
-                ],
-            ),
-        )
-        # Two responses for two calls
-        response = response + response
-
-        # Wrap the values into proper Response objs
-        response = tuple(
-            web_security_scanner.ListScanRunsResponse.to_json(x) for x in response
-        )
-        return_values = tuple(Response() for i in response)
-        for return_val, response_val in zip(return_values, response):
-            return_val._content = response_val.encode("UTF-8")
-            return_val.status_code = 200
-        req.side_effect = return_values
-
-        sample_request = {"parent": "projects/sample1/scanConfigs/sample2"}
-
-        pager = client.list_scan_runs(request=sample_request)
-
-        results = list(pager)
-        assert len(results) == 6
-        assert all(isinstance(i, scan_run.ScanRun) for i in results)
-
-        pages = list(client.list_scan_runs(request=sample_request).pages)
-        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
-            assert page_.raw_page.next_page_token == token
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.stop_scan_run(request)
 
 
 @pytest.mark.parametrize(
@@ -7752,10 +8233,9 @@ def test_list_scan_runs_rest_pager(transport: str = "rest"):
         dict,
     ],
 )
-def test_stop_scan_run_rest(request_type):
+def test_stop_scan_run_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -7776,14 +8256,15 @@ def test_stop_scan_run_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = scan_run.ScanRun.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.stop_scan_run(request)
 
     # Establish that the response is the type that we expect.
@@ -7797,42 +8278,6 @@ def test_stop_scan_run_rest(request_type):
     assert response.progress_percent == 1733
 
 
-def test_stop_scan_run_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.stop_scan_run in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[client._transport.stop_scan_run] = mock_rpc
-
-        request = {}
-        client.stop_scan_run(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.stop_scan_run(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_stop_scan_run_rest_interceptors(null_interceptor):
     transport = transports.WebSecurityScannerRestTransport(
@@ -7842,6 +8287,7 @@ def test_stop_scan_run_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -7863,10 +8309,11 @@ def test_stop_scan_run_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = scan_run.ScanRun.to_json(scan_run.ScanRun())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = scan_run.ScanRun.to_json(scan_run.ScanRun())
+        req.return_value.content = return_value
 
         request = web_security_scanner.StopScanRunRequest()
         metadata = [
@@ -7888,16 +8335,14 @@ def test_stop_scan_run_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_stop_scan_run_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.StopScanRunRequest
+def test_list_crawled_urls_rest_bad_request(
+    request_type=web_security_scanner.ListCrawledUrlsRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"}
+    request_init = {"parent": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -7905,17 +8350,14 @@ def test_stop_scan_run_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.stop_scan_run(request)
-
-
-def test_stop_scan_run_rest_error():
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_crawled_urls(request)
 
 
 @pytest.mark.parametrize(
@@ -7925,10 +8367,9 @@ def test_stop_scan_run_rest_error():
         dict,
     ],
 )
-def test_list_crawled_urls_rest(request_type):
+def test_list_crawled_urls_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -7943,57 +8384,20 @@ def test_list_crawled_urls_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = web_security_scanner.ListCrawledUrlsResponse.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.list_crawled_urls(request)
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListCrawledUrlsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_crawled_urls_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.list_crawled_urls in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.list_crawled_urls
-        ] = mock_rpc
-
-        request = {}
-        client.list_crawled_urls(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.list_crawled_urls(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -8005,6 +8409,7 @@ def test_list_crawled_urls_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -8026,14 +8431,13 @@ def test_list_crawled_urls_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            web_security_scanner.ListCrawledUrlsResponse.to_json(
-                web_security_scanner.ListCrawledUrlsResponse()
-            )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = web_security_scanner.ListCrawledUrlsResponse.to_json(
+            web_security_scanner.ListCrawledUrlsResponse()
         )
+        req.return_value.content = return_value
 
         request = web_security_scanner.ListCrawledUrlsRequest()
         metadata = [
@@ -8055,16 +8459,16 @@ def test_list_crawled_urls_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_list_crawled_urls_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.ListCrawledUrlsRequest
+def test_get_finding_rest_bad_request(
+    request_type=web_security_scanner.GetFindingRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"}
+    request_init = {
+        "name": "projects/sample1/scanConfigs/sample2/scanRuns/sample3/findings/sample4"
+    }
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -8072,76 +8476,14 @@ def test_list_crawled_urls_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.list_crawled_urls(request)
-
-
-def test_list_crawled_urls_rest_pager(transport: str = "rest"):
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # TODO(kbandes): remove this mock unless there's a good reason for it.
-        # with mock.patch.object(path_template, 'transcode') as transcode:
-        # Set the response as a series of pages
-        response = (
-            web_security_scanner.ListCrawledUrlsResponse(
-                crawled_urls=[
-                    crawled_url.CrawledUrl(),
-                    crawled_url.CrawledUrl(),
-                    crawled_url.CrawledUrl(),
-                ],
-                next_page_token="abc",
-            ),
-            web_security_scanner.ListCrawledUrlsResponse(
-                crawled_urls=[],
-                next_page_token="def",
-            ),
-            web_security_scanner.ListCrawledUrlsResponse(
-                crawled_urls=[
-                    crawled_url.CrawledUrl(),
-                ],
-                next_page_token="ghi",
-            ),
-            web_security_scanner.ListCrawledUrlsResponse(
-                crawled_urls=[
-                    crawled_url.CrawledUrl(),
-                    crawled_url.CrawledUrl(),
-                ],
-            ),
-        )
-        # Two responses for two calls
-        response = response + response
-
-        # Wrap the values into proper Response objs
-        response = tuple(
-            web_security_scanner.ListCrawledUrlsResponse.to_json(x) for x in response
-        )
-        return_values = tuple(Response() for i in response)
-        for return_val, response_val in zip(return_values, response):
-            return_val._content = response_val.encode("UTF-8")
-            return_val.status_code = 200
-        req.side_effect = return_values
-
-        sample_request = {
-            "parent": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"
-        }
-
-        pager = client.list_crawled_urls(request=sample_request)
-
-        results = list(pager)
-        assert len(results) == 6
-        assert all(isinstance(i, crawled_url.CrawledUrl) for i in results)
-
-        pages = list(client.list_crawled_urls(request=sample_request).pages)
-        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
-            assert page_.raw_page.next_page_token == token
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_finding(request)
 
 
 @pytest.mark.parametrize(
@@ -8151,10 +8493,9 @@ def test_list_crawled_urls_rest_pager(transport: str = "rest"):
         dict,
     ],
 )
-def test_get_finding_rest(request_type):
+def test_get_finding_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -8181,14 +8522,15 @@ def test_get_finding_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = finding.Finding.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.get_finding(request)
 
     # Establish that the response is the type that we expect.
@@ -8206,42 +8548,6 @@ def test_get_finding_rest(request_type):
     assert response.tracking_id == "tracking_id_value"
 
 
-def test_get_finding_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.get_finding in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[client._transport.get_finding] = mock_rpc
-
-        request = {}
-        client.get_finding(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.get_finding(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
-
-
 @pytest.mark.parametrize("null_interceptor", [True, False])
 def test_get_finding_rest_interceptors(null_interceptor):
     transport = transports.WebSecurityScannerRestTransport(
@@ -8251,6 +8557,7 @@ def test_get_finding_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -8272,10 +8579,11 @@ def test_get_finding_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = finding.Finding.to_json(finding.Finding())
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = finding.Finding.to_json(finding.Finding())
+        req.return_value.content = return_value
 
         request = web_security_scanner.GetFindingRequest()
         metadata = [
@@ -8297,18 +8605,14 @@ def test_get_finding_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_get_finding_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.GetFindingRequest
+def test_list_findings_rest_bad_request(
+    request_type=web_security_scanner.ListFindingsRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/scanConfigs/sample2/scanRuns/sample3/findings/sample4"
-    }
+    request_init = {"parent": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -8316,17 +8620,14 @@ def test_get_finding_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.get_finding(request)
-
-
-def test_get_finding_rest_error():
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_findings(request)
 
 
 @pytest.mark.parametrize(
@@ -8336,10 +8637,9 @@ def test_get_finding_rest_error():
         dict,
     ],
 )
-def test_list_findings_rest(request_type):
+def test_list_findings_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -8354,55 +8654,20 @@ def test_list_findings_rest(request_type):
         )
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = web_security_scanner.ListFindingsResponse.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.list_findings(request)
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListFindingsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_findings_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert client._transport.list_findings in client._transport._wrapped_methods
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[client._transport.list_findings] = mock_rpc
-
-        request = {}
-        client.list_findings(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.list_findings(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -8414,6 +8679,7 @@ def test_list_findings_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -8435,12 +8701,13 @@ def test_list_findings_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = web_security_scanner.ListFindingsResponse.to_json(
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = web_security_scanner.ListFindingsResponse.to_json(
             web_security_scanner.ListFindingsResponse()
         )
+        req.return_value.content = return_value
 
         request = web_security_scanner.ListFindingsRequest()
         metadata = [
@@ -8462,14 +8729,12 @@ def test_list_findings_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_list_findings_rest_bad_request(
-    transport: str = "rest", request_type=web_security_scanner.ListFindingsRequest
+def test_list_finding_type_stats_rest_bad_request(
+    request_type=web_security_scanner.ListFindingTypeStatsRequest,
 ):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
     # send a request that will satisfy transcoding
     request_init = {"parent": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"}
     request = request_type(**request_init)
@@ -8479,76 +8744,14 @@ def test_list_findings_rest_bad_request(
         core_exceptions.BadRequest
     ):
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
         response_value.status_code = 400
-        response_value.request = Request()
+        response_value.request = mock.Mock()
         req.return_value = response_value
-        client.list_findings(request)
-
-
-def test_list_findings_rest_pager(transport: str = "rest"):
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(Session, "request") as req:
-        # TODO(kbandes): remove this mock unless there's a good reason for it.
-        # with mock.patch.object(path_template, 'transcode') as transcode:
-        # Set the response as a series of pages
-        response = (
-            web_security_scanner.ListFindingsResponse(
-                findings=[
-                    finding.Finding(),
-                    finding.Finding(),
-                    finding.Finding(),
-                ],
-                next_page_token="abc",
-            ),
-            web_security_scanner.ListFindingsResponse(
-                findings=[],
-                next_page_token="def",
-            ),
-            web_security_scanner.ListFindingsResponse(
-                findings=[
-                    finding.Finding(),
-                ],
-                next_page_token="ghi",
-            ),
-            web_security_scanner.ListFindingsResponse(
-                findings=[
-                    finding.Finding(),
-                    finding.Finding(),
-                ],
-            ),
-        )
-        # Two responses for two calls
-        response = response + response
-
-        # Wrap the values into proper Response objs
-        response = tuple(
-            web_security_scanner.ListFindingsResponse.to_json(x) for x in response
-        )
-        return_values = tuple(Response() for i in response)
-        for return_val, response_val in zip(return_values, response):
-            return_val._content = response_val.encode("UTF-8")
-            return_val.status_code = 200
-        req.side_effect = return_values
-
-        sample_request = {
-            "parent": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"
-        }
-
-        pager = client.list_findings(request=sample_request)
-
-        results = list(pager)
-        assert len(results) == 6
-        assert all(isinstance(i, finding.Finding) for i in results)
-
-        pages = list(client.list_findings(request=sample_request).pages)
-        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
-            assert page_.raw_page.next_page_token == token
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_finding_type_stats(request)
 
 
 @pytest.mark.parametrize(
@@ -8558,10 +8761,9 @@ def test_list_findings_rest_pager(transport: str = "rest"):
         dict,
     ],
 )
-def test_list_finding_type_stats_rest(request_type):
+def test_list_finding_type_stats_rest_call_success(request_type):
     client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
 
     # send a request that will satisfy transcoding
@@ -8574,61 +8776,21 @@ def test_list_finding_type_stats_rest(request_type):
         return_value = web_security_scanner.ListFindingTypeStatsResponse()
 
         # Wrap the value into a proper Response obj
-        response_value = Response()
+        response_value = mock.Mock()
         response_value.status_code = 200
+
         # Convert return value to protobuf type
         return_value = web_security_scanner.ListFindingTypeStatsResponse.pb(
             return_value
         )
         json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
+        response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
         response = client.list_finding_type_stats(request)
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, web_security_scanner.ListFindingTypeStatsResponse)
-
-
-def test_list_finding_type_stats_rest_use_cached_wrapped_rpc():
-    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
-    # instead of constructing them on each call
-    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport="rest",
-        )
-
-        # Should wrap all calls on client creation
-        assert wrapper_fn.call_count > 0
-        wrapper_fn.reset_mock()
-
-        # Ensure method has been cached
-        assert (
-            client._transport.list_finding_type_stats
-            in client._transport._wrapped_methods
-        )
-
-        # Replace cached wrapped function with mock
-        mock_rpc = mock.Mock()
-        mock_rpc.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client._transport._wrapped_methods[
-            client._transport.list_finding_type_stats
-        ] = mock_rpc
-
-        request = {}
-        client.list_finding_type_stats(request)
-
-        # Establish that the underlying gRPC stub method was called.
-        assert mock_rpc.call_count == 1
-
-        client.list_finding_type_stats(request)
-
-        # Establish that a new wrapper was not created for this call
-        assert wrapper_fn.call_count == 0
-        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -8640,6 +8802,7 @@ def test_list_finding_type_stats_rest_interceptors(null_interceptor):
         else transports.WebSecurityScannerRestInterceptor(),
     )
     client = WebSecurityScannerClient(transport=transport)
+
     with mock.patch.object(
         type(client.transport._session), "request"
     ) as req, mock.patch.object(
@@ -8661,14 +8824,13 @@ def test_list_finding_type_stats_rest_interceptors(null_interceptor):
             "query_params": pb_message,
         }
 
-        req.return_value = Response()
+        req.return_value = mock.Mock()
         req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            web_security_scanner.ListFindingTypeStatsResponse.to_json(
-                web_security_scanner.ListFindingTypeStatsResponse()
-            )
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = web_security_scanner.ListFindingTypeStatsResponse.to_json(
+            web_security_scanner.ListFindingTypeStatsResponse()
         )
+        req.return_value.content = return_value
 
         request = web_security_scanner.ListFindingTypeStatsRequest()
         metadata = [
@@ -8690,141 +8852,283 @@ def test_list_finding_type_stats_rest_interceptors(null_interceptor):
         post.assert_called_once()
 
 
-def test_list_finding_type_stats_rest_bad_request(
-    transport: str = "rest",
-    request_type=web_security_scanner.ListFindingTypeStatsRequest,
-):
-    client = WebSecurityScannerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/scanConfigs/sample2/scanRuns/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_finding_type_stats(request)
-
-
-def test_list_finding_type_stats_rest_error():
+def test_initialize_client_w_rest():
     client = WebSecurityScannerClient(
         credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
+    assert client is not None
 
 
-def test_credentials_transport_error():
-    # It is an error to provide credentials and a transport instance.
-    transport = transports.WebSecurityScannerGrpcTransport(
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_scan_config_empty_call_rest():
+    client = WebSecurityScannerClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(),
-            transport=transport,
-        )
 
-    # It is an error to provide a credentials file and a transport instance.
-    transport = transports.WebSecurityScannerGrpcTransport(
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_scan_config), "__call__"
+    ) as call:
+        client.create_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.CreateScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_scan_config_empty_call_rest():
+    client = WebSecurityScannerClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = WebSecurityScannerClient(
-            client_options={"credentials_file": "credentials.json"},
-            transport=transport,
-        )
 
-    # It is an error to provide an api_key and a transport instance.
-    transport = transports.WebSecurityScannerGrpcTransport(
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_scan_config), "__call__"
+    ) as call:
+        client.delete_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.DeleteScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_scan_config_empty_call_rest():
+    client = WebSecurityScannerClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    options = client_options.ClientOptions()
-    options.api_key = "api_key"
-    with pytest.raises(ValueError):
-        client = WebSecurityScannerClient(
-            client_options=options,
-            transport=transport,
-        )
 
-    # It is an error to provide an api_key and a credential.
-    options = client_options.ClientOptions()
-    options.api_key = "api_key"
-    with pytest.raises(ValueError):
-        client = WebSecurityScannerClient(
-            client_options=options, credentials=ga_credentials.AnonymousCredentials()
-        )
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_scan_config), "__call__") as call:
+        client.get_scan_config(request=None)
 
-    # It is an error to provide scopes and a transport instance.
-    transport = transports.WebSecurityScannerGrpcTransport(
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.GetScanConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_scan_configs_empty_call_rest():
+    client = WebSecurityScannerClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    with pytest.raises(ValueError):
-        client = WebSecurityScannerClient(
-            client_options={"scopes": ["1", "2"]},
-            transport=transport,
-        )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_scan_configs), "__call__"
+    ) as call:
+        client.list_scan_configs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListScanConfigsRequest()
+
+        assert args[0] == request_msg
 
 
-def test_transport_instance():
-    # A client may be instantiated with a custom transport instance.
-    transport = transports.WebSecurityScannerGrpcTransport(
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_scan_config_empty_call_rest():
+    client = WebSecurityScannerClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    client = WebSecurityScannerClient(transport=transport)
-    assert client.transport is transport
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_scan_config), "__call__"
+    ) as call:
+        client.update_scan_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.UpdateScanConfigRequest()
+
+        assert args[0] == request_msg
 
 
-def test_transport_get_channel():
-    # A client may be instantiated with a custom transport instance.
-    transport = transports.WebSecurityScannerGrpcTransport(
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_start_scan_run_empty_call_rest():
+    client = WebSecurityScannerClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    channel = transport.grpc_channel
-    assert channel
 
-    transport = transports.WebSecurityScannerGrpcAsyncIOTransport(
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.start_scan_run), "__call__") as call:
+        client.start_scan_run(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.StartScanRunRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_scan_run_empty_call_rest():
+    client = WebSecurityScannerClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    channel = transport.grpc_channel
-    assert channel
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_scan_run), "__call__") as call:
+        client.get_scan_run(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.GetScanRunRequest()
+
+        assert args[0] == request_msg
 
 
-@pytest.mark.parametrize(
-    "transport_class",
-    [
-        transports.WebSecurityScannerGrpcTransport,
-        transports.WebSecurityScannerGrpcAsyncIOTransport,
-        transports.WebSecurityScannerRestTransport,
-    ],
-)
-def test_transport_adc(transport_class):
-    # Test default credentials are used if not provided.
-    with mock.patch.object(google.auth, "default") as adc:
-        adc.return_value = (ga_credentials.AnonymousCredentials(), None)
-        transport_class()
-        adc.assert_called_once()
-
-
-@pytest.mark.parametrize(
-    "transport_name",
-    [
-        "grpc",
-        "rest",
-    ],
-)
-def test_transport_kind(transport_name):
-    transport = WebSecurityScannerClient.get_transport_class(transport_name)(
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_scan_runs_empty_call_rest():
+    client = WebSecurityScannerClient(
         credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
     )
-    assert transport.kind == transport_name
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_scan_runs), "__call__") as call:
+        client.list_scan_runs(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListScanRunsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_stop_scan_run_empty_call_rest():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.stop_scan_run), "__call__") as call:
+        client.stop_scan_run(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.StopScanRunRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_crawled_urls_empty_call_rest():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_crawled_urls), "__call__"
+    ) as call:
+        client.list_crawled_urls(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListCrawledUrlsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_finding_empty_call_rest():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_finding), "__call__") as call:
+        client.get_finding(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.GetFindingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_findings_empty_call_rest():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_findings), "__call__") as call:
+        client.list_findings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListFindingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_finding_type_stats_empty_call_rest():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_finding_type_stats), "__call__"
+    ) as call:
+        client.list_finding_type_stats(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = web_security_scanner.ListFindingTypeStatsRequest()
+
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -9457,36 +9761,41 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = WebSecurityScannerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+def test_transport_close_grpc():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = WebSecurityScannerAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
         async with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = WebSecurityScannerClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = WebSecurityScannerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

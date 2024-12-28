@@ -4,6 +4,28 @@
 
 [1]: https://pypi.org/project/google-cloud-monitoring/#history
 
+## [2.24.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.23.1...google-cloud-monitoring-v2.24.0) (2024-12-12)
+
+
+### Features
+
+* Added support for notification prompts in AlertPolicy ([d596268](https://github.com/googleapis/google-cloud-python/commit/d596268609066ad822eb4a701903e4223ce21583))
+* Added support for PromQL metric validation opt-out in AlertPolicy ([d596268](https://github.com/googleapis/google-cloud-python/commit/d596268609066ad822eb4a701903e4223ce21583))
+
+## [2.23.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.23.0...google-cloud-monitoring-v2.23.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13244](https://github.com/googleapis/google-cloud-python/issues/13244)) ([ae1f471](https://github.com/googleapis/google-cloud-python/commit/ae1f47175bf3354f78cb558a844a9cab00317b95))
+
+## [2.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.22.2...google-cloud-monitoring-v2.23.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13207](https://github.com/googleapis/google-cloud-python/issues/13207)) ([ceb9be8](https://github.com/googleapis/google-cloud-python/commit/ceb9be8f89ac7355d842bac1d77b2926eb0b649c))
+
 ## [2.22.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.22.1...google-cloud-monitoring-v2.22.2) (2024-07-30)
 
 

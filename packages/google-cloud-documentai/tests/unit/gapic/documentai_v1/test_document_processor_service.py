@@ -22,9 +22,26 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
+
+from google.api_core import api_core_version
+from google.protobuf import json_format
+import grpc
+from grpc.experimental import aio
+from proto.marshal.rules import wrappers
+from proto.marshal.rules.dates import DurationRule, TimestampRule
+import pytest
+from requests import PreparedRequest, Request, Response
+from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
 
 from google.api import launch_stage_pb2  # type: ignore
 from google.api_core import (
@@ -36,7 +53,7 @@ from google.api_core import (
     operations_v1,
     path_template,
 )
-from google.api_core import api_core_version, client_options
+from google.api_core import client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
 from google.api_core import retry as retries
@@ -50,7 +67,6 @@ from google.protobuf import any_pb2  # type: ignore
 from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
-from google.protobuf import json_format
 from google.protobuf import timestamp_pb2  # type: ignore
 from google.protobuf import wrappers_pb2  # type: ignore
 from google.rpc import status_pb2  # type: ignore
@@ -59,13 +75,6 @@ from google.type import date_pb2  # type: ignore
 from google.type import datetime_pb2  # type: ignore
 from google.type import money_pb2  # type: ignore
 from google.type import postal_address_pb2  # type: ignore
-import grpc
-from grpc.experimental import aio
-from proto.marshal.rules import wrappers
-from proto.marshal.rules.dates import DurationRule, TimestampRule
-import pytest
-from requests import PreparedRequest, Request, Response
-from requests.sessions import Session
 
 from google.cloud.documentai_v1.services.document_processor_service import (
     DocumentProcessorServiceAsyncClient,
@@ -87,8 +96,22 @@ from google.cloud.documentai_v1.types import processor as gcd_processor
 from google.cloud.documentai_v1.types import processor_type
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -345,94 +368,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         DocumentProcessorServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            DocumentProcessorServiceClient,
-            transports.DocumentProcessorServiceGrpcTransport,
-            "grpc",
-        ),
-        (
-            DocumentProcessorServiceClient,
-            transports.DocumentProcessorServiceRestTransport,
-            "rest",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1263,25 +1198,6 @@ def test_process_document(request_type, transport: str = "grpc"):
     assert isinstance(response, document_processor_service.ProcessResponse)
 
 
-def test_process_document_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.process_document), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.process_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ProcessRequest()
-
-
 def test_process_document_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1348,27 +1264,6 @@ def test_process_document_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_process_document_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.process_document), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            document_processor_service.ProcessResponse()
-        )
-        response = await client.process_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ProcessRequest()
-
-
-@pytest.mark.asyncio
 async def test_process_document_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1376,7 +1271,7 @@ async def test_process_document_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1391,22 +1286,23 @@ async def test_process_document_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.process_document
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.process_document(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.process_document(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1415,7 +1311,7 @@ async def test_process_document_async(
     request_type=document_processor_service.ProcessRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1478,7 +1374,7 @@ def test_process_document_field_headers():
 @pytest.mark.asyncio
 async def test_process_document_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1548,7 +1444,7 @@ def test_process_document_flattened_error():
 @pytest.mark.asyncio
 async def test_process_document_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1577,7 +1473,7 @@ async def test_process_document_flattened_async():
 @pytest.mark.asyncio
 async def test_process_document_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1622,27 +1518,6 @@ def test_batch_process_documents(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_batch_process_documents_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.batch_process_documents), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.batch_process_documents()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.BatchProcessRequest()
 
 
 def test_batch_process_documents_non_empty_request_with_auto_populated_field():
@@ -1708,8 +1583,9 @@ def test_batch_process_documents_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.batch_process_documents(request)
@@ -1720,29 +1596,6 @@ def test_batch_process_documents_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_batch_process_documents_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.batch_process_documents), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.batch_process_documents()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.BatchProcessRequest()
-
-
-@pytest.mark.asyncio
 async def test_batch_process_documents_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1750,7 +1603,7 @@ async def test_batch_process_documents_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1765,26 +1618,28 @@ async def test_batch_process_documents_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_process_documents
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.batch_process_documents(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.batch_process_documents(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1793,7 +1648,7 @@ async def test_batch_process_documents_async(
     request_type=document_processor_service.BatchProcessRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1860,7 +1715,7 @@ def test_batch_process_documents_field_headers():
 @pytest.mark.asyncio
 async def test_batch_process_documents_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1934,7 +1789,7 @@ def test_batch_process_documents_flattened_error():
 @pytest.mark.asyncio
 async def test_batch_process_documents_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1965,7 +1820,7 @@ async def test_batch_process_documents_flattened_async():
 @pytest.mark.asyncio
 async def test_batch_process_documents_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2010,27 +1865,6 @@ def test_fetch_processor_types(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, document_processor_service.FetchProcessorTypesResponse)
-
-
-def test_fetch_processor_types_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.fetch_processor_types), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.fetch_processor_types()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.FetchProcessorTypesRequest()
 
 
 def test_fetch_processor_types_non_empty_request_with_auto_populated_field():
@@ -2104,29 +1938,6 @@ def test_fetch_processor_types_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_fetch_processor_types_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.fetch_processor_types), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            document_processor_service.FetchProcessorTypesResponse()
-        )
-        response = await client.fetch_processor_types()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.FetchProcessorTypesRequest()
-
-
-@pytest.mark.asyncio
 async def test_fetch_processor_types_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2134,7 +1945,7 @@ async def test_fetch_processor_types_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2149,22 +1960,23 @@ async def test_fetch_processor_types_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.fetch_processor_types
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.fetch_processor_types(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.fetch_processor_types(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2173,7 +1985,7 @@ async def test_fetch_processor_types_async(
     request_type=document_processor_service.FetchProcessorTypesRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2240,7 +2052,7 @@ def test_fetch_processor_types_field_headers():
 @pytest.mark.asyncio
 async def test_fetch_processor_types_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2314,7 +2126,7 @@ def test_fetch_processor_types_flattened_error():
 @pytest.mark.asyncio
 async def test_fetch_processor_types_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2345,7 +2157,7 @@ async def test_fetch_processor_types_flattened_async():
 @pytest.mark.asyncio
 async def test_fetch_processor_types_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2393,27 +2205,6 @@ def test_list_processor_types(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListProcessorTypesPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_processor_types_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_processor_types), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_processor_types()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ListProcessorTypesRequest()
 
 
 def test_list_processor_types_non_empty_request_with_auto_populated_field():
@@ -2488,31 +2279,6 @@ def test_list_processor_types_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_processor_types_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_processor_types), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            document_processor_service.ListProcessorTypesResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_processor_types()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ListProcessorTypesRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_processor_types_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2520,7 +2286,7 @@ async def test_list_processor_types_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2535,22 +2301,23 @@ async def test_list_processor_types_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_processor_types
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_processor_types(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_processor_types(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2559,7 +2326,7 @@ async def test_list_processor_types_async(
     request_type=document_processor_service.ListProcessorTypesRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2629,7 +2396,7 @@ def test_list_processor_types_field_headers():
 @pytest.mark.asyncio
 async def test_list_processor_types_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2703,7 +2470,7 @@ def test_list_processor_types_flattened_error():
 @pytest.mark.asyncio
 async def test_list_processor_types_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2734,7 +2501,7 @@ async def test_list_processor_types_flattened_async():
 @pytest.mark.asyncio
 async def test_list_processor_types_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2848,7 +2615,7 @@ def test_list_processor_types_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_processor_types_async_pager():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2900,7 +2667,7 @@ async def test_list_processor_types_async_pager():
 @pytest.mark.asyncio
 async def test_list_processor_types_async_pages():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2996,27 +2763,6 @@ def test_get_processor_type(request_type, transport: str = "grpc"):
     assert response.sample_document_uris == ["sample_document_uris_value"]
 
 
-def test_get_processor_type_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_processor_type), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_processor_type()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.GetProcessorTypeRequest()
-
-
 def test_get_processor_type_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3087,36 +2833,6 @@ def test_get_processor_type_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_processor_type_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_processor_type), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            processor_type.ProcessorType(
-                name="name_value",
-                type_="type__value",
-                category="category_value",
-                allow_creation=True,
-                launch_stage=launch_stage_pb2.LaunchStage.UNIMPLEMENTED,
-                sample_document_uris=["sample_document_uris_value"],
-            )
-        )
-        response = await client.get_processor_type()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.GetProcessorTypeRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_processor_type_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3124,7 +2840,7 @@ async def test_get_processor_type_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3139,22 +2855,23 @@ async def test_get_processor_type_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_processor_type
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_processor_type(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_processor_type(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3163,7 +2880,7 @@ async def test_get_processor_type_async(
     request_type=document_processor_service.GetProcessorTypeRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3243,7 +2960,7 @@ def test_get_processor_type_field_headers():
 @pytest.mark.asyncio
 async def test_get_processor_type_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3317,7 +3034,7 @@ def test_get_processor_type_flattened_error():
 @pytest.mark.asyncio
 async def test_get_processor_type_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3348,7 +3065,7 @@ async def test_get_processor_type_flattened_async():
 @pytest.mark.asyncio
 async def test_get_processor_type_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3394,25 +3111,6 @@ def test_list_processors(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListProcessorsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_processors_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_processors), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_processors()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ListProcessorsRequest()
 
 
 def test_list_processors_non_empty_request_with_auto_populated_field():
@@ -3481,29 +3179,6 @@ def test_list_processors_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_processors_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_processors), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            document_processor_service.ListProcessorsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_processors()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ListProcessorsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_processors_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3511,7 +3186,7 @@ async def test_list_processors_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3526,22 +3201,23 @@ async def test_list_processors_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_processors
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_processors(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_processors(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3550,7 +3226,7 @@ async def test_list_processors_async(
     request_type=document_processor_service.ListProcessorsRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3616,7 +3292,7 @@ def test_list_processors_field_headers():
 @pytest.mark.asyncio
 async def test_list_processors_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3686,7 +3362,7 @@ def test_list_processors_flattened_error():
 @pytest.mark.asyncio
 async def test_list_processors_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3715,7 +3391,7 @@ async def test_list_processors_flattened_async():
 @pytest.mark.asyncio
 async def test_list_processors_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3825,7 +3501,7 @@ def test_list_processors_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_processors_async_pager():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3875,7 +3551,7 @@ async def test_list_processors_async_pager():
 @pytest.mark.asyncio
 async def test_list_processors_async_pages():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3973,25 +3649,6 @@ def test_get_processor(request_type, transport: str = "grpc"):
     assert response.satisfies_pzi is True
 
 
-def test_get_processor_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_processor), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.GetProcessorRequest()
-
-
 def test_get_processor_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -4056,37 +3713,6 @@ def test_get_processor_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_processor_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_processor), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            processor.Processor(
-                name="name_value",
-                type_="type__value",
-                display_name="display_name_value",
-                state=processor.Processor.State.ENABLED,
-                default_processor_version="default_processor_version_value",
-                process_endpoint="process_endpoint_value",
-                kms_key_name="kms_key_name_value",
-                satisfies_pzs=True,
-                satisfies_pzi=True,
-            )
-        )
-        response = await client.get_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.GetProcessorRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_processor_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4094,7 +3720,7 @@ async def test_get_processor_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4109,22 +3735,23 @@ async def test_get_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_processor
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_processor(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_processor(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4133,7 +3760,7 @@ async def test_get_processor_async(
     request_type=document_processor_service.GetProcessorRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4215,7 +3842,7 @@ def test_get_processor_field_headers():
 @pytest.mark.asyncio
 async def test_get_processor_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4283,7 +3910,7 @@ def test_get_processor_flattened_error():
 @pytest.mark.asyncio
 async def test_get_processor_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4310,7 +3937,7 @@ async def test_get_processor_flattened_async():
 @pytest.mark.asyncio
 async def test_get_processor_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4355,27 +3982,6 @@ def test_train_processor_version(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_train_processor_version_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.train_processor_version), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.train_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.TrainProcessorVersionRequest()
 
 
 def test_train_processor_version_non_empty_request_with_auto_populated_field():
@@ -4443,8 +4049,9 @@ def test_train_processor_version_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.train_processor_version(request)
@@ -4455,29 +4062,6 @@ def test_train_processor_version_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_train_processor_version_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.train_processor_version), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.train_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.TrainProcessorVersionRequest()
-
-
-@pytest.mark.asyncio
 async def test_train_processor_version_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4485,7 +4069,7 @@ async def test_train_processor_version_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4500,26 +4084,28 @@ async def test_train_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.train_processor_version
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.train_processor_version(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.train_processor_version(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4528,7 +4114,7 @@ async def test_train_processor_version_async(
     request_type=document_processor_service.TrainProcessorVersionRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4595,7 +4181,7 @@ def test_train_processor_version_field_headers():
 @pytest.mark.asyncio
 async def test_train_processor_version_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4674,7 +4260,7 @@ def test_train_processor_version_flattened_error():
 @pytest.mark.asyncio
 async def test_train_processor_version_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4709,7 +4295,7 @@ async def test_train_processor_version_flattened_async():
 @pytest.mark.asyncio
 async def test_train_processor_version_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4777,27 +4363,6 @@ def test_get_processor_version(request_type, transport: str = "grpc"):
     )
     assert response.satisfies_pzs is True
     assert response.satisfies_pzi is True
-
-
-def test_get_processor_version_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_processor_version), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.GetProcessorVersionRequest()
 
 
 def test_get_processor_version_non_empty_request_with_auto_populated_field():
@@ -4871,39 +4436,6 @@ def test_get_processor_version_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_processor_version_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_processor_version), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            processor.ProcessorVersion(
-                name="name_value",
-                display_name="display_name_value",
-                state=processor.ProcessorVersion.State.DEPLOYED,
-                kms_key_name="kms_key_name_value",
-                kms_key_version_name="kms_key_version_name_value",
-                google_managed=True,
-                model_type=processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE,
-                satisfies_pzs=True,
-                satisfies_pzi=True,
-            )
-        )
-        response = await client.get_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.GetProcessorVersionRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_processor_version_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4911,7 +4443,7 @@ async def test_get_processor_version_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4926,22 +4458,23 @@ async def test_get_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_processor_version
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_processor_version(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_processor_version(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4950,7 +4483,7 @@ async def test_get_processor_version_async(
     request_type=document_processor_service.GetProcessorVersionRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5039,7 +4572,7 @@ def test_get_processor_version_field_headers():
 @pytest.mark.asyncio
 async def test_get_processor_version_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5113,7 +4646,7 @@ def test_get_processor_version_flattened_error():
 @pytest.mark.asyncio
 async def test_get_processor_version_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5144,7 +4677,7 @@ async def test_get_processor_version_flattened_async():
 @pytest.mark.asyncio
 async def test_get_processor_version_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5192,27 +4725,6 @@ def test_list_processor_versions(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListProcessorVersionsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_processor_versions_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_processor_versions), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_processor_versions()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ListProcessorVersionsRequest()
 
 
 def test_list_processor_versions_non_empty_request_with_auto_populated_field():
@@ -5288,31 +4800,6 @@ def test_list_processor_versions_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_processor_versions_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_processor_versions), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            document_processor_service.ListProcessorVersionsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_processor_versions()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ListProcessorVersionsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_processor_versions_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5320,7 +4807,7 @@ async def test_list_processor_versions_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5335,22 +4822,23 @@ async def test_list_processor_versions_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_processor_versions
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_processor_versions(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_processor_versions(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5359,7 +4847,7 @@ async def test_list_processor_versions_async(
     request_type=document_processor_service.ListProcessorVersionsRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5429,7 +4917,7 @@ def test_list_processor_versions_field_headers():
 @pytest.mark.asyncio
 async def test_list_processor_versions_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5503,7 +4991,7 @@ def test_list_processor_versions_flattened_error():
 @pytest.mark.asyncio
 async def test_list_processor_versions_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5534,7 +5022,7 @@ async def test_list_processor_versions_flattened_async():
 @pytest.mark.asyncio
 async def test_list_processor_versions_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5648,7 +5136,7 @@ def test_list_processor_versions_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_processor_versions_async_pager():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5700,7 +5188,7 @@ async def test_list_processor_versions_async_pager():
 @pytest.mark.asyncio
 async def test_list_processor_versions_async_pages():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5783,27 +5271,6 @@ def test_delete_processor_version(request_type, transport: str = "grpc"):
     assert isinstance(response, future.Future)
 
 
-def test_delete_processor_version_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_processor_version), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.DeleteProcessorVersionRequest()
-
-
 def test_delete_processor_version_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5867,8 +5334,9 @@ def test_delete_processor_version_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_processor_version(request)
@@ -5879,29 +5347,6 @@ def test_delete_processor_version_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_processor_version_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.delete_processor_version), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.delete_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.DeleteProcessorVersionRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_processor_version_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5909,7 +5354,7 @@ async def test_delete_processor_version_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5924,26 +5369,28 @@ async def test_delete_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_processor_version
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_processor_version(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_processor_version(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5952,7 +5399,7 @@ async def test_delete_processor_version_async(
     request_type=document_processor_service.DeleteProcessorVersionRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6019,7 +5466,7 @@ def test_delete_processor_version_field_headers():
 @pytest.mark.asyncio
 async def test_delete_processor_version_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6093,7 +5540,7 @@ def test_delete_processor_version_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_processor_version_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6124,7 +5571,7 @@ async def test_delete_processor_version_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_processor_version_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6169,27 +5616,6 @@ def test_deploy_processor_version(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_deploy_processor_version_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.deploy_processor_version), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.deploy_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.DeployProcessorVersionRequest()
 
 
 def test_deploy_processor_version_non_empty_request_with_auto_populated_field():
@@ -6255,8 +5681,9 @@ def test_deploy_processor_version_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.deploy_processor_version(request)
@@ -6267,29 +5694,6 @@ def test_deploy_processor_version_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_deploy_processor_version_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.deploy_processor_version), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.deploy_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.DeployProcessorVersionRequest()
-
-
-@pytest.mark.asyncio
 async def test_deploy_processor_version_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6297,7 +5701,7 @@ async def test_deploy_processor_version_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6312,26 +5716,28 @@ async def test_deploy_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.deploy_processor_version
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.deploy_processor_version(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.deploy_processor_version(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6340,7 +5746,7 @@ async def test_deploy_processor_version_async(
     request_type=document_processor_service.DeployProcessorVersionRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6407,7 +5813,7 @@ def test_deploy_processor_version_field_headers():
 @pytest.mark.asyncio
 async def test_deploy_processor_version_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6481,7 +5887,7 @@ def test_deploy_processor_version_flattened_error():
 @pytest.mark.asyncio
 async def test_deploy_processor_version_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6512,7 +5918,7 @@ async def test_deploy_processor_version_flattened_async():
 @pytest.mark.asyncio
 async def test_deploy_processor_version_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6557,27 +5963,6 @@ def test_undeploy_processor_version(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_undeploy_processor_version_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.undeploy_processor_version), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.undeploy_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.UndeployProcessorVersionRequest()
 
 
 def test_undeploy_processor_version_non_empty_request_with_auto_populated_field():
@@ -6643,8 +6028,9 @@ def test_undeploy_processor_version_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.undeploy_processor_version(request)
@@ -6655,29 +6041,6 @@ def test_undeploy_processor_version_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_undeploy_processor_version_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.undeploy_processor_version), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.undeploy_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.UndeployProcessorVersionRequest()
-
-
-@pytest.mark.asyncio
 async def test_undeploy_processor_version_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6685,7 +6048,7 @@ async def test_undeploy_processor_version_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6700,26 +6063,28 @@ async def test_undeploy_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.undeploy_processor_version
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.undeploy_processor_version(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.undeploy_processor_version(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6728,7 +6093,7 @@ async def test_undeploy_processor_version_async(
     request_type=document_processor_service.UndeployProcessorVersionRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6795,7 +6160,7 @@ def test_undeploy_processor_version_field_headers():
 @pytest.mark.asyncio
 async def test_undeploy_processor_version_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6869,7 +6234,7 @@ def test_undeploy_processor_version_flattened_error():
 @pytest.mark.asyncio
 async def test_undeploy_processor_version_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6900,7 +6265,7 @@ async def test_undeploy_processor_version_flattened_async():
 @pytest.mark.asyncio
 async def test_undeploy_processor_version_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6962,25 +6327,6 @@ def test_create_processor(request_type, transport: str = "grpc"):
     assert response.kms_key_name == "kms_key_name_value"
     assert response.satisfies_pzs is True
     assert response.satisfies_pzi is True
-
-
-def test_create_processor_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_processor), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.CreateProcessorRequest()
 
 
 def test_create_processor_non_empty_request_with_auto_populated_field():
@@ -7049,37 +6395,6 @@ def test_create_processor_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_processor_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_processor), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            gcd_processor.Processor(
-                name="name_value",
-                type_="type__value",
-                display_name="display_name_value",
-                state=gcd_processor.Processor.State.ENABLED,
-                default_processor_version="default_processor_version_value",
-                process_endpoint="process_endpoint_value",
-                kms_key_name="kms_key_name_value",
-                satisfies_pzs=True,
-                satisfies_pzi=True,
-            )
-        )
-        response = await client.create_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.CreateProcessorRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_processor_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7087,7 +6402,7 @@ async def test_create_processor_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7102,22 +6417,23 @@ async def test_create_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_processor
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_processor(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_processor(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7126,7 +6442,7 @@ async def test_create_processor_async(
     request_type=document_processor_service.CreateProcessorRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7208,7 +6524,7 @@ def test_create_processor_field_headers():
 @pytest.mark.asyncio
 async def test_create_processor_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7283,7 +6599,7 @@ def test_create_processor_flattened_error():
 @pytest.mark.asyncio
 async def test_create_processor_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7316,7 +6632,7 @@ async def test_create_processor_flattened_async():
 @pytest.mark.asyncio
 async def test_create_processor_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7360,25 +6676,6 @@ def test_delete_processor(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_delete_processor_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_processor), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.DeleteProcessorRequest()
 
 
 def test_delete_processor_non_empty_request_with_auto_populated_field():
@@ -7439,8 +6736,9 @@ def test_delete_processor_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_processor(request)
@@ -7451,27 +6749,6 @@ def test_delete_processor_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_processor_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_processor), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.delete_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.DeleteProcessorRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_processor_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7479,7 +6756,7 @@ async def test_delete_processor_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7494,26 +6771,28 @@ async def test_delete_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_processor
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_processor(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_processor(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7522,7 +6801,7 @@ async def test_delete_processor_async(
     request_type=document_processor_service.DeleteProcessorRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7585,7 +6864,7 @@ def test_delete_processor_field_headers():
 @pytest.mark.asyncio
 async def test_delete_processor_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7655,7 +6934,7 @@ def test_delete_processor_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_processor_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7684,7 +6963,7 @@ async def test_delete_processor_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_processor_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7727,25 +7006,6 @@ def test_enable_processor(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_enable_processor_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.enable_processor), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.enable_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.EnableProcessorRequest()
 
 
 def test_enable_processor_non_empty_request_with_auto_populated_field():
@@ -7806,8 +7066,9 @@ def test_enable_processor_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.enable_processor(request)
@@ -7818,27 +7079,6 @@ def test_enable_processor_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_enable_processor_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.enable_processor), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.enable_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.EnableProcessorRequest()
-
-
-@pytest.mark.asyncio
 async def test_enable_processor_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7846,7 +7086,7 @@ async def test_enable_processor_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7861,26 +7101,28 @@ async def test_enable_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.enable_processor
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.enable_processor(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.enable_processor(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7889,7 +7131,7 @@ async def test_enable_processor_async(
     request_type=document_processor_service.EnableProcessorRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7952,7 +7194,7 @@ def test_enable_processor_field_headers():
 @pytest.mark.asyncio
 async def test_enable_processor_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8016,27 +7258,6 @@ def test_disable_processor(request_type, transport: str = "grpc"):
     assert isinstance(response, future.Future)
 
 
-def test_disable_processor_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.disable_processor), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.disable_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.DisableProcessorRequest()
-
-
 def test_disable_processor_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -8097,8 +7318,9 @@ def test_disable_processor_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.disable_processor(request)
@@ -8109,29 +7331,6 @@ def test_disable_processor_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_disable_processor_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.disable_processor), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.disable_processor()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.DisableProcessorRequest()
-
-
-@pytest.mark.asyncio
 async def test_disable_processor_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8139,7 +7338,7 @@ async def test_disable_processor_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8154,26 +7353,28 @@ async def test_disable_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.disable_processor
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.disable_processor(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.disable_processor(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8182,7 +7383,7 @@ async def test_disable_processor_async(
     request_type=document_processor_service.DisableProcessorRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8249,7 +7450,7 @@ def test_disable_processor_field_headers():
 @pytest.mark.asyncio
 async def test_disable_processor_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8313,27 +7514,6 @@ def test_set_default_processor_version(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_set_default_processor_version_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_default_processor_version), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_default_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.SetDefaultProcessorVersionRequest()
 
 
 def test_set_default_processor_version_non_empty_request_with_auto_populated_field():
@@ -8401,8 +7581,9 @@ def test_set_default_processor_version_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.set_default_processor_version(request)
@@ -8413,29 +7594,6 @@ def test_set_default_processor_version_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_default_processor_version_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_default_processor_version), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.set_default_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.SetDefaultProcessorVersionRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_default_processor_version_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8443,7 +7601,7 @@ async def test_set_default_processor_version_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8458,26 +7616,28 @@ async def test_set_default_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_default_processor_version
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_default_processor_version(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.set_default_processor_version(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8486,7 +7646,7 @@ async def test_set_default_processor_version_async(
     request_type=document_processor_service.SetDefaultProcessorVersionRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8553,7 +7713,7 @@ def test_set_default_processor_version_field_headers():
 @pytest.mark.asyncio
 async def test_set_default_processor_version_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8617,25 +7777,6 @@ def test_review_document(request_type, transport: str = "grpc"):
     assert isinstance(response, future.Future)
 
 
-def test_review_document_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.review_document), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.review_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ReviewDocumentRequest()
-
-
 def test_review_document_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -8692,8 +7833,9 @@ def test_review_document_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.review_document(request)
@@ -8704,27 +7846,6 @@ def test_review_document_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_review_document_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.review_document), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.review_document()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ReviewDocumentRequest()
-
-
-@pytest.mark.asyncio
 async def test_review_document_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8732,7 +7853,7 @@ async def test_review_document_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8747,26 +7868,28 @@ async def test_review_document_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.review_document
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.review_document(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.review_document(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8775,7 +7898,7 @@ async def test_review_document_async(
     request_type=document_processor_service.ReviewDocumentRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8838,7 +7961,7 @@ def test_review_document_field_headers():
 @pytest.mark.asyncio
 async def test_review_document_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8908,7 +8031,7 @@ def test_review_document_flattened_error():
 @pytest.mark.asyncio
 async def test_review_document_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8937,7 +8060,7 @@ async def test_review_document_flattened_async():
 @pytest.mark.asyncio
 async def test_review_document_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8982,27 +8105,6 @@ def test_evaluate_processor_version(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_evaluate_processor_version_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.evaluate_processor_version), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.evaluate_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.EvaluateProcessorVersionRequest()
 
 
 def test_evaluate_processor_version_non_empty_request_with_auto_populated_field():
@@ -9068,8 +8170,9 @@ def test_evaluate_processor_version_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.evaluate_processor_version(request)
@@ -9080,29 +8183,6 @@ def test_evaluate_processor_version_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_evaluate_processor_version_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.evaluate_processor_version), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.evaluate_processor_version()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.EvaluateProcessorVersionRequest()
-
-
-@pytest.mark.asyncio
 async def test_evaluate_processor_version_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -9110,7 +8190,7 @@ async def test_evaluate_processor_version_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -9125,26 +8205,28 @@ async def test_evaluate_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.evaluate_processor_version
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.evaluate_processor_version(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.evaluate_processor_version(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9153,7 +8235,7 @@ async def test_evaluate_processor_version_async(
     request_type=document_processor_service.EvaluateProcessorVersionRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9220,7 +8302,7 @@ def test_evaluate_processor_version_field_headers():
 @pytest.mark.asyncio
 async def test_evaluate_processor_version_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9294,7 +8376,7 @@ def test_evaluate_processor_version_flattened_error():
 @pytest.mark.asyncio
 async def test_evaluate_processor_version_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9325,7 +8407,7 @@ async def test_evaluate_processor_version_flattened_async():
 @pytest.mark.asyncio
 async def test_evaluate_processor_version_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -9375,25 +8457,6 @@ def test_get_evaluation(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
     assert response.kms_key_name == "kms_key_name_value"
     assert response.kms_key_version_name == "kms_key_version_name_value"
-
-
-def test_get_evaluation_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_evaluation), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_evaluation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.GetEvaluationRequest()
 
 
 def test_get_evaluation_non_empty_request_with_auto_populated_field():
@@ -9460,31 +8523,6 @@ def test_get_evaluation_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_evaluation_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_evaluation), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            evaluation.Evaluation(
-                name="name_value",
-                kms_key_name="kms_key_name_value",
-                kms_key_version_name="kms_key_version_name_value",
-            )
-        )
-        response = await client.get_evaluation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.GetEvaluationRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_evaluation_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -9492,7 +8530,7 @@ async def test_get_evaluation_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -9507,22 +8545,23 @@ async def test_get_evaluation_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_evaluation
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_evaluation(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_evaluation(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9531,7 +8570,7 @@ async def test_get_evaluation_async(
     request_type=document_processor_service.GetEvaluationRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9601,7 +8640,7 @@ def test_get_evaluation_field_headers():
 @pytest.mark.asyncio
 async def test_get_evaluation_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9671,7 +8710,7 @@ def test_get_evaluation_flattened_error():
 @pytest.mark.asyncio
 async def test_get_evaluation_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9700,7 +8739,7 @@ async def test_get_evaluation_flattened_async():
 @pytest.mark.asyncio
 async def test_get_evaluation_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -9746,25 +8785,6 @@ def test_list_evaluations(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListEvaluationsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_evaluations_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_evaluations), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_evaluations()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ListEvaluationsRequest()
 
 
 def test_list_evaluations_non_empty_request_with_auto_populated_field():
@@ -9835,29 +8855,6 @@ def test_list_evaluations_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_evaluations_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_evaluations), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            document_processor_service.ListEvaluationsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_evaluations()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == document_processor_service.ListEvaluationsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_evaluations_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -9865,7 +8862,7 @@ async def test_list_evaluations_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = DocumentProcessorServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -9880,22 +8877,23 @@ async def test_list_evaluations_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_evaluations
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_evaluations(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_evaluations(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9904,7 +8902,7 @@ async def test_list_evaluations_async(
     request_type=document_processor_service.ListEvaluationsRequest,
 ):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9970,7 +8968,7 @@ def test_list_evaluations_field_headers():
 @pytest.mark.asyncio
 async def test_list_evaluations_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -10040,7 +9038,7 @@ def test_list_evaluations_flattened_error():
 @pytest.mark.asyncio
 async def test_list_evaluations_flattened_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10069,7 +9067,7 @@ async def test_list_evaluations_flattened_async():
 @pytest.mark.asyncio
 async def test_list_evaluations_flattened_error_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -10179,7 +9177,7 @@ def test_list_evaluations_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_evaluations_async_pager():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10229,7 +9227,7 @@ async def test_list_evaluations_async_pager():
 @pytest.mark.asyncio
 async def test_list_evaluations_async_pages():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10273,43 +9271,6 @@ async def test_list_evaluations_async_pages():
             pages.append(page_)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.ProcessRequest,
-        dict,
-    ],
-)
-def test_process_document_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = document_processor_service.ProcessResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = document_processor_service.ProcessResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.process_document(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, document_processor_service.ProcessResponse)
 
 
 def test_process_document_rest_use_cached_wrapped_rpc():
@@ -10417,6 +9378,7 @@ def test_process_document_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.process_document(request)
 
@@ -10432,87 +9394,6 @@ def test_process_document_rest_unset_required_fields():
 
     unset_fields = transport.process_document._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_process_document_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_process_document"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_process_document"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.ProcessRequest.pb(
-            document_processor_service.ProcessRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = document_processor_service.ProcessResponse.to_json(
-            document_processor_service.ProcessResponse()
-        )
-
-        request = document_processor_service.ProcessRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = document_processor_service.ProcessResponse()
-
-        client.process_document(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_process_document_rest_bad_request(
-    transport: str = "rest", request_type=document_processor_service.ProcessRequest
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.process_document(request)
 
 
 def test_process_document_rest_flattened():
@@ -10545,6 +9426,7 @@ def test_process_document_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.process_document(**mock_args)
 
@@ -10572,47 +9454,6 @@ def test_process_document_rest_flattened_error(transport: str = "rest"):
             document_processor_service.ProcessRequest(),
             name="name_value",
         )
-
-
-def test_process_document_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.BatchProcessRequest,
-        dict,
-    ],
-)
-def test_batch_process_documents_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.batch_process_documents(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_batch_process_documents_rest_use_cached_wrapped_rpc():
@@ -10724,6 +9565,7 @@ def test_batch_process_documents_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.batch_process_documents(request)
 
@@ -10739,91 +9581,6 @@ def test_batch_process_documents_rest_unset_required_fields():
 
     unset_fields = transport.batch_process_documents._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_batch_process_documents_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "post_batch_process_documents",
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "pre_batch_process_documents",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.BatchProcessRequest.pb(
-            document_processor_service.BatchProcessRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.BatchProcessRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.batch_process_documents(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_batch_process_documents_rest_bad_request(
-    transport: str = "rest", request_type=document_processor_service.BatchProcessRequest
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.batch_process_documents(request)
 
 
 def test_batch_process_documents_rest_flattened():
@@ -10854,6 +9611,7 @@ def test_batch_process_documents_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.batch_process_documents(**mock_args)
 
@@ -10881,51 +9639,6 @@ def test_batch_process_documents_rest_flattened_error(transport: str = "rest"):
             document_processor_service.BatchProcessRequest(),
             name="name_value",
         )
-
-
-def test_batch_process_documents_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.FetchProcessorTypesRequest,
-        dict,
-    ],
-)
-def test_fetch_processor_types_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = document_processor_service.FetchProcessorTypesResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = document_processor_service.FetchProcessorTypesResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.fetch_processor_types(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, document_processor_service.FetchProcessorTypesResponse)
 
 
 def test_fetch_processor_types_rest_use_cached_wrapped_rpc():
@@ -11037,6 +9750,7 @@ def test_fetch_processor_types_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.fetch_processor_types(request)
 
@@ -11052,90 +9766,6 @@ def test_fetch_processor_types_rest_unset_required_fields():
 
     unset_fields = transport.fetch_processor_types._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("parent",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_fetch_processor_types_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_fetch_processor_types"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_fetch_processor_types"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.FetchProcessorTypesRequest.pb(
-            document_processor_service.FetchProcessorTypesRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            document_processor_service.FetchProcessorTypesResponse.to_json(
-                document_processor_service.FetchProcessorTypesResponse()
-            )
-        )
-
-        request = document_processor_service.FetchProcessorTypesRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = document_processor_service.FetchProcessorTypesResponse()
-
-        client.fetch_processor_types(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_fetch_processor_types_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.FetchProcessorTypesRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.fetch_processor_types(request)
 
 
 def test_fetch_processor_types_rest_flattened():
@@ -11168,6 +9798,7 @@ def test_fetch_processor_types_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.fetch_processor_types(**mock_args)
 
@@ -11195,54 +9826,6 @@ def test_fetch_processor_types_rest_flattened_error(transport: str = "rest"):
             document_processor_service.FetchProcessorTypesRequest(),
             parent="parent_value",
         )
-
-
-def test_fetch_processor_types_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.ListProcessorTypesRequest,
-        dict,
-    ],
-)
-def test_list_processor_types_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = document_processor_service.ListProcessorTypesResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = document_processor_service.ListProcessorTypesResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_processor_types(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListProcessorTypesPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_processor_types_rest_use_cached_wrapped_rpc():
@@ -11360,6 +9943,7 @@ def test_list_processor_types_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_processor_types(request)
 
@@ -11383,90 +9967,6 @@ def test_list_processor_types_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_processor_types_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_list_processor_types"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_list_processor_types"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.ListProcessorTypesRequest.pb(
-            document_processor_service.ListProcessorTypesRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            document_processor_service.ListProcessorTypesResponse.to_json(
-                document_processor_service.ListProcessorTypesResponse()
-            )
-        )
-
-        request = document_processor_service.ListProcessorTypesRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = document_processor_service.ListProcessorTypesResponse()
-
-        client.list_processor_types(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_processor_types_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.ListProcessorTypesRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_processor_types(request)
 
 
 def test_list_processor_types_rest_flattened():
@@ -11499,6 +9999,7 @@ def test_list_processor_types_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_processor_types(**mock_args)
 
@@ -11590,56 +10091,6 @@ def test_list_processor_types_rest_pager(transport: str = "rest"):
         pages = list(client.list_processor_types(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.GetProcessorTypeRequest,
-        dict,
-    ],
-)
-def test_get_processor_type_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processorTypes/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = processor_type.ProcessorType(
-            name="name_value",
-            type_="type__value",
-            category="category_value",
-            allow_creation=True,
-            launch_stage=launch_stage_pb2.LaunchStage.UNIMPLEMENTED,
-            sample_document_uris=["sample_document_uris_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = processor_type.ProcessorType.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_processor_type(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, processor_type.ProcessorType)
-    assert response.name == "name_value"
-    assert response.type_ == "type__value"
-    assert response.category == "category_value"
-    assert response.allow_creation is True
-    assert response.launch_stage == launch_stage_pb2.LaunchStage.UNIMPLEMENTED
-    assert response.sample_document_uris == ["sample_document_uris_value"]
 
 
 def test_get_processor_type_rest_use_cached_wrapped_rpc():
@@ -11748,6 +10199,7 @@ def test_get_processor_type_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_processor_type(request)
 
@@ -11763,88 +10215,6 @@ def test_get_processor_type_rest_unset_required_fields():
 
     unset_fields = transport.get_processor_type._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_processor_type_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_get_processor_type"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_get_processor_type"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.GetProcessorTypeRequest.pb(
-            document_processor_service.GetProcessorTypeRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = processor_type.ProcessorType.to_json(
-            processor_type.ProcessorType()
-        )
-
-        request = document_processor_service.GetProcessorTypeRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = processor_type.ProcessorType()
-
-        client.get_processor_type(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_processor_type_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.GetProcessorTypeRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processorTypes/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_processor_type(request)
 
 
 def test_get_processor_type_rest_flattened():
@@ -11877,6 +10247,7 @@ def test_get_processor_type_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_processor_type(**mock_args)
 
@@ -11904,54 +10275,6 @@ def test_get_processor_type_rest_flattened_error(transport: str = "rest"):
             document_processor_service.GetProcessorTypeRequest(),
             name="name_value",
         )
-
-
-def test_get_processor_type_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.ListProcessorsRequest,
-        dict,
-    ],
-)
-def test_list_processors_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = document_processor_service.ListProcessorsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = document_processor_service.ListProcessorsResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_processors(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListProcessorsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_processors_rest_use_cached_wrapped_rpc():
@@ -12065,6 +10388,7 @@ def test_list_processors_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_processors(request)
 
@@ -12088,90 +10412,6 @@ def test_list_processors_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_processors_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_list_processors"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_list_processors"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.ListProcessorsRequest.pb(
-            document_processor_service.ListProcessorsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            document_processor_service.ListProcessorsResponse.to_json(
-                document_processor_service.ListProcessorsResponse()
-            )
-        )
-
-        request = document_processor_service.ListProcessorsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = document_processor_service.ListProcessorsResponse()
-
-        client.list_processors(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_processors_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.ListProcessorsRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_processors(request)
 
 
 def test_list_processors_rest_flattened():
@@ -12204,6 +10444,7 @@ def test_list_processors_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_processors(**mock_args)
 
@@ -12294,62 +10535,6 @@ def test_list_processors_rest_pager(transport: str = "rest"):
         pages = list(client.list_processors(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.GetProcessorRequest,
-        dict,
-    ],
-)
-def test_get_processor_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = processor.Processor(
-            name="name_value",
-            type_="type__value",
-            display_name="display_name_value",
-            state=processor.Processor.State.ENABLED,
-            default_processor_version="default_processor_version_value",
-            process_endpoint="process_endpoint_value",
-            kms_key_name="kms_key_name_value",
-            satisfies_pzs=True,
-            satisfies_pzi=True,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = processor.Processor.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_processor(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, processor.Processor)
-    assert response.name == "name_value"
-    assert response.type_ == "type__value"
-    assert response.display_name == "display_name_value"
-    assert response.state == processor.Processor.State.ENABLED
-    assert response.default_processor_version == "default_processor_version_value"
-    assert response.process_endpoint == "process_endpoint_value"
-    assert response.kms_key_name == "kms_key_name_value"
-    assert response.satisfies_pzs is True
-    assert response.satisfies_pzi is True
 
 
 def test_get_processor_rest_use_cached_wrapped_rpc():
@@ -12454,6 +10639,7 @@ def test_get_processor_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_processor(request)
 
@@ -12469,85 +10655,6 @@ def test_get_processor_rest_unset_required_fields():
 
     unset_fields = transport.get_processor._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_processor_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_get_processor"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_get_processor"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.GetProcessorRequest.pb(
-            document_processor_service.GetProcessorRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = processor.Processor.to_json(processor.Processor())
-
-        request = document_processor_service.GetProcessorRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = processor.Processor()
-
-        client.get_processor(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_processor_rest_bad_request(
-    transport: str = "rest", request_type=document_processor_service.GetProcessorRequest
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_processor(request)
 
 
 def test_get_processor_rest_flattened():
@@ -12580,6 +10687,7 @@ def test_get_processor_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_processor(**mock_args)
 
@@ -12606,47 +10714,6 @@ def test_get_processor_rest_flattened_error(transport: str = "rest"):
             document_processor_service.GetProcessorRequest(),
             name="name_value",
         )
-
-
-def test_get_processor_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.TrainProcessorVersionRequest,
-        dict,
-    ],
-)
-def test_train_processor_version_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.train_processor_version(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_train_processor_version_rest_use_cached_wrapped_rpc():
@@ -12758,6 +10825,7 @@ def test_train_processor_version_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.train_processor_version(request)
 
@@ -12781,92 +10849,6 @@ def test_train_processor_version_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_train_processor_version_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "post_train_processor_version",
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "pre_train_processor_version",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.TrainProcessorVersionRequest.pb(
-            document_processor_service.TrainProcessorVersionRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.TrainProcessorVersionRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.train_processor_version(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_train_processor_version_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.TrainProcessorVersionRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.train_processor_version(request)
 
 
 def test_train_processor_version_rest_flattened():
@@ -12898,6 +10880,7 @@ def test_train_processor_version_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.train_processor_version(**mock_args)
 
@@ -12926,73 +10909,6 @@ def test_train_processor_version_rest_flattened_error(transport: str = "rest"):
             parent="parent_value",
             processor_version=processor.ProcessorVersion(name="name_value"),
         )
-
-
-def test_train_processor_version_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.GetProcessorVersionRequest,
-        dict,
-    ],
-)
-def test_get_processor_version_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = processor.ProcessorVersion(
-            name="name_value",
-            display_name="display_name_value",
-            state=processor.ProcessorVersion.State.DEPLOYED,
-            kms_key_name="kms_key_name_value",
-            kms_key_version_name="kms_key_version_name_value",
-            google_managed=True,
-            model_type=processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE,
-            satisfies_pzs=True,
-            satisfies_pzi=True,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = processor.ProcessorVersion.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_processor_version(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, processor.ProcessorVersion)
-    assert response.name == "name_value"
-    assert response.display_name == "display_name_value"
-    assert response.state == processor.ProcessorVersion.State.DEPLOYED
-    assert response.kms_key_name == "kms_key_name_value"
-    assert response.kms_key_version_name == "kms_key_version_name_value"
-    assert response.google_managed is True
-    assert (
-        response.model_type
-        == processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE
-    )
-    assert response.satisfies_pzs is True
-    assert response.satisfies_pzi is True
 
 
 def test_get_processor_version_rest_use_cached_wrapped_rpc():
@@ -13102,6 +11018,7 @@ def test_get_processor_version_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_processor_version(request)
 
@@ -13117,90 +11034,6 @@ def test_get_processor_version_rest_unset_required_fields():
 
     unset_fields = transport.get_processor_version._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_processor_version_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_get_processor_version"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_get_processor_version"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.GetProcessorVersionRequest.pb(
-            document_processor_service.GetProcessorVersionRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = processor.ProcessorVersion.to_json(
-            processor.ProcessorVersion()
-        )
-
-        request = document_processor_service.GetProcessorVersionRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = processor.ProcessorVersion()
-
-        client.get_processor_version(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_processor_version_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.GetProcessorVersionRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_processor_version(request)
 
 
 def test_get_processor_version_rest_flattened():
@@ -13233,6 +11066,7 @@ def test_get_processor_version_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_processor_version(**mock_args)
 
@@ -13260,54 +11094,6 @@ def test_get_processor_version_rest_flattened_error(transport: str = "rest"):
             document_processor_service.GetProcessorVersionRequest(),
             name="name_value",
         )
-
-
-def test_get_processor_version_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.ListProcessorVersionsRequest,
-        dict,
-    ],
-)
-def test_list_processor_versions_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = document_processor_service.ListProcessorVersionsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = document_processor_service.ListProcessorVersionsResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_processor_versions(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListProcessorVersionsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_processor_versions_rest_use_cached_wrapped_rpc():
@@ -13426,6 +11212,7 @@ def test_list_processor_versions_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_processor_versions(request)
 
@@ -13449,92 +11236,6 @@ def test_list_processor_versions_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_processor_versions_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "post_list_processor_versions",
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "pre_list_processor_versions",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.ListProcessorVersionsRequest.pb(
-            document_processor_service.ListProcessorVersionsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            document_processor_service.ListProcessorVersionsResponse.to_json(
-                document_processor_service.ListProcessorVersionsResponse()
-            )
-        )
-
-        request = document_processor_service.ListProcessorVersionsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = document_processor_service.ListProcessorVersionsResponse()
-
-        client.list_processor_versions(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_processor_versions_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.ListProcessorVersionsRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_processor_versions(request)
 
 
 def test_list_processor_versions_rest_flattened():
@@ -13569,6 +11270,7 @@ def test_list_processor_versions_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_processor_versions(**mock_args)
 
@@ -13662,43 +11364,6 @@ def test_list_processor_versions_rest_pager(transport: str = "rest"):
         pages = list(client.list_processor_versions(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.DeleteProcessorVersionRequest,
-        dict,
-    ],
-)
-def test_delete_processor_version_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_processor_version(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_delete_processor_version_rest_use_cached_wrapped_rpc():
@@ -13809,6 +11474,7 @@ def test_delete_processor_version_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_processor_version(request)
 
@@ -13824,94 +11490,6 @@ def test_delete_processor_version_rest_unset_required_fields():
 
     unset_fields = transport.delete_processor_version._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_processor_version_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "post_delete_processor_version",
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "pre_delete_processor_version",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.DeleteProcessorVersionRequest.pb(
-            document_processor_service.DeleteProcessorVersionRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.DeleteProcessorVersionRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.delete_processor_version(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_processor_version_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.DeleteProcessorVersionRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_processor_version(request)
 
 
 def test_delete_processor_version_rest_flattened():
@@ -13942,6 +11520,7 @@ def test_delete_processor_version_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_processor_version(**mock_args)
 
@@ -13969,49 +11548,6 @@ def test_delete_processor_version_rest_flattened_error(transport: str = "rest"):
             document_processor_service.DeleteProcessorVersionRequest(),
             name="name_value",
         )
-
-
-def test_delete_processor_version_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.DeployProcessorVersionRequest,
-        dict,
-    ],
-)
-def test_deploy_processor_version_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.deploy_processor_version(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_deploy_processor_version_rest_use_cached_wrapped_rpc():
@@ -14123,6 +11659,7 @@ def test_deploy_processor_version_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.deploy_processor_version(request)
 
@@ -14138,94 +11675,6 @@ def test_deploy_processor_version_rest_unset_required_fields():
 
     unset_fields = transport.deploy_processor_version._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_deploy_processor_version_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "post_deploy_processor_version",
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "pre_deploy_processor_version",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.DeployProcessorVersionRequest.pb(
-            document_processor_service.DeployProcessorVersionRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.DeployProcessorVersionRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.deploy_processor_version(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_deploy_processor_version_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.DeployProcessorVersionRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.deploy_processor_version(request)
 
 
 def test_deploy_processor_version_rest_flattened():
@@ -14256,6 +11705,7 @@ def test_deploy_processor_version_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.deploy_processor_version(**mock_args)
 
@@ -14283,49 +11733,6 @@ def test_deploy_processor_version_rest_flattened_error(transport: str = "rest"):
             document_processor_service.DeployProcessorVersionRequest(),
             name="name_value",
         )
-
-
-def test_deploy_processor_version_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.UndeployProcessorVersionRequest,
-        dict,
-    ],
-)
-def test_undeploy_processor_version_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.undeploy_processor_version(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_undeploy_processor_version_rest_use_cached_wrapped_rpc():
@@ -14437,6 +11844,7 @@ def test_undeploy_processor_version_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.undeploy_processor_version(request)
 
@@ -14452,94 +11860,6 @@ def test_undeploy_processor_version_rest_unset_required_fields():
 
     unset_fields = transport.undeploy_processor_version._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_undeploy_processor_version_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "post_undeploy_processor_version",
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "pre_undeploy_processor_version",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.UndeployProcessorVersionRequest.pb(
-            document_processor_service.UndeployProcessorVersionRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.UndeployProcessorVersionRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.undeploy_processor_version(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_undeploy_processor_version_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.UndeployProcessorVersionRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.undeploy_processor_version(request)
 
 
 def test_undeploy_processor_version_rest_flattened():
@@ -14570,6 +11890,7 @@ def test_undeploy_processor_version_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.undeploy_processor_version(**mock_args)
 
@@ -14597,152 +11918,6 @@ def test_undeploy_processor_version_rest_flattened_error(transport: str = "rest"
             document_processor_service.UndeployProcessorVersionRequest(),
             name="name_value",
         )
-
-
-def test_undeploy_processor_version_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.CreateProcessorRequest,
-        dict,
-    ],
-)
-def test_create_processor_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request_init["processor"] = {
-        "name": "name_value",
-        "type_": "type__value",
-        "display_name": "display_name_value",
-        "state": 1,
-        "default_processor_version": "default_processor_version_value",
-        "processor_version_aliases": [
-            {"alias": "alias_value", "processor_version": "processor_version_value"}
-        ],
-        "process_endpoint": "process_endpoint_value",
-        "create_time": {"seconds": 751, "nanos": 543},
-        "kms_key_name": "kms_key_name_value",
-        "satisfies_pzs": True,
-        "satisfies_pzi": True,
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = document_processor_service.CreateProcessorRequest.meta.fields[
-        "processor"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["processor"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["processor"][field])):
-                    del request_init["processor"][field][i][subfield]
-            else:
-                del request_init["processor"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = gcd_processor.Processor(
-            name="name_value",
-            type_="type__value",
-            display_name="display_name_value",
-            state=gcd_processor.Processor.State.ENABLED,
-            default_processor_version="default_processor_version_value",
-            process_endpoint="process_endpoint_value",
-            kms_key_name="kms_key_name_value",
-            satisfies_pzs=True,
-            satisfies_pzi=True,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = gcd_processor.Processor.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_processor(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, gcd_processor.Processor)
-    assert response.name == "name_value"
-    assert response.type_ == "type__value"
-    assert response.display_name == "display_name_value"
-    assert response.state == gcd_processor.Processor.State.ENABLED
-    assert response.default_processor_version == "default_processor_version_value"
-    assert response.process_endpoint == "process_endpoint_value"
-    assert response.kms_key_name == "kms_key_name_value"
-    assert response.satisfies_pzs is True
-    assert response.satisfies_pzi is True
 
 
 def test_create_processor_rest_use_cached_wrapped_rpc():
@@ -14850,6 +12025,7 @@ def test_create_processor_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_processor(request)
 
@@ -14873,88 +12049,6 @@ def test_create_processor_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_processor_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_create_processor"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_create_processor"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.CreateProcessorRequest.pb(
-            document_processor_service.CreateProcessorRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = gcd_processor.Processor.to_json(
-            gcd_processor.Processor()
-        )
-
-        request = document_processor_service.CreateProcessorRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = gcd_processor.Processor()
-
-        client.create_processor(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_processor_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.CreateProcessorRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_processor(request)
 
 
 def test_create_processor_rest_flattened():
@@ -14986,6 +12080,7 @@ def test_create_processor_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_processor(**mock_args)
 
@@ -15013,47 +12108,6 @@ def test_create_processor_rest_flattened_error(transport: str = "rest"):
             parent="parent_value",
             processor=gcd_processor.Processor(name="name_value"),
         )
-
-
-def test_create_processor_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.DeleteProcessorRequest,
-        dict,
-    ],
-)
-def test_delete_processor_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_processor(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_delete_processor_rest_use_cached_wrapped_rpc():
@@ -15161,6 +12215,7 @@ def test_delete_processor_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_processor(request)
 
@@ -15176,90 +12231,6 @@ def test_delete_processor_rest_unset_required_fields():
 
     unset_fields = transport.delete_processor._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_processor_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_delete_processor"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_delete_processor"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.DeleteProcessorRequest.pb(
-            document_processor_service.DeleteProcessorRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.DeleteProcessorRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.delete_processor(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_processor_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.DeleteProcessorRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_processor(request)
 
 
 def test_delete_processor_rest_flattened():
@@ -15290,6 +12261,7 @@ def test_delete_processor_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_processor(**mock_args)
 
@@ -15316,47 +12288,6 @@ def test_delete_processor_rest_flattened_error(transport: str = "rest"):
             document_processor_service.DeleteProcessorRequest(),
             name="name_value",
         )
-
-
-def test_delete_processor_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.EnableProcessorRequest,
-        dict,
-    ],
-)
-def test_enable_processor_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.enable_processor(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_enable_processor_rest_use_cached_wrapped_rpc():
@@ -15465,6 +12396,7 @@ def test_enable_processor_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.enable_processor(request)
 
@@ -15480,131 +12412,6 @@ def test_enable_processor_rest_unset_required_fields():
 
     unset_fields = transport.enable_processor._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_enable_processor_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_enable_processor"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_enable_processor"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.EnableProcessorRequest.pb(
-            document_processor_service.EnableProcessorRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.EnableProcessorRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.enable_processor(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_enable_processor_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.EnableProcessorRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.enable_processor(request)
-
-
-def test_enable_processor_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.DisableProcessorRequest,
-        dict,
-    ],
-)
-def test_disable_processor_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.disable_processor(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_disable_processor_rest_use_cached_wrapped_rpc():
@@ -15713,6 +12520,7 @@ def test_disable_processor_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.disable_processor(request)
 
@@ -15728,133 +12536,6 @@ def test_disable_processor_rest_unset_required_fields():
 
     unset_fields = transport.disable_processor._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_disable_processor_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_disable_processor"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_disable_processor"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.DisableProcessorRequest.pb(
-            document_processor_service.DisableProcessorRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.DisableProcessorRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.disable_processor(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_disable_processor_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.DisableProcessorRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.disable_processor(request)
-
-
-def test_disable_processor_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.SetDefaultProcessorVersionRequest,
-        dict,
-    ],
-)
-def test_set_default_processor_version_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "processor": "projects/sample1/locations/sample2/processors/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_default_processor_version(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_set_default_processor_version_rest_use_cached_wrapped_rpc():
@@ -15973,6 +12654,7 @@ def test_set_default_processor_version_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_default_processor_version(request)
 
@@ -15998,137 +12680,6 @@ def test_set_default_processor_version_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_default_processor_version_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "post_set_default_processor_version",
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "pre_set_default_processor_version",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.SetDefaultProcessorVersionRequest.pb(
-            document_processor_service.SetDefaultProcessorVersionRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.SetDefaultProcessorVersionRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.set_default_processor_version(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_default_processor_version_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.SetDefaultProcessorVersionRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "processor": "projects/sample1/locations/sample2/processors/sample3"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_default_processor_version(request)
-
-
-def test_set_default_processor_version_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.ReviewDocumentRequest,
-        dict,
-    ],
-)
-def test_review_document_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "human_review_config": "projects/sample1/locations/sample2/processors/sample3/humanReviewConfig"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.review_document(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_review_document_rest_use_cached_wrapped_rpc():
@@ -16235,6 +12786,7 @@ def test_review_document_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.review_document(request)
 
@@ -16250,92 +12802,6 @@ def test_review_document_rest_unset_required_fields():
 
     unset_fields = transport.review_document._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("humanReviewConfig",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_review_document_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_review_document"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_review_document"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.ReviewDocumentRequest.pb(
-            document_processor_service.ReviewDocumentRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.ReviewDocumentRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.review_document(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_review_document_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.ReviewDocumentRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "human_review_config": "projects/sample1/locations/sample2/processors/sample3/humanReviewConfig"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.review_document(request)
 
 
 def test_review_document_rest_flattened():
@@ -16366,6 +12832,7 @@ def test_review_document_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.review_document(**mock_args)
 
@@ -16393,49 +12860,6 @@ def test_review_document_rest_flattened_error(transport: str = "rest"):
             document_processor_service.ReviewDocumentRequest(),
             human_review_config="human_review_config_value",
         )
-
-
-def test_review_document_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.EvaluateProcessorVersionRequest,
-        dict,
-    ],
-)
-def test_evaluate_processor_version_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "processor_version": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.evaluate_processor_version(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_evaluate_processor_version_rest_use_cached_wrapped_rpc():
@@ -16547,6 +12971,7 @@ def test_evaluate_processor_version_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.evaluate_processor_version(request)
 
@@ -16562,94 +12987,6 @@ def test_evaluate_processor_version_rest_unset_required_fields():
 
     unset_fields = transport.evaluate_processor_version._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("processorVersion",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_evaluate_processor_version_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "post_evaluate_processor_version",
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor,
-        "pre_evaluate_processor_version",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.EvaluateProcessorVersionRequest.pb(
-            document_processor_service.EvaluateProcessorVersionRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = document_processor_service.EvaluateProcessorVersionRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.evaluate_processor_version(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_evaluate_processor_version_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.EvaluateProcessorVersionRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "processor_version": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.evaluate_processor_version(request)
 
 
 def test_evaluate_processor_version_rest_flattened():
@@ -16680,6 +13017,7 @@ def test_evaluate_processor_version_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.evaluate_processor_version(**mock_args)
 
@@ -16707,58 +13045,6 @@ def test_evaluate_processor_version_rest_flattened_error(transport: str = "rest"
             document_processor_service.EvaluateProcessorVersionRequest(),
             processor_version="processor_version_value",
         )
-
-
-def test_evaluate_processor_version_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.GetEvaluationRequest,
-        dict,
-    ],
-)
-def test_get_evaluation_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4/evaluations/sample5"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = evaluation.Evaluation(
-            name="name_value",
-            kms_key_name="kms_key_name_value",
-            kms_key_version_name="kms_key_version_name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = evaluation.Evaluation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_evaluation(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, evaluation.Evaluation)
-    assert response.name == "name_value"
-    assert response.kms_key_name == "kms_key_name_value"
-    assert response.kms_key_version_name == "kms_key_version_name_value"
 
 
 def test_get_evaluation_rest_use_cached_wrapped_rpc():
@@ -16863,6 +13149,7 @@ def test_get_evaluation_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_evaluation(request)
 
@@ -16878,90 +13165,6 @@ def test_get_evaluation_rest_unset_required_fields():
 
     unset_fields = transport.get_evaluation._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_evaluation_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_get_evaluation"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_get_evaluation"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.GetEvaluationRequest.pb(
-            document_processor_service.GetEvaluationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = evaluation.Evaluation.to_json(
-            evaluation.Evaluation()
-        )
-
-        request = document_processor_service.GetEvaluationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = evaluation.Evaluation()
-
-        client.get_evaluation(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_evaluation_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.GetEvaluationRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4/evaluations/sample5"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_evaluation(request)
 
 
 def test_get_evaluation_rest_flattened():
@@ -16994,6 +13197,7 @@ def test_get_evaluation_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_evaluation(**mock_args)
 
@@ -17021,56 +13225,6 @@ def test_get_evaluation_rest_flattened_error(transport: str = "rest"):
             document_processor_service.GetEvaluationRequest(),
             name="name_value",
         )
-
-
-def test_get_evaluation_rest_error():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        document_processor_service.ListEvaluationsRequest,
-        dict,
-    ],
-)
-def test_list_evaluations_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "parent": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = document_processor_service.ListEvaluationsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = document_processor_service.ListEvaluationsResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_evaluations(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListEvaluationsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_evaluations_rest_use_cached_wrapped_rpc():
@@ -17186,6 +13340,7 @@ def test_list_evaluations_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_evaluations(request)
 
@@ -17209,92 +13364,6 @@ def test_list_evaluations_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_evaluations_rest_interceptors(null_interceptor):
-    transport = transports.DocumentProcessorServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.DocumentProcessorServiceRestInterceptor(),
-    )
-    client = DocumentProcessorServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "post_list_evaluations"
-    ) as post, mock.patch.object(
-        transports.DocumentProcessorServiceRestInterceptor, "pre_list_evaluations"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = document_processor_service.ListEvaluationsRequest.pb(
-            document_processor_service.ListEvaluationsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            document_processor_service.ListEvaluationsResponse.to_json(
-                document_processor_service.ListEvaluationsResponse()
-            )
-        )
-
-        request = document_processor_service.ListEvaluationsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = document_processor_service.ListEvaluationsResponse()
-
-        client.list_evaluations(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_evaluations_rest_bad_request(
-    transport: str = "rest",
-    request_type=document_processor_service.ListEvaluationsRequest,
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "parent": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_evaluations(request)
 
 
 def test_list_evaluations_rest_flattened():
@@ -17329,6 +13398,7 @@ def test_list_evaluations_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_evaluations(**mock_args)
 
@@ -17516,18 +13586,4807 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_grpc():
+    transport = DocumentProcessorServiceClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_process_document_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.process_document), "__call__") as call:
+        call.return_value = document_processor_service.ProcessResponse()
+        client.process_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ProcessRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_batch_process_documents_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_process_documents), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.batch_process_documents(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.BatchProcessRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_fetch_processor_types_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.fetch_processor_types), "__call__"
+    ) as call:
+        call.return_value = document_processor_service.FetchProcessorTypesResponse()
+        client.fetch_processor_types(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.FetchProcessorTypesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_processor_types_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_processor_types), "__call__"
+    ) as call:
+        call.return_value = document_processor_service.ListProcessorTypesResponse()
+        client.list_processor_types(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListProcessorTypesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_processor_type_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_processor_type), "__call__"
+    ) as call:
+        call.return_value = processor_type.ProcessorType()
+        client.get_processor_type(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetProcessorTypeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_processors_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_processors), "__call__") as call:
+        call.return_value = document_processor_service.ListProcessorsResponse()
+        client.list_processors(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListProcessorsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_processor_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_processor), "__call__") as call:
+        call.return_value = processor.Processor()
+        client.get_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_train_processor_version_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.train_processor_version), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.train_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.TrainProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_processor_version_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_processor_version), "__call__"
+    ) as call:
+        call.return_value = processor.ProcessorVersion()
+        client.get_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_processor_versions_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_processor_versions), "__call__"
+    ) as call:
+        call.return_value = document_processor_service.ListProcessorVersionsResponse()
+        client.list_processor_versions(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListProcessorVersionsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_processor_version_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_processor_version), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DeleteProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_deploy_processor_version_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.deploy_processor_version), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.deploy_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DeployProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_undeploy_processor_version_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.undeploy_processor_version), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.undeploy_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.UndeployProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_processor_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_processor), "__call__") as call:
+        call.return_value = gcd_processor.Processor()
+        client.create_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.CreateProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_processor_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_processor), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DeleteProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_enable_processor_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.enable_processor), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.enable_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.EnableProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_disable_processor_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.disable_processor), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.disable_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DisableProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_default_processor_version_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_default_processor_version), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.set_default_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.SetDefaultProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_review_document_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.review_document), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.review_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ReviewDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_evaluate_processor_version_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.evaluate_processor_version), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.evaluate_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.EvaluateProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_evaluation_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_evaluation), "__call__") as call:
+        call.return_value = evaluation.Evaluation()
+        client.get_evaluation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetEvaluationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_evaluations_empty_call_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_evaluations), "__call__") as call:
+        call.return_value = document_processor_service.ListEvaluationsResponse()
+        client.list_evaluations(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListEvaluationsRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = DocumentProcessorServiceAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_process_document_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.process_document), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            document_processor_service.ProcessResponse()
+        )
+        await client.process_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ProcessRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_batch_process_documents_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_process_documents), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.batch_process_documents(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.BatchProcessRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_fetch_processor_types_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.fetch_processor_types), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            document_processor_service.FetchProcessorTypesResponse()
+        )
+        await client.fetch_processor_types(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.FetchProcessorTypesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_processor_types_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_processor_types), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            document_processor_service.ListProcessorTypesResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_processor_types(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListProcessorTypesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_processor_type_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_processor_type), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            processor_type.ProcessorType(
+                name="name_value",
+                type_="type__value",
+                category="category_value",
+                allow_creation=True,
+                launch_stage=launch_stage_pb2.LaunchStage.UNIMPLEMENTED,
+                sample_document_uris=["sample_document_uris_value"],
+            )
+        )
+        await client.get_processor_type(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetProcessorTypeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_processors_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_processors), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            document_processor_service.ListProcessorsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_processors(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListProcessorsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_processor_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_processor), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            processor.Processor(
+                name="name_value",
+                type_="type__value",
+                display_name="display_name_value",
+                state=processor.Processor.State.ENABLED,
+                default_processor_version="default_processor_version_value",
+                process_endpoint="process_endpoint_value",
+                kms_key_name="kms_key_name_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
+            )
+        )
+        await client.get_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_train_processor_version_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.train_processor_version), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.train_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.TrainProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_processor_version_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_processor_version), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            processor.ProcessorVersion(
+                name="name_value",
+                display_name="display_name_value",
+                state=processor.ProcessorVersion.State.DEPLOYED,
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                google_managed=True,
+                model_type=processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
+            )
+        )
+        await client.get_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_processor_versions_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_processor_versions), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            document_processor_service.ListProcessorVersionsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_processor_versions(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListProcessorVersionsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_processor_version_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_processor_version), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.delete_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DeleteProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_deploy_processor_version_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.deploy_processor_version), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.deploy_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DeployProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_undeploy_processor_version_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.undeploy_processor_version), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.undeploy_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.UndeployProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_processor_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_processor), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gcd_processor.Processor(
+                name="name_value",
+                type_="type__value",
+                display_name="display_name_value",
+                state=gcd_processor.Processor.State.ENABLED,
+                default_processor_version="default_processor_version_value",
+                process_endpoint="process_endpoint_value",
+                kms_key_name="kms_key_name_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
+            )
+        )
+        await client.create_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.CreateProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_processor_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_processor), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.delete_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DeleteProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_enable_processor_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.enable_processor), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.enable_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.EnableProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_disable_processor_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.disable_processor), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.disable_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DisableProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_default_processor_version_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_default_processor_version), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.set_default_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.SetDefaultProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_review_document_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.review_document), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.review_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ReviewDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_evaluate_processor_version_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.evaluate_processor_version), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.evaluate_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.EvaluateProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_evaluation_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_evaluation), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            evaluation.Evaluation(
+                name="name_value",
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+            )
+        )
+        await client.get_evaluation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetEvaluationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_evaluations_empty_call_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_evaluations), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            document_processor_service.ListEvaluationsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_evaluations(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListEvaluationsRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = DocumentProcessorServiceClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_process_document_rest_bad_request(
+    request_type=document_processor_service.ProcessRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.process_document(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "grpc",
-        "rest",
+        document_processor_service.ProcessRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = DocumentProcessorServiceClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_process_document_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = document_processor_service.ProcessResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = document_processor_service.ProcessResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.process_document(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, document_processor_service.ProcessResponse)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_process_document_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_process_document"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_process_document"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.ProcessRequest.pb(
+            document_processor_service.ProcessRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = document_processor_service.ProcessResponse.to_json(
+            document_processor_service.ProcessResponse()
+        )
+        req.return_value.content = return_value
+
+        request = document_processor_service.ProcessRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = document_processor_service.ProcessResponse()
+
+        client.process_document(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_batch_process_documents_rest_bad_request(
+    request_type=document_processor_service.BatchProcessRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.batch_process_documents(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.BatchProcessRequest,
+        dict,
+    ],
+)
+def test_batch_process_documents_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.batch_process_documents(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_batch_process_documents_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "post_batch_process_documents",
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "pre_batch_process_documents",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.BatchProcessRequest.pb(
+            document_processor_service.BatchProcessRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.BatchProcessRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.batch_process_documents(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_fetch_processor_types_rest_bad_request(
+    request_type=document_processor_service.FetchProcessorTypesRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.fetch_processor_types(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.FetchProcessorTypesRequest,
+        dict,
+    ],
+)
+def test_fetch_processor_types_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = document_processor_service.FetchProcessorTypesResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = document_processor_service.FetchProcessorTypesResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.fetch_processor_types(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, document_processor_service.FetchProcessorTypesResponse)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_fetch_processor_types_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_fetch_processor_types"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_fetch_processor_types"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.FetchProcessorTypesRequest.pb(
+            document_processor_service.FetchProcessorTypesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = document_processor_service.FetchProcessorTypesResponse.to_json(
+            document_processor_service.FetchProcessorTypesResponse()
+        )
+        req.return_value.content = return_value
+
+        request = document_processor_service.FetchProcessorTypesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = document_processor_service.FetchProcessorTypesResponse()
+
+        client.fetch_processor_types(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_processor_types_rest_bad_request(
+    request_type=document_processor_service.ListProcessorTypesRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_processor_types(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.ListProcessorTypesRequest,
+        dict,
+    ],
+)
+def test_list_processor_types_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = document_processor_service.ListProcessorTypesResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = document_processor_service.ListProcessorTypesResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_processor_types(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListProcessorTypesPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_processor_types_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_list_processor_types"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_list_processor_types"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.ListProcessorTypesRequest.pb(
+            document_processor_service.ListProcessorTypesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = document_processor_service.ListProcessorTypesResponse.to_json(
+            document_processor_service.ListProcessorTypesResponse()
+        )
+        req.return_value.content = return_value
+
+        request = document_processor_service.ListProcessorTypesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = document_processor_service.ListProcessorTypesResponse()
+
+        client.list_processor_types(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_processor_type_rest_bad_request(
+    request_type=document_processor_service.GetProcessorTypeRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processorTypes/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_processor_type(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.GetProcessorTypeRequest,
+        dict,
+    ],
+)
+def test_get_processor_type_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processorTypes/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = processor_type.ProcessorType(
+            name="name_value",
+            type_="type__value",
+            category="category_value",
+            allow_creation=True,
+            launch_stage=launch_stage_pb2.LaunchStage.UNIMPLEMENTED,
+            sample_document_uris=["sample_document_uris_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = processor_type.ProcessorType.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_processor_type(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, processor_type.ProcessorType)
+    assert response.name == "name_value"
+    assert response.type_ == "type__value"
+    assert response.category == "category_value"
+    assert response.allow_creation is True
+    assert response.launch_stage == launch_stage_pb2.LaunchStage.UNIMPLEMENTED
+    assert response.sample_document_uris == ["sample_document_uris_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_processor_type_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_get_processor_type"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_get_processor_type"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.GetProcessorTypeRequest.pb(
+            document_processor_service.GetProcessorTypeRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = processor_type.ProcessorType.to_json(
+            processor_type.ProcessorType()
+        )
+        req.return_value.content = return_value
+
+        request = document_processor_service.GetProcessorTypeRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = processor_type.ProcessorType()
+
+        client.get_processor_type(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_processors_rest_bad_request(
+    request_type=document_processor_service.ListProcessorsRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_processors(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.ListProcessorsRequest,
+        dict,
+    ],
+)
+def test_list_processors_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = document_processor_service.ListProcessorsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = document_processor_service.ListProcessorsResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_processors(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListProcessorsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_processors_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_list_processors"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_list_processors"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.ListProcessorsRequest.pb(
+            document_processor_service.ListProcessorsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = document_processor_service.ListProcessorsResponse.to_json(
+            document_processor_service.ListProcessorsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = document_processor_service.ListProcessorsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = document_processor_service.ListProcessorsResponse()
+
+        client.list_processors(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_processor_rest_bad_request(
+    request_type=document_processor_service.GetProcessorRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_processor(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.GetProcessorRequest,
+        dict,
+    ],
+)
+def test_get_processor_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = processor.Processor(
+            name="name_value",
+            type_="type__value",
+            display_name="display_name_value",
+            state=processor.Processor.State.ENABLED,
+            default_processor_version="default_processor_version_value",
+            process_endpoint="process_endpoint_value",
+            kms_key_name="kms_key_name_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = processor.Processor.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_processor(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, processor.Processor)
+    assert response.name == "name_value"
+    assert response.type_ == "type__value"
+    assert response.display_name == "display_name_value"
+    assert response.state == processor.Processor.State.ENABLED
+    assert response.default_processor_version == "default_processor_version_value"
+    assert response.process_endpoint == "process_endpoint_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_processor_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_get_processor"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_get_processor"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.GetProcessorRequest.pb(
+            document_processor_service.GetProcessorRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = processor.Processor.to_json(processor.Processor())
+        req.return_value.content = return_value
+
+        request = document_processor_service.GetProcessorRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = processor.Processor()
+
+        client.get_processor(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_train_processor_version_rest_bad_request(
+    request_type=document_processor_service.TrainProcessorVersionRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.train_processor_version(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.TrainProcessorVersionRequest,
+        dict,
+    ],
+)
+def test_train_processor_version_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.train_processor_version(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_train_processor_version_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "post_train_processor_version",
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "pre_train_processor_version",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.TrainProcessorVersionRequest.pb(
+            document_processor_service.TrainProcessorVersionRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.TrainProcessorVersionRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.train_processor_version(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_processor_version_rest_bad_request(
+    request_type=document_processor_service.GetProcessorVersionRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_processor_version(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.GetProcessorVersionRequest,
+        dict,
+    ],
+)
+def test_get_processor_version_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = processor.ProcessorVersion(
+            name="name_value",
+            display_name="display_name_value",
+            state=processor.ProcessorVersion.State.DEPLOYED,
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            google_managed=True,
+            model_type=processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = processor.ProcessorVersion.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_processor_version(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, processor.ProcessorVersion)
+    assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == processor.ProcessorVersion.State.DEPLOYED
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.google_managed is True
+    assert (
+        response.model_type
+        == processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE
+    )
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_processor_version_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_get_processor_version"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_get_processor_version"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.GetProcessorVersionRequest.pb(
+            document_processor_service.GetProcessorVersionRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = processor.ProcessorVersion.to_json(processor.ProcessorVersion())
+        req.return_value.content = return_value
+
+        request = document_processor_service.GetProcessorVersionRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = processor.ProcessorVersion()
+
+        client.get_processor_version(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_processor_versions_rest_bad_request(
+    request_type=document_processor_service.ListProcessorVersionsRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_processor_versions(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.ListProcessorVersionsRequest,
+        dict,
+    ],
+)
+def test_list_processor_versions_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = document_processor_service.ListProcessorVersionsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = document_processor_service.ListProcessorVersionsResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_processor_versions(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListProcessorVersionsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_processor_versions_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "post_list_processor_versions",
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "pre_list_processor_versions",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.ListProcessorVersionsRequest.pb(
+            document_processor_service.ListProcessorVersionsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = document_processor_service.ListProcessorVersionsResponse.to_json(
+            document_processor_service.ListProcessorVersionsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = document_processor_service.ListProcessorVersionsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = document_processor_service.ListProcessorVersionsResponse()
+
+        client.list_processor_versions(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_processor_version_rest_bad_request(
+    request_type=document_processor_service.DeleteProcessorVersionRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_processor_version(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.DeleteProcessorVersionRequest,
+        dict,
+    ],
+)
+def test_delete_processor_version_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_processor_version(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_processor_version_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "post_delete_processor_version",
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "pre_delete_processor_version",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.DeleteProcessorVersionRequest.pb(
+            document_processor_service.DeleteProcessorVersionRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.DeleteProcessorVersionRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.delete_processor_version(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_deploy_processor_version_rest_bad_request(
+    request_type=document_processor_service.DeployProcessorVersionRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.deploy_processor_version(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.DeployProcessorVersionRequest,
+        dict,
+    ],
+)
+def test_deploy_processor_version_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.deploy_processor_version(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_deploy_processor_version_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "post_deploy_processor_version",
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "pre_deploy_processor_version",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.DeployProcessorVersionRequest.pb(
+            document_processor_service.DeployProcessorVersionRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.DeployProcessorVersionRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.deploy_processor_version(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_undeploy_processor_version_rest_bad_request(
+    request_type=document_processor_service.UndeployProcessorVersionRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.undeploy_processor_version(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.UndeployProcessorVersionRequest,
+        dict,
+    ],
+)
+def test_undeploy_processor_version_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.undeploy_processor_version(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_undeploy_processor_version_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "post_undeploy_processor_version",
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "pre_undeploy_processor_version",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.UndeployProcessorVersionRequest.pb(
+            document_processor_service.UndeployProcessorVersionRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.UndeployProcessorVersionRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.undeploy_processor_version(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_processor_rest_bad_request(
+    request_type=document_processor_service.CreateProcessorRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_processor(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.CreateProcessorRequest,
+        dict,
+    ],
+)
+def test_create_processor_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request_init["processor"] = {
+        "name": "name_value",
+        "type_": "type__value",
+        "display_name": "display_name_value",
+        "state": 1,
+        "default_processor_version": "default_processor_version_value",
+        "processor_version_aliases": [
+            {"alias": "alias_value", "processor_version": "processor_version_value"}
+        ],
+        "process_endpoint": "process_endpoint_value",
+        "create_time": {"seconds": 751, "nanos": 543},
+        "kms_key_name": "kms_key_name_value",
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = document_processor_service.CreateProcessorRequest.meta.fields[
+        "processor"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["processor"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["processor"][field])):
+                    del request_init["processor"][field][i][subfield]
+            else:
+                del request_init["processor"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = gcd_processor.Processor(
+            name="name_value",
+            type_="type__value",
+            display_name="display_name_value",
+            state=gcd_processor.Processor.State.ENABLED,
+            default_processor_version="default_processor_version_value",
+            process_endpoint="process_endpoint_value",
+            kms_key_name="kms_key_name_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = gcd_processor.Processor.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_processor(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, gcd_processor.Processor)
+    assert response.name == "name_value"
+    assert response.type_ == "type__value"
+    assert response.display_name == "display_name_value"
+    assert response.state == gcd_processor.Processor.State.ENABLED
+    assert response.default_processor_version == "default_processor_version_value"
+    assert response.process_endpoint == "process_endpoint_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_processor_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_create_processor"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_create_processor"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.CreateProcessorRequest.pb(
+            document_processor_service.CreateProcessorRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = gcd_processor.Processor.to_json(gcd_processor.Processor())
+        req.return_value.content = return_value
+
+        request = document_processor_service.CreateProcessorRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = gcd_processor.Processor()
+
+        client.create_processor(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_processor_rest_bad_request(
+    request_type=document_processor_service.DeleteProcessorRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_processor(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.DeleteProcessorRequest,
+        dict,
+    ],
+)
+def test_delete_processor_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_processor(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_processor_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_delete_processor"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_delete_processor"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.DeleteProcessorRequest.pb(
+            document_processor_service.DeleteProcessorRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.DeleteProcessorRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.delete_processor(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_enable_processor_rest_bad_request(
+    request_type=document_processor_service.EnableProcessorRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.enable_processor(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.EnableProcessorRequest,
+        dict,
+    ],
+)
+def test_enable_processor_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.enable_processor(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_enable_processor_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_enable_processor"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_enable_processor"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.EnableProcessorRequest.pb(
+            document_processor_service.EnableProcessorRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.EnableProcessorRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.enable_processor(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_disable_processor_rest_bad_request(
+    request_type=document_processor_service.DisableProcessorRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.disable_processor(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.DisableProcessorRequest,
+        dict,
+    ],
+)
+def test_disable_processor_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/processors/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.disable_processor(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_disable_processor_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_disable_processor"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_disable_processor"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.DisableProcessorRequest.pb(
+            document_processor_service.DisableProcessorRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.DisableProcessorRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.disable_processor(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_default_processor_version_rest_bad_request(
+    request_type=document_processor_service.SetDefaultProcessorVersionRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "processor": "projects/sample1/locations/sample2/processors/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_default_processor_version(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.SetDefaultProcessorVersionRequest,
+        dict,
+    ],
+)
+def test_set_default_processor_version_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "processor": "projects/sample1/locations/sample2/processors/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_default_processor_version(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_default_processor_version_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "post_set_default_processor_version",
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "pre_set_default_processor_version",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.SetDefaultProcessorVersionRequest.pb(
+            document_processor_service.SetDefaultProcessorVersionRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.SetDefaultProcessorVersionRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.set_default_processor_version(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_review_document_rest_bad_request(
+    request_type=document_processor_service.ReviewDocumentRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "human_review_config": "projects/sample1/locations/sample2/processors/sample3/humanReviewConfig"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.review_document(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.ReviewDocumentRequest,
+        dict,
+    ],
+)
+def test_review_document_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "human_review_config": "projects/sample1/locations/sample2/processors/sample3/humanReviewConfig"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.review_document(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_review_document_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_review_document"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_review_document"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.ReviewDocumentRequest.pb(
+            document_processor_service.ReviewDocumentRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.ReviewDocumentRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.review_document(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_evaluate_processor_version_rest_bad_request(
+    request_type=document_processor_service.EvaluateProcessorVersionRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "processor_version": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.evaluate_processor_version(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.EvaluateProcessorVersionRequest,
+        dict,
+    ],
+)
+def test_evaluate_processor_version_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "processor_version": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.evaluate_processor_version(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_evaluate_processor_version_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "post_evaluate_processor_version",
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor,
+        "pre_evaluate_processor_version",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.EvaluateProcessorVersionRequest.pb(
+            document_processor_service.EvaluateProcessorVersionRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.EvaluateProcessorVersionRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.evaluate_processor_version(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_evaluation_rest_bad_request(
+    request_type=document_processor_service.GetEvaluationRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4/evaluations/sample5"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_evaluation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.GetEvaluationRequest,
+        dict,
+    ],
+)
+def test_get_evaluation_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4/evaluations/sample5"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = evaluation.Evaluation(
+            name="name_value",
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = evaluation.Evaluation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_evaluation(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, evaluation.Evaluation)
+    assert response.name == "name_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_evaluation_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_get_evaluation"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_get_evaluation"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.GetEvaluationRequest.pb(
+            document_processor_service.GetEvaluationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = evaluation.Evaluation.to_json(evaluation.Evaluation())
+        req.return_value.content = return_value
+
+        request = document_processor_service.GetEvaluationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = evaluation.Evaluation()
+
+        client.get_evaluation(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_evaluations_rest_bad_request(
+    request_type=document_processor_service.ListEvaluationsRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "parent": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_evaluations(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        document_processor_service.ListEvaluationsRequest,
+        dict,
+    ],
+)
+def test_list_evaluations_rest_call_success(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "parent": "projects/sample1/locations/sample2/processors/sample3/processorVersions/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = document_processor_service.ListEvaluationsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = document_processor_service.ListEvaluationsResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_evaluations(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListEvaluationsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_evaluations_rest_interceptors(null_interceptor):
+    transport = transports.DocumentProcessorServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DocumentProcessorServiceRestInterceptor(),
+    )
+    client = DocumentProcessorServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "post_list_evaluations"
+    ) as post, mock.patch.object(
+        transports.DocumentProcessorServiceRestInterceptor, "pre_list_evaluations"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = document_processor_service.ListEvaluationsRequest.pb(
+            document_processor_service.ListEvaluationsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = document_processor_service.ListEvaluationsResponse.to_json(
+            document_processor_service.ListEvaluationsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = document_processor_service.ListEvaluationsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = document_processor_service.ListEvaluationsResponse()
+
+        client.list_evaluations(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict(
+        {"name": "projects/sample1/locations/sample2"}, request
+    )
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_location(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        locations_pb2.GetLocationRequest,
+        dict,
+    ],
+)
+def test_get_location_rest(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = locations_pb2.Location()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.get_location(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, locations_pb2.Location)
+
+
+def test_list_locations_rest_bad_request(
+    request_type=locations_pb2.ListLocationsRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict({"name": "projects/sample1"}, request)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_locations(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        locations_pb2.ListLocationsRequest,
+        dict,
+    ],
+)
+def test_list_locations_rest(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "projects/sample1"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = locations_pb2.ListLocationsResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.list_locations(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, locations_pb2.ListLocationsResponse)
+
+
+def test_cancel_operation_rest_bad_request(
+    request_type=operations_pb2.CancelOperationRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict(
+        {"name": "projects/sample1/locations/sample2/operations/sample3"}, request
+    )
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.cancel_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.CancelOperationRequest,
+        dict,
+    ],
+)
+def test_cancel_operation_rest(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = "{}"
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.cancel_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+def test_get_operation_rest_bad_request(
+    request_type=operations_pb2.GetOperationRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict(
+        {"name": "projects/sample1/operations/sample2"}, request
+    )
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.GetOperationRequest,
+        dict,
+    ],
+)
+def test_get_operation_rest(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "projects/sample1/operations/sample2"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.get_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.Operation)
+
+
+def test_list_operations_rest_bad_request(
+    request_type=operations_pb2.ListOperationsRequest,
+):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict(
+        {"name": "projects/sample1/locations/sample2/operations"}, request
+    )
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_operations(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.ListOperationsRequest,
+        dict,
+    ],
+)
+def test_list_operations_rest(request_type):
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "projects/sample1/locations/sample2/operations"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.ListOperationsResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.list_operations(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.ListOperationsResponse)
+
+
+def test_initialize_client_w_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_process_document_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.process_document), "__call__") as call:
+        client.process_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ProcessRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_batch_process_documents_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.batch_process_documents), "__call__"
+    ) as call:
+        client.batch_process_documents(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.BatchProcessRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_fetch_processor_types_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.fetch_processor_types), "__call__"
+    ) as call:
+        client.fetch_processor_types(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.FetchProcessorTypesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_processor_types_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_processor_types), "__call__"
+    ) as call:
+        client.list_processor_types(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListProcessorTypesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_processor_type_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_processor_type), "__call__"
+    ) as call:
+        client.get_processor_type(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetProcessorTypeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_processors_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_processors), "__call__") as call:
+        client.list_processors(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListProcessorsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_processor_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_processor), "__call__") as call:
+        client.get_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_train_processor_version_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.train_processor_version), "__call__"
+    ) as call:
+        client.train_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.TrainProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_processor_version_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_processor_version), "__call__"
+    ) as call:
+        client.get_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_processor_versions_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_processor_versions), "__call__"
+    ) as call:
+        client.list_processor_versions(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListProcessorVersionsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_processor_version_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_processor_version), "__call__"
+    ) as call:
+        client.delete_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DeleteProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_deploy_processor_version_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.deploy_processor_version), "__call__"
+    ) as call:
+        client.deploy_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DeployProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_undeploy_processor_version_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.undeploy_processor_version), "__call__"
+    ) as call:
+        client.undeploy_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.UndeployProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_processor_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_processor), "__call__") as call:
+        client.create_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.CreateProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_processor_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_processor), "__call__") as call:
+        client.delete_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DeleteProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_enable_processor_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.enable_processor), "__call__") as call:
+        client.enable_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.EnableProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_disable_processor_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.disable_processor), "__call__"
+    ) as call:
+        client.disable_processor(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.DisableProcessorRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_default_processor_version_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_default_processor_version), "__call__"
+    ) as call:
+        client.set_default_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.SetDefaultProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_review_document_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.review_document), "__call__") as call:
+        client.review_document(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ReviewDocumentRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_evaluate_processor_version_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.evaluate_processor_version), "__call__"
+    ) as call:
+        client.evaluate_processor_version(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.EvaluateProcessorVersionRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_evaluation_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_evaluation), "__call__") as call:
+        client.get_evaluation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.GetEvaluationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_evaluations_empty_call_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_evaluations), "__call__") as call:
+        client.list_evaluations(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = document_processor_service.ListEvaluationsRequest()
+
+        assert args[0] == request_msg
+
+
+def test_document_processor_service_rest_lro_client():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    transport = client.transport
+
+    # Ensure that we have an api-core operations client.
+    assert isinstance(
+        transport.operations_client,
+        operations_v1.AbstractOperationsClient,
+    )
+
+    # Ensure that subsequent calls to the property send the exact same object.
+    assert transport.operations_client is transport.operations_client
 
 
 def test_transport_grpc_default():
@@ -17792,23 +18651,6 @@ def test_document_processor_service_http_transport_client_cert_source_for_mtls()
             credentials=cred, client_cert_source_for_mtls=client_cert_source_callback
         )
         mock_configure_mtls_channel.assert_called_once_with(client_cert_source_callback)
-
-
-def test_document_processor_service_rest_lro_client():
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    transport = client.transport
-
-    # Ensure that we have a api-core operations client.
-    assert isinstance(
-        transport.operations_client,
-        operations_v1.AbstractOperationsClient,
-    )
-
-    # Ensure that subsequent calls to the property send the exact same object.
-    assert transport.operations_client is transport.operations_client
 
 
 @pytest.mark.parametrize(
@@ -18375,308 +19217,6 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-    with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
-    ) as close:
-        async with client:
-            close.assert_not_called()
-        close.assert_called_once()
-
-
-def test_get_location_rest_bad_request(
-    transport: str = "rest", request_type=locations_pb2.GetLocationRequest
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    request = request_type()
-    request = json_format.ParseDict(
-        {"name": "projects/sample1/locations/sample2"}, request
-    )
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_location(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        locations_pb2.GetLocationRequest,
-        dict,
-    ],
-)
-def test_get_location_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = locations_pb2.Location()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.get_location(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, locations_pb2.Location)
-
-
-def test_list_locations_rest_bad_request(
-    transport: str = "rest", request_type=locations_pb2.ListLocationsRequest
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    request = request_type()
-    request = json_format.ParseDict({"name": "projects/sample1"}, request)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_locations(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        locations_pb2.ListLocationsRequest,
-        dict,
-    ],
-)
-def test_list_locations_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "projects/sample1"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = locations_pb2.ListLocationsResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.list_locations(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, locations_pb2.ListLocationsResponse)
-
-
-def test_cancel_operation_rest_bad_request(
-    transport: str = "rest", request_type=operations_pb2.CancelOperationRequest
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    request = request_type()
-    request = json_format.ParseDict(
-        {"name": "projects/sample1/locations/sample2/operations/sample3"}, request
-    )
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.cancel_operation(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        operations_pb2.CancelOperationRequest,
-        dict,
-    ],
-)
-def test_cancel_operation_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = "{}"
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.cancel_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
-
-
-def test_get_operation_rest_bad_request(
-    transport: str = "rest", request_type=operations_pb2.GetOperationRequest
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    request = request_type()
-    request = json_format.ParseDict(
-        {"name": "projects/sample1/operations/sample2"}, request
-    )
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_operation(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        operations_pb2.GetOperationRequest,
-        dict,
-    ],
-)
-def test_get_operation_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "projects/sample1/operations/sample2"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.get_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, operations_pb2.Operation)
-
-
-def test_list_operations_rest_bad_request(
-    transport: str = "rest", request_type=operations_pb2.ListOperationsRequest
-):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    request = request_type()
-    request = json_format.ParseDict(
-        {"name": "projects/sample1/locations/sample2/operations"}, request
-    )
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_operations(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        operations_pb2.ListOperationsRequest,
-        dict,
-    ],
-)
-def test_list_operations_rest(request_type):
-    client = DocumentProcessorServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "projects/sample1/locations/sample2/operations"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.ListOperationsResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.list_operations(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, operations_pb2.ListOperationsResponse)
-
-
 def test_cancel_operation(transport: str = "grpc"):
     client = DocumentProcessorServiceClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -18704,7 +19244,7 @@ def test_cancel_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_cancel_operation_async(transport: str = "grpc_asyncio"):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -18757,7 +19297,7 @@ def test_cancel_operation_field_headers():
 @pytest.mark.asyncio
 async def test_cancel_operation_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -18802,7 +19342,7 @@ def test_cancel_operation_from_dict():
 @pytest.mark.asyncio
 async def test_cancel_operation_from_dict_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.cancel_operation), "__call__") as call:
@@ -18843,7 +19383,7 @@ def test_get_operation(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_get_operation_async(transport: str = "grpc_asyncio"):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -18898,7 +19438,7 @@ def test_get_operation_field_headers():
 @pytest.mark.asyncio
 async def test_get_operation_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -18945,7 +19485,7 @@ def test_get_operation_from_dict():
 @pytest.mark.asyncio
 async def test_get_operation_from_dict_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
@@ -18988,7 +19528,7 @@ def test_list_operations(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_operations_async(transport: str = "grpc_asyncio"):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -19043,7 +19583,7 @@ def test_list_operations_field_headers():
 @pytest.mark.asyncio
 async def test_list_operations_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -19090,7 +19630,7 @@ def test_list_operations_from_dict():
 @pytest.mark.asyncio
 async def test_list_operations_from_dict_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
@@ -19133,7 +19673,7 @@ def test_list_locations(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_locations_async(transport: str = "grpc_asyncio"):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -19188,7 +19728,7 @@ def test_list_locations_field_headers():
 @pytest.mark.asyncio
 async def test_list_locations_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -19235,7 +19775,7 @@ def test_list_locations_from_dict():
 @pytest.mark.asyncio
 async def test_list_locations_from_dict_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.list_locations), "__call__") as call:
@@ -19278,7 +19818,7 @@ def test_get_location(transport: str = "grpc"):
 @pytest.mark.asyncio
 async def test_get_location_async(transport: str = "grpc_asyncio"):
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -19333,7 +19873,7 @@ def test_get_location_field_headers():
 @pytest.mark.asyncio
 async def test_get_location_field_headers_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials()
+        credentials=async_anonymous_credentials()
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -19380,7 +19920,7 @@ def test_get_location_from_dict():
 @pytest.mark.asyncio
 async def test_get_location_from_dict_async():
     client = DocumentProcessorServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
     # Mock the actual call within the gRPC stub, and fake the request.
     with mock.patch.object(type(client.transport.list_locations), "__call__") as call:
@@ -19396,22 +19936,41 @@ async def test_get_location_from_dict_async():
         call.assert_called()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
+def test_transport_close_grpc():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
-    for transport, close_name in transports.items():
-        client = DocumentProcessorServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = DocumentProcessorServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        async with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+def test_transport_close_rest():
+    client = DocumentProcessorServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

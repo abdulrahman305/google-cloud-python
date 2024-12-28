@@ -13,46 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import (
-    gapic_v1,
-    operations_v1,
-    path_template,
-    rest_helpers,
-    rest_streaming,
-)
+from google.api_core import gapic_v1, operations_v1, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.ads.admanager_v1.types import report_service
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseReportServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.longrunning import operations_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.ads.admanager_v1.types import report_service
-
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import ReportServiceTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -71,11 +69,51 @@ class ReportServiceRestInterceptor:
 
     .. code-block:: python
         class MyCustomReportServiceInterceptor(ReportServiceRestInterceptor):
-            def pre_export_saved_report(self, request, metadata):
+            def pre_create_report(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
 
-            def post_export_saved_report(self, response):
+            def post_create_report(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_fetch_report_result_rows(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_fetch_report_result_rows(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_get_report(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_report(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_list_reports(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_reports(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_run_report(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_run_report(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_update_report(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_report(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -85,22 +123,148 @@ class ReportServiceRestInterceptor:
 
     """
 
-    def pre_export_saved_report(
+    def pre_create_report(
         self,
-        request: report_service.ExportSavedReportRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[report_service.ExportSavedReportRequest, Sequence[Tuple[str, str]]]:
-        """Pre-rpc interceptor for export_saved_report
+        request: report_service.CreateReportRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        report_service.CreateReportRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for create_report
 
         Override in a subclass to manipulate the request or metadata
         before they are sent to the ReportService server.
         """
         return request, metadata
 
-    def post_export_saved_report(
+    def post_create_report(
+        self, response: report_service.Report
+    ) -> report_service.Report:
+        """Post-rpc interceptor for create_report
+
+        Override in a subclass to manipulate the response
+        after it is returned by the ReportService server but before
+        it is returned to user code.
+        """
+        return response
+
+    def pre_fetch_report_result_rows(
+        self,
+        request: report_service.FetchReportResultRowsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        report_service.FetchReportResultRowsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for fetch_report_result_rows
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ReportService server.
+        """
+        return request, metadata
+
+    def post_fetch_report_result_rows(
+        self, response: report_service.FetchReportResultRowsResponse
+    ) -> report_service.FetchReportResultRowsResponse:
+        """Post-rpc interceptor for fetch_report_result_rows
+
+        Override in a subclass to manipulate the response
+        after it is returned by the ReportService server but before
+        it is returned to user code.
+        """
+        return response
+
+    def pre_get_report(
+        self,
+        request: report_service.GetReportRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        report_service.GetReportRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for get_report
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ReportService server.
+        """
+        return request, metadata
+
+    def post_get_report(self, response: report_service.Report) -> report_service.Report:
+        """Post-rpc interceptor for get_report
+
+        Override in a subclass to manipulate the response
+        after it is returned by the ReportService server but before
+        it is returned to user code.
+        """
+        return response
+
+    def pre_list_reports(
+        self,
+        request: report_service.ListReportsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        report_service.ListReportsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for list_reports
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ReportService server.
+        """
+        return request, metadata
+
+    def post_list_reports(
+        self, response: report_service.ListReportsResponse
+    ) -> report_service.ListReportsResponse:
+        """Post-rpc interceptor for list_reports
+
+        Override in a subclass to manipulate the response
+        after it is returned by the ReportService server but before
+        it is returned to user code.
+        """
+        return response
+
+    def pre_run_report(
+        self,
+        request: report_service.RunReportRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        report_service.RunReportRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for run_report
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ReportService server.
+        """
+        return request, metadata
+
+    def post_run_report(
         self, response: operations_pb2.Operation
     ) -> operations_pb2.Operation:
-        """Post-rpc interceptor for export_saved_report
+        """Post-rpc interceptor for run_report
+
+        Override in a subclass to manipulate the response
+        after it is returned by the ReportService server but before
+        it is returned to user code.
+        """
+        return response
+
+    def pre_update_report(
+        self,
+        request: report_service.UpdateReportRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        report_service.UpdateReportRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for update_report
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ReportService server.
+        """
+        return request, metadata
+
+    def post_update_report(
+        self, response: report_service.Report
+    ) -> report_service.Report:
+        """Post-rpc interceptor for update_report
 
         Override in a subclass to manipulate the response
         after it is returned by the ReportService server but before
@@ -111,8 +275,10 @@ class ReportServiceRestInterceptor:
     def pre_get_operation(
         self,
         request: operations_pb2.GetOperationRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[operations_pb2.GetOperationRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        operations_pb2.GetOperationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for get_operation
 
         Override in a subclass to manipulate the request or metadata
@@ -139,17 +305,16 @@ class ReportServiceRestStub:
     _interceptor: ReportServiceRestInterceptor
 
 
-class ReportServiceRestTransport(ReportServiceTransport):
-    """REST backend transport for ReportService.
+class ReportServiceRestTransport(_BaseReportServiceRestTransport):
+    """REST backend synchronous transport for ReportService.
 
-    Provides methods for interacting with Reports.
+    Provides methods for interacting with reports.
 
     This class defines the same methods as the primary client, so the
     primary client can load the underlying transport implementation
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -203,21 +368,12 @@ class ReportServiceRestTransport(ReportServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -242,11 +398,11 @@ class ReportServiceRestTransport(ReportServiceTransport):
                 "google.longrunning.Operations.GetOperation": [
                     {
                         "method": "get",
-                        "uri": "/v1/{name=networks/*/operations/reports/exports/*}",
+                        "uri": "/v1/{name=networks/*/operations/reports/runs/*}",
                     },
                     {
                         "method": "get",
-                        "uri": "/v1/{name=networks/*/operations/reports/runs/*}",
+                        "uri": "/v1/{name=networks/*/operations/reports/exports/*}",
                     },
                 ],
             }
@@ -267,39 +423,640 @@ class ReportServiceRestTransport(ReportServiceTransport):
         # Return the client from cache.
         return self._operations_client
 
-    class _ExportSavedReport(ReportServiceRestStub):
+    class _CreateReport(
+        _BaseReportServiceRestTransport._BaseCreateReport, ReportServiceRestStub
+    ):
         def __hash__(self):
-            return hash("ExportSavedReport")
+            return hash("ReportServiceRestTransport.CreateReport")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
-            request: report_service.ExportSavedReportRequest,
+            request: report_service.CreateReportRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
-        ) -> operations_pb2.Operation:
-            r"""Call the export saved report method over HTTP.
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> report_service.Report:
+            r"""Call the create report method over HTTP.
 
             Args:
-                request (~.report_service.ExportSavedReportRequest):
-                    The request object. Request proto for the configuration
-                of a report run.
+                request (~.report_service.CreateReportRequest):
+                    The request object. Request object for ``CreateReport`` method.
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.report_service.Report:
+                    The ``Report`` resource.
+            """
+
+            http_options = (
+                _BaseReportServiceRestTransport._BaseCreateReport._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_create_report(request, metadata)
+            transcoded_request = _BaseReportServiceRestTransport._BaseCreateReport._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseReportServiceRestTransport._BaseCreateReport._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseReportServiceRestTransport._BaseCreateReport._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.ReportServiceClient.CreateReport",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "CreateReport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ReportServiceRestTransport._CreateReport._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = report_service.Report()
+            pb_resp = report_service.Report.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_create_report(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = report_service.Report.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.ReportServiceClient.create_report",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "CreateReport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _FetchReportResultRows(
+        _BaseReportServiceRestTransport._BaseFetchReportResultRows,
+        ReportServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("ReportServiceRestTransport.FetchReportResultRows")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: report_service.FetchReportResultRowsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> report_service.FetchReportResultRowsResponse:
+            r"""Call the fetch report result rows method over HTTP.
+
+            Args:
+                request (~.report_service.FetchReportResultRowsRequest):
+                    The request object. The request message for the fetch
+                report result rows endpoint.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.report_service.FetchReportResultRowsResponse:
+                    The response message for the fetch
+                report result rows endpoint.
+
+            """
+
+            http_options = (
+                _BaseReportServiceRestTransport._BaseFetchReportResultRows._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_fetch_report_result_rows(
+                request, metadata
+            )
+            transcoded_request = _BaseReportServiceRestTransport._BaseFetchReportResultRows._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseReportServiceRestTransport._BaseFetchReportResultRows._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.ReportServiceClient.FetchReportResultRows",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "FetchReportResultRows",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ReportServiceRestTransport._FetchReportResultRows._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = report_service.FetchReportResultRowsResponse()
+            pb_resp = report_service.FetchReportResultRowsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_fetch_report_result_rows(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        report_service.FetchReportResultRowsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.ReportServiceClient.fetch_report_result_rows",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "FetchReportResultRows",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetReport(
+        _BaseReportServiceRestTransport._BaseGetReport, ReportServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("ReportServiceRestTransport.GetReport")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: report_service.GetReportRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> report_service.Report:
+            r"""Call the get report method over HTTP.
+
+            Args:
+                request (~.report_service.GetReportRequest):
+                    The request object. Request object for ``GetReport`` method.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.report_service.Report:
+                    The ``Report`` resource.
+            """
+
+            http_options = (
+                _BaseReportServiceRestTransport._BaseGetReport._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_report(request, metadata)
+            transcoded_request = (
+                _BaseReportServiceRestTransport._BaseGetReport._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseReportServiceRestTransport._BaseGetReport._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.ReportServiceClient.GetReport",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "GetReport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ReportServiceRestTransport._GetReport._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = report_service.Report()
+            pb_resp = report_service.Report.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_report(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = report_service.Report.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.ReportServiceClient.get_report",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "GetReport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListReports(
+        _BaseReportServiceRestTransport._BaseListReports, ReportServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("ReportServiceRestTransport.ListReports")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: report_service.ListReportsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> report_service.ListReportsResponse:
+            r"""Call the list reports method over HTTP.
+
+            Args:
+                request (~.report_service.ListReportsRequest):
+                    The request object. Request object for ``ListReports`` method.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.report_service.ListReportsResponse:
+                    Response object for ``ListReportsResponse`` containing
+                matching ``Report`` objects.
+
+            """
+
+            http_options = (
+                _BaseReportServiceRestTransport._BaseListReports._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_reports(request, metadata)
+            transcoded_request = _BaseReportServiceRestTransport._BaseListReports._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseReportServiceRestTransport._BaseListReports._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.ReportServiceClient.ListReports",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "ListReports",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ReportServiceRestTransport._ListReports._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = report_service.ListReportsResponse()
+            pb_resp = report_service.ListReportsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_reports(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = report_service.ListReportsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.ReportServiceClient.list_reports",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "ListReports",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _RunReport(
+        _BaseReportServiceRestTransport._BaseRunReport, ReportServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("ReportServiceRestTransport.RunReport")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: report_service.RunReportRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the run report method over HTTP.
+
+            Args:
+                request (~.report_service.RunReportRequest):
+                    The request object. Request message for a running a
+                report.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.operations_pb2.Operation:
@@ -309,47 +1066,66 @@ class ReportServiceRestTransport(ReportServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{report=networks/*/reports/*}:exportSavedReport",
-                    "body": "*",
-                },
-            ]
-            request, metadata = self._interceptor.pre_export_saved_report(
-                request, metadata
+            http_options = (
+                _BaseReportServiceRestTransport._BaseRunReport._get_http_options()
             )
-            pb_request = report_service.ExportSavedReportRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
 
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
-            )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
-
-            # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
+            request, metadata = self._interceptor.pre_run_report(request, metadata)
+            transcoded_request = (
+                _BaseReportServiceRestTransport._BaseRunReport._get_transcoded_request(
+                    http_options, request
                 )
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            body = (
+                _BaseReportServiceRestTransport._BaseRunReport._get_request_body_json(
+                    transcoded_request
+                )
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseReportServiceRestTransport._BaseRunReport._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.ReportServiceClient.RunReport",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "RunReport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = ReportServiceRestTransport._RunReport._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -360,29 +1136,269 @@ class ReportServiceRestTransport(ReportServiceTransport):
             # Return the response
             resp = operations_pb2.Operation()
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
-            resp = self._interceptor.post_export_saved_report(resp)
+
+            resp = self._interceptor.post_run_report(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.ReportServiceClient.run_report",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "RunReport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateReport(
+        _BaseReportServiceRestTransport._BaseUpdateReport, ReportServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("ReportServiceRestTransport.UpdateReport")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: report_service.UpdateReportRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> report_service.Report:
+            r"""Call the update report method over HTTP.
+
+            Args:
+                request (~.report_service.UpdateReportRequest):
+                    The request object. Request object for ``UpdateReport`` method.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.report_service.Report:
+                    The ``Report`` resource.
+            """
+
+            http_options = (
+                _BaseReportServiceRestTransport._BaseUpdateReport._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_report(request, metadata)
+            transcoded_request = _BaseReportServiceRestTransport._BaseUpdateReport._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseReportServiceRestTransport._BaseUpdateReport._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseReportServiceRestTransport._BaseUpdateReport._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.ReportServiceClient.UpdateReport",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "UpdateReport",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ReportServiceRestTransport._UpdateReport._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = report_service.Report()
+            pb_resp = report_service.Report.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_report(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = report_service.Report.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.ReportServiceClient.update_report",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "UpdateReport",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property
-    def export_saved_report(
+    def create_report(
         self,
-    ) -> Callable[[report_service.ExportSavedReportRequest], operations_pb2.Operation]:
+    ) -> Callable[[report_service.CreateReportRequest], report_service.Report]:
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
-        return self._ExportSavedReport(self._session, self._host, self._interceptor)  # type: ignore
+        return self._CreateReport(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def fetch_report_result_rows(
+        self,
+    ) -> Callable[
+        [report_service.FetchReportResultRowsRequest],
+        report_service.FetchReportResultRowsResponse,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._FetchReportResultRows(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def get_report(
+        self,
+    ) -> Callable[[report_service.GetReportRequest], report_service.Report]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetReport(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def list_reports(
+        self,
+    ) -> Callable[
+        [report_service.ListReportsRequest], report_service.ListReportsResponse
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListReports(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def run_report(
+        self,
+    ) -> Callable[[report_service.RunReportRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._RunReport(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def update_report(
+        self,
+    ) -> Callable[[report_service.UpdateReportRequest], report_service.Report]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateReport(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def get_operation(self):
         return self._GetOperation(self._session, self._host, self._interceptor)  # type: ignore
 
-    class _GetOperation(ReportServiceRestStub):
+    class _GetOperation(
+        _BaseReportServiceRestTransport._BaseGetOperation, ReportServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("ReportServiceRestTransport.GetOperation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
         def __call__(
             self,
             request: operations_pb2.GetOperationRequest,
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> operations_pb2.Operation:
             r"""Call the get operation method over HTTP.
 
@@ -392,43 +1408,64 @@ class ReportServiceRestTransport(ReportServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 operations_pb2.Operation: Response from GetOperation method.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=networks/*/operations/reports/exports/*}",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=networks/*/operations/reports/runs/*}",
-                },
-            ]
+            http_options = (
+                _BaseReportServiceRestTransport._BaseGetOperation._get_http_options()
+            )
 
             request, metadata = self._interceptor.pre_get_operation(request, metadata)
-            request_kwargs = json_format.MessageToDict(request)
-            transcoded_request = path_template.transcode(http_options, **request_kwargs)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseReportServiceRestTransport._BaseGetOperation._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(json.dumps(transcoded_request["query_params"]))
+            query_params = _BaseReportServiceRestTransport._BaseGetOperation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.ads.admanager_v1.ReportServiceClient.GetOperation",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "GetOperation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params),
+            response = ReportServiceRestTransport._GetOperation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -436,9 +1473,31 @@ class ReportServiceRestTransport(ReportServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+            content = response.content.decode("utf-8")
             resp = operations_pb2.Operation()
-            resp = json_format.Parse(response.content.decode("utf-8"), resp)
+            resp = json_format.Parse(content, resp)
             resp = self._interceptor.post_get_operation(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.ads.admanager_v1.ReportServiceAsyncClient.GetOperation",
+                    extra={
+                        "serviceName": "google.ads.admanager.v1.ReportService",
+                        "rpcName": "GetOperation",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
             return resp
 
     @property

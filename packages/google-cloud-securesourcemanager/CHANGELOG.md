@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.11...google-cloud-securesourcemanager-v0.1.12) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.10...google-cloud-securesourcemanager-v0.1.11) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13245](https://github.com/googleapis/google-cloud-python/issues/13245)) ([875f712](https://github.com/googleapis/google-cloud-python/commit/875f712265a36919409964f5ade218330f1d0147))
+
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.9...google-cloud-securesourcemanager-v0.1.10) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13209](https://github.com/googleapis/google-cloud-python/issues/13209)) ([5f2e30d](https://github.com/googleapis/google-cloud-python/commit/5f2e30d62eea6080f5707ee18755f2bb812ad00b))
+
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.8...google-cloud-securesourcemanager-v0.1.9) (2024-10-23)
+
+
+### Features
+
+* [google-cloud-securesourcemanager] Add field `instance` to message `.google.cloud.securesourcemanager.v1.ListRepositoriesRequest` ([#13176](https://github.com/googleapis/google-cloud-python/issues/13176)) ([18b266f](https://github.com/googleapis/google-cloud-python/commit/18b266f70010b8d233e3a3e9ce97a89caf2e0695))
+* Add branch rule APIs ([e6a764b](https://github.com/googleapis/google-cloud-python/commit/e6a764b84fc0529e15c9c1a0721a50809af52369))
+* Add field `psc_allowed_projects` to message `.google.cloud.securesourcemanager.v1.Instance` ([e6a764b](https://github.com/googleapis/google-cloud-python/commit/e6a764b84fc0529e15c9c1a0721a50809af52369))
+
+
+### Documentation
+
+* A comment for field `instance` in message ([18b266f](https://github.com/googleapis/google-cloud-python/commit/18b266f70010b8d233e3a3e9ce97a89caf2e0695))
+* A comment for field `instance` in message `.google.cloud.securesourcemanager.v1.Repository` is changed ([e6a764b](https://github.com/googleapis/google-cloud-python/commit/e6a764b84fc0529e15c9c1a0721a50809af52369))
+
 ## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.7...google-cloud-securesourcemanager-v0.1.8) (2024-07-30)
 
 

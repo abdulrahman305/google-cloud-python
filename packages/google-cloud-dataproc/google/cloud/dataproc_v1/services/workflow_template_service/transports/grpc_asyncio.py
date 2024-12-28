@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -25,13 +29,92 @@ from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.dataproc_v1.types import workflow_templates
 
 from .base import DEFAULT_CLIENT_INFO, WorkflowTemplateServiceTransport
 from .grpc import WorkflowTemplateServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.dataproc.v1.WorkflowTemplateService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.dataproc.v1.WorkflowTemplateService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTransport):
@@ -231,7 +314,13 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -254,7 +343,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -282,7 +371,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_workflow_template" not in self._stubs:
-            self._stubs["create_workflow_template"] = self.grpc_channel.unary_unary(
+            self._stubs["create_workflow_template"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataproc.v1.WorkflowTemplateService/CreateWorkflowTemplate",
                 request_serializer=workflow_templates.CreateWorkflowTemplateRequest.serialize,
                 response_deserializer=workflow_templates.WorkflowTemplate.deserialize,
@@ -314,7 +403,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_workflow_template" not in self._stubs:
-            self._stubs["get_workflow_template"] = self.grpc_channel.unary_unary(
+            self._stubs["get_workflow_template"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataproc.v1.WorkflowTemplateService/GetWorkflowTemplate",
                 request_serializer=workflow_templates.GetWorkflowTemplateRequest.serialize,
                 response_deserializer=workflow_templates.WorkflowTemplate.deserialize,
@@ -365,7 +454,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         if "instantiate_workflow_template" not in self._stubs:
             self._stubs[
                 "instantiate_workflow_template"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.dataproc.v1.WorkflowTemplateService/InstantiateWorkflowTemplate",
                 request_serializer=workflow_templates.InstantiateWorkflowTemplateRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -422,7 +511,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         if "instantiate_inline_workflow_template" not in self._stubs:
             self._stubs[
                 "instantiate_inline_workflow_template"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.dataproc.v1.WorkflowTemplateService/InstantiateInlineWorkflowTemplate",
                 request_serializer=workflow_templates.InstantiateInlineWorkflowTemplateRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -453,7 +542,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_workflow_template" not in self._stubs:
-            self._stubs["update_workflow_template"] = self.grpc_channel.unary_unary(
+            self._stubs["update_workflow_template"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataproc.v1.WorkflowTemplateService/UpdateWorkflowTemplate",
                 request_serializer=workflow_templates.UpdateWorkflowTemplateRequest.serialize,
                 response_deserializer=workflow_templates.WorkflowTemplate.deserialize,
@@ -483,7 +572,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_workflow_templates" not in self._stubs:
-            self._stubs["list_workflow_templates"] = self.grpc_channel.unary_unary(
+            self._stubs["list_workflow_templates"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataproc.v1.WorkflowTemplateService/ListWorkflowTemplates",
                 request_serializer=workflow_templates.ListWorkflowTemplatesRequest.serialize,
                 response_deserializer=workflow_templates.ListWorkflowTemplatesResponse.deserialize,
@@ -512,7 +601,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_workflow_template" not in self._stubs:
-            self._stubs["delete_workflow_template"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_workflow_template"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataproc.v1.WorkflowTemplateService/DeleteWorkflowTemplate",
                 request_serializer=workflow_templates.DeleteWorkflowTemplateRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -522,7 +611,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.create_workflow_template: gapic_v1.method_async.wrap_method(
+            self.create_workflow_template: self._wrap_method(
                 self.create_workflow_template,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -536,7 +625,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.get_workflow_template: gapic_v1.method_async.wrap_method(
+            self.get_workflow_template: self._wrap_method(
                 self.get_workflow_template,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -552,7 +641,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.instantiate_workflow_template: gapic_v1.method_async.wrap_method(
+            self.instantiate_workflow_template: self._wrap_method(
                 self.instantiate_workflow_template,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -566,7 +655,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.instantiate_inline_workflow_template: gapic_v1.method_async.wrap_method(
+            self.instantiate_inline_workflow_template: self._wrap_method(
                 self.instantiate_inline_workflow_template,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -580,7 +669,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.update_workflow_template: gapic_v1.method_async.wrap_method(
+            self.update_workflow_template: self._wrap_method(
                 self.update_workflow_template,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -594,7 +683,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.list_workflow_templates: gapic_v1.method_async.wrap_method(
+            self.list_workflow_templates: self._wrap_method(
                 self.list_workflow_templates,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -610,7 +699,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.delete_workflow_template: gapic_v1.method_async.wrap_method(
+            self.delete_workflow_template: self._wrap_method(
                 self.delete_workflow_template,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -624,10 +713,54 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
                 default_timeout=600.0,
                 client_info=client_info,
             ),
+            self.get_iam_policy: self._wrap_method(
+                self.get_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.set_iam_policy: self._wrap_method(
+                self.set_iam_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.test_iam_permissions: self._wrap_method(
+                self.test_iam_permissions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -639,7 +772,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -656,7 +789,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -673,7 +806,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -692,7 +825,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,
@@ -717,7 +850,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "set_iam_policy" not in self._stubs:
-            self._stubs["set_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["set_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/SetIamPolicy",
                 request_serializer=iam_policy_pb2.SetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -743,7 +876,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_iam_policy" not in self._stubs:
-            self._stubs["get_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["get_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/GetIamPolicy",
                 request_serializer=iam_policy_pb2.GetIamPolicyRequest.SerializeToString,
                 response_deserializer=policy_pb2.Policy.FromString,
@@ -772,7 +905,7 @@ class WorkflowTemplateServiceGrpcAsyncIOTransport(WorkflowTemplateServiceTranspo
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "test_iam_permissions" not in self._stubs:
-            self._stubs["test_iam_permissions"] = self.grpc_channel.unary_unary(
+            self._stubs["test_iam_permissions"] = self._logged_channel.unary_unary(
                 "/google.iam.v1.IAMPolicy/TestIamPermissions",
                 request_serializer=iam_policy_pb2.TestIamPermissionsRequest.SerializeToString,
                 response_deserializer=iam_policy_pb2.TestIamPermissionsResponse.FromString,

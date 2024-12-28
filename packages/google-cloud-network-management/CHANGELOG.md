@@ -1,5 +1,72 @@
 # Changelog
 
+## [1.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.22.0...google-cloud-network-management-v1.23.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([feb5c03](https://github.com/googleapis/google-cloud-python/commit/feb5c0348d0efbe5d3c01d5470f2daaef5302842))
+
+## [1.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.21.0...google-cloud-network-management-v1.22.0) (2024-11-14)
+
+
+### Features
+
+* [google-cloud-network-management] add round-trip mode ([cef77c3](https://github.com/googleapis/google-cloud-python/commit/cef77c3870029a75b1196ca32ebf08d75f962093))
+* [google-cloud-network-management] add round-trip mode ([#13280](https://github.com/googleapis/google-cloud-python/issues/13280)) ([cef77c3](https://github.com/googleapis/google-cloud-python/commit/cef77c3870029a75b1196ca32ebf08d75f962093))
+
+## [1.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.20.0...google-cloud-network-management-v1.21.0) (2024-11-11)
+
+
+### Features
+
+* add DNS endpoint of Google Kubernetes Engine cluster control plane ([826abc1](https://github.com/googleapis/google-cloud-python/commit/826abc1a079e84535922b796646da936a1aa4fed))
+* add more detailed drop causes to corresponding enum ([826abc1](https://github.com/googleapis/google-cloud-python/commit/826abc1a079e84535922b796646da936a1aa4fed))
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13244](https://github.com/googleapis/google-cloud-python/issues/13244)) ([ae1f471](https://github.com/googleapis/google-cloud-python/commit/ae1f47175bf3354f78cb558a844a9cab00317b95))
+
+
+### Documentation
+
+* update outdated comments ([826abc1](https://github.com/googleapis/google-cloud-python/commit/826abc1a079e84535922b796646da936a1aa4fed))
+
+## [1.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.19.0...google-cloud-network-management-v1.20.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13208](https://github.com/googleapis/google-cloud-python/issues/13208)) ([a019409](https://github.com/googleapis/google-cloud-python/commit/a019409a5b5a983402301f1ac175d8b7e45c3818))
+
+## [1.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.18.0...google-cloud-network-management-v1.19.0) (2024-10-23)
+
+
+### Features
+
+* add fields related to advertised routes to the RouteInfo proto ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add firewall policy URI to the FirewallInfo proto ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add load balancer name to the ForwardingRuleInfo proto ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add messages and fields related to Redis Clusters ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add messages and fields related to Redis Instances ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add more detailed abort and drop causes to corresponding enums ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add PSC network attachment URI to the InstanceInfo proto ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add PSC target fields to the ForwardingRuleInfo proto ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add region name field to the RouteInfo proto ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add region name to the ForwardingRuleInfo proto ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+* add subnet URI and region name to the NetworkInfo proto ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+
+
+### Documentation
+
+* update outdated comments in the FirewallInfo proto ([046e080](https://github.com/googleapis/google-cloud-python/commit/046e080dc9a580c0b700708fde0145527dc5227a))
+
 ## [1.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.17.3...google-cloud-network-management-v1.18.0) (2024-08-08)
 
 

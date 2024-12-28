@@ -151,6 +151,8 @@ from google.cloud.discoveryengine_v1beta.types.completion import (
     SuggestionDenyListEntry,
 )
 from google.cloud.discoveryengine_v1beta.types.completion_service import (
+    AdvancedCompleteQueryRequest,
+    AdvancedCompleteQueryResponse,
     CompleteQueryRequest,
     CompleteQueryResponse,
 )
@@ -192,7 +194,12 @@ from google.cloud.discoveryengine_v1beta.types.conversational_search_service imp
 from google.cloud.discoveryengine_v1beta.types.custom_tuning_model import (
     CustomTuningModel,
 )
-from google.cloud.discoveryengine_v1beta.types.data_store import DataStore, LanguageInfo
+from google.cloud.discoveryengine_v1beta.types.data_store import (
+    DataStore,
+    LanguageInfo,
+    NaturalLanguageQueryUnderstandingConfig,
+    WorkspaceConfig,
+)
 from google.cloud.discoveryengine_v1beta.types.data_store_service import (
     CreateDataStoreMetadata,
     CreateDataStoreRequest,
@@ -208,6 +215,8 @@ from google.cloud.discoveryengine_v1beta.types.document_processing_config import
     DocumentProcessingConfig,
 )
 from google.cloud.discoveryengine_v1beta.types.document_service import (
+    BatchGetDocumentsMetadataRequest,
+    BatchGetDocumentsMetadataResponse,
     CreateDocumentRequest,
     DeleteDocumentRequest,
     GetDocumentRequest,
@@ -248,8 +257,15 @@ from google.cloud.discoveryengine_v1beta.types.grounded_generation_service impor
     CheckGroundingRequest,
     CheckGroundingResponse,
     CheckGroundingSpec,
+    GenerateGroundedContentRequest,
+    GenerateGroundedContentResponse,
+    GroundedGenerationContent,
 )
-from google.cloud.discoveryengine_v1beta.types.grounding import FactChunk, GroundingFact
+from google.cloud.discoveryengine_v1beta.types.grounding import (
+    FactChunk,
+    GroundingConfig,
+    GroundingFact,
+)
 from google.cloud.discoveryengine_v1beta.types.import_config import (
     AlloyDbSource,
     BigQuerySource,
@@ -289,6 +305,7 @@ from google.cloud.discoveryengine_v1beta.types.purge_config import (
     PurgeDocumentsMetadata,
     PurgeDocumentsRequest,
     PurgeDocumentsResponse,
+    PurgeErrorConfig,
     PurgeSuggestionDenyListEntriesMetadata,
     PurgeSuggestionDenyListEntriesRequest,
     PurgeSuggestionDenyListEntriesResponse,
@@ -355,6 +372,7 @@ from google.cloud.discoveryengine_v1beta.types.serving_config_service import (
 )
 from google.cloud.discoveryengine_v1beta.types.session import Query, Session
 from google.cloud.discoveryengine_v1beta.types.site_search_engine import (
+    Sitemap,
     SiteSearchEngine,
     SiteVerificationInfo,
     TargetSite,
@@ -366,8 +384,12 @@ from google.cloud.discoveryengine_v1beta.types.site_search_engine_service import
     BatchVerifyTargetSitesMetadata,
     BatchVerifyTargetSitesRequest,
     BatchVerifyTargetSitesResponse,
+    CreateSitemapMetadata,
+    CreateSitemapRequest,
     CreateTargetSiteMetadata,
     CreateTargetSiteRequest,
+    DeleteSitemapMetadata,
+    DeleteSitemapRequest,
     DeleteTargetSiteMetadata,
     DeleteTargetSiteRequest,
     DisableAdvancedSiteSearchMetadata,
@@ -378,6 +400,8 @@ from google.cloud.discoveryengine_v1beta.types.site_search_engine_service import
     EnableAdvancedSiteSearchResponse,
     FetchDomainVerificationStatusRequest,
     FetchDomainVerificationStatusResponse,
+    FetchSitemapsRequest,
+    FetchSitemapsResponse,
     GetSiteSearchEngineRequest,
     GetTargetSiteRequest,
     ListTargetSitesRequest,
@@ -456,6 +480,8 @@ __all__ = (
     "SolutionType",
     "CompletionSuggestion",
     "SuggestionDenyListEntry",
+    "AdvancedCompleteQueryRequest",
+    "AdvancedCompleteQueryResponse",
     "CompleteQueryRequest",
     "CompleteQueryResponse",
     "Condition",
@@ -491,6 +517,8 @@ __all__ = (
     "CustomTuningModel",
     "DataStore",
     "LanguageInfo",
+    "NaturalLanguageQueryUnderstandingConfig",
+    "WorkspaceConfig",
     "CreateDataStoreMetadata",
     "CreateDataStoreRequest",
     "DeleteDataStoreMetadata",
@@ -501,6 +529,8 @@ __all__ = (
     "UpdateDataStoreRequest",
     "Document",
     "DocumentProcessingConfig",
+    "BatchGetDocumentsMetadataRequest",
+    "BatchGetDocumentsMetadataResponse",
     "CreateDocumentRequest",
     "DeleteDocumentRequest",
     "GetDocumentRequest",
@@ -533,7 +563,11 @@ __all__ = (
     "CheckGroundingRequest",
     "CheckGroundingResponse",
     "CheckGroundingSpec",
+    "GenerateGroundedContentRequest",
+    "GenerateGroundedContentResponse",
+    "GroundedGenerationContent",
     "FactChunk",
+    "GroundingConfig",
     "GroundingFact",
     "AlloyDbSource",
     "BigQuerySource",
@@ -569,6 +603,7 @@ __all__ = (
     "PurgeDocumentsMetadata",
     "PurgeDocumentsRequest",
     "PurgeDocumentsResponse",
+    "PurgeErrorConfig",
     "PurgeSuggestionDenyListEntriesMetadata",
     "PurgeSuggestionDenyListEntriesRequest",
     "PurgeSuggestionDenyListEntriesResponse",
@@ -618,6 +653,7 @@ __all__ = (
     "UpdateServingConfigRequest",
     "Query",
     "Session",
+    "Sitemap",
     "SiteSearchEngine",
     "SiteVerificationInfo",
     "TargetSite",
@@ -627,8 +663,12 @@ __all__ = (
     "BatchVerifyTargetSitesMetadata",
     "BatchVerifyTargetSitesRequest",
     "BatchVerifyTargetSitesResponse",
+    "CreateSitemapMetadata",
+    "CreateSitemapRequest",
     "CreateTargetSiteMetadata",
     "CreateTargetSiteRequest",
+    "DeleteSitemapMetadata",
+    "DeleteSitemapRequest",
     "DeleteTargetSiteMetadata",
     "DeleteTargetSiteRequest",
     "DisableAdvancedSiteSearchMetadata",
@@ -639,6 +679,8 @@ __all__ = (
     "EnableAdvancedSiteSearchResponse",
     "FetchDomainVerificationStatusRequest",
     "FetchDomainVerificationStatusResponse",
+    "FetchSitemapsRequest",
+    "FetchSitemapsResponse",
     "GetSiteSearchEngineRequest",
     "GetTargetSiteRequest",
     "ListTargetSitesRequest",

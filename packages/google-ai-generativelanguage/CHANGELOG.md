@@ -1,5 +1,78 @@
 # Changelog
 
+## [0.6.14](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.13...google-ai-generativelanguage-v0.6.14) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([b1dfc55](https://github.com/googleapis/google-cloud-python/commit/b1dfc556d4652a48564ff37becb31d5a06ee2b5b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([b1dfc55](https://github.com/googleapis/google-cloud-python/commit/b1dfc556d4652a48564ff37becb31d5a06ee2b5b))
+
+## [0.6.13](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.12...google-ai-generativelanguage-v0.6.13) (2024-11-21)
+
+
+### Features
+
+* Add GroundingMetadata.web_search_queries ([3535963](https://github.com/googleapis/google-cloud-python/commit/353596382dc59c4df75071846578ad09d5130e76))
+* Adds `GenerateContentResponse.model_version` output ([3535963](https://github.com/googleapis/google-cloud-python/commit/353596382dc59c4df75071846578ad09d5130e76))
+* Adds search grounding ([3535963](https://github.com/googleapis/google-cloud-python/commit/353596382dc59c4df75071846578ad09d5130e76))
+
+
+### Documentation
+
+* Some small updates. ([3535963](https://github.com/googleapis/google-cloud-python/commit/353596382dc59c4df75071846578ad09d5130e76))
+
+## [0.6.12](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.11...google-ai-generativelanguage-v0.6.12) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([85c7512](https://github.com/googleapis/google-cloud-python/commit/85c7512bbdde2b9cc60b4ad42b8c36c4558a07a5))
+
+## [0.6.11](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.10...google-ai-generativelanguage-v0.6.11) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13199](https://github.com/googleapis/google-cloud-python/issues/13199)) ([2fc3726](https://github.com/googleapis/google-cloud-python/commit/2fc372685731141ca1ed2a917dd18bacd79db88e))
+
+## [0.6.10](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.9...google-ai-generativelanguage-v0.6.10) (2024-09-23)
+
+
+### Features
+
+* Add GenerationConfig.{presence_penalty, frequency_penalty, logprobs, response_logprobs, logprobs} and Candidate.{avg_logprobs, logprobs_result} ([d6238e4](https://github.com/googleapis/google-cloud-python/commit/d6238e49a17caf54dd0fbc45215527beed057cc5))
+* Add GoogleSearchRetrieval tool and candidate.grounding_metadata ([d6238e4](https://github.com/googleapis/google-cloud-python/commit/d6238e49a17caf54dd0fbc45215527beed057cc5))
+* Add HarmBlockThreshold.OFF ([d6238e4](https://github.com/googleapis/google-cloud-python/commit/d6238e49a17caf54dd0fbc45215527beed057cc5))
+* Add HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY ([d6238e4](https://github.com/googleapis/google-cloud-python/commit/d6238e49a17caf54dd0fbc45215527beed057cc5))
+* Add PredictionService (for Imagen) ([d6238e4](https://github.com/googleapis/google-cloud-python/commit/d6238e49a17caf54dd0fbc45215527beed057cc5))
+* Add Schema.min_items ([d6238e4](https://github.com/googleapis/google-cloud-python/commit/d6238e49a17caf54dd0fbc45215527beed057cc5))
+* Add TunedModels.reader_project_numbers ([d6238e4](https://github.com/googleapis/google-cloud-python/commit/d6238e49a17caf54dd0fbc45215527beed057cc5))
+
+
+### Documentation
+
+* Small fixes ([d6238e4](https://github.com/googleapis/google-cloud-python/commit/d6238e49a17caf54dd0fbc45215527beed057cc5))
+* Tag HarmCategories by the model family they're used on. ([d6238e4](https://github.com/googleapis/google-cloud-python/commit/d6238e49a17caf54dd0fbc45215527beed057cc5))
+
+## [0.6.9](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.8...google-ai-generativelanguage-v0.6.9) (2024-08-19)
+
+
+### Features
+
+* Add model max_temperature ([fdebbf2](https://github.com/googleapis/google-cloud-python/commit/fdebbf2e914e9a8ed5a31a04ce9fe26de0f69c72))
+* Add new PromptFeedback and FinishReason entries ([fdebbf2](https://github.com/googleapis/google-cloud-python/commit/fdebbf2e914e9a8ed5a31a04ce9fe26de0f69c72))
+* Add new PromptFeedback and FinishReason entries for https://github.com/google-gemini/generative-ai-python/issues/476 ([fdebbf2](https://github.com/googleapis/google-cloud-python/commit/fdebbf2e914e9a8ed5a31a04ce9fe26de0f69c72))
+
+
+### Documentation
+
+* Many small fixes ([fdebbf2](https://github.com/googleapis/google-cloud-python/commit/fdebbf2e914e9a8ed5a31a04ce9fe26de0f69c72))
+
 ## [0.6.8](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.7...google-ai-generativelanguage-v0.6.8) (2024-07-30)
 
 

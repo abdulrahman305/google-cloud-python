@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -23,13 +27,92 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.asset_v1.types import asset_service
 
 from .base import DEFAULT_CLIENT_INFO, AssetServiceTransport
 from .grpc import AssetServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.asset.v1.AssetService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.asset.v1.AssetService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
@@ -228,7 +311,13 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -251,7 +340,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -290,7 +379,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "export_assets" not in self._stubs:
-            self._stubs["export_assets"] = self.grpc_channel.unary_unary(
+            self._stubs["export_assets"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/ExportAssets",
                 request_serializer=asset_service.ExportAssetsRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -319,7 +408,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_assets" not in self._stubs:
-            self._stubs["list_assets"] = self.grpc_channel.unary_unary(
+            self._stubs["list_assets"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/ListAssets",
                 request_serializer=asset_service.ListAssetsRequest.serialize,
                 response_deserializer=asset_service.ListAssetsResponse.deserialize,
@@ -354,7 +443,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "batch_get_assets_history" not in self._stubs:
-            self._stubs["batch_get_assets_history"] = self.grpc_channel.unary_unary(
+            self._stubs["batch_get_assets_history"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/BatchGetAssetsHistory",
                 request_serializer=asset_service.BatchGetAssetsHistoryRequest.serialize,
                 response_deserializer=asset_service.BatchGetAssetsHistoryResponse.deserialize,
@@ -382,7 +471,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_feed" not in self._stubs:
-            self._stubs["create_feed"] = self.grpc_channel.unary_unary(
+            self._stubs["create_feed"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/CreateFeed",
                 request_serializer=asset_service.CreateFeedRequest.serialize,
                 response_deserializer=asset_service.Feed.deserialize,
@@ -408,7 +497,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_feed" not in self._stubs:
-            self._stubs["get_feed"] = self.grpc_channel.unary_unary(
+            self._stubs["get_feed"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/GetFeed",
                 request_serializer=asset_service.GetFeedRequest.serialize,
                 response_deserializer=asset_service.Feed.deserialize,
@@ -437,7 +526,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_feeds" not in self._stubs:
-            self._stubs["list_feeds"] = self.grpc_channel.unary_unary(
+            self._stubs["list_feeds"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/ListFeeds",
                 request_serializer=asset_service.ListFeedsRequest.serialize,
                 response_deserializer=asset_service.ListFeedsResponse.deserialize,
@@ -463,7 +552,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_feed" not in self._stubs:
-            self._stubs["update_feed"] = self.grpc_channel.unary_unary(
+            self._stubs["update_feed"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/UpdateFeed",
                 request_serializer=asset_service.UpdateFeedRequest.serialize,
                 response_deserializer=asset_service.Feed.deserialize,
@@ -489,7 +578,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_feed" not in self._stubs:
-            self._stubs["delete_feed"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_feed"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/DeleteFeed",
                 request_serializer=asset_service.DeleteFeedRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -521,7 +610,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "search_all_resources" not in self._stubs:
-            self._stubs["search_all_resources"] = self.grpc_channel.unary_unary(
+            self._stubs["search_all_resources"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/SearchAllResources",
                 request_serializer=asset_service.SearchAllResourcesRequest.serialize,
                 response_deserializer=asset_service.SearchAllResourcesResponse.deserialize,
@@ -553,7 +642,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "search_all_iam_policies" not in self._stubs:
-            self._stubs["search_all_iam_policies"] = self.grpc_channel.unary_unary(
+            self._stubs["search_all_iam_policies"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/SearchAllIamPolicies",
                 request_serializer=asset_service.SearchAllIamPoliciesRequest.serialize,
                 response_deserializer=asset_service.SearchAllIamPoliciesResponse.deserialize,
@@ -583,7 +672,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "analyze_iam_policy" not in self._stubs:
-            self._stubs["analyze_iam_policy"] = self.grpc_channel.unary_unary(
+            self._stubs["analyze_iam_policy"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/AnalyzeIamPolicy",
                 request_serializer=asset_service.AnalyzeIamPolicyRequest.serialize,
                 response_deserializer=asset_service.AnalyzeIamPolicyResponse.deserialize,
@@ -625,7 +714,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         if "analyze_iam_policy_longrunning" not in self._stubs:
             self._stubs[
                 "analyze_iam_policy_longrunning"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/AnalyzeIamPolicyLongrunning",
                 request_serializer=asset_service.AnalyzeIamPolicyLongrunningRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -659,7 +748,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "analyze_move" not in self._stubs:
-            self._stubs["analyze_move"] = self.grpc_channel.unary_unary(
+            self._stubs["analyze_move"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/AnalyzeMove",
                 request_serializer=asset_service.AnalyzeMoveRequest.serialize,
                 response_deserializer=asset_service.AnalyzeMoveResponse.deserialize,
@@ -702,7 +791,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "query_assets" not in self._stubs:
-            self._stubs["query_assets"] = self.grpc_channel.unary_unary(
+            self._stubs["query_assets"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/QueryAssets",
                 request_serializer=asset_service.QueryAssetsRequest.serialize,
                 response_deserializer=asset_service.QueryAssetsResponse.deserialize,
@@ -731,7 +820,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_saved_query" not in self._stubs:
-            self._stubs["create_saved_query"] = self.grpc_channel.unary_unary(
+            self._stubs["create_saved_query"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/CreateSavedQuery",
                 request_serializer=asset_service.CreateSavedQueryRequest.serialize,
                 response_deserializer=asset_service.SavedQuery.deserialize,
@@ -759,7 +848,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_saved_query" not in self._stubs:
-            self._stubs["get_saved_query"] = self.grpc_channel.unary_unary(
+            self._stubs["get_saved_query"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/GetSavedQuery",
                 request_serializer=asset_service.GetSavedQueryRequest.serialize,
                 response_deserializer=asset_service.SavedQuery.deserialize,
@@ -789,7 +878,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_saved_queries" not in self._stubs:
-            self._stubs["list_saved_queries"] = self.grpc_channel.unary_unary(
+            self._stubs["list_saved_queries"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/ListSavedQueries",
                 request_serializer=asset_service.ListSavedQueriesRequest.serialize,
                 response_deserializer=asset_service.ListSavedQueriesResponse.deserialize,
@@ -817,7 +906,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_saved_query" not in self._stubs:
-            self._stubs["update_saved_query"] = self.grpc_channel.unary_unary(
+            self._stubs["update_saved_query"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/UpdateSavedQuery",
                 request_serializer=asset_service.UpdateSavedQueryRequest.serialize,
                 response_deserializer=asset_service.SavedQuery.deserialize,
@@ -843,7 +932,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_saved_query" not in self._stubs:
-            self._stubs["delete_saved_query"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_saved_query"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/DeleteSavedQuery",
                 request_serializer=asset_service.DeleteSavedQueryRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -875,7 +964,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         if "batch_get_effective_iam_policies" not in self._stubs:
             self._stubs[
                 "batch_get_effective_iam_policies"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/BatchGetEffectiveIamPolicies",
                 request_serializer=asset_service.BatchGetEffectiveIamPoliciesRequest.serialize,
                 response_deserializer=asset_service.BatchGetEffectiveIamPoliciesResponse.deserialize,
@@ -904,7 +993,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "analyze_org_policies" not in self._stubs:
-            self._stubs["analyze_org_policies"] = self.grpc_channel.unary_unary(
+            self._stubs["analyze_org_policies"] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/AnalyzeOrgPolicies",
                 request_serializer=asset_service.AnalyzeOrgPoliciesRequest.serialize,
                 response_deserializer=asset_service.AnalyzeOrgPoliciesResponse.deserialize,
@@ -937,7 +1026,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         if "analyze_org_policy_governed_containers" not in self._stubs:
             self._stubs[
                 "analyze_org_policy_governed_containers"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/AnalyzeOrgPolicyGovernedContainers",
                 request_serializer=asset_service.AnalyzeOrgPolicyGovernedContainersRequest.serialize,
                 response_deserializer=asset_service.AnalyzeOrgPolicyGovernedContainersResponse.deserialize,
@@ -1018,7 +1107,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         if "analyze_org_policy_governed_assets" not in self._stubs:
             self._stubs[
                 "analyze_org_policy_governed_assets"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.asset.v1.AssetService/AnalyzeOrgPolicyGovernedAssets",
                 request_serializer=asset_service.AnalyzeOrgPolicyGovernedAssetsRequest.serialize,
                 response_deserializer=asset_service.AnalyzeOrgPolicyGovernedAssetsResponse.deserialize,
@@ -1028,12 +1117,12 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.export_assets: gapic_v1.method_async.wrap_method(
+            self.export_assets: self._wrap_method(
                 self.export_assets,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_assets: gapic_v1.method_async.wrap_method(
+            self.list_assets: self._wrap_method(
                 self.list_assets,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1048,7 +1137,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.batch_get_assets_history: gapic_v1.method_async.wrap_method(
+            self.batch_get_assets_history: self._wrap_method(
                 self.batch_get_assets_history,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1063,12 +1152,12 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_feed: gapic_v1.method_async.wrap_method(
+            self.create_feed: self._wrap_method(
                 self.create_feed,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_feed: gapic_v1.method_async.wrap_method(
+            self.get_feed: self._wrap_method(
                 self.get_feed,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1083,7 +1172,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_feeds: gapic_v1.method_async.wrap_method(
+            self.list_feeds: self._wrap_method(
                 self.list_feeds,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1098,12 +1187,12 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_feed: gapic_v1.method_async.wrap_method(
+            self.update_feed: self._wrap_method(
                 self.update_feed,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_feed: gapic_v1.method_async.wrap_method(
+            self.delete_feed: self._wrap_method(
                 self.delete_feed,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1118,7 +1207,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.search_all_resources: gapic_v1.method_async.wrap_method(
+            self.search_all_resources: self._wrap_method(
                 self.search_all_resources,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1132,7 +1221,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.search_all_iam_policies: gapic_v1.method_async.wrap_method(
+            self.search_all_iam_policies: self._wrap_method(
                 self.search_all_iam_policies,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1146,7 +1235,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.analyze_iam_policy: gapic_v1.method_async.wrap_method(
+            self.analyze_iam_policy: self._wrap_method(
                 self.analyze_iam_policy,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1160,17 +1249,17 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=300.0,
                 client_info=client_info,
             ),
-            self.analyze_iam_policy_longrunning: gapic_v1.method_async.wrap_method(
+            self.analyze_iam_policy_longrunning: self._wrap_method(
                 self.analyze_iam_policy_longrunning,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.analyze_move: gapic_v1.method_async.wrap_method(
+            self.analyze_move: self._wrap_method(
                 self.analyze_move,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.query_assets: gapic_v1.method_async.wrap_method(
+            self.query_assets: self._wrap_method(
                 self.query_assets,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1184,12 +1273,12 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=200.0,
                 client_info=client_info,
             ),
-            self.create_saved_query: gapic_v1.method_async.wrap_method(
+            self.create_saved_query: self._wrap_method(
                 self.create_saved_query,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_saved_query: gapic_v1.method_async.wrap_method(
+            self.get_saved_query: self._wrap_method(
                 self.get_saved_query,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1204,7 +1293,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_saved_queries: gapic_v1.method_async.wrap_method(
+            self.list_saved_queries: self._wrap_method(
                 self.list_saved_queries,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1219,12 +1308,12 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_saved_query: gapic_v1.method_async.wrap_method(
+            self.update_saved_query: self._wrap_method(
                 self.update_saved_query,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_saved_query: gapic_v1.method_async.wrap_method(
+            self.delete_saved_query: self._wrap_method(
                 self.delete_saved_query,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1239,7 +1328,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.batch_get_effective_iam_policies: gapic_v1.method_async.wrap_method(
+            self.batch_get_effective_iam_policies: self._wrap_method(
                 self.batch_get_effective_iam_policies,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1253,7 +1342,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=300.0,
                 client_info=client_info,
             ),
-            self.analyze_org_policies: gapic_v1.method_async.wrap_method(
+            self.analyze_org_policies: self._wrap_method(
                 self.analyze_org_policies,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1268,7 +1357,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.analyze_org_policy_governed_containers: gapic_v1.method_async.wrap_method(
+            self.analyze_org_policy_governed_containers: self._wrap_method(
                 self.analyze_org_policy_governed_containers,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1283,7 +1372,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.analyze_org_policy_governed_assets: gapic_v1.method_async.wrap_method(
+            self.analyze_org_policy_governed_assets: self._wrap_method(
                 self.analyze_org_policy_governed_assets,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1298,10 +1387,24 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def get_operation(
@@ -1313,7 +1416,7 @@ class AssetServiceGrpcAsyncIOTransport(AssetServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,

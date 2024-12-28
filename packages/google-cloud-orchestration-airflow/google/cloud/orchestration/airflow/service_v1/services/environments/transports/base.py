@@ -177,6 +177,11 @@ class EnvironmentsTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.check_upgrade: gapic_v1.method.wrap_method(
+                self.check_upgrade,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.create_user_workloads_secret: gapic_v1.method.wrap_method(
                 self.create_user_workloads_secret,
                 default_timeout=None,
@@ -244,6 +249,21 @@ class EnvironmentsTransport(abc.ABC):
             ),
             self.fetch_database_properties: gapic_v1.method.wrap_method(
                 self.fetch_database_properties,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: gapic_v1.method.wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: gapic_v1.method.wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: gapic_v1.method.wrap_method(
+                self.list_operations,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -356,6 +376,15 @@ class EnvironmentsTransport(abc.ABC):
             environments.ListWorkloadsResponse,
             Awaitable[environments.ListWorkloadsResponse],
         ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def check_upgrade(
+        self,
+    ) -> Callable[
+        [environments.CheckUpgradeRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()
 

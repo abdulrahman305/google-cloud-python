@@ -480,6 +480,12 @@ class CreateTransferConfigRequest(proto.Message):
     user id corresponding to the authorization info. Otherwise, the
     transfer configuration will be associated with the calling user.
 
+    When using a cross project service account for creating a transfer
+    config, you must enable cross project service account usage. For
+    more information, see `Disable attachment of service accounts to
+    resources in other
+    projects <https://cloud.google.com/resource-manager/docs/organization-policy/restricting-service-accounts#disable_cross_project_service_accounts>`__.
+
     Attributes:
         parent (str):
             Required. The BigQuery project id where the transfer
@@ -492,6 +498,11 @@ class CreateTransferConfigRequest(proto.Message):
             Required. Data transfer configuration to
             create.
         authorization_code (str):
+            Deprecated: Authorization code was required when
+            ``transferConfig.dataSourceId`` is 'youtube_channel' but it
+            is no longer used in any data sources. Use ``version_info``
+            instead.
+
             Optional OAuth2 authorization code to use with this transfer
             configuration. This is required only if
             ``transferConfig.dataSourceId`` is 'youtube_channel' and new
@@ -505,7 +516,7 @@ class CreateTransferConfigRequest(proto.Message):
                 https://bigquery.cloud.google.com/datatransfer/oauthz/auth?redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=authorization_code&client_id=<var>client_id</var>&scope=<var>data_source_scopes</var>
                 </pre>
 
-            -  The client_id is the OAuth client_id of the a data source
+            -  The client_id is the OAuth client_id of the data source
                as returned by ListDataSources method.
             -  data_source_scopes are the scopes returned by
                ListDataSources method.
@@ -514,8 +525,10 @@ class CreateTransferConfigRequest(proto.Message):
             ``service_account_name`` is used to create the transfer
             config.
         version_info (str):
-            Optional version info. This is required only if
-            ``transferConfig.dataSourceId`` is not 'youtube_channel' and
+            Optional version info. This parameter replaces
+            ``authorization_code`` which is no longer used in any data
+            sources. This is required only if
+            ``transferConfig.dataSourceId`` is 'youtube_channel' *or*
             new credentials are needed, as indicated by
             ``CheckValidCreds``. In order to obtain version info, make a
             request to the following URL:
@@ -526,7 +539,7 @@ class CreateTransferConfigRequest(proto.Message):
                 https://bigquery.cloud.google.com/datatransfer/oauthz/auth?redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=version_info&client_id=<var>client_id</var>&scope=<var>data_source_scopes</var>
                 </pre>
 
-            -  The client_id is the OAuth client_id of the a data source
+            -  The client_id is the OAuth client_id of the data source
                as returned by ListDataSources method.
             -  data_source_scopes are the scopes returned by
                ListDataSources method.
@@ -570,15 +583,26 @@ class CreateTransferConfigRequest(proto.Message):
 
 
 class UpdateTransferConfigRequest(proto.Message):
-    r"""A request to update a transfer configuration. To update the
-    user id of the transfer configuration, authorization info needs
-    to be provided.
+    r"""A request to update a transfer configuration. To update the user id
+    of the transfer configuration, authorization info needs to be
+    provided.
+
+    When using a cross project service account for updating a transfer
+    config, you must enable cross project service account usage. For
+    more information, see `Disable attachment of service accounts to
+    resources in other
+    projects <https://cloud.google.com/resource-manager/docs/organization-policy/restricting-service-accounts#disable_cross_project_service_accounts>`__.
 
     Attributes:
         transfer_config (google.cloud.bigquery_datatransfer_v1.types.TransferConfig):
             Required. Data transfer configuration to
             create.
         authorization_code (str):
+            Deprecated: Authorization code was required when
+            ``transferConfig.dataSourceId`` is 'youtube_channel' but it
+            is no longer used in any data sources. Use ``version_info``
+            instead.
+
             Optional OAuth2 authorization code to use with this transfer
             configuration. This is required only if
             ``transferConfig.dataSourceId`` is 'youtube_channel' and new
@@ -592,7 +616,7 @@ class UpdateTransferConfigRequest(proto.Message):
                 https://bigquery.cloud.google.com/datatransfer/oauthz/auth?redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=authorization_code&client_id=<var>client_id</var>&scope=<var>data_source_scopes</var>
                 </pre>
 
-            -  The client_id is the OAuth client_id of the a data source
+            -  The client_id is the OAuth client_id of the data source
                as returned by ListDataSources method.
             -  data_source_scopes are the scopes returned by
                ListDataSources method.
@@ -604,8 +628,10 @@ class UpdateTransferConfigRequest(proto.Message):
             Required. Required list of fields to be
             updated in this request.
         version_info (str):
-            Optional version info. This is required only if
-            ``transferConfig.dataSourceId`` is not 'youtube_channel' and
+            Optional version info. This parameter replaces
+            ``authorization_code`` which is no longer used in any data
+            sources. This is required only if
+            ``transferConfig.dataSourceId`` is 'youtube_channel' *or*
             new credentials are needed, as indicated by
             ``CheckValidCreds``. In order to obtain version info, make a
             request to the following URL:
@@ -616,7 +642,7 @@ class UpdateTransferConfigRequest(proto.Message):
                 https://bigquery.cloud.google.com/datatransfer/oauthz/auth?redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=version_info&client_id=<var>client_id</var>&scope=<var>data_source_scopes</var>
                 </pre>
 
-            -  The client_id is the OAuth client_id of the a data source
+            -  The client_id is the OAuth client_id of the data source
                as returned by ListDataSources method.
             -  data_source_scopes are the scopes returned by
                ListDataSources method.

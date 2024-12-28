@@ -22,24 +22,12 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
-from google.protobuf import duration_pb2  # type: ignore
+from google.api_core import api_core_version
 from google.protobuf import json_format
-from google.protobuf import timestamp_pb2  # type: ignore
-from google.protobuf import wrappers_pb2  # type: ignore
-from google.rpc import code_pb2  # type: ignore
-from google.rpc import status_pb2  # type: ignore
 import grpc
 from grpc.experimental import aio
 from proto.marshal.rules import wrappers
@@ -47,6 +35,27 @@ from proto.marshal.rules.dates import DurationRule, TimestampRule
 import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
+from google.protobuf import duration_pb2  # type: ignore
+from google.protobuf import timestamp_pb2  # type: ignore
+from google.protobuf import wrappers_pb2  # type: ignore
+from google.rpc import code_pb2  # type: ignore
+from google.rpc import status_pb2  # type: ignore
 
 from google.cloud.container_v1.services.cluster_manager import (
     ClusterManagerAsyncClient,
@@ -57,8 +66,22 @@ from google.cloud.container_v1.services.cluster_manager import (
 from google.cloud.container_v1.types import cluster_service
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -298,86 +321,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         ClusterManagerClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (ClusterManagerClient, transports.ClusterManagerGrpcTransport, "grpc"),
-        (ClusterManagerClient, transports.ClusterManagerRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1158,25 +1101,6 @@ def test_list_clusters(request_type, transport: str = "grpc"):
     assert response.missing_zones == ["missing_zones_value"]
 
 
-def test_list_clusters_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_clusters), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_clusters()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.ListClustersRequest()
-
-
 def test_list_clusters_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1245,29 +1169,6 @@ def test_list_clusters_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_clusters_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_clusters), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.ListClustersResponse(
-                missing_zones=["missing_zones_value"],
-            )
-        )
-        response = await client.list_clusters()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.ListClustersRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_clusters_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1275,7 +1176,7 @@ async def test_list_clusters_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1290,22 +1191,23 @@ async def test_list_clusters_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_clusters
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_clusters(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_clusters(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1313,7 +1215,7 @@ async def test_list_clusters_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.ListClustersRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1379,7 +1281,7 @@ def test_list_clusters_field_headers():
 @pytest.mark.asyncio
 async def test_list_clusters_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1459,7 +1361,7 @@ def test_list_clusters_flattened_error():
 @pytest.mark.asyncio
 async def test_list_clusters_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1496,7 +1398,7 @@ async def test_list_clusters_flattened_async():
 @pytest.mark.asyncio
 async def test_list_clusters_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1608,25 +1510,6 @@ def test_get_cluster(request_type, transport: str = "grpc"):
     assert response.satisfies_pzi is True
 
 
-def test_get_cluster_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_cluster), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_cluster()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetClusterRequest()
-
-
 def test_get_cluster_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1697,60 +1580,6 @@ def test_get_cluster_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_cluster_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_cluster), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Cluster(
-                name="name_value",
-                description="description_value",
-                initial_node_count=1911,
-                logging_service="logging_service_value",
-                monitoring_service="monitoring_service_value",
-                network="network_value",
-                cluster_ipv4_cidr="cluster_ipv4_cidr_value",
-                subnetwork="subnetwork_value",
-                locations=["locations_value"],
-                enable_kubernetes_alpha=True,
-                label_fingerprint="label_fingerprint_value",
-                self_link="self_link_value",
-                zone="zone_value",
-                endpoint="endpoint_value",
-                initial_cluster_version="initial_cluster_version_value",
-                current_master_version="current_master_version_value",
-                current_node_version="current_node_version_value",
-                create_time="create_time_value",
-                status=cluster_service.Cluster.Status.PROVISIONING,
-                status_message="status_message_value",
-                node_ipv4_cidr_size=1955,
-                services_ipv4_cidr="services_ipv4_cidr_value",
-                instance_group_urls=["instance_group_urls_value"],
-                current_node_count=1936,
-                expire_time="expire_time_value",
-                location="location_value",
-                enable_tpu=True,
-                tpu_ipv4_cidr_block="tpu_ipv4_cidr_block_value",
-                id="id_value",
-                etag="etag_value",
-                satisfies_pzs=True,
-                satisfies_pzi=True,
-            )
-        )
-        response = await client.get_cluster()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetClusterRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_cluster_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1758,7 +1587,7 @@ async def test_get_cluster_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1773,22 +1602,23 @@ async def test_get_cluster_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_cluster
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_cluster(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_cluster(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1796,7 +1626,7 @@ async def test_get_cluster_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.GetClusterRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1924,7 +1754,7 @@ def test_get_cluster_field_headers():
 @pytest.mark.asyncio
 async def test_get_cluster_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2009,7 +1839,7 @@ def test_get_cluster_flattened_error():
 @pytest.mark.asyncio
 async def test_get_cluster_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2050,7 +1880,7 @@ async def test_get_cluster_flattened_async():
 @pytest.mark.asyncio
 async def test_get_cluster_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2121,25 +1951,6 @@ def test_create_cluster(request_type, transport: str = "grpc"):
     assert response.end_time == "end_time_value"
 
 
-def test_create_cluster_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_cluster), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_cluster()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CreateClusterRequest()
-
-
 def test_create_cluster_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -2208,39 +2019,6 @@ def test_create_cluster_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_cluster_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_cluster), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.create_cluster()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CreateClusterRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_cluster_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2248,7 +2026,7 @@ async def test_create_cluster_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2263,22 +2041,23 @@ async def test_create_cluster_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_cluster
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_cluster(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_cluster(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2286,7 +2065,7 @@ async def test_create_cluster_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.CreateClusterRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2372,7 +2151,7 @@ def test_create_cluster_field_headers():
 @pytest.mark.asyncio
 async def test_create_cluster_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2457,7 +2236,7 @@ def test_create_cluster_flattened_error():
 @pytest.mark.asyncio
 async def test_create_cluster_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2498,7 +2277,7 @@ async def test_create_cluster_flattened_async():
 @pytest.mark.asyncio
 async def test_create_cluster_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2567,25 +2346,6 @@ def test_update_cluster(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_update_cluster_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_cluster), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_cluster()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.UpdateClusterRequest()
 
 
 def test_update_cluster_non_empty_request_with_auto_populated_field():
@@ -2658,39 +2418,6 @@ def test_update_cluster_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_cluster_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_cluster), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.update_cluster()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.UpdateClusterRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_cluster_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2698,7 +2425,7 @@ async def test_update_cluster_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2713,22 +2440,23 @@ async def test_update_cluster_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_cluster
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_cluster(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_cluster(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2736,7 +2464,7 @@ async def test_update_cluster_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.UpdateClusterRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2822,7 +2550,7 @@ def test_update_cluster_field_headers():
 @pytest.mark.asyncio
 async def test_update_cluster_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2918,7 +2646,7 @@ def test_update_cluster_flattened_error():
 @pytest.mark.asyncio
 async def test_update_cluster_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2967,7 +2695,7 @@ async def test_update_cluster_flattened_async():
 @pytest.mark.asyncio
 async def test_update_cluster_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3039,25 +2767,6 @@ def test_update_node_pool(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_update_node_pool_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_node_pool), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_node_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.UpdateNodePoolRequest()
 
 
 def test_update_node_pool_non_empty_request_with_auto_populated_field():
@@ -3144,39 +2853,6 @@ def test_update_node_pool_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_node_pool_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_node_pool), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.update_node_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.UpdateNodePoolRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_node_pool_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3184,7 +2860,7 @@ async def test_update_node_pool_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3199,22 +2875,23 @@ async def test_update_node_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_node_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_node_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_node_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3222,7 +2899,7 @@ async def test_update_node_pool_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.UpdateNodePoolRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3308,7 +2985,7 @@ def test_update_node_pool_field_headers():
 @pytest.mark.asyncio
 async def test_update_node_pool_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3395,27 +3072,6 @@ def test_set_node_pool_autoscaling(request_type, transport: str = "grpc"):
     assert response.end_time == "end_time_value"
 
 
-def test_set_node_pool_autoscaling_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_node_pool_autoscaling), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_node_pool_autoscaling()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetNodePoolAutoscalingRequest()
-
-
 def test_set_node_pool_autoscaling_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3495,41 +3151,6 @@ def test_set_node_pool_autoscaling_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_node_pool_autoscaling_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_node_pool_autoscaling), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_node_pool_autoscaling()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetNodePoolAutoscalingRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_node_pool_autoscaling_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3537,7 +3158,7 @@ async def test_set_node_pool_autoscaling_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3552,22 +3173,23 @@ async def test_set_node_pool_autoscaling_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_node_pool_autoscaling
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_node_pool_autoscaling(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_node_pool_autoscaling(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3576,7 +3198,7 @@ async def test_set_node_pool_autoscaling_async(
     request_type=cluster_service.SetNodePoolAutoscalingRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3666,7 +3288,7 @@ def test_set_node_pool_autoscaling_field_headers():
 @pytest.mark.asyncio
 async def test_set_node_pool_autoscaling_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3755,27 +3377,6 @@ def test_set_logging_service(request_type, transport: str = "grpc"):
     assert response.end_time == "end_time_value"
 
 
-def test_set_logging_service_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_logging_service), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_logging_service()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetLoggingServiceRequest()
-
-
 def test_set_logging_service_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3854,41 +3455,6 @@ def test_set_logging_service_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_logging_service_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_logging_service), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_logging_service()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetLoggingServiceRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_logging_service_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3896,7 +3462,7 @@ async def test_set_logging_service_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3911,22 +3477,23 @@ async def test_set_logging_service_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_logging_service
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_logging_service(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_logging_service(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3935,7 +3502,7 @@ async def test_set_logging_service_async(
     request_type=cluster_service.SetLoggingServiceRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4025,7 +3592,7 @@ def test_set_logging_service_field_headers():
 @pytest.mark.asyncio
 async def test_set_logging_service_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4119,7 +3686,7 @@ def test_set_logging_service_flattened_error():
 @pytest.mark.asyncio
 async def test_set_logging_service_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4166,7 +3733,7 @@ async def test_set_logging_service_flattened_async():
 @pytest.mark.asyncio
 async def test_set_logging_service_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4238,27 +3805,6 @@ def test_set_monitoring_service(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_set_monitoring_service_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_monitoring_service), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_monitoring_service()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetMonitoringServiceRequest()
 
 
 def test_set_monitoring_service_non_empty_request_with_auto_populated_field():
@@ -4340,41 +3886,6 @@ def test_set_monitoring_service_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_monitoring_service_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_monitoring_service), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_monitoring_service()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetMonitoringServiceRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_monitoring_service_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4382,7 +3893,7 @@ async def test_set_monitoring_service_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4397,22 +3908,23 @@ async def test_set_monitoring_service_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_monitoring_service
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_monitoring_service(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_monitoring_service(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4421,7 +3933,7 @@ async def test_set_monitoring_service_async(
     request_type=cluster_service.SetMonitoringServiceRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4511,7 +4023,7 @@ def test_set_monitoring_service_field_headers():
 @pytest.mark.asyncio
 async def test_set_monitoring_service_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4605,7 +4117,7 @@ def test_set_monitoring_service_flattened_error():
 @pytest.mark.asyncio
 async def test_set_monitoring_service_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4652,7 +4164,7 @@ async def test_set_monitoring_service_flattened_async():
 @pytest.mark.asyncio
 async def test_set_monitoring_service_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4724,27 +4236,6 @@ def test_set_addons_config(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_set_addons_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_addons_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_addons_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetAddonsConfigRequest()
 
 
 def test_set_addons_config_non_empty_request_with_auto_populated_field():
@@ -4821,41 +4312,6 @@ def test_set_addons_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_addons_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_addons_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_addons_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetAddonsConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_addons_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4863,7 +4319,7 @@ async def test_set_addons_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4878,22 +4334,23 @@ async def test_set_addons_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_addons_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_addons_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_addons_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4901,7 +4358,7 @@ async def test_set_addons_config_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.SetAddonsConfigRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4991,7 +4448,7 @@ def test_set_addons_config_field_headers():
 @pytest.mark.asyncio
 async def test_set_addons_config_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5091,7 +4548,7 @@ def test_set_addons_config_flattened_error():
 @pytest.mark.asyncio
 async def test_set_addons_config_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5142,7 +4599,7 @@ async def test_set_addons_config_flattened_async():
 @pytest.mark.asyncio
 async def test_set_addons_config_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5216,25 +4673,6 @@ def test_set_locations(request_type, transport: str = "grpc"):
     assert response.end_time == "end_time_value"
 
 
-def test_set_locations_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.set_locations), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_locations()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetLocationsRequest()
-
-
 def test_set_locations_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -5305,39 +4743,6 @@ def test_set_locations_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_locations_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.set_locations), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_locations()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetLocationsRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_locations_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5345,7 +4750,7 @@ async def test_set_locations_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5360,22 +4765,23 @@ async def test_set_locations_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_locations
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_locations(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_locations(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5383,7 +4789,7 @@ async def test_set_locations_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.SetLocationsRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5469,7 +4875,7 @@ def test_set_locations_field_headers():
 @pytest.mark.asyncio
 async def test_set_locations_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5559,7 +4965,7 @@ def test_set_locations_flattened_error():
 @pytest.mark.asyncio
 async def test_set_locations_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5604,7 +5010,7 @@ async def test_set_locations_flattened_async():
 @pytest.mark.asyncio
 async def test_set_locations_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5674,25 +5080,6 @@ def test_update_master(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_update_master_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_master), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.update_master()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.UpdateMasterRequest()
 
 
 def test_update_master_non_empty_request_with_auto_populated_field():
@@ -5767,39 +5154,6 @@ def test_update_master_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_update_master_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.update_master), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.update_master()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.UpdateMasterRequest()
-
-
-@pytest.mark.asyncio
 async def test_update_master_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5807,7 +5161,7 @@ async def test_update_master_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5822,22 +5176,23 @@ async def test_update_master_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_master
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_master(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_master(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5845,7 +5200,7 @@ async def test_update_master_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.UpdateMasterRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5931,7 +5286,7 @@ def test_update_master_field_headers():
 @pytest.mark.asyncio
 async def test_update_master_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6021,7 +5376,7 @@ def test_update_master_flattened_error():
 @pytest.mark.asyncio
 async def test_update_master_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6066,7 +5421,7 @@ async def test_update_master_flattened_async():
 @pytest.mark.asyncio
 async def test_update_master_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6136,25 +5491,6 @@ def test_set_master_auth(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_set_master_auth_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.set_master_auth), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_master_auth()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetMasterAuthRequest()
 
 
 def test_set_master_auth_non_empty_request_with_auto_populated_field():
@@ -6227,39 +5563,6 @@ def test_set_master_auth_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_master_auth_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.set_master_auth), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_master_auth()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetMasterAuthRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_master_auth_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6267,7 +5570,7 @@ async def test_set_master_auth_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6282,22 +5585,23 @@ async def test_set_master_auth_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_master_auth
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_master_auth(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_master_auth(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6305,7 +5609,7 @@ async def test_set_master_auth_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.SetMasterAuthRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6391,7 +5695,7 @@ def test_set_master_auth_field_headers():
 @pytest.mark.asyncio
 async def test_set_master_auth_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6476,25 +5780,6 @@ def test_delete_cluster(request_type, transport: str = "grpc"):
     assert response.end_time == "end_time_value"
 
 
-def test_delete_cluster_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_cluster), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_cluster()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.DeleteClusterRequest()
-
-
 def test_delete_cluster_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -6565,39 +5850,6 @@ def test_delete_cluster_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_cluster_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_cluster), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.delete_cluster()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.DeleteClusterRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_cluster_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6605,7 +5857,7 @@ async def test_delete_cluster_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6620,22 +5872,23 @@ async def test_delete_cluster_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_cluster
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_cluster(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_cluster(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6643,7 +5896,7 @@ async def test_delete_cluster_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.DeleteClusterRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6729,7 +5982,7 @@ def test_delete_cluster_field_headers():
 @pytest.mark.asyncio
 async def test_delete_cluster_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6814,7 +6067,7 @@ def test_delete_cluster_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_cluster_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6855,7 +6108,7 @@ async def test_delete_cluster_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_cluster_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6904,25 +6157,6 @@ def test_list_operations(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, cluster_service.ListOperationsResponse)
     assert response.missing_zones == ["missing_zones_value"]
-
-
-def test_list_operations_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_operations()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.ListOperationsRequest()
 
 
 def test_list_operations_non_empty_request_with_auto_populated_field():
@@ -6993,29 +6227,6 @@ def test_list_operations_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_operations_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.ListOperationsResponse(
-                missing_zones=["missing_zones_value"],
-            )
-        )
-        response = await client.list_operations()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.ListOperationsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_operations_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7023,7 +6234,7 @@ async def test_list_operations_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7038,22 +6249,23 @@ async def test_list_operations_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_operations
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_operations(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_operations(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7061,7 +6273,7 @@ async def test_list_operations_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.ListOperationsRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7127,7 +6339,7 @@ def test_list_operations_field_headers():
 @pytest.mark.asyncio
 async def test_list_operations_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7207,7 +6419,7 @@ def test_list_operations_flattened_error():
 @pytest.mark.asyncio
 async def test_list_operations_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7244,7 +6456,7 @@ async def test_list_operations_flattened_async():
 @pytest.mark.asyncio
 async def test_list_operations_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7312,25 +6524,6 @@ def test_get_operation(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_get_operation_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_operation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetOperationRequest()
 
 
 def test_get_operation_non_empty_request_with_auto_populated_field():
@@ -7403,39 +6596,6 @@ def test_get_operation_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_operation_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.get_operation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetOperationRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_operation_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7443,7 +6603,7 @@ async def test_get_operation_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7458,22 +6618,23 @@ async def test_get_operation_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_operation
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_operation(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_operation(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7481,7 +6642,7 @@ async def test_get_operation_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.GetOperationRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7567,7 +6728,7 @@ def test_get_operation_field_headers():
 @pytest.mark.asyncio
 async def test_get_operation_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -7652,7 +6813,7 @@ def test_get_operation_flattened_error():
 @pytest.mark.asyncio
 async def test_get_operation_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -7693,7 +6854,7 @@ async def test_get_operation_flattened_async():
 @pytest.mark.asyncio
 async def test_get_operation_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -7739,25 +6900,6 @@ def test_cancel_operation(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_cancel_operation_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.cancel_operation), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.cancel_operation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CancelOperationRequest()
 
 
 def test_cancel_operation_non_empty_request_with_auto_populated_field():
@@ -7832,25 +6974,6 @@ def test_cancel_operation_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_cancel_operation_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.cancel_operation), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.cancel_operation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CancelOperationRequest()
-
-
-@pytest.mark.asyncio
 async def test_cancel_operation_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -7858,7 +6981,7 @@ async def test_cancel_operation_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -7873,22 +6996,23 @@ async def test_cancel_operation_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.cancel_operation
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.cancel_operation(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.cancel_operation(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -7896,7 +7020,7 @@ async def test_cancel_operation_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.CancelOperationRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -7957,7 +7081,7 @@ def test_cancel_operation_field_headers():
 @pytest.mark.asyncio
 async def test_cancel_operation_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8040,7 +7164,7 @@ def test_cancel_operation_flattened_error():
 @pytest.mark.asyncio
 async def test_cancel_operation_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8079,7 +7203,7 @@ async def test_cancel_operation_flattened_async():
 @pytest.mark.asyncio
 async def test_cancel_operation_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8138,27 +7262,6 @@ def test_get_server_config(request_type, transport: str = "grpc"):
     assert response.default_image_type == "default_image_type_value"
     assert response.valid_image_types == ["valid_image_types_value"]
     assert response.valid_master_versions == ["valid_master_versions_value"]
-
-
-def test_get_server_config_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_server_config), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_server_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetServerConfigRequest()
 
 
 def test_get_server_config_non_empty_request_with_auto_populated_field():
@@ -8233,35 +7336,6 @@ def test_get_server_config_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_server_config_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_server_config), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.ServerConfig(
-                default_cluster_version="default_cluster_version_value",
-                valid_node_versions=["valid_node_versions_value"],
-                default_image_type="default_image_type_value",
-                valid_image_types=["valid_image_types_value"],
-                valid_master_versions=["valid_master_versions_value"],
-            )
-        )
-        response = await client.get_server_config()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetServerConfigRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_server_config_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8269,7 +7343,7 @@ async def test_get_server_config_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8284,22 +7358,23 @@ async def test_get_server_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_server_config
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_server_config(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_server_config(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8307,7 +7382,7 @@ async def test_get_server_config_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.GetServerConfigRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8385,7 +7460,7 @@ def test_get_server_config_field_headers():
 @pytest.mark.asyncio
 async def test_get_server_config_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8469,7 +7544,7 @@ def test_get_server_config_flattened_error():
 @pytest.mark.asyncio
 async def test_get_server_config_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -8508,7 +7583,7 @@ async def test_get_server_config_flattened_async():
 @pytest.mark.asyncio
 async def test_get_server_config_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -8555,27 +7630,6 @@ def test_get_json_web_keys(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, cluster_service.GetJSONWebKeysResponse)
-
-
-def test_get_json_web_keys_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_json_web_keys), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_json_web_keys()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetJSONWebKeysRequest()
 
 
 def test_get_json_web_keys_non_empty_request_with_auto_populated_field():
@@ -8646,29 +7700,6 @@ def test_get_json_web_keys_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_json_web_keys_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_json_web_keys), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.GetJSONWebKeysResponse()
-        )
-        response = await client.get_json_web_keys()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetJSONWebKeysRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_json_web_keys_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8676,7 +7707,7 @@ async def test_get_json_web_keys_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8691,22 +7722,23 @@ async def test_get_json_web_keys_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_json_web_keys
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_json_web_keys(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_json_web_keys(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -8714,7 +7746,7 @@ async def test_get_json_web_keys_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.GetJSONWebKeysRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -8781,7 +7813,7 @@ def test_get_json_web_keys_field_headers():
 @pytest.mark.asyncio
 async def test_get_json_web_keys_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -8843,25 +7875,6 @@ def test_list_node_pools(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, cluster_service.ListNodePoolsResponse)
-
-
-def test_list_node_pools_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_node_pools), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_node_pools()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.ListNodePoolsRequest()
 
 
 def test_list_node_pools_non_empty_request_with_auto_populated_field():
@@ -8934,27 +7947,6 @@ def test_list_node_pools_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_node_pools_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.list_node_pools), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.ListNodePoolsResponse()
-        )
-        response = await client.list_node_pools()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.ListNodePoolsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_node_pools_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -8962,7 +7954,7 @@ async def test_list_node_pools_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -8977,22 +7969,23 @@ async def test_list_node_pools_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_node_pools
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_node_pools(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_node_pools(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9000,7 +7993,7 @@ async def test_list_node_pools_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.ListNodePoolsRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9063,7 +8056,7 @@ def test_list_node_pools_field_headers():
 @pytest.mark.asyncio
 async def test_list_node_pools_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9148,7 +8141,7 @@ def test_list_node_pools_flattened_error():
 @pytest.mark.asyncio
 async def test_list_node_pools_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9189,7 +8182,7 @@ async def test_list_node_pools_flattened_async():
 @pytest.mark.asyncio
 async def test_list_node_pools_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -9256,25 +8249,6 @@ def test_get_node_pool(request_type, transport: str = "grpc"):
     assert response.status_message == "status_message_value"
     assert response.pod_ipv4_cidr_size == 1856
     assert response.etag == "etag_value"
-
-
-def test_get_node_pool_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_node_pool), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_node_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetNodePoolRequest()
 
 
 def test_get_node_pool_non_empty_request_with_auto_populated_field():
@@ -9349,38 +8323,6 @@ def test_get_node_pool_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_node_pool_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_node_pool), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.NodePool(
-                name="name_value",
-                initial_node_count=1911,
-                locations=["locations_value"],
-                self_link="self_link_value",
-                version="version_value",
-                instance_group_urls=["instance_group_urls_value"],
-                status=cluster_service.NodePool.Status.PROVISIONING,
-                status_message="status_message_value",
-                pod_ipv4_cidr_size=1856,
-                etag="etag_value",
-            )
-        )
-        response = await client.get_node_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.GetNodePoolRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_node_pool_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -9388,7 +8330,7 @@ async def test_get_node_pool_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -9403,22 +8345,23 @@ async def test_get_node_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_node_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_node_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_node_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9426,7 +8369,7 @@ async def test_get_node_pool_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.GetNodePoolRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9510,7 +8453,7 @@ def test_get_node_pool_field_headers():
 @pytest.mark.asyncio
 async def test_get_node_pool_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -9600,7 +8543,7 @@ def test_get_node_pool_flattened_error():
 @pytest.mark.asyncio
 async def test_get_node_pool_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -9645,7 +8588,7 @@ async def test_get_node_pool_flattened_async():
 @pytest.mark.asyncio
 async def test_get_node_pool_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -9715,25 +8658,6 @@ def test_create_node_pool(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_create_node_pool_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_node_pool), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_node_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CreateNodePoolRequest()
 
 
 def test_create_node_pool_non_empty_request_with_auto_populated_field():
@@ -9808,39 +8732,6 @@ def test_create_node_pool_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_node_pool_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.create_node_pool), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.create_node_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CreateNodePoolRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_node_pool_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -9848,7 +8739,7 @@ async def test_create_node_pool_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -9863,22 +8754,23 @@ async def test_create_node_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_node_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_node_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_node_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -9886,7 +8778,7 @@ async def test_create_node_pool_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.CreateNodePoolRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -9972,7 +8864,7 @@ def test_create_node_pool_field_headers():
 @pytest.mark.asyncio
 async def test_create_node_pool_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -10062,7 +8954,7 @@ def test_create_node_pool_flattened_error():
 @pytest.mark.asyncio
 async def test_create_node_pool_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10107,7 +8999,7 @@ async def test_create_node_pool_flattened_async():
 @pytest.mark.asyncio
 async def test_create_node_pool_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -10177,25 +9069,6 @@ def test_delete_node_pool(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_delete_node_pool_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_node_pool), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.delete_node_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.DeleteNodePoolRequest()
 
 
 def test_delete_node_pool_non_empty_request_with_auto_populated_field():
@@ -10272,39 +9145,6 @@ def test_delete_node_pool_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_delete_node_pool_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.delete_node_pool), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.delete_node_pool()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.DeleteNodePoolRequest()
-
-
-@pytest.mark.asyncio
 async def test_delete_node_pool_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -10312,7 +9152,7 @@ async def test_delete_node_pool_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -10327,22 +9167,23 @@ async def test_delete_node_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_node_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_node_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_node_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -10350,7 +9191,7 @@ async def test_delete_node_pool_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.DeleteNodePoolRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -10436,7 +9277,7 @@ def test_delete_node_pool_field_headers():
 @pytest.mark.asyncio
 async def test_delete_node_pool_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -10526,7 +9367,7 @@ def test_delete_node_pool_flattened_error():
 @pytest.mark.asyncio
 async def test_delete_node_pool_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -10571,7 +9412,7 @@ async def test_delete_node_pool_flattened_async():
 @pytest.mark.asyncio
 async def test_delete_node_pool_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -10620,27 +9461,6 @@ def test_complete_node_pool_upgrade(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert response is None
-
-
-def test_complete_node_pool_upgrade_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.complete_node_pool_upgrade), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.complete_node_pool_upgrade()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CompleteNodePoolUpgradeRequest()
 
 
 def test_complete_node_pool_upgrade_non_empty_request_with_auto_populated_field():
@@ -10714,27 +9534,6 @@ def test_complete_node_pool_upgrade_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_complete_node_pool_upgrade_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.complete_node_pool_upgrade), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
-        response = await client.complete_node_pool_upgrade()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CompleteNodePoolUpgradeRequest()
-
-
-@pytest.mark.asyncio
 async def test_complete_node_pool_upgrade_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -10742,7 +9541,7 @@ async def test_complete_node_pool_upgrade_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -10757,22 +9556,23 @@ async def test_complete_node_pool_upgrade_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.complete_node_pool_upgrade
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.complete_node_pool_upgrade(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.complete_node_pool_upgrade(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -10781,7 +9581,7 @@ async def test_complete_node_pool_upgrade_async(
     request_type=cluster_service.CompleteNodePoolUpgradeRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -10846,7 +9646,7 @@ def test_complete_node_pool_upgrade_field_headers():
 @pytest.mark.asyncio
 async def test_complete_node_pool_upgrade_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -10933,27 +9733,6 @@ def test_rollback_node_pool_upgrade(request_type, transport: str = "grpc"):
     assert response.end_time == "end_time_value"
 
 
-def test_rollback_node_pool_upgrade_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.rollback_node_pool_upgrade), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.rollback_node_pool_upgrade()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.RollbackNodePoolUpgradeRequest()
-
-
 def test_rollback_node_pool_upgrade_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -11033,41 +9812,6 @@ def test_rollback_node_pool_upgrade_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_rollback_node_pool_upgrade_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.rollback_node_pool_upgrade), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.rollback_node_pool_upgrade()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.RollbackNodePoolUpgradeRequest()
-
-
-@pytest.mark.asyncio
 async def test_rollback_node_pool_upgrade_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -11075,7 +9819,7 @@ async def test_rollback_node_pool_upgrade_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -11090,22 +9834,23 @@ async def test_rollback_node_pool_upgrade_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.rollback_node_pool_upgrade
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.rollback_node_pool_upgrade(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.rollback_node_pool_upgrade(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -11114,7 +9859,7 @@ async def test_rollback_node_pool_upgrade_async(
     request_type=cluster_service.RollbackNodePoolUpgradeRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11204,7 +9949,7 @@ def test_rollback_node_pool_upgrade_field_headers():
 @pytest.mark.asyncio
 async def test_rollback_node_pool_upgrade_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11298,7 +10043,7 @@ def test_rollback_node_pool_upgrade_flattened_error():
 @pytest.mark.asyncio
 async def test_rollback_node_pool_upgrade_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -11345,7 +10090,7 @@ async def test_rollback_node_pool_upgrade_flattened_async():
 @pytest.mark.asyncio
 async def test_rollback_node_pool_upgrade_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -11417,27 +10162,6 @@ def test_set_node_pool_management(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_set_node_pool_management_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_node_pool_management), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_node_pool_management()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetNodePoolManagementRequest()
 
 
 def test_set_node_pool_management_non_empty_request_with_auto_populated_field():
@@ -11519,41 +10243,6 @@ def test_set_node_pool_management_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_node_pool_management_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_node_pool_management), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_node_pool_management()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetNodePoolManagementRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_node_pool_management_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -11561,7 +10250,7 @@ async def test_set_node_pool_management_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -11576,22 +10265,23 @@ async def test_set_node_pool_management_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_node_pool_management
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_node_pool_management(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_node_pool_management(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -11600,7 +10290,7 @@ async def test_set_node_pool_management_async(
     request_type=cluster_service.SetNodePoolManagementRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -11690,7 +10380,7 @@ def test_set_node_pool_management_field_headers():
 @pytest.mark.asyncio
 async def test_set_node_pool_management_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -11777,25 +10467,6 @@ def test_set_labels(request_type, transport: str = "grpc"):
     assert response.end_time == "end_time_value"
 
 
-def test_set_labels_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.set_labels), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_labels()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetLabelsRequest()
-
-
 def test_set_labels_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -11868,45 +10539,12 @@ def test_set_labels_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_labels_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.set_labels), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_labels()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetLabelsRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_labels_async_use_cached_wrapped_rpc(transport: str = "grpc_asyncio"):
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -11921,22 +10559,23 @@ async def test_set_labels_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_labels
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_labels(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_labels(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -11944,7 +10583,7 @@ async def test_set_labels_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.SetLabelsRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -12030,7 +10669,7 @@ def test_set_labels_field_headers():
 @pytest.mark.asyncio
 async def test_set_labels_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -12115,25 +10754,6 @@ def test_set_legacy_abac(request_type, transport: str = "grpc"):
     assert response.end_time == "end_time_value"
 
 
-def test_set_legacy_abac_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.set_legacy_abac), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_legacy_abac()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetLegacyAbacRequest()
-
-
 def test_set_legacy_abac_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -12204,39 +10824,6 @@ def test_set_legacy_abac_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_legacy_abac_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.set_legacy_abac), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_legacy_abac()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetLegacyAbacRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_legacy_abac_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -12244,7 +10831,7 @@ async def test_set_legacy_abac_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -12259,22 +10846,23 @@ async def test_set_legacy_abac_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_legacy_abac
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_legacy_abac(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_legacy_abac(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -12282,7 +10870,7 @@ async def test_set_legacy_abac_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.SetLegacyAbacRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -12368,7 +10956,7 @@ def test_set_legacy_abac_field_headers():
 @pytest.mark.asyncio
 async def test_set_legacy_abac_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -12458,7 +11046,7 @@ def test_set_legacy_abac_flattened_error():
 @pytest.mark.asyncio
 async def test_set_legacy_abac_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -12503,7 +11091,7 @@ async def test_set_legacy_abac_flattened_async():
 @pytest.mark.asyncio
 async def test_set_legacy_abac_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -12575,27 +11163,6 @@ def test_start_ip_rotation(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_start_ip_rotation_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.start_ip_rotation), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.start_ip_rotation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.StartIPRotationRequest()
 
 
 def test_start_ip_rotation_non_empty_request_with_auto_populated_field():
@@ -12672,41 +11239,6 @@ def test_start_ip_rotation_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_start_ip_rotation_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.start_ip_rotation), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.start_ip_rotation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.StartIPRotationRequest()
-
-
-@pytest.mark.asyncio
 async def test_start_ip_rotation_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -12714,7 +11246,7 @@ async def test_start_ip_rotation_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -12729,22 +11261,23 @@ async def test_start_ip_rotation_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.start_ip_rotation
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.start_ip_rotation(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.start_ip_rotation(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -12752,7 +11285,7 @@ async def test_start_ip_rotation_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.StartIPRotationRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -12842,7 +11375,7 @@ def test_start_ip_rotation_field_headers():
 @pytest.mark.asyncio
 async def test_start_ip_rotation_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -12931,7 +11464,7 @@ def test_start_ip_rotation_flattened_error():
 @pytest.mark.asyncio
 async def test_start_ip_rotation_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -12974,7 +11507,7 @@ async def test_start_ip_rotation_flattened_async():
 @pytest.mark.asyncio
 async def test_start_ip_rotation_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -13045,27 +11578,6 @@ def test_complete_ip_rotation(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_complete_ip_rotation_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.complete_ip_rotation), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.complete_ip_rotation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CompleteIPRotationRequest()
 
 
 def test_complete_ip_rotation_non_empty_request_with_auto_populated_field():
@@ -13144,41 +11656,6 @@ def test_complete_ip_rotation_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_complete_ip_rotation_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.complete_ip_rotation), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.complete_ip_rotation()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CompleteIPRotationRequest()
-
-
-@pytest.mark.asyncio
 async def test_complete_ip_rotation_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -13186,7 +11663,7 @@ async def test_complete_ip_rotation_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -13201,22 +11678,23 @@ async def test_complete_ip_rotation_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.complete_ip_rotation
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.complete_ip_rotation(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.complete_ip_rotation(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -13225,7 +11703,7 @@ async def test_complete_ip_rotation_async(
     request_type=cluster_service.CompleteIPRotationRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -13315,7 +11793,7 @@ def test_complete_ip_rotation_field_headers():
 @pytest.mark.asyncio
 async def test_complete_ip_rotation_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -13404,7 +11882,7 @@ def test_complete_ip_rotation_flattened_error():
 @pytest.mark.asyncio
 async def test_complete_ip_rotation_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -13447,7 +11925,7 @@ async def test_complete_ip_rotation_flattened_async():
 @pytest.mark.asyncio
 async def test_complete_ip_rotation_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -13518,27 +11996,6 @@ def test_set_node_pool_size(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_set_node_pool_size_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_node_pool_size), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_node_pool_size()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetNodePoolSizeRequest()
 
 
 def test_set_node_pool_size_non_empty_request_with_auto_populated_field():
@@ -13619,41 +12076,6 @@ def test_set_node_pool_size_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_node_pool_size_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_node_pool_size), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_node_pool_size()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetNodePoolSizeRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_node_pool_size_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -13661,7 +12083,7 @@ async def test_set_node_pool_size_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -13676,22 +12098,23 @@ async def test_set_node_pool_size_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_node_pool_size
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_node_pool_size(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_node_pool_size(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -13699,7 +12122,7 @@ async def test_set_node_pool_size_async(
     transport: str = "grpc_asyncio", request_type=cluster_service.SetNodePoolSizeRequest
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -13789,7 +12212,7 @@ def test_set_node_pool_size_field_headers():
 @pytest.mark.asyncio
 async def test_set_node_pool_size_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -13878,27 +12301,6 @@ def test_set_network_policy(request_type, transport: str = "grpc"):
     assert response.end_time == "end_time_value"
 
 
-def test_set_network_policy_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_network_policy), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_network_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetNetworkPolicyRequest()
-
-
 def test_set_network_policy_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -13975,41 +12377,6 @@ def test_set_network_policy_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_network_policy_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_network_policy), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_network_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetNetworkPolicyRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_network_policy_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -14017,7 +12384,7 @@ async def test_set_network_policy_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -14032,22 +12399,23 @@ async def test_set_network_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_network_policy
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_network_policy(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_network_policy(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -14056,7 +12424,7 @@ async def test_set_network_policy_async(
     request_type=cluster_service.SetNetworkPolicyRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -14146,7 +12514,7 @@ def test_set_network_policy_field_headers():
 @pytest.mark.asyncio
 async def test_set_network_policy_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -14246,7 +12614,7 @@ def test_set_network_policy_flattened_error():
 @pytest.mark.asyncio
 async def test_set_network_policy_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -14297,7 +12665,7 @@ async def test_set_network_policy_flattened_async():
 @pytest.mark.asyncio
 async def test_set_network_policy_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -14371,27 +12739,6 @@ def test_set_maintenance_policy(request_type, transport: str = "grpc"):
     assert response.location == "location_value"
     assert response.start_time == "start_time_value"
     assert response.end_time == "end_time_value"
-
-
-def test_set_maintenance_policy_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_maintenance_policy), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.set_maintenance_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetMaintenancePolicyRequest()
 
 
 def test_set_maintenance_policy_non_empty_request_with_auto_populated_field():
@@ -14471,41 +12818,6 @@ def test_set_maintenance_policy_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_set_maintenance_policy_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.set_maintenance_policy), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.Operation(
-                name="name_value",
-                zone="zone_value",
-                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-                status=cluster_service.Operation.Status.PENDING,
-                detail="detail_value",
-                status_message="status_message_value",
-                self_link="self_link_value",
-                target_link="target_link_value",
-                location="location_value",
-                start_time="start_time_value",
-                end_time="end_time_value",
-            )
-        )
-        response = await client.set_maintenance_policy()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.SetMaintenancePolicyRequest()
-
-
-@pytest.mark.asyncio
 async def test_set_maintenance_policy_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -14513,7 +12825,7 @@ async def test_set_maintenance_policy_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -14528,22 +12840,23 @@ async def test_set_maintenance_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_maintenance_policy
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.set_maintenance_policy(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.set_maintenance_policy(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -14552,7 +12865,7 @@ async def test_set_maintenance_policy_async(
     request_type=cluster_service.SetMaintenancePolicyRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -14642,7 +12955,7 @@ def test_set_maintenance_policy_field_headers():
 @pytest.mark.asyncio
 async def test_set_maintenance_policy_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -14754,7 +13067,7 @@ def test_set_maintenance_policy_flattened_error():
 @pytest.mark.asyncio
 async def test_set_maintenance_policy_flattened_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -14813,7 +13126,7 @@ async def test_set_maintenance_policy_flattened_async():
 @pytest.mark.asyncio
 async def test_set_maintenance_policy_flattened_error_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -14871,27 +13184,6 @@ def test_list_usable_subnetworks(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListUsableSubnetworksPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_usable_subnetworks_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_usable_subnetworks), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_usable_subnetworks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.ListUsableSubnetworksRequest()
 
 
 def test_list_usable_subnetworks_non_empty_request_with_auto_populated_field():
@@ -14969,31 +13261,6 @@ def test_list_usable_subnetworks_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_usable_subnetworks_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_usable_subnetworks), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.ListUsableSubnetworksResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_usable_subnetworks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.ListUsableSubnetworksRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_usable_subnetworks_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -15001,7 +13268,7 @@ async def test_list_usable_subnetworks_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -15016,22 +13283,23 @@ async def test_list_usable_subnetworks_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_usable_subnetworks
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_usable_subnetworks(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_usable_subnetworks(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -15040,7 +13308,7 @@ async def test_list_usable_subnetworks_async(
     request_type=cluster_service.ListUsableSubnetworksRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -15110,7 +13378,7 @@ def test_list_usable_subnetworks_field_headers():
 @pytest.mark.asyncio
 async def test_list_usable_subnetworks_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -15243,7 +13511,7 @@ def test_list_usable_subnetworks_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_usable_subnetworks_async_pager():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -15295,7 +13563,7 @@ async def test_list_usable_subnetworks_async_pager():
 @pytest.mark.asyncio
 async def test_list_usable_subnetworks_async_pages():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -15381,27 +13649,6 @@ def test_check_autopilot_compatibility(request_type, transport: str = "grpc"):
     assert response.summary == "summary_value"
 
 
-def test_check_autopilot_compatibility_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.check_autopilot_compatibility), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.check_autopilot_compatibility()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CheckAutopilotCompatibilityRequest()
-
-
 def test_check_autopilot_compatibility_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -15473,31 +13720,6 @@ def test_check_autopilot_compatibility_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_check_autopilot_compatibility_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.check_autopilot_compatibility), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            cluster_service.CheckAutopilotCompatibilityResponse(
-                summary="summary_value",
-            )
-        )
-        response = await client.check_autopilot_compatibility()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == cluster_service.CheckAutopilotCompatibilityRequest()
-
-
-@pytest.mark.asyncio
 async def test_check_autopilot_compatibility_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -15505,7 +13727,7 @@ async def test_check_autopilot_compatibility_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = ClusterManagerAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -15520,22 +13742,23 @@ async def test_check_autopilot_compatibility_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.check_autopilot_compatibility
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.check_autopilot_compatibility(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.check_autopilot_compatibility(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -15544,7 +13767,7 @@ async def test_check_autopilot_compatibility_async(
     request_type=cluster_service.CheckAutopilotCompatibilityRequest,
 ):
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -15614,7 +13837,7 @@ def test_check_autopilot_compatibility_field_headers():
 @pytest.mark.asyncio
 async def test_check_autopilot_compatibility_field_headers_async():
     client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -15643,46 +13866,6 @@ async def test_check_autopilot_compatibility_field_headers_async():
         "x-goog-request-params",
         "name=name_value",
     ) in kw["metadata"]
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.ListClustersRequest,
-        dict,
-    ],
-)
-def test_list_clusters_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.ListClustersResponse(
-            missing_zones=["missing_zones_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.ListClustersResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_clusters(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.ListClustersResponse)
-    assert response.missing_zones == ["missing_zones_value"]
 
 
 def test_list_clusters_rest_use_cached_wrapped_rpc():
@@ -15721,87 +13904,6 @@ def test_list_clusters_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_clusters_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_list_clusters"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_list_clusters"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.ListClustersRequest.pb(
-            cluster_service.ListClustersRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.ListClustersResponse.to_json(
-            cluster_service.ListClustersResponse()
-        )
-
-        request = cluster_service.ListClustersRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.ListClustersResponse()
-
-        client.list_clusters(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_clusters_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.ListClustersRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_clusters(request)
-
-
 def test_list_clusters_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -15832,6 +13934,7 @@ def test_list_clusters_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_clusters(**mock_args)
 
@@ -15860,114 +13963,6 @@ def test_list_clusters_rest_flattened_error(transport: str = "rest"):
             zone="zone_value",
             parent="parent_value",
         )
-
-
-def test_list_clusters_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.GetClusterRequest,
-        dict,
-    ],
-)
-def test_get_cluster_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Cluster(
-            name="name_value",
-            description="description_value",
-            initial_node_count=1911,
-            logging_service="logging_service_value",
-            monitoring_service="monitoring_service_value",
-            network="network_value",
-            cluster_ipv4_cidr="cluster_ipv4_cidr_value",
-            subnetwork="subnetwork_value",
-            locations=["locations_value"],
-            enable_kubernetes_alpha=True,
-            label_fingerprint="label_fingerprint_value",
-            self_link="self_link_value",
-            zone="zone_value",
-            endpoint="endpoint_value",
-            initial_cluster_version="initial_cluster_version_value",
-            current_master_version="current_master_version_value",
-            current_node_version="current_node_version_value",
-            create_time="create_time_value",
-            status=cluster_service.Cluster.Status.PROVISIONING,
-            status_message="status_message_value",
-            node_ipv4_cidr_size=1955,
-            services_ipv4_cidr="services_ipv4_cidr_value",
-            instance_group_urls=["instance_group_urls_value"],
-            current_node_count=1936,
-            expire_time="expire_time_value",
-            location="location_value",
-            enable_tpu=True,
-            tpu_ipv4_cidr_block="tpu_ipv4_cidr_block_value",
-            id="id_value",
-            etag="etag_value",
-            satisfies_pzs=True,
-            satisfies_pzi=True,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Cluster.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_cluster(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Cluster)
-    assert response.name == "name_value"
-    assert response.description == "description_value"
-    assert response.initial_node_count == 1911
-    assert response.logging_service == "logging_service_value"
-    assert response.monitoring_service == "monitoring_service_value"
-    assert response.network == "network_value"
-    assert response.cluster_ipv4_cidr == "cluster_ipv4_cidr_value"
-    assert response.subnetwork == "subnetwork_value"
-    assert response.locations == ["locations_value"]
-    assert response.enable_kubernetes_alpha is True
-    assert response.label_fingerprint == "label_fingerprint_value"
-    assert response.self_link == "self_link_value"
-    assert response.zone == "zone_value"
-    assert response.endpoint == "endpoint_value"
-    assert response.initial_cluster_version == "initial_cluster_version_value"
-    assert response.current_master_version == "current_master_version_value"
-    assert response.current_node_version == "current_node_version_value"
-    assert response.create_time == "create_time_value"
-    assert response.status == cluster_service.Cluster.Status.PROVISIONING
-    assert response.status_message == "status_message_value"
-    assert response.node_ipv4_cidr_size == 1955
-    assert response.services_ipv4_cidr == "services_ipv4_cidr_value"
-    assert response.instance_group_urls == ["instance_group_urls_value"]
-    assert response.current_node_count == 1936
-    assert response.expire_time == "expire_time_value"
-    assert response.location == "location_value"
-    assert response.enable_tpu is True
-    assert response.tpu_ipv4_cidr_block == "tpu_ipv4_cidr_block_value"
-    assert response.id == "id_value"
-    assert response.etag == "etag_value"
-    assert response.satisfies_pzs is True
-    assert response.satisfies_pzi is True
 
 
 def test_get_cluster_rest_use_cached_wrapped_rpc():
@@ -16006,87 +14001,6 @@ def test_get_cluster_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_cluster_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_get_cluster"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_get_cluster"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.GetClusterRequest.pb(
-            cluster_service.GetClusterRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Cluster.to_json(
-            cluster_service.Cluster()
-        )
-
-        request = cluster_service.GetClusterRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Cluster()
-
-        client.get_cluster(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_cluster_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.GetClusterRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_cluster(request)
-
-
 def test_get_cluster_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -16118,6 +14032,7 @@ def test_get_cluster_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_cluster(**mock_args)
 
@@ -16147,72 +14062,6 @@ def test_get_cluster_rest_flattened_error(transport: str = "rest"):
             cluster_id="cluster_id_value",
             name="name_value",
         )
-
-
-def test_get_cluster_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.CreateClusterRequest,
-        dict,
-    ],
-)
-def test_create_cluster_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_cluster(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_create_cluster_rest_use_cached_wrapped_rpc():
@@ -16313,6 +14162,7 @@ def test_create_cluster_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_cluster(request)
 
@@ -16328,87 +14178,6 @@ def test_create_cluster_rest_unset_required_fields():
 
     unset_fields = transport.create_cluster._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("cluster",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_cluster_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_create_cluster"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_create_cluster"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.CreateClusterRequest.pb(
-            cluster_service.CreateClusterRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.CreateClusterRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.create_cluster(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_cluster_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.CreateClusterRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_cluster(request)
 
 
 def test_create_cluster_rest_flattened():
@@ -16442,6 +14211,7 @@ def test_create_cluster_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_cluster(**mock_args)
 
@@ -16471,72 +14241,6 @@ def test_create_cluster_rest_flattened_error(transport: str = "rest"):
             cluster=cluster_service.Cluster(name="name_value"),
             parent="parent_value",
         )
-
-
-def test_create_cluster_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.UpdateClusterRequest,
-        dict,
-    ],
-)
-def test_update_cluster_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_cluster(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_update_cluster_rest_use_cached_wrapped_rpc():
@@ -16637,6 +14341,7 @@ def test_update_cluster_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_cluster(request)
 
@@ -16652,87 +14357,6 @@ def test_update_cluster_rest_unset_required_fields():
 
     unset_fields = transport.update_cluster._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("update",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_cluster_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_update_cluster"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_update_cluster"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.UpdateClusterRequest.pb(
-            cluster_service.UpdateClusterRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.UpdateClusterRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.update_cluster(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_cluster_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.UpdateClusterRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_cluster(request)
 
 
 def test_update_cluster_rest_flattened():
@@ -16769,6 +14393,7 @@ def test_update_cluster_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_cluster(**mock_args)
 
@@ -16801,74 +14426,6 @@ def test_update_cluster_rest_flattened_error(transport: str = "rest"):
             ),
             name="name_value",
         )
-
-
-def test_update_cluster_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.UpdateNodePoolRequest,
-        dict,
-    ],
-)
-def test_update_node_pool_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_node_pool(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_update_node_pool_rest_use_cached_wrapped_rpc():
@@ -16980,6 +14537,7 @@ def test_update_node_pool_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_node_pool(request)
 
@@ -17003,157 +14561,6 @@ def test_update_node_pool_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_node_pool_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_update_node_pool"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_update_node_pool"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.UpdateNodePoolRequest.pb(
-            cluster_service.UpdateNodePoolRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.UpdateNodePoolRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.update_node_pool(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_node_pool_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.UpdateNodePoolRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_node_pool(request)
-
-
-def test_update_node_pool_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetNodePoolAutoscalingRequest,
-        dict,
-    ],
-)
-def test_set_node_pool_autoscaling_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_node_pool_autoscaling(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_node_pool_autoscaling_rest_use_cached_wrapped_rpc():
@@ -17259,6 +14666,7 @@ def test_set_node_pool_autoscaling_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_node_pool_autoscaling(request)
 
@@ -17274,155 +14682,6 @@ def test_set_node_pool_autoscaling_rest_unset_required_fields():
 
     unset_fields = transport.set_node_pool_autoscaling._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("autoscaling",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_node_pool_autoscaling_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_node_pool_autoscaling"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_node_pool_autoscaling"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetNodePoolAutoscalingRequest.pb(
-            cluster_service.SetNodePoolAutoscalingRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetNodePoolAutoscalingRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_node_pool_autoscaling(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_node_pool_autoscaling_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetNodePoolAutoscalingRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_node_pool_autoscaling(request)
-
-
-def test_set_node_pool_autoscaling_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetLoggingServiceRequest,
-        dict,
-    ],
-)
-def test_set_logging_service_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_logging_service(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_logging_service_rest_use_cached_wrapped_rpc():
@@ -17532,6 +14791,7 @@ def test_set_logging_service_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_logging_service(request)
 
@@ -17547,87 +14807,6 @@ def test_set_logging_service_rest_unset_required_fields():
 
     unset_fields = transport.set_logging_service._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("loggingService",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_logging_service_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_logging_service"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_logging_service"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetLoggingServiceRequest.pb(
-            cluster_service.SetLoggingServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetLoggingServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_logging_service(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_logging_service_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetLoggingServiceRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_logging_service(request)
 
 
 def test_set_logging_service_rest_flattened():
@@ -17662,6 +14841,7 @@ def test_set_logging_service_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_logging_service(**mock_args)
 
@@ -17693,72 +14873,6 @@ def test_set_logging_service_rest_flattened_error(transport: str = "rest"):
             logging_service="logging_service_value",
             name="name_value",
         )
-
-
-def test_set_logging_service_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetMonitoringServiceRequest,
-        dict,
-    ],
-)
-def test_set_monitoring_service_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_monitoring_service(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_monitoring_service_rest_use_cached_wrapped_rpc():
@@ -17869,6 +14983,7 @@ def test_set_monitoring_service_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_monitoring_service(request)
 
@@ -17884,87 +14999,6 @@ def test_set_monitoring_service_rest_unset_required_fields():
 
     unset_fields = transport.set_monitoring_service._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("monitoringService",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_monitoring_service_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_monitoring_service"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_monitoring_service"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetMonitoringServiceRequest.pb(
-            cluster_service.SetMonitoringServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetMonitoringServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_monitoring_service(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_monitoring_service_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetMonitoringServiceRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_monitoring_service(request)
 
 
 def test_set_monitoring_service_rest_flattened():
@@ -17999,6 +15033,7 @@ def test_set_monitoring_service_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_monitoring_service(**mock_args)
 
@@ -18030,72 +15065,6 @@ def test_set_monitoring_service_rest_flattened_error(transport: str = "rest"):
             monitoring_service="monitoring_service_value",
             name="name_value",
         )
-
-
-def test_set_monitoring_service_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetAddonsConfigRequest,
-        dict,
-    ],
-)
-def test_set_addons_config_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_addons_config(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_addons_config_rest_use_cached_wrapped_rpc():
@@ -18198,6 +15167,7 @@ def test_set_addons_config_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_addons_config(request)
 
@@ -18213,87 +15183,6 @@ def test_set_addons_config_rest_unset_required_fields():
 
     unset_fields = transport.set_addons_config._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("addonsConfig",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_addons_config_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_addons_config"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_addons_config"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetAddonsConfigRequest.pb(
-            cluster_service.SetAddonsConfigRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetAddonsConfigRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_addons_config(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_addons_config_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetAddonsConfigRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_addons_config(request)
 
 
 def test_set_addons_config_rest_flattened():
@@ -18330,6 +15219,7 @@ def test_set_addons_config_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_addons_config(**mock_args)
 
@@ -18363,72 +15253,6 @@ def test_set_addons_config_rest_flattened_error(transport: str = "rest"):
             ),
             name="name_value",
         )
-
-
-def test_set_addons_config_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetLocationsRequest,
-        dict,
-    ],
-)
-def test_set_locations_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_locations(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_locations_rest_use_cached_wrapped_rpc():
@@ -18534,6 +15358,7 @@ def test_set_locations_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_locations(request)
 
@@ -18549,87 +15374,6 @@ def test_set_locations_rest_unset_required_fields():
 
     unset_fields = transport.set_locations._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("locations",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_locations_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_locations"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_locations"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetLocationsRequest.pb(
-            cluster_service.SetLocationsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetLocationsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_locations(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_locations_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetLocationsRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_locations(request)
 
 
 def test_set_locations_rest_flattened():
@@ -18664,6 +15408,7 @@ def test_set_locations_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_locations(**mock_args)
 
@@ -18695,72 +15440,6 @@ def test_set_locations_rest_flattened_error(transport: str = "rest"):
             locations=["locations_value"],
             name="name_value",
         )
-
-
-def test_set_locations_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.UpdateMasterRequest,
-        dict,
-    ],
-)
-def test_update_master_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_master(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_update_master_rest_use_cached_wrapped_rpc():
@@ -18866,6 +15545,7 @@ def test_update_master_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_master(request)
 
@@ -18881,87 +15561,6 @@ def test_update_master_rest_unset_required_fields():
 
     unset_fields = transport.update_master._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("masterVersion",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_master_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_update_master"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_update_master"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.UpdateMasterRequest.pb(
-            cluster_service.UpdateMasterRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.UpdateMasterRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.update_master(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_master_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.UpdateMasterRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_master(request)
 
 
 def test_update_master_rest_flattened():
@@ -18996,6 +15595,7 @@ def test_update_master_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_master(**mock_args)
 
@@ -19027,72 +15627,6 @@ def test_update_master_rest_flattened_error(transport: str = "rest"):
             master_version="master_version_value",
             name="name_value",
         )
-
-
-def test_update_master_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetMasterAuthRequest,
-        dict,
-    ],
-)
-def test_set_master_auth_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_master_auth(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_master_auth_rest_use_cached_wrapped_rpc():
@@ -19193,6 +15727,7 @@ def test_set_master_auth_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_master_auth(request)
 
@@ -19216,153 +15751,6 @@ def test_set_master_auth_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_master_auth_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_master_auth"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_master_auth"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetMasterAuthRequest.pb(
-            cluster_service.SetMasterAuthRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetMasterAuthRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_master_auth(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_master_auth_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetMasterAuthRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_master_auth(request)
-
-
-def test_set_master_auth_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.DeleteClusterRequest,
-        dict,
-    ],
-)
-def test_delete_cluster_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_cluster(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_delete_cluster_rest_use_cached_wrapped_rpc():
@@ -19401,87 +15789,6 @@ def test_delete_cluster_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_cluster_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_delete_cluster"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_delete_cluster"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.DeleteClusterRequest.pb(
-            cluster_service.DeleteClusterRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.DeleteClusterRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.delete_cluster(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_cluster_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.DeleteClusterRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_cluster(request)
-
-
 def test_delete_cluster_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -19513,6 +15820,7 @@ def test_delete_cluster_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_cluster(**mock_args)
 
@@ -19542,52 +15850,6 @@ def test_delete_cluster_rest_flattened_error(transport: str = "rest"):
             cluster_id="cluster_id_value",
             name="name_value",
         )
-
-
-def test_delete_cluster_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.ListOperationsRequest,
-        dict,
-    ],
-)
-def test_list_operations_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.ListOperationsResponse(
-            missing_zones=["missing_zones_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.ListOperationsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_operations(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.ListOperationsResponse)
-    assert response.missing_zones == ["missing_zones_value"]
 
 
 def test_list_operations_rest_use_cached_wrapped_rpc():
@@ -19626,87 +15888,6 @@ def test_list_operations_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_operations_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_list_operations"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_list_operations"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.ListOperationsRequest.pb(
-            cluster_service.ListOperationsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.ListOperationsResponse.to_json(
-            cluster_service.ListOperationsResponse()
-        )
-
-        request = cluster_service.ListOperationsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.ListOperationsResponse()
-
-        client.list_operations(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_operations_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.ListOperationsRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_operations(request)
-
-
 def test_list_operations_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -19737,6 +15918,7 @@ def test_list_operations_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_operations(**mock_args)
 
@@ -19765,72 +15947,6 @@ def test_list_operations_rest_flattened_error(transport: str = "rest"):
             zone="zone_value",
             parent="parent_value",
         )
-
-
-def test_list_operations_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.GetOperationRequest,
-        dict,
-    ],
-)
-def test_get_operation_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_get_operation_rest_use_cached_wrapped_rpc():
@@ -19869,87 +15985,6 @@ def test_get_operation_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_operation_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_get_operation"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_get_operation"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.GetOperationRequest.pb(
-            cluster_service.GetOperationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.GetOperationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.get_operation(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_operation_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.GetOperationRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_operation(request)
-
-
 def test_get_operation_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -19983,6 +16018,7 @@ def test_get_operation_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_operation(**mock_args)
 
@@ -20012,47 +16048,6 @@ def test_get_operation_rest_flattened_error(transport: str = "rest"):
             operation_id="operation_id_value",
             name="name_value",
         )
-
-
-def test_get_operation_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.CancelOperationRequest,
-        dict,
-    ],
-)
-def test_cancel_operation_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.cancel_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_cancel_operation_rest_use_cached_wrapped_rpc():
@@ -20093,79 +16088,6 @@ def test_cancel_operation_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_cancel_operation_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_cancel_operation"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = cluster_service.CancelOperationRequest.pb(
-            cluster_service.CancelOperationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = cluster_service.CancelOperationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.cancel_operation(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_cancel_operation_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.CancelOperationRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.cancel_operation(request)
-
-
 def test_cancel_operation_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -20197,6 +16119,7 @@ def test_cancel_operation_rest_flattened():
         json_return_value = ""
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.cancel_operation(**mock_args)
 
@@ -20227,60 +16150,6 @@ def test_cancel_operation_rest_flattened_error(transport: str = "rest"):
             operation_id="operation_id_value",
             name="name_value",
         )
-
-
-def test_cancel_operation_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.GetServerConfigRequest,
-        dict,
-    ],
-)
-def test_get_server_config_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.ServerConfig(
-            default_cluster_version="default_cluster_version_value",
-            valid_node_versions=["valid_node_versions_value"],
-            default_image_type="default_image_type_value",
-            valid_image_types=["valid_image_types_value"],
-            valid_master_versions=["valid_master_versions_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.ServerConfig.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_server_config(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.ServerConfig)
-    assert response.default_cluster_version == "default_cluster_version_value"
-    assert response.valid_node_versions == ["valid_node_versions_value"]
-    assert response.default_image_type == "default_image_type_value"
-    assert response.valid_image_types == ["valid_image_types_value"]
-    assert response.valid_master_versions == ["valid_master_versions_value"]
 
 
 def test_get_server_config_rest_use_cached_wrapped_rpc():
@@ -20321,87 +16190,6 @@ def test_get_server_config_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_server_config_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_get_server_config"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_get_server_config"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.GetServerConfigRequest.pb(
-            cluster_service.GetServerConfigRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.ServerConfig.to_json(
-            cluster_service.ServerConfig()
-        )
-
-        request = cluster_service.GetServerConfigRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.ServerConfig()
-
-        client.get_server_config(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_server_config_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.GetServerConfigRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_server_config(request)
-
-
 def test_get_server_config_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -20432,6 +16220,7 @@ def test_get_server_config_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_server_config(**mock_args)
 
@@ -20460,49 +16249,6 @@ def test_get_server_config_rest_flattened_error(transport: str = "rest"):
             zone="zone_value",
             name="name_value",
         )
-
-
-def test_get_server_config_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.GetJSONWebKeysRequest,
-        dict,
-    ],
-)
-def test_get_json_web_keys_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.GetJSONWebKeysResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.GetJSONWebKeysResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_json_web_keys(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.GetJSONWebKeysResponse)
 
 
 def test_get_json_web_keys_rest_use_cached_wrapped_rpc():
@@ -20543,130 +16289,6 @@ def test_get_json_web_keys_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_json_web_keys_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_get_json_web_keys"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_get_json_web_keys"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.GetJSONWebKeysRequest.pb(
-            cluster_service.GetJSONWebKeysRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.GetJSONWebKeysResponse.to_json(
-            cluster_service.GetJSONWebKeysResponse()
-        )
-
-        request = cluster_service.GetJSONWebKeysRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.GetJSONWebKeysResponse()
-
-        client.get_json_web_keys(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_json_web_keys_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.GetJSONWebKeysRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_json_web_keys(request)
-
-
-def test_get_json_web_keys_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.ListNodePoolsRequest,
-        dict,
-    ],
-)
-def test_list_node_pools_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.ListNodePoolsResponse()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.ListNodePoolsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_node_pools(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.ListNodePoolsResponse)
-
-
 def test_list_node_pools_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -20703,87 +16325,6 @@ def test_list_node_pools_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_node_pools_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_list_node_pools"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_list_node_pools"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.ListNodePoolsRequest.pb(
-            cluster_service.ListNodePoolsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.ListNodePoolsResponse.to_json(
-            cluster_service.ListNodePoolsResponse()
-        )
-
-        request = cluster_service.ListNodePoolsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.ListNodePoolsResponse()
-
-        client.list_node_pools(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_node_pools_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.ListNodePoolsRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_node_pools(request)
-
-
 def test_list_node_pools_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -20817,6 +16358,7 @@ def test_list_node_pools_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_node_pools(**mock_args)
 
@@ -20847,72 +16389,6 @@ def test_list_node_pools_rest_flattened_error(transport: str = "rest"):
             cluster_id="cluster_id_value",
             parent="parent_value",
         )
-
-
-def test_list_node_pools_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.GetNodePoolRequest,
-        dict,
-    ],
-)
-def test_get_node_pool_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.NodePool(
-            name="name_value",
-            initial_node_count=1911,
-            locations=["locations_value"],
-            self_link="self_link_value",
-            version="version_value",
-            instance_group_urls=["instance_group_urls_value"],
-            status=cluster_service.NodePool.Status.PROVISIONING,
-            status_message="status_message_value",
-            pod_ipv4_cidr_size=1856,
-            etag="etag_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.NodePool.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_node_pool(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.NodePool)
-    assert response.name == "name_value"
-    assert response.initial_node_count == 1911
-    assert response.locations == ["locations_value"]
-    assert response.self_link == "self_link_value"
-    assert response.version == "version_value"
-    assert response.instance_group_urls == ["instance_group_urls_value"]
-    assert response.status == cluster_service.NodePool.Status.PROVISIONING
-    assert response.status_message == "status_message_value"
-    assert response.pod_ipv4_cidr_size == 1856
-    assert response.etag == "etag_value"
 
 
 def test_get_node_pool_rest_use_cached_wrapped_rpc():
@@ -20951,89 +16427,6 @@ def test_get_node_pool_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_node_pool_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_get_node_pool"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_get_node_pool"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.GetNodePoolRequest.pb(
-            cluster_service.GetNodePoolRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.NodePool.to_json(
-            cluster_service.NodePool()
-        )
-
-        request = cluster_service.GetNodePoolRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.NodePool()
-
-        client.get_node_pool(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_node_pool_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.GetNodePoolRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_node_pool(request)
-
-
 def test_get_node_pool_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -21068,6 +16461,7 @@ def test_get_node_pool_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_node_pool(**mock_args)
 
@@ -21099,72 +16493,6 @@ def test_get_node_pool_rest_flattened_error(transport: str = "rest"):
             node_pool_id="node_pool_id_value",
             name="name_value",
         )
-
-
-def test_get_node_pool_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.CreateNodePoolRequest,
-        dict,
-    ],
-)
-def test_create_node_pool_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_node_pool(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_create_node_pool_rest_use_cached_wrapped_rpc():
@@ -21267,6 +16595,7 @@ def test_create_node_pool_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_node_pool(request)
 
@@ -21282,87 +16611,6 @@ def test_create_node_pool_rest_unset_required_fields():
 
     unset_fields = transport.create_node_pool._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("nodePool",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_node_pool_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_create_node_pool"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_create_node_pool"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.CreateNodePoolRequest.pb(
-            cluster_service.CreateNodePoolRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.CreateNodePoolRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.create_node_pool(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_node_pool_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.CreateNodePoolRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_node_pool(request)
 
 
 def test_create_node_pool_rest_flattened():
@@ -21399,6 +16647,7 @@ def test_create_node_pool_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_node_pool(**mock_args)
 
@@ -21430,74 +16679,6 @@ def test_create_node_pool_rest_flattened_error(transport: str = "rest"):
             node_pool=cluster_service.NodePool(name="name_value"),
             parent="parent_value",
         )
-
-
-def test_create_node_pool_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.DeleteNodePoolRequest,
-        dict,
-    ],
-)
-def test_delete_node_pool_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_node_pool(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_delete_node_pool_rest_use_cached_wrapped_rpc():
@@ -21538,89 +16719,6 @@ def test_delete_node_pool_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_node_pool_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_delete_node_pool"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_delete_node_pool"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.DeleteNodePoolRequest.pb(
-            cluster_service.DeleteNodePoolRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.DeleteNodePoolRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.delete_node_pool(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_node_pool_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.DeleteNodePoolRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_node_pool(request)
-
-
 def test_delete_node_pool_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -21655,6 +16753,7 @@ def test_delete_node_pool_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_node_pool(**mock_args)
 
@@ -21686,49 +16785,6 @@ def test_delete_node_pool_rest_flattened_error(transport: str = "rest"):
             node_pool_id="node_pool_id_value",
             name="name_value",
         )
-
-
-def test_delete_node_pool_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.CompleteNodePoolUpgradeRequest,
-        dict,
-    ],
-)
-def test_complete_node_pool_upgrade_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = None
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = ""
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.complete_node_pool_upgrade(request)
-
-    # Establish that the response is the type that we expect.
-    assert response is None
 
 
 def test_complete_node_pool_upgrade_rest_use_cached_wrapped_rpc():
@@ -21772,149 +16828,6 @@ def test_complete_node_pool_upgrade_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_complete_node_pool_upgrade_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_complete_node_pool_upgrade"
-    ) as pre:
-        pre.assert_not_called()
-        pb_message = cluster_service.CompleteNodePoolUpgradeRequest.pb(
-            cluster_service.CompleteNodePoolUpgradeRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-
-        request = cluster_service.CompleteNodePoolUpgradeRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-
-        client.complete_node_pool_upgrade(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-
-
-def test_complete_node_pool_upgrade_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.CompleteNodePoolUpgradeRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.complete_node_pool_upgrade(request)
-
-
-def test_complete_node_pool_upgrade_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.RollbackNodePoolUpgradeRequest,
-        dict,
-    ],
-)
-def test_rollback_node_pool_upgrade_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.rollback_node_pool_upgrade(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
-
-
 def test_rollback_node_pool_upgrade_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -21956,89 +16869,6 @@ def test_rollback_node_pool_upgrade_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_rollback_node_pool_upgrade_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_rollback_node_pool_upgrade"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_rollback_node_pool_upgrade"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.RollbackNodePoolUpgradeRequest.pb(
-            cluster_service.RollbackNodePoolUpgradeRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.RollbackNodePoolUpgradeRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.rollback_node_pool_upgrade(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_rollback_node_pool_upgrade_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.RollbackNodePoolUpgradeRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.rollback_node_pool_upgrade(request)
-
-
 def test_rollback_node_pool_upgrade_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -22073,6 +16903,7 @@ def test_rollback_node_pool_upgrade_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.rollback_node_pool_upgrade(**mock_args)
 
@@ -22104,74 +16935,6 @@ def test_rollback_node_pool_upgrade_rest_flattened_error(transport: str = "rest"
             node_pool_id="node_pool_id_value",
             name="name_value",
         )
-
-
-def test_rollback_node_pool_upgrade_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetNodePoolManagementRequest,
-        dict,
-    ],
-)
-def test_set_node_pool_management_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_node_pool_management(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_node_pool_management_rest_use_cached_wrapped_rpc():
@@ -22277,6 +17040,7 @@ def test_set_node_pool_management_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_node_pool_management(request)
 
@@ -22292,155 +17056,6 @@ def test_set_node_pool_management_rest_unset_required_fields():
 
     unset_fields = transport.set_node_pool_management._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("management",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_node_pool_management_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_node_pool_management"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_node_pool_management"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetNodePoolManagementRequest.pb(
-            cluster_service.SetNodePoolManagementRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetNodePoolManagementRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_node_pool_management(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_node_pool_management_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetNodePoolManagementRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_node_pool_management(request)
-
-
-def test_set_node_pool_management_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetLabelsRequest,
-        dict,
-    ],
-)
-def test_set_labels_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_labels(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_labels_rest_use_cached_wrapped_rpc():
@@ -22544,6 +17159,7 @@ def test_set_labels_rest_required_fields(request_type=cluster_service.SetLabelsR
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_labels(request)
 
@@ -22567,153 +17183,6 @@ def test_set_labels_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_labels_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_labels"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_labels"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetLabelsRequest.pb(
-            cluster_service.SetLabelsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetLabelsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_labels(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_labels_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetLabelsRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_labels(request)
-
-
-def test_set_labels_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetLegacyAbacRequest,
-        dict,
-    ],
-)
-def test_set_legacy_abac_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_legacy_abac(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_legacy_abac_rest_use_cached_wrapped_rpc():
@@ -22819,6 +17288,7 @@ def test_set_legacy_abac_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_legacy_abac(request)
 
@@ -22834,87 +17304,6 @@ def test_set_legacy_abac_rest_unset_required_fields():
 
     unset_fields = transport.set_legacy_abac._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("enabled",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_legacy_abac_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_legacy_abac"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_legacy_abac"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetLegacyAbacRequest.pb(
-            cluster_service.SetLegacyAbacRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetLegacyAbacRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_legacy_abac(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_legacy_abac_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetLegacyAbacRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_legacy_abac(request)
 
 
 def test_set_legacy_abac_rest_flattened():
@@ -22949,6 +17338,7 @@ def test_set_legacy_abac_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_legacy_abac(**mock_args)
 
@@ -22980,72 +17370,6 @@ def test_set_legacy_abac_rest_flattened_error(transport: str = "rest"):
             enabled=True,
             name="name_value",
         )
-
-
-def test_set_legacy_abac_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.StartIPRotationRequest,
-        dict,
-    ],
-)
-def test_start_ip_rotation_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.start_ip_rotation(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_start_ip_rotation_rest_use_cached_wrapped_rpc():
@@ -23086,87 +17410,6 @@ def test_start_ip_rotation_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_start_ip_rotation_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_start_ip_rotation"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_start_ip_rotation"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.StartIPRotationRequest.pb(
-            cluster_service.StartIPRotationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.StartIPRotationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.start_ip_rotation(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_start_ip_rotation_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.StartIPRotationRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.start_ip_rotation(request)
-
-
 def test_start_ip_rotation_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -23198,6 +17441,7 @@ def test_start_ip_rotation_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.start_ip_rotation(**mock_args)
 
@@ -23228,72 +17472,6 @@ def test_start_ip_rotation_rest_flattened_error(transport: str = "rest"):
             cluster_id="cluster_id_value",
             name="name_value",
         )
-
-
-def test_start_ip_rotation_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.CompleteIPRotationRequest,
-        dict,
-    ],
-)
-def test_complete_ip_rotation_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.complete_ip_rotation(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_complete_ip_rotation_rest_use_cached_wrapped_rpc():
@@ -23336,87 +17514,6 @@ def test_complete_ip_rotation_rest_use_cached_wrapped_rpc():
         assert mock_rpc.call_count == 2
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_complete_ip_rotation_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_complete_ip_rotation"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_complete_ip_rotation"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.CompleteIPRotationRequest.pb(
-            cluster_service.CompleteIPRotationRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.CompleteIPRotationRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.complete_ip_rotation(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_complete_ip_rotation_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.CompleteIPRotationRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.complete_ip_rotation(request)
-
-
 def test_complete_ip_rotation_rest_flattened():
     client = ClusterManagerClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -23448,6 +17545,7 @@ def test_complete_ip_rotation_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.complete_ip_rotation(**mock_args)
 
@@ -23478,74 +17576,6 @@ def test_complete_ip_rotation_rest_flattened_error(transport: str = "rest"):
             cluster_id="cluster_id_value",
             name="name_value",
         )
-
-
-def test_complete_ip_rotation_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetNodePoolSizeRequest,
-        dict,
-    ],
-)
-def test_set_node_pool_size_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_node_pool_size(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_node_pool_size_rest_use_cached_wrapped_rpc():
@@ -23655,6 +17685,7 @@ def test_set_node_pool_size_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_node_pool_size(request)
 
@@ -23670,155 +17701,6 @@ def test_set_node_pool_size_rest_unset_required_fields():
 
     unset_fields = transport.set_node_pool_size._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("nodeCount",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_node_pool_size_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_node_pool_size"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_node_pool_size"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetNodePoolSizeRequest.pb(
-            cluster_service.SetNodePoolSizeRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetNodePoolSizeRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_node_pool_size(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_node_pool_size_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetNodePoolSizeRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {
-        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
-    }
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_node_pool_size(request)
-
-
-def test_set_node_pool_size_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetNetworkPolicyRequest,
-        dict,
-    ],
-)
-def test_set_network_policy_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_network_policy(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_network_policy_rest_use_cached_wrapped_rpc():
@@ -23923,6 +17805,7 @@ def test_set_network_policy_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_network_policy(request)
 
@@ -23938,87 +17821,6 @@ def test_set_network_policy_rest_unset_required_fields():
 
     unset_fields = transport.set_network_policy._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("networkPolicy",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_network_policy_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_network_policy"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_network_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetNetworkPolicyRequest.pb(
-            cluster_service.SetNetworkPolicyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetNetworkPolicyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_network_policy(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_network_policy_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetNetworkPolicyRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_network_policy(request)
 
 
 def test_set_network_policy_rest_flattened():
@@ -24055,6 +17857,7 @@ def test_set_network_policy_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_network_policy(**mock_args)
 
@@ -24088,72 +17891,6 @@ def test_set_network_policy_rest_flattened_error(transport: str = "rest"):
             ),
             name="name_value",
         )
-
-
-def test_set_network_policy_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.SetMaintenancePolicyRequest,
-        dict,
-    ],
-)
-def test_set_maintenance_policy_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.Operation(
-            name="name_value",
-            zone="zone_value",
-            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
-            status=cluster_service.Operation.Status.PENDING,
-            detail="detail_value",
-            status_message="status_message_value",
-            self_link="self_link_value",
-            target_link="target_link_value",
-            location="location_value",
-            start_time="start_time_value",
-            end_time="end_time_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_maintenance_policy(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.Operation)
-    assert response.name == "name_value"
-    assert response.zone == "zone_value"
-    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
-    assert response.status == cluster_service.Operation.Status.PENDING
-    assert response.detail == "detail_value"
-    assert response.status_message == "status_message_value"
-    assert response.self_link == "self_link_value"
-    assert response.target_link == "target_link_value"
-    assert response.location == "location_value"
-    assert response.start_time == "start_time_value"
-    assert response.end_time == "end_time_value"
 
 
 def test_set_maintenance_policy_rest_use_cached_wrapped_rpc():
@@ -24272,6 +18009,7 @@ def test_set_maintenance_policy_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_maintenance_policy(request)
 
@@ -24297,87 +18035,6 @@ def test_set_maintenance_policy_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_maintenance_policy_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_set_maintenance_policy"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_set_maintenance_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.SetMaintenancePolicyRequest.pb(
-            cluster_service.SetMaintenancePolicyRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = cluster_service.Operation.to_json(
-            cluster_service.Operation()
-        )
-
-        request = cluster_service.SetMaintenancePolicyRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.Operation()
-
-        client.set_maintenance_policy(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_maintenance_policy_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.SetMaintenancePolicyRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_maintenance_policy(request)
 
 
 def test_set_maintenance_policy_rest_flattened():
@@ -24418,6 +18075,7 @@ def test_set_maintenance_policy_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_maintenance_policy(**mock_args)
 
@@ -24455,52 +18113,6 @@ def test_set_maintenance_policy_rest_flattened_error(transport: str = "rest"):
             ),
             name="name_value",
         )
-
-
-def test_set_maintenance_policy_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.ListUsableSubnetworksRequest,
-        dict,
-    ],
-)
-def test_list_usable_subnetworks_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.ListUsableSubnetworksResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.ListUsableSubnetworksResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_usable_subnetworks(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListUsableSubnetworksPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_usable_subnetworks_rest_use_cached_wrapped_rpc():
@@ -24542,89 +18154,6 @@ def test_list_usable_subnetworks_rest_use_cached_wrapped_rpc():
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
         assert mock_rpc.call_count == 2
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_usable_subnetworks_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_list_usable_subnetworks"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_list_usable_subnetworks"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.ListUsableSubnetworksRequest.pb(
-            cluster_service.ListUsableSubnetworksRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            cluster_service.ListUsableSubnetworksResponse.to_json(
-                cluster_service.ListUsableSubnetworksResponse()
-            )
-        )
-
-        request = cluster_service.ListUsableSubnetworksRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.ListUsableSubnetworksResponse()
-
-        client.list_usable_subnetworks(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_usable_subnetworks_rest_bad_request(
-    transport: str = "rest", request_type=cluster_service.ListUsableSubnetworksRequest
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "projects/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_usable_subnetworks(request)
 
 
 def test_list_usable_subnetworks_rest_pager(transport: str = "rest"):
@@ -24690,48 +18219,6 @@ def test_list_usable_subnetworks_rest_pager(transport: str = "rest"):
             assert page_.raw_page.next_page_token == token
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        cluster_service.CheckAutopilotCompatibilityRequest,
-        dict,
-    ],
-)
-def test_check_autopilot_compatibility_rest(request_type):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = cluster_service.CheckAutopilotCompatibilityResponse(
-            summary="summary_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = cluster_service.CheckAutopilotCompatibilityResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.check_autopilot_compatibility(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, cluster_service.CheckAutopilotCompatibilityResponse)
-    assert response.summary == "summary_value"
-
-
 def test_check_autopilot_compatibility_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -24771,96 +18258,6 @@ def test_check_autopilot_compatibility_rest_use_cached_wrapped_rpc():
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
         assert mock_rpc.call_count == 2
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_check_autopilot_compatibility_rest_interceptors(null_interceptor):
-    transport = transports.ClusterManagerRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.ClusterManagerRestInterceptor(),
-    )
-    client = ClusterManagerClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "post_check_autopilot_compatibility"
-    ) as post, mock.patch.object(
-        transports.ClusterManagerRestInterceptor, "pre_check_autopilot_compatibility"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = cluster_service.CheckAutopilotCompatibilityRequest.pb(
-            cluster_service.CheckAutopilotCompatibilityRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            cluster_service.CheckAutopilotCompatibilityResponse.to_json(
-                cluster_service.CheckAutopilotCompatibilityResponse()
-            )
-        )
-
-        request = cluster_service.CheckAutopilotCompatibilityRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = cluster_service.CheckAutopilotCompatibilityResponse()
-
-        client.check_autopilot_compatibility(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_check_autopilot_compatibility_rest_bad_request(
-    transport: str = "rest",
-    request_type=cluster_service.CheckAutopilotCompatibilityRequest,
-):
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.check_autopilot_compatibility(request)
-
-
-def test_check_autopilot_compatibility_rest_error():
-    client = ClusterManagerClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
 
 
 def test_credentials_transport_error():
@@ -24955,18 +18352,7424 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_grpc():
+    transport = ClusterManagerClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_clusters_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_clusters), "__call__") as call:
+        call.return_value = cluster_service.ListClustersResponse()
+        client.list_clusters(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListClustersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_cluster_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_cluster), "__call__") as call:
+        call.return_value = cluster_service.Cluster()
+        client.get_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_cluster_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_cluster), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.create_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CreateClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_cluster_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_cluster), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.update_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.UpdateClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_node_pool_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_node_pool), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.update_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.UpdateNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_node_pool_autoscaling_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_node_pool_autoscaling), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.set_node_pool_autoscaling(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNodePoolAutoscalingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_logging_service_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_logging_service), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.set_logging_service(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLoggingServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_monitoring_service_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_monitoring_service), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.set_monitoring_service(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetMonitoringServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_addons_config_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_addons_config), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.set_addons_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetAddonsConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_locations_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_locations), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.set_locations(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLocationsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_master_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_master), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.update_master(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.UpdateMasterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_master_auth_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_master_auth), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.set_master_auth(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetMasterAuthRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_cluster_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_cluster), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.delete_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.DeleteClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_operations_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
+        call.return_value = cluster_service.ListOperationsResponse()
+        client.list_operations(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListOperationsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_operation_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.get_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_cancel_operation_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.cancel_operation), "__call__") as call:
+        call.return_value = None
+        client.cancel_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CancelOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_server_config_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_server_config), "__call__"
+    ) as call:
+        call.return_value = cluster_service.ServerConfig()
+        client.get_server_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetServerConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_json_web_keys_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_json_web_keys), "__call__"
+    ) as call:
+        call.return_value = cluster_service.GetJSONWebKeysResponse()
+        client.get_json_web_keys(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetJSONWebKeysRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_node_pools_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_node_pools), "__call__") as call:
+        call.return_value = cluster_service.ListNodePoolsResponse()
+        client.list_node_pools(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListNodePoolsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_node_pool_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_node_pool), "__call__") as call:
+        call.return_value = cluster_service.NodePool()
+        client.get_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_node_pool_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_node_pool), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.create_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CreateNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_node_pool_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_node_pool), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.delete_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.DeleteNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_complete_node_pool_upgrade_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.complete_node_pool_upgrade), "__call__"
+    ) as call:
+        call.return_value = None
+        client.complete_node_pool_upgrade(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CompleteNodePoolUpgradeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_rollback_node_pool_upgrade_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.rollback_node_pool_upgrade), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.rollback_node_pool_upgrade(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.RollbackNodePoolUpgradeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_node_pool_management_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_node_pool_management), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.set_node_pool_management(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNodePoolManagementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_labels_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_labels), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.set_labels(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLabelsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_legacy_abac_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_legacy_abac), "__call__") as call:
+        call.return_value = cluster_service.Operation()
+        client.set_legacy_abac(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLegacyAbacRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_start_ip_rotation_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.start_ip_rotation), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.start_ip_rotation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.StartIPRotationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_complete_ip_rotation_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.complete_ip_rotation), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.complete_ip_rotation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CompleteIPRotationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_node_pool_size_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_node_pool_size), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.set_node_pool_size(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNodePoolSizeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_network_policy_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_network_policy), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.set_network_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNetworkPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_maintenance_policy_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_maintenance_policy), "__call__"
+    ) as call:
+        call.return_value = cluster_service.Operation()
+        client.set_maintenance_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetMaintenancePolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_usable_subnetworks_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_usable_subnetworks), "__call__"
+    ) as call:
+        call.return_value = cluster_service.ListUsableSubnetworksResponse()
+        client.list_usable_subnetworks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListUsableSubnetworksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_check_autopilot_compatibility_empty_call_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.check_autopilot_compatibility), "__call__"
+    ) as call:
+        call.return_value = cluster_service.CheckAutopilotCompatibilityResponse()
+        client.check_autopilot_compatibility(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CheckAutopilotCompatibilityRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = ClusterManagerAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_clusters_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_clusters), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.ListClustersResponse(
+                missing_zones=["missing_zones_value"],
+            )
+        )
+        await client.list_clusters(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListClustersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_cluster_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Cluster(
+                name="name_value",
+                description="description_value",
+                initial_node_count=1911,
+                logging_service="logging_service_value",
+                monitoring_service="monitoring_service_value",
+                network="network_value",
+                cluster_ipv4_cidr="cluster_ipv4_cidr_value",
+                subnetwork="subnetwork_value",
+                locations=["locations_value"],
+                enable_kubernetes_alpha=True,
+                label_fingerprint="label_fingerprint_value",
+                self_link="self_link_value",
+                zone="zone_value",
+                endpoint="endpoint_value",
+                initial_cluster_version="initial_cluster_version_value",
+                current_master_version="current_master_version_value",
+                current_node_version="current_node_version_value",
+                create_time="create_time_value",
+                status=cluster_service.Cluster.Status.PROVISIONING,
+                status_message="status_message_value",
+                node_ipv4_cidr_size=1955,
+                services_ipv4_cidr="services_ipv4_cidr_value",
+                instance_group_urls=["instance_group_urls_value"],
+                current_node_count=1936,
+                expire_time="expire_time_value",
+                location="location_value",
+                enable_tpu=True,
+                tpu_ipv4_cidr_block="tpu_ipv4_cidr_block_value",
+                id="id_value",
+                etag="etag_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
+            )
+        )
+        await client.get_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_cluster_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.create_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CreateClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_cluster_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.update_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.UpdateClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_node_pool_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_node_pool), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.update_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.UpdateNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_node_pool_autoscaling_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_node_pool_autoscaling), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_node_pool_autoscaling(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNodePoolAutoscalingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_logging_service_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_logging_service), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_logging_service(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLoggingServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_monitoring_service_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_monitoring_service), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_monitoring_service(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetMonitoringServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_addons_config_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_addons_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_addons_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetAddonsConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_locations_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_locations), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_locations(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLocationsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_master_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_master), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.update_master(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.UpdateMasterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_master_auth_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_master_auth), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_master_auth(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetMasterAuthRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_cluster_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.delete_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.DeleteClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_operations_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.ListOperationsResponse(
+                missing_zones=["missing_zones_value"],
+            )
+        )
+        await client.list_operations(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListOperationsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_operation_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.get_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_cancel_operation_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.cancel_operation), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.cancel_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CancelOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_server_config_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_server_config), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.ServerConfig(
+                default_cluster_version="default_cluster_version_value",
+                valid_node_versions=["valid_node_versions_value"],
+                default_image_type="default_image_type_value",
+                valid_image_types=["valid_image_types_value"],
+                valid_master_versions=["valid_master_versions_value"],
+            )
+        )
+        await client.get_server_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetServerConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_json_web_keys_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_json_web_keys), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.GetJSONWebKeysResponse()
+        )
+        await client.get_json_web_keys(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetJSONWebKeysRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_node_pools_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_node_pools), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.ListNodePoolsResponse()
+        )
+        await client.list_node_pools(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListNodePoolsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_node_pool_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_node_pool), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.NodePool(
+                name="name_value",
+                initial_node_count=1911,
+                locations=["locations_value"],
+                self_link="self_link_value",
+                version="version_value",
+                instance_group_urls=["instance_group_urls_value"],
+                status=cluster_service.NodePool.Status.PROVISIONING,
+                status_message="status_message_value",
+                pod_ipv4_cidr_size=1856,
+                etag="etag_value",
+            )
+        )
+        await client.get_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_node_pool_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_node_pool), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.create_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CreateNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_node_pool_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_node_pool), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.delete_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.DeleteNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_complete_node_pool_upgrade_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.complete_node_pool_upgrade), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.complete_node_pool_upgrade(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CompleteNodePoolUpgradeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_rollback_node_pool_upgrade_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.rollback_node_pool_upgrade), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.rollback_node_pool_upgrade(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.RollbackNodePoolUpgradeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_node_pool_management_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_node_pool_management), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_node_pool_management(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNodePoolManagementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_labels_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_labels), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_labels(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLabelsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_legacy_abac_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_legacy_abac), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_legacy_abac(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLegacyAbacRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_start_ip_rotation_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.start_ip_rotation), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.start_ip_rotation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.StartIPRotationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_complete_ip_rotation_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.complete_ip_rotation), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.complete_ip_rotation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CompleteIPRotationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_node_pool_size_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_node_pool_size), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_node_pool_size(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNodePoolSizeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_network_policy_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_network_policy), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_network_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNetworkPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_set_maintenance_policy_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_maintenance_policy), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.Operation(
+                name="name_value",
+                zone="zone_value",
+                operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+                status=cluster_service.Operation.Status.PENDING,
+                detail="detail_value",
+                status_message="status_message_value",
+                self_link="self_link_value",
+                target_link="target_link_value",
+                location="location_value",
+                start_time="start_time_value",
+                end_time="end_time_value",
+            )
+        )
+        await client.set_maintenance_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetMaintenancePolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_usable_subnetworks_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_usable_subnetworks), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.ListUsableSubnetworksResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_usable_subnetworks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListUsableSubnetworksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_check_autopilot_compatibility_empty_call_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.check_autopilot_compatibility), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            cluster_service.CheckAutopilotCompatibilityResponse(
+                summary="summary_value",
+            )
+        )
+        await client.check_autopilot_compatibility(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CheckAutopilotCompatibilityRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = ClusterManagerClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_list_clusters_rest_bad_request(
+    request_type=cluster_service.ListClustersRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_clusters(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "grpc",
-        "rest",
+        cluster_service.ListClustersRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = ClusterManagerClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_list_clusters_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.ListClustersResponse(
+            missing_zones=["missing_zones_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.ListClustersResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_clusters(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.ListClustersResponse)
+    assert response.missing_zones == ["missing_zones_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_clusters_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_list_clusters"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_list_clusters"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.ListClustersRequest.pb(
+            cluster_service.ListClustersRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.ListClustersResponse.to_json(
+            cluster_service.ListClustersResponse()
+        )
+        req.return_value.content = return_value
+
+        request = cluster_service.ListClustersRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.ListClustersResponse()
+
+        client.list_clusters(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_cluster_rest_bad_request(request_type=cluster_service.GetClusterRequest):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_cluster(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.GetClusterRequest,
+        dict,
+    ],
+)
+def test_get_cluster_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Cluster(
+            name="name_value",
+            description="description_value",
+            initial_node_count=1911,
+            logging_service="logging_service_value",
+            monitoring_service="monitoring_service_value",
+            network="network_value",
+            cluster_ipv4_cidr="cluster_ipv4_cidr_value",
+            subnetwork="subnetwork_value",
+            locations=["locations_value"],
+            enable_kubernetes_alpha=True,
+            label_fingerprint="label_fingerprint_value",
+            self_link="self_link_value",
+            zone="zone_value",
+            endpoint="endpoint_value",
+            initial_cluster_version="initial_cluster_version_value",
+            current_master_version="current_master_version_value",
+            current_node_version="current_node_version_value",
+            create_time="create_time_value",
+            status=cluster_service.Cluster.Status.PROVISIONING,
+            status_message="status_message_value",
+            node_ipv4_cidr_size=1955,
+            services_ipv4_cidr="services_ipv4_cidr_value",
+            instance_group_urls=["instance_group_urls_value"],
+            current_node_count=1936,
+            expire_time="expire_time_value",
+            location="location_value",
+            enable_tpu=True,
+            tpu_ipv4_cidr_block="tpu_ipv4_cidr_block_value",
+            id="id_value",
+            etag="etag_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Cluster.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_cluster(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Cluster)
+    assert response.name == "name_value"
+    assert response.description == "description_value"
+    assert response.initial_node_count == 1911
+    assert response.logging_service == "logging_service_value"
+    assert response.monitoring_service == "monitoring_service_value"
+    assert response.network == "network_value"
+    assert response.cluster_ipv4_cidr == "cluster_ipv4_cidr_value"
+    assert response.subnetwork == "subnetwork_value"
+    assert response.locations == ["locations_value"]
+    assert response.enable_kubernetes_alpha is True
+    assert response.label_fingerprint == "label_fingerprint_value"
+    assert response.self_link == "self_link_value"
+    assert response.zone == "zone_value"
+    assert response.endpoint == "endpoint_value"
+    assert response.initial_cluster_version == "initial_cluster_version_value"
+    assert response.current_master_version == "current_master_version_value"
+    assert response.current_node_version == "current_node_version_value"
+    assert response.create_time == "create_time_value"
+    assert response.status == cluster_service.Cluster.Status.PROVISIONING
+    assert response.status_message == "status_message_value"
+    assert response.node_ipv4_cidr_size == 1955
+    assert response.services_ipv4_cidr == "services_ipv4_cidr_value"
+    assert response.instance_group_urls == ["instance_group_urls_value"]
+    assert response.current_node_count == 1936
+    assert response.expire_time == "expire_time_value"
+    assert response.location == "location_value"
+    assert response.enable_tpu is True
+    assert response.tpu_ipv4_cidr_block == "tpu_ipv4_cidr_block_value"
+    assert response.id == "id_value"
+    assert response.etag == "etag_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_cluster_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_get_cluster"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_get_cluster"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.GetClusterRequest.pb(
+            cluster_service.GetClusterRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Cluster.to_json(cluster_service.Cluster())
+        req.return_value.content = return_value
+
+        request = cluster_service.GetClusterRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Cluster()
+
+        client.get_cluster(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_cluster_rest_bad_request(
+    request_type=cluster_service.CreateClusterRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_cluster(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.CreateClusterRequest,
+        dict,
+    ],
+)
+def test_create_cluster_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_cluster(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_cluster_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_create_cluster"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_create_cluster"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.CreateClusterRequest.pb(
+            cluster_service.CreateClusterRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.CreateClusterRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.create_cluster(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_cluster_rest_bad_request(
+    request_type=cluster_service.UpdateClusterRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_cluster(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.UpdateClusterRequest,
+        dict,
+    ],
+)
+def test_update_cluster_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_cluster(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_cluster_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_update_cluster"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_update_cluster"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.UpdateClusterRequest.pb(
+            cluster_service.UpdateClusterRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.UpdateClusterRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.update_cluster(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_node_pool_rest_bad_request(
+    request_type=cluster_service.UpdateNodePoolRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_node_pool(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.UpdateNodePoolRequest,
+        dict,
+    ],
+)
+def test_update_node_pool_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_node_pool(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_node_pool_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_update_node_pool"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_update_node_pool"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.UpdateNodePoolRequest.pb(
+            cluster_service.UpdateNodePoolRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.UpdateNodePoolRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.update_node_pool(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_node_pool_autoscaling_rest_bad_request(
+    request_type=cluster_service.SetNodePoolAutoscalingRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_node_pool_autoscaling(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetNodePoolAutoscalingRequest,
+        dict,
+    ],
+)
+def test_set_node_pool_autoscaling_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_node_pool_autoscaling(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_node_pool_autoscaling_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_node_pool_autoscaling"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_node_pool_autoscaling"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetNodePoolAutoscalingRequest.pb(
+            cluster_service.SetNodePoolAutoscalingRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetNodePoolAutoscalingRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_node_pool_autoscaling(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_logging_service_rest_bad_request(
+    request_type=cluster_service.SetLoggingServiceRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_logging_service(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetLoggingServiceRequest,
+        dict,
+    ],
+)
+def test_set_logging_service_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_logging_service(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_logging_service_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_logging_service"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_logging_service"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetLoggingServiceRequest.pb(
+            cluster_service.SetLoggingServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetLoggingServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_logging_service(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_monitoring_service_rest_bad_request(
+    request_type=cluster_service.SetMonitoringServiceRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_monitoring_service(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetMonitoringServiceRequest,
+        dict,
+    ],
+)
+def test_set_monitoring_service_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_monitoring_service(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_monitoring_service_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_monitoring_service"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_monitoring_service"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetMonitoringServiceRequest.pb(
+            cluster_service.SetMonitoringServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetMonitoringServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_monitoring_service(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_addons_config_rest_bad_request(
+    request_type=cluster_service.SetAddonsConfigRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_addons_config(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetAddonsConfigRequest,
+        dict,
+    ],
+)
+def test_set_addons_config_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_addons_config(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_addons_config_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_addons_config"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_addons_config"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetAddonsConfigRequest.pb(
+            cluster_service.SetAddonsConfigRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetAddonsConfigRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_addons_config(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_locations_rest_bad_request(
+    request_type=cluster_service.SetLocationsRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_locations(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetLocationsRequest,
+        dict,
+    ],
+)
+def test_set_locations_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_locations(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_locations_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_locations"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_locations"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetLocationsRequest.pb(
+            cluster_service.SetLocationsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetLocationsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_locations(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_master_rest_bad_request(
+    request_type=cluster_service.UpdateMasterRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_master(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.UpdateMasterRequest,
+        dict,
+    ],
+)
+def test_update_master_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_master(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_master_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_update_master"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_update_master"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.UpdateMasterRequest.pb(
+            cluster_service.UpdateMasterRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.UpdateMasterRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.update_master(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_master_auth_rest_bad_request(
+    request_type=cluster_service.SetMasterAuthRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_master_auth(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetMasterAuthRequest,
+        dict,
+    ],
+)
+def test_set_master_auth_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_master_auth(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_master_auth_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_master_auth"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_master_auth"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetMasterAuthRequest.pb(
+            cluster_service.SetMasterAuthRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetMasterAuthRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_master_auth(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_cluster_rest_bad_request(
+    request_type=cluster_service.DeleteClusterRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_cluster(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.DeleteClusterRequest,
+        dict,
+    ],
+)
+def test_delete_cluster_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_cluster(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_cluster_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_delete_cluster"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_delete_cluster"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.DeleteClusterRequest.pb(
+            cluster_service.DeleteClusterRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.DeleteClusterRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.delete_cluster(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_operations_rest_bad_request(
+    request_type=cluster_service.ListOperationsRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_operations(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.ListOperationsRequest,
+        dict,
+    ],
+)
+def test_list_operations_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.ListOperationsResponse(
+            missing_zones=["missing_zones_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.ListOperationsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_operations(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.ListOperationsResponse)
+    assert response.missing_zones == ["missing_zones_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_operations_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_list_operations"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_list_operations"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.ListOperationsRequest.pb(
+            cluster_service.ListOperationsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.ListOperationsResponse.to_json(
+            cluster_service.ListOperationsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = cluster_service.ListOperationsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.ListOperationsResponse()
+
+        client.list_operations(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_operation_rest_bad_request(
+    request_type=cluster_service.GetOperationRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.GetOperationRequest,
+        dict,
+    ],
+)
+def test_get_operation_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_operation_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_get_operation"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_get_operation"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.GetOperationRequest.pb(
+            cluster_service.GetOperationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.GetOperationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.get_operation(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_cancel_operation_rest_bad_request(
+    request_type=cluster_service.CancelOperationRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.cancel_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.CancelOperationRequest,
+        dict,
+    ],
+)
+def test_cancel_operation_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/operations/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.cancel_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_cancel_operation_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_cancel_operation"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = cluster_service.CancelOperationRequest.pb(
+            cluster_service.CancelOperationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = cluster_service.CancelOperationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.cancel_operation(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_get_server_config_rest_bad_request(
+    request_type=cluster_service.GetServerConfigRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_server_config(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.GetServerConfigRequest,
+        dict,
+    ],
+)
+def test_get_server_config_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.ServerConfig(
+            default_cluster_version="default_cluster_version_value",
+            valid_node_versions=["valid_node_versions_value"],
+            default_image_type="default_image_type_value",
+            valid_image_types=["valid_image_types_value"],
+            valid_master_versions=["valid_master_versions_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.ServerConfig.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_server_config(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.ServerConfig)
+    assert response.default_cluster_version == "default_cluster_version_value"
+    assert response.valid_node_versions == ["valid_node_versions_value"]
+    assert response.default_image_type == "default_image_type_value"
+    assert response.valid_image_types == ["valid_image_types_value"]
+    assert response.valid_master_versions == ["valid_master_versions_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_server_config_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_get_server_config"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_get_server_config"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.GetServerConfigRequest.pb(
+            cluster_service.GetServerConfigRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.ServerConfig.to_json(
+            cluster_service.ServerConfig()
+        )
+        req.return_value.content = return_value
+
+        request = cluster_service.GetServerConfigRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.ServerConfig()
+
+        client.get_server_config(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_json_web_keys_rest_bad_request(
+    request_type=cluster_service.GetJSONWebKeysRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_json_web_keys(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.GetJSONWebKeysRequest,
+        dict,
+    ],
+)
+def test_get_json_web_keys_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.GetJSONWebKeysResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.GetJSONWebKeysResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_json_web_keys(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.GetJSONWebKeysResponse)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_json_web_keys_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_get_json_web_keys"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_get_json_web_keys"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.GetJSONWebKeysRequest.pb(
+            cluster_service.GetJSONWebKeysRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.GetJSONWebKeysResponse.to_json(
+            cluster_service.GetJSONWebKeysResponse()
+        )
+        req.return_value.content = return_value
+
+        request = cluster_service.GetJSONWebKeysRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.GetJSONWebKeysResponse()
+
+        client.get_json_web_keys(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_node_pools_rest_bad_request(
+    request_type=cluster_service.ListNodePoolsRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_node_pools(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.ListNodePoolsRequest,
+        dict,
+    ],
+)
+def test_list_node_pools_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.ListNodePoolsResponse()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.ListNodePoolsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_node_pools(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.ListNodePoolsResponse)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_node_pools_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_list_node_pools"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_list_node_pools"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.ListNodePoolsRequest.pb(
+            cluster_service.ListNodePoolsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.ListNodePoolsResponse.to_json(
+            cluster_service.ListNodePoolsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = cluster_service.ListNodePoolsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.ListNodePoolsResponse()
+
+        client.list_node_pools(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_node_pool_rest_bad_request(
+    request_type=cluster_service.GetNodePoolRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_node_pool(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.GetNodePoolRequest,
+        dict,
+    ],
+)
+def test_get_node_pool_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.NodePool(
+            name="name_value",
+            initial_node_count=1911,
+            locations=["locations_value"],
+            self_link="self_link_value",
+            version="version_value",
+            instance_group_urls=["instance_group_urls_value"],
+            status=cluster_service.NodePool.Status.PROVISIONING,
+            status_message="status_message_value",
+            pod_ipv4_cidr_size=1856,
+            etag="etag_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.NodePool.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_node_pool(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.NodePool)
+    assert response.name == "name_value"
+    assert response.initial_node_count == 1911
+    assert response.locations == ["locations_value"]
+    assert response.self_link == "self_link_value"
+    assert response.version == "version_value"
+    assert response.instance_group_urls == ["instance_group_urls_value"]
+    assert response.status == cluster_service.NodePool.Status.PROVISIONING
+    assert response.status_message == "status_message_value"
+    assert response.pod_ipv4_cidr_size == 1856
+    assert response.etag == "etag_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_node_pool_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_get_node_pool"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_get_node_pool"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.GetNodePoolRequest.pb(
+            cluster_service.GetNodePoolRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.NodePool.to_json(cluster_service.NodePool())
+        req.return_value.content = return_value
+
+        request = cluster_service.GetNodePoolRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.NodePool()
+
+        client.get_node_pool(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_node_pool_rest_bad_request(
+    request_type=cluster_service.CreateNodePoolRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_node_pool(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.CreateNodePoolRequest,
+        dict,
+    ],
+)
+def test_create_node_pool_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_node_pool(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_node_pool_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_create_node_pool"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_create_node_pool"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.CreateNodePoolRequest.pb(
+            cluster_service.CreateNodePoolRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.CreateNodePoolRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.create_node_pool(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_node_pool_rest_bad_request(
+    request_type=cluster_service.DeleteNodePoolRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_node_pool(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.DeleteNodePoolRequest,
+        dict,
+    ],
+)
+def test_delete_node_pool_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_node_pool(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_node_pool_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_delete_node_pool"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_delete_node_pool"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.DeleteNodePoolRequest.pb(
+            cluster_service.DeleteNodePoolRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.DeleteNodePoolRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.delete_node_pool(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_complete_node_pool_upgrade_rest_bad_request(
+    request_type=cluster_service.CompleteNodePoolUpgradeRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.complete_node_pool_upgrade(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.CompleteNodePoolUpgradeRequest,
+        dict,
+    ],
+)
+def test_complete_node_pool_upgrade_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.complete_node_pool_upgrade(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_complete_node_pool_upgrade_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_complete_node_pool_upgrade"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = cluster_service.CompleteNodePoolUpgradeRequest.pb(
+            cluster_service.CompleteNodePoolUpgradeRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        request = cluster_service.CompleteNodePoolUpgradeRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.complete_node_pool_upgrade(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_rollback_node_pool_upgrade_rest_bad_request(
+    request_type=cluster_service.RollbackNodePoolUpgradeRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.rollback_node_pool_upgrade(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.RollbackNodePoolUpgradeRequest,
+        dict,
+    ],
+)
+def test_rollback_node_pool_upgrade_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.rollback_node_pool_upgrade(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_rollback_node_pool_upgrade_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_rollback_node_pool_upgrade"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_rollback_node_pool_upgrade"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.RollbackNodePoolUpgradeRequest.pb(
+            cluster_service.RollbackNodePoolUpgradeRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.RollbackNodePoolUpgradeRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.rollback_node_pool_upgrade(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_node_pool_management_rest_bad_request(
+    request_type=cluster_service.SetNodePoolManagementRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_node_pool_management(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetNodePoolManagementRequest,
+        dict,
+    ],
+)
+def test_set_node_pool_management_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_node_pool_management(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_node_pool_management_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_node_pool_management"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_node_pool_management"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetNodePoolManagementRequest.pb(
+            cluster_service.SetNodePoolManagementRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetNodePoolManagementRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_node_pool_management(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_labels_rest_bad_request(request_type=cluster_service.SetLabelsRequest):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_labels(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetLabelsRequest,
+        dict,
+    ],
+)
+def test_set_labels_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_labels(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_labels_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_labels"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_labels"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetLabelsRequest.pb(
+            cluster_service.SetLabelsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetLabelsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_labels(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_legacy_abac_rest_bad_request(
+    request_type=cluster_service.SetLegacyAbacRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_legacy_abac(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetLegacyAbacRequest,
+        dict,
+    ],
+)
+def test_set_legacy_abac_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_legacy_abac(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_legacy_abac_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_legacy_abac"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_legacy_abac"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetLegacyAbacRequest.pb(
+            cluster_service.SetLegacyAbacRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetLegacyAbacRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_legacy_abac(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_start_ip_rotation_rest_bad_request(
+    request_type=cluster_service.StartIPRotationRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.start_ip_rotation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.StartIPRotationRequest,
+        dict,
+    ],
+)
+def test_start_ip_rotation_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.start_ip_rotation(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_start_ip_rotation_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_start_ip_rotation"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_start_ip_rotation"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.StartIPRotationRequest.pb(
+            cluster_service.StartIPRotationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.StartIPRotationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.start_ip_rotation(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_complete_ip_rotation_rest_bad_request(
+    request_type=cluster_service.CompleteIPRotationRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.complete_ip_rotation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.CompleteIPRotationRequest,
+        dict,
+    ],
+)
+def test_complete_ip_rotation_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.complete_ip_rotation(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_complete_ip_rotation_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_complete_ip_rotation"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_complete_ip_rotation"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.CompleteIPRotationRequest.pb(
+            cluster_service.CompleteIPRotationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.CompleteIPRotationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.complete_ip_rotation(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_node_pool_size_rest_bad_request(
+    request_type=cluster_service.SetNodePoolSizeRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_node_pool_size(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetNodePoolSizeRequest,
+        dict,
+    ],
+)
+def test_set_node_pool_size_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/clusters/sample3/nodePools/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_node_pool_size(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_node_pool_size_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_node_pool_size"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_node_pool_size"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetNodePoolSizeRequest.pb(
+            cluster_service.SetNodePoolSizeRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetNodePoolSizeRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_node_pool_size(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_network_policy_rest_bad_request(
+    request_type=cluster_service.SetNetworkPolicyRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_network_policy(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetNetworkPolicyRequest,
+        dict,
+    ],
+)
+def test_set_network_policy_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_network_policy(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_network_policy_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_network_policy"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_network_policy"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetNetworkPolicyRequest.pb(
+            cluster_service.SetNetworkPolicyRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetNetworkPolicyRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_network_policy(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_maintenance_policy_rest_bad_request(
+    request_type=cluster_service.SetMaintenancePolicyRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_maintenance_policy(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.SetMaintenancePolicyRequest,
+        dict,
+    ],
+)
+def test_set_maintenance_policy_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.Operation(
+            name="name_value",
+            zone="zone_value",
+            operation_type=cluster_service.Operation.Type.CREATE_CLUSTER,
+            status=cluster_service.Operation.Status.PENDING,
+            detail="detail_value",
+            status_message="status_message_value",
+            self_link="self_link_value",
+            target_link="target_link_value",
+            location="location_value",
+            start_time="start_time_value",
+            end_time="end_time_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_maintenance_policy(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.Operation)
+    assert response.name == "name_value"
+    assert response.zone == "zone_value"
+    assert response.operation_type == cluster_service.Operation.Type.CREATE_CLUSTER
+    assert response.status == cluster_service.Operation.Status.PENDING
+    assert response.detail == "detail_value"
+    assert response.status_message == "status_message_value"
+    assert response.self_link == "self_link_value"
+    assert response.target_link == "target_link_value"
+    assert response.location == "location_value"
+    assert response.start_time == "start_time_value"
+    assert response.end_time == "end_time_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_maintenance_policy_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_set_maintenance_policy"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_set_maintenance_policy"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.SetMaintenancePolicyRequest.pb(
+            cluster_service.SetMaintenancePolicyRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.Operation.to_json(cluster_service.Operation())
+        req.return_value.content = return_value
+
+        request = cluster_service.SetMaintenancePolicyRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.Operation()
+
+        client.set_maintenance_policy(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_usable_subnetworks_rest_bad_request(
+    request_type=cluster_service.ListUsableSubnetworksRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_usable_subnetworks(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.ListUsableSubnetworksRequest,
+        dict,
+    ],
+)
+def test_list_usable_subnetworks_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.ListUsableSubnetworksResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.ListUsableSubnetworksResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_usable_subnetworks(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListUsableSubnetworksPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_usable_subnetworks_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_list_usable_subnetworks"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_list_usable_subnetworks"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.ListUsableSubnetworksRequest.pb(
+            cluster_service.ListUsableSubnetworksRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.ListUsableSubnetworksResponse.to_json(
+            cluster_service.ListUsableSubnetworksResponse()
+        )
+        req.return_value.content = return_value
+
+        request = cluster_service.ListUsableSubnetworksRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.ListUsableSubnetworksResponse()
+
+        client.list_usable_subnetworks(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_check_autopilot_compatibility_rest_bad_request(
+    request_type=cluster_service.CheckAutopilotCompatibilityRequest,
+):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.check_autopilot_compatibility(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        cluster_service.CheckAutopilotCompatibilityRequest,
+        dict,
+    ],
+)
+def test_check_autopilot_compatibility_rest_call_success(request_type):
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = cluster_service.CheckAutopilotCompatibilityResponse(
+            summary="summary_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = cluster_service.CheckAutopilotCompatibilityResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.check_autopilot_compatibility(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, cluster_service.CheckAutopilotCompatibilityResponse)
+    assert response.summary == "summary_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_check_autopilot_compatibility_rest_interceptors(null_interceptor):
+    transport = transports.ClusterManagerRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ClusterManagerRestInterceptor(),
+    )
+    client = ClusterManagerClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "post_check_autopilot_compatibility"
+    ) as post, mock.patch.object(
+        transports.ClusterManagerRestInterceptor, "pre_check_autopilot_compatibility"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = cluster_service.CheckAutopilotCompatibilityRequest.pb(
+            cluster_service.CheckAutopilotCompatibilityRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = cluster_service.CheckAutopilotCompatibilityResponse.to_json(
+            cluster_service.CheckAutopilotCompatibilityResponse()
+        )
+        req.return_value.content = return_value
+
+        request = cluster_service.CheckAutopilotCompatibilityRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = cluster_service.CheckAutopilotCompatibilityResponse()
+
+        client.check_autopilot_compatibility(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_initialize_client_w_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_clusters_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_clusters), "__call__") as call:
+        client.list_clusters(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListClustersRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_cluster_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_cluster), "__call__") as call:
+        client.get_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_cluster_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_cluster), "__call__") as call:
+        client.create_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CreateClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_cluster_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_cluster), "__call__") as call:
+        client.update_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.UpdateClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_node_pool_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_node_pool), "__call__") as call:
+        client.update_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.UpdateNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_node_pool_autoscaling_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_node_pool_autoscaling), "__call__"
+    ) as call:
+        client.set_node_pool_autoscaling(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNodePoolAutoscalingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_logging_service_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_logging_service), "__call__"
+    ) as call:
+        client.set_logging_service(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLoggingServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_monitoring_service_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_monitoring_service), "__call__"
+    ) as call:
+        client.set_monitoring_service(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetMonitoringServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_addons_config_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_addons_config), "__call__"
+    ) as call:
+        client.set_addons_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetAddonsConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_locations_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_locations), "__call__") as call:
+        client.set_locations(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLocationsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_master_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update_master), "__call__") as call:
+        client.update_master(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.UpdateMasterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_master_auth_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_master_auth), "__call__") as call:
+        client.set_master_auth(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetMasterAuthRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_cluster_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_cluster), "__call__") as call:
+        client.delete_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.DeleteClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_operations_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_operations), "__call__") as call:
+        client.list_operations(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListOperationsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_operation_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_operation), "__call__") as call:
+        client.get_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_cancel_operation_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.cancel_operation), "__call__") as call:
+        client.cancel_operation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CancelOperationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_server_config_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_server_config), "__call__"
+    ) as call:
+        client.get_server_config(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetServerConfigRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_json_web_keys_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_json_web_keys), "__call__"
+    ) as call:
+        client.get_json_web_keys(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetJSONWebKeysRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_node_pools_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_node_pools), "__call__") as call:
+        client.list_node_pools(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListNodePoolsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_node_pool_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_node_pool), "__call__") as call:
+        client.get_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.GetNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_node_pool_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.create_node_pool), "__call__") as call:
+        client.create_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CreateNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_node_pool_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete_node_pool), "__call__") as call:
+        client.delete_node_pool(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.DeleteNodePoolRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_complete_node_pool_upgrade_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.complete_node_pool_upgrade), "__call__"
+    ) as call:
+        client.complete_node_pool_upgrade(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CompleteNodePoolUpgradeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_rollback_node_pool_upgrade_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.rollback_node_pool_upgrade), "__call__"
+    ) as call:
+        client.rollback_node_pool_upgrade(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.RollbackNodePoolUpgradeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_node_pool_management_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_node_pool_management), "__call__"
+    ) as call:
+        client.set_node_pool_management(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNodePoolManagementRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_labels_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_labels), "__call__") as call:
+        client.set_labels(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLabelsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_legacy_abac_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_legacy_abac), "__call__") as call:
+        client.set_legacy_abac(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetLegacyAbacRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_start_ip_rotation_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.start_ip_rotation), "__call__"
+    ) as call:
+        client.start_ip_rotation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.StartIPRotationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_complete_ip_rotation_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.complete_ip_rotation), "__call__"
+    ) as call:
+        client.complete_ip_rotation(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CompleteIPRotationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_node_pool_size_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_node_pool_size), "__call__"
+    ) as call:
+        client.set_node_pool_size(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNodePoolSizeRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_network_policy_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_network_policy), "__call__"
+    ) as call:
+        client.set_network_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetNetworkPolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_maintenance_policy_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_maintenance_policy), "__call__"
+    ) as call:
+        client.set_maintenance_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.SetMaintenancePolicyRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_usable_subnetworks_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_usable_subnetworks), "__call__"
+    ) as call:
+        client.list_usable_subnetworks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.ListUsableSubnetworksRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_check_autopilot_compatibility_empty_call_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.check_autopilot_compatibility), "__call__"
+    ) as call:
+        client.check_autopilot_compatibility(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = cluster_service.CheckAutopilotCompatibilityRequest()
+
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -25524,9 +26327,69 @@ def test_cluster_manager_transport_channel_mtls_with_adc(transport_class):
             assert transport.grpc_channel == mock_grpc_channel
 
 
-def test_topic_path():
+def test_ca_pool_path():
     project = "squid"
-    topic = "clam"
+    location = "clam"
+    ca_pool = "whelk"
+    expected = "projects/{project}/locations/{location}/caPools/{ca_pool}".format(
+        project=project,
+        location=location,
+        ca_pool=ca_pool,
+    )
+    actual = ClusterManagerClient.ca_pool_path(project, location, ca_pool)
+    assert expected == actual
+
+
+def test_parse_ca_pool_path():
+    expected = {
+        "project": "octopus",
+        "location": "oyster",
+        "ca_pool": "nudibranch",
+    }
+    path = ClusterManagerClient.ca_pool_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = ClusterManagerClient.parse_ca_pool_path(path)
+    assert expected == actual
+
+
+def test_crypto_key_version_path():
+    project = "cuttlefish"
+    location = "mussel"
+    key_ring = "winkle"
+    crypto_key = "nautilus"
+    crypto_key_version = "scallop"
+    expected = "projects/{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}/cryptoKeyVersions/{crypto_key_version}".format(
+        project=project,
+        location=location,
+        key_ring=key_ring,
+        crypto_key=crypto_key,
+        crypto_key_version=crypto_key_version,
+    )
+    actual = ClusterManagerClient.crypto_key_version_path(
+        project, location, key_ring, crypto_key, crypto_key_version
+    )
+    assert expected == actual
+
+
+def test_parse_crypto_key_version_path():
+    expected = {
+        "project": "abalone",
+        "location": "squid",
+        "key_ring": "clam",
+        "crypto_key": "whelk",
+        "crypto_key_version": "octopus",
+    }
+    path = ClusterManagerClient.crypto_key_version_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = ClusterManagerClient.parse_crypto_key_version_path(path)
+    assert expected == actual
+
+
+def test_topic_path():
+    project = "oyster"
+    topic = "nudibranch"
     expected = "projects/{project}/topics/{topic}".format(
         project=project,
         topic=topic,
@@ -25537,8 +26400,8 @@ def test_topic_path():
 
 def test_parse_topic_path():
     expected = {
-        "project": "whelk",
-        "topic": "octopus",
+        "project": "cuttlefish",
+        "topic": "mussel",
     }
     path = ClusterManagerClient.topic_path(**expected)
 
@@ -25548,7 +26411,7 @@ def test_parse_topic_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "oyster"
+    billing_account = "winkle"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -25558,7 +26421,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "nudibranch",
+        "billing_account": "nautilus",
     }
     path = ClusterManagerClient.common_billing_account_path(**expected)
 
@@ -25568,7 +26431,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "cuttlefish"
+    folder = "scallop"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -25578,7 +26441,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "mussel",
+        "folder": "abalone",
     }
     path = ClusterManagerClient.common_folder_path(**expected)
 
@@ -25588,7 +26451,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "winkle"
+    organization = "squid"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -25598,7 +26461,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "nautilus",
+        "organization": "clam",
     }
     path = ClusterManagerClient.common_organization_path(**expected)
 
@@ -25608,7 +26471,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "scallop"
+    project = "whelk"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -25618,7 +26481,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "abalone",
+        "project": "octopus",
     }
     path = ClusterManagerClient.common_project_path(**expected)
 
@@ -25628,8 +26491,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "squid"
-    location = "clam"
+    project = "oyster"
+    location = "nudibranch"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -25640,8 +26503,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "whelk",
-        "location": "octopus",
+        "project": "cuttlefish",
+        "location": "mussel",
     }
     path = ClusterManagerClient.common_location_path(**expected)
 
@@ -25673,36 +26536,41 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = ClusterManagerAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+def test_transport_close_grpc():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = ClusterManagerAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
         async with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = ClusterManagerClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = ClusterManagerClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

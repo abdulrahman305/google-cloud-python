@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.14.0...google-cloud-storage-transfer-v1.15.0) (2024-12-18)
+
+
+### Features
+
+* [google-cloud-storage-transfer] support cross-bucket replication ([#13372](https://github.com/googleapis/google-cloud-python/issues/13372)) ([20d6e4c](https://github.com/googleapis/google-cloud-python/commit/20d6e4ca97d18e711abde3cda6953b8476ad489f))
+
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.13.1...google-cloud-storage-transfer-v1.14.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([856e0f0](https://github.com/googleapis/google-cloud-python/commit/856e0f07bd5212d60ad64be4c16ac8fafd07850b))
+
+## [1.13.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.13.0...google-cloud-storage-transfer-v1.13.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13246](https://github.com/googleapis/google-cloud-python/issues/13246)) ([bcad563](https://github.com/googleapis/google-cloud-python/commit/bcad563acea541bb51f9fbd005f18e9f32e381f0))
+
+## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.12.0...google-cloud-storage-transfer-v1.13.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13210](https://github.com/googleapis/google-cloud-python/issues/13210)) ([0b62ac6](https://github.com/googleapis/google-cloud-python/commit/0b62ac6aa99bd3259a088097630f2bd1f06825e6))
+
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.11.5...google-cloud-storage-transfer-v1.12.0) (2024-08-19)
+
+
+### Features
+
+* add GCS Managed Folders ([9c54c1d](https://github.com/googleapis/google-cloud-python/commit/9c54c1d92e54f71f35d8e7a65bb16f730ec841b0))
+* add HDFS configuration ([9c54c1d](https://github.com/googleapis/google-cloud-python/commit/9c54c1d92e54f71f35d8e7a65bb16f730ec841b0))
+* add S3 Cloudfront Domain ([9c54c1d](https://github.com/googleapis/google-cloud-python/commit/9c54c1d92e54f71f35d8e7a65bb16f730ec841b0))
+* add S3 Managed Private Network ([9c54c1d](https://github.com/googleapis/google-cloud-python/commit/9c54c1d92e54f71f35d8e7a65bb16f730ec841b0))
+
 ## [1.11.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.11.4...google-cloud-storage-transfer-v1.11.5) (2024-07-30)
 
 

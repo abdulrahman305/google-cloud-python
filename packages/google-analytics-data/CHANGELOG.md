@@ -1,5 +1,63 @@
 # Changelog
 
+## [0.18.16](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.15...google-analytics-data-v0.18.16) (2024-12-12)
+
+
+### Features
+
+* add `EmptyFilter` type to the Data API v1beta ([0dab0e7](https://github.com/googleapis/google-cloud-python/commit/0dab0e7888c085ed658ec2e59779bba0f41f1a79))
+* add `sampling_metadatas` field to the `ResponseMetaData` type ([4035ab8](https://github.com/googleapis/google-cloud-python/commit/4035ab84c5a8d7819634535a90a6e329223839e0))
+* Add support for opt-in debug logging ([b1dfc55](https://github.com/googleapis/google-cloud-python/commit/b1dfc556d4652a48564ff37becb31d5a06ee2b5b))
+* add the `empty_filter` field to the `Filter` type ([4035ab8](https://github.com/googleapis/google-cloud-python/commit/4035ab84c5a8d7819634535a90a6e329223839e0))
+* add the `empty_filter` field to the `Filter` type ([0dab0e7](https://github.com/googleapis/google-cloud-python/commit/0dab0e7888c085ed658ec2e59779bba0f41f1a79))
+* add the `EmptyFilter` type to the Data API v1alpha ([4035ab8](https://github.com/googleapis/google-cloud-python/commit/4035ab84c5a8d7819634535a90a6e329223839e0))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([b1dfc55](https://github.com/googleapis/google-cloud-python/commit/b1dfc556d4652a48564ff37becb31d5a06ee2b5b))
+
+
+### Documentation
+
+* remove all references to 'GA4' in documentation ([0dab0e7](https://github.com/googleapis/google-cloud-python/commit/0dab0e7888c085ed658ec2e59779bba0f41f1a79))
+* update documentation for the`RunReport` method ([0dab0e7](https://github.com/googleapis/google-cloud-python/commit/0dab0e7888c085ed658ec2e59779bba0f41f1a79))
+
+## [0.18.15](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.14...google-analytics-data-v0.18.15) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([85c7512](https://github.com/googleapis/google-cloud-python/commit/85c7512bbdde2b9cc60b4ad42b8c36c4558a07a5))
+
+## [0.18.14](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.13...google-analytics-data-v0.18.14) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13199](https://github.com/googleapis/google-cloud-python/issues/13199)) ([2fc3726](https://github.com/googleapis/google-cloud-python/commit/2fc372685731141ca1ed2a917dd18bacd79db88e))
+
+## [0.18.13](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.12...google-analytics-data-v0.18.13) (2024-10-23)
+
+
+### Features
+
+* add `sampling_level` to the `ReportDefinition` type ([d395233](https://github.com/googleapis/google-cloud-python/commit/d395233f8ffbee93df8db344a8628407fe1c1f15))
+* add `SamplingLevel` type to Data API v1alpha ([d395233](https://github.com/googleapis/google-cloud-python/commit/d395233f8ffbee93df8db344a8628407fe1c1f15))
+
+## [0.18.12](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.11...google-analytics-data-v0.18.12) (2024-09-23)
+
+
+### Features
+
+* add `GetPropertyQuotasSnapshot` method to the Data API v1alpha ([65f098a](https://github.com/googleapis/google-cloud-python/commit/65f098a1125677c69240849703a0b97bcab7fc4c))
+* add `PropertyQuotasSnapshot` type to the Data API v1alpha ([65f098a](https://github.com/googleapis/google-cloud-python/commit/65f098a1125677c69240849703a0b97bcab7fc4c))
+
+
+### Documentation
+
+* update the documentation for the `CreateReportTask` method ([65f098a](https://github.com/googleapis/google-cloud-python/commit/65f098a1125677c69240849703a0b97bcab7fc4c))
+
 ## [0.18.11](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.10...google-analytics-data-v0.18.11) (2024-08-08)
 
 

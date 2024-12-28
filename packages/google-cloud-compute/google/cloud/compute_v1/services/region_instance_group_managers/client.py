@@ -15,6 +15,7 @@
 #
 from collections import OrderedDict
 import functools
+import logging as std_logging
 import os
 import re
 from typing import (
@@ -48,6 +49,15 @@ try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 from google.api_core import extended_operation  # type: ignore
 
@@ -442,36 +452,6 @@ class RegionInstanceGroupManagersClient(
             raise ValueError("Universe Domain cannot be an empty string.")
         return universe_domain
 
-    @staticmethod
-    def _compare_universes(
-        client_universe: str, credentials: ga_credentials.Credentials
-    ) -> bool:
-        """Returns True iff the universe domains used by the client and credentials match.
-
-        Args:
-            client_universe (str): The universe domain configured via the client options.
-            credentials (ga_credentials.Credentials): The credentials being used in the client.
-
-        Returns:
-            bool: True iff client_universe matches the universe in credentials.
-
-        Raises:
-            ValueError: when client_universe does not match the universe in credentials.
-        """
-
-        default_universe = RegionInstanceGroupManagersClient._DEFAULT_UNIVERSE
-        credentials_universe = getattr(credentials, "universe_domain", default_universe)
-
-        if client_universe != credentials_universe:
-            raise ValueError(
-                "The configured universe domain "
-                f"({client_universe}) does not match the universe domain "
-                f"found in the credentials ({credentials_universe}). "
-                "If you haven't configured the universe domain explicitly, "
-                f"`{default_universe}` is the default."
-            )
-        return True
-
     def _validate_universe_domain(self):
         """Validates client's and credentials' universe domains are consistent.
 
@@ -481,13 +461,9 @@ class RegionInstanceGroupManagersClient(
         Raises:
             ValueError: If the configured universe domain is not valid.
         """
-        self._is_universe_domain_valid = (
-            self._is_universe_domain_valid
-            or RegionInstanceGroupManagersClient._compare_universes(
-                self.universe_domain, self.transport._credentials
-            )
-        )
-        return self._is_universe_domain_valid
+
+        # NOTE (b/349488459): universe validation is disabled until further notice.
+        return True
 
     @property
     def api_endpoint(self):
@@ -602,6 +578,10 @@ class RegionInstanceGroupManagersClient(
         # Initialize the universe domain validation.
         self._is_universe_domain_valid = False
 
+        if CLIENT_LOGGING_SUPPORTED:  # pragma: NO COVER
+            # Setup logging.
+            client_logging.initialize_logging()
+
         api_key_value = getattr(self._client_options, "api_key", None)
         if api_key_value and credentials:
             raise ValueError(
@@ -651,7 +631,7 @@ class RegionInstanceGroupManagersClient(
                 Type[RegionInstanceGroupManagersTransport],
                 Callable[..., RegionInstanceGroupManagersTransport],
             ] = (
-                type(self).get_transport_class(transport)
+                RegionInstanceGroupManagersClient.get_transport_class(transport)
                 if isinstance(transport, str) or transport is None
                 else cast(
                     Callable[..., RegionInstanceGroupManagersTransport], transport
@@ -670,6 +650,29 @@ class RegionInstanceGroupManagersClient(
                 api_audience=self._client_options.api_audience,
             )
 
+        if "async" not in str(self._transport):
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                std_logging.DEBUG
+            ):  # pragma: NO COVER
+                _LOGGER.debug(
+                    "Created client `google.cloud.compute_v1.RegionInstanceGroupManagersClient`.",
+                    extra={
+                        "serviceName": "google.cloud.compute.v1.RegionInstanceGroupManagers",
+                        "universeDomain": getattr(
+                            self._transport._credentials, "universe_domain", ""
+                        ),
+                        "credentialsType": f"{type(self._transport._credentials).__module__}.{type(self._transport._credentials).__qualname__}",
+                        "credentialsInfo": getattr(
+                            self.transport._credentials, "get_cred_info", lambda: None
+                        )(),
+                    }
+                    if hasattr(self._transport, "_credentials")
+                    else {
+                        "serviceName": "google.cloud.compute.v1.RegionInstanceGroupManagers",
+                        "credentialsType": None,
+                    },
+                )
+
     def abandon_instances_unary(
         self,
         request: Optional[
@@ -684,7 +687,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Flags the specified instances to be immediately
         removed from the managed instance group. Abandoning an
@@ -761,8 +764,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -853,7 +858,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Flags the specified instances to be immediately
         removed from the managed instance group. Abandoning an
@@ -930,8 +935,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -1049,7 +1056,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Apply updates to selected instances the managed
         instance group.
@@ -1114,8 +1121,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -1212,7 +1221,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Apply updates to selected instances the managed
         instance group.
@@ -1277,8 +1286,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -1398,7 +1409,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Creates instances with per-instance configurations in
         this regional managed instance group. Instances are
@@ -1470,8 +1481,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -1562,7 +1575,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Creates instances with per-instance configurations in
         this regional managed instance group. Instances are
@@ -1634,8 +1647,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -1748,7 +1763,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Deletes the specified managed instance group and all
         of the instances in that group.
@@ -1808,8 +1823,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -1881,7 +1898,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Deletes the specified managed instance group and all
         of the instances in that group.
@@ -1941,8 +1958,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -2042,7 +2061,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Flags the specified instances in the managed instance
         group to be immediately deleted. The instances are also
@@ -2118,8 +2137,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -2210,7 +2231,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Flags the specified instances in the managed instance
         group to be immediately deleted. The instances are also
@@ -2286,8 +2307,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -2405,7 +2428,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Deletes selected per-instance configurations for the
         managed instance group.
@@ -2470,8 +2493,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -2568,7 +2593,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Deletes selected per-instance configurations for the
         managed instance group.
@@ -2633,8 +2658,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -2751,7 +2778,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.InstanceGroupManager:
         r"""Returns all of the details about the specified
         managed instance group.
@@ -2811,8 +2838,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.compute_v1.types.InstanceGroupManager:
@@ -2891,7 +2920,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager_resource: Optional[compute.InstanceGroupManager] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Creates a managed instance group using the
         information that you specify in the request. After the
@@ -2956,8 +2985,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -3030,7 +3061,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager_resource: Optional[compute.InstanceGroupManager] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Creates a managed instance group using the
         information that you specify in the request. After the
@@ -3095,8 +3126,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -3193,7 +3226,7 @@ class RegionInstanceGroupManagersClient(
         region: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListPager:
         r"""Retrieves the list of managed instance groups that
         are contained within the specified region.
@@ -3246,8 +3279,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.compute_v1.services.region_instance_group_managers.pagers.ListPager:
@@ -3330,7 +3365,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListErrorsPager:
         r"""Lists all errors thrown by actions on instances for a
         given regional managed instance group. The filter and
@@ -3394,8 +3429,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.compute_v1.services.region_instance_group_managers.pagers.ListErrorsPager:
@@ -3481,7 +3518,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListManagedInstancesPager:
         r"""Lists the instances in the managed instance group and instances
         that are scheduled to be created. The list includes any current
@@ -3546,8 +3583,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.compute_v1.services.region_instance_group_managers.pagers.ListManagedInstancesPager:
@@ -3637,7 +3676,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListPerInstanceConfigsPager:
         r"""Lists all of the per-instance configurations defined
         for the managed instance group. The orderBy query
@@ -3699,8 +3738,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.compute_v1.services.region_instance_group_managers.pagers.ListPerInstanceConfigsPager:
@@ -3791,7 +3832,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager_resource: Optional[compute.InstanceGroupManager] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Updates a managed instance group using the
         information that you specify in the request. This
@@ -3868,8 +3909,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -3948,7 +3991,7 @@ class RegionInstanceGroupManagersClient(
         instance_group_manager_resource: Optional[compute.InstanceGroupManager] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Updates a managed instance group using the
         information that you specify in the request. This
@@ -4025,8 +4068,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -4134,7 +4179,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Inserts or patches per-instance configurations for
         the managed instance group. perInstanceConfig.name
@@ -4201,8 +4246,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -4299,7 +4346,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Inserts or patches per-instance configurations for
         the managed instance group. perInstanceConfig.name
@@ -4366,8 +4413,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -4487,7 +4536,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Flags the specified VM instances in the managed
         instance group to be immediately recreated. Each
@@ -4562,8 +4611,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -4653,7 +4704,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Flags the specified VM instances in the managed
         instance group to be immediately recreated. Each
@@ -4728,8 +4779,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -4842,7 +4895,7 @@ class RegionInstanceGroupManagersClient(
         size: Optional[int] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Changes the intended size of the managed instance
         group. If you increase the size, the group creates new
@@ -4919,8 +4972,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -4995,7 +5050,7 @@ class RegionInstanceGroupManagersClient(
         size: Optional[int] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Changes the intended size of the managed instance
         group. If you increase the size, the group creates new
@@ -5072,8 +5127,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -5161,6 +5218,375 @@ class RegionInstanceGroupManagersClient(
         # Done; return the response.
         return response
 
+    def resume_instances_unary(
+        self,
+        request: Optional[
+            Union[compute.ResumeInstancesRegionInstanceGroupManagerRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        region: Optional[str] = None,
+        instance_group_manager: Optional[str] = None,
+        region_instance_group_managers_resume_instances_request_resource: Optional[
+            compute.RegionInstanceGroupManagersResumeInstancesRequest
+        ] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> compute.Operation:
+        r"""Flags the specified instances in the managed instance
+        group to be resumed. This method increases the
+        targetSize and decreases the targetSuspendedSize of the
+        managed instance group by the number of instances that
+        you resume. The resumeInstances operation is marked DONE
+        if the resumeInstances request is successful. The
+        underlying actions take additional time. You must
+        separately verify the status of the RESUMING action with
+        the listmanagedinstances method. In this request, you
+        can only specify instances that are suspended. For
+        example, if an instance was previously suspended using
+        the suspendInstances method, it can be resumed using the
+        resumeInstances method. If a health check is attached to
+        the managed instance group, the specified instances will
+        be verified as healthy after they are resumed. You can
+        specify a maximum of 1000 instances with this method per
+        request.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_resume_instances():
+                # Create a client
+                client = compute_v1.RegionInstanceGroupManagersClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.ResumeInstancesRegionInstanceGroupManagerRequest(
+                    instance_group_manager="instance_group_manager_value",
+                    project="project_value",
+                    region="region_value",
+                )
+
+                # Make the request
+                response = client.resume_instances(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.ResumeInstancesRegionInstanceGroupManagerRequest, dict]):
+                The request object. A request message for
+                RegionInstanceGroupManagers.ResumeInstances.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region (str):
+                Name of the region scoping this
+                request.
+
+                This corresponds to the ``region`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            instance_group_manager (str):
+                Name of the managed instance group.
+                This corresponds to the ``instance_group_manager`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region_instance_group_managers_resume_instances_request_resource (google.cloud.compute_v1.types.RegionInstanceGroupManagersResumeInstancesRequest):
+                The body resource for this request
+                This corresponds to the ``region_instance_group_managers_resume_instances_request_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any(
+            [
+                project,
+                region,
+                instance_group_manager,
+                region_instance_group_managers_resume_instances_request_resource,
+            ]
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.ResumeInstancesRegionInstanceGroupManagerRequest
+        ):
+            request = compute.ResumeInstancesRegionInstanceGroupManagerRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if region is not None:
+                request.region = region
+            if instance_group_manager is not None:
+                request.instance_group_manager = instance_group_manager
+            if (
+                region_instance_group_managers_resume_instances_request_resource
+                is not None
+            ):
+                request.region_instance_group_managers_resume_instances_request_resource = (
+                    region_instance_group_managers_resume_instances_request_resource
+                )
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.resume_instances]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("region", request.region),
+                    ("instance_group_manager", request.instance_group_manager),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def resume_instances(
+        self,
+        request: Optional[
+            Union[compute.ResumeInstancesRegionInstanceGroupManagerRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        region: Optional[str] = None,
+        instance_group_manager: Optional[str] = None,
+        region_instance_group_managers_resume_instances_request_resource: Optional[
+            compute.RegionInstanceGroupManagersResumeInstancesRequest
+        ] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> extended_operation.ExtendedOperation:
+        r"""Flags the specified instances in the managed instance
+        group to be resumed. This method increases the
+        targetSize and decreases the targetSuspendedSize of the
+        managed instance group by the number of instances that
+        you resume. The resumeInstances operation is marked DONE
+        if the resumeInstances request is successful. The
+        underlying actions take additional time. You must
+        separately verify the status of the RESUMING action with
+        the listmanagedinstances method. In this request, you
+        can only specify instances that are suspended. For
+        example, if an instance was previously suspended using
+        the suspendInstances method, it can be resumed using the
+        resumeInstances method. If a health check is attached to
+        the managed instance group, the specified instances will
+        be verified as healthy after they are resumed. You can
+        specify a maximum of 1000 instances with this method per
+        request.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_resume_instances():
+                # Create a client
+                client = compute_v1.RegionInstanceGroupManagersClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.ResumeInstancesRegionInstanceGroupManagerRequest(
+                    instance_group_manager="instance_group_manager_value",
+                    project="project_value",
+                    region="region_value",
+                )
+
+                # Make the request
+                response = client.resume_instances(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.ResumeInstancesRegionInstanceGroupManagerRequest, dict]):
+                The request object. A request message for
+                RegionInstanceGroupManagers.ResumeInstances.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region (str):
+                Name of the region scoping this
+                request.
+
+                This corresponds to the ``region`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            instance_group_manager (str):
+                Name of the managed instance group.
+                This corresponds to the ``instance_group_manager`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region_instance_group_managers_resume_instances_request_resource (google.cloud.compute_v1.types.RegionInstanceGroupManagersResumeInstancesRequest):
+                The body resource for this request
+                This corresponds to the ``region_instance_group_managers_resume_instances_request_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any(
+            [
+                project,
+                region,
+                instance_group_manager,
+                region_instance_group_managers_resume_instances_request_resource,
+            ]
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.ResumeInstancesRegionInstanceGroupManagerRequest
+        ):
+            request = compute.ResumeInstancesRegionInstanceGroupManagerRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if region is not None:
+                request.region = region
+            if instance_group_manager is not None:
+                request.instance_group_manager = instance_group_manager
+            if (
+                region_instance_group_managers_resume_instances_request_resource
+                is not None
+            ):
+                request.region_instance_group_managers_resume_instances_request_resource = (
+                    region_instance_group_managers_resume_instances_request_resource
+                )
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.resume_instances]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("region", request.region),
+                    ("instance_group_manager", request.instance_group_manager),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        operation_service = self._transport._region_operations_client
+        operation_request = compute.GetRegionOperationRequest()
+        operation_request.project = request.project
+        operation_request.region = request.region
+        operation_request.operation = response.name
+
+        get_operation = functools.partial(operation_service.get, operation_request)
+        # Cancel is not part of extended operations yet.
+        cancel_operation = lambda: None
+
+        # Note: this class is an implementation detail to provide a uniform
+        # set of names for certain fields in the extended operation proto message.
+        # See google.api_core.extended_operation.ExtendedOperation for details
+        # on these properties and the  expected interface.
+        class _CustomOperation(extended_operation.ExtendedOperation):
+            @property
+            def error_message(self):
+                return self._extended_operation.http_error_message
+
+            @property
+            def error_code(self):
+                return self._extended_operation.http_error_status_code
+
+        response = _CustomOperation.make(get_operation, cancel_operation, response)
+
+        # Done; return the response.
+        return response
+
     def set_instance_template_unary(
         self,
         request: Optional[
@@ -5175,7 +5601,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Sets the instance template to use when creating new
         instances or recreating instances in this group.
@@ -5241,8 +5667,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -5332,7 +5760,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Sets the instance template to use when creating new
         instances or recreating instances in this group.
@@ -5398,8 +5826,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -5514,7 +5944,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Modifies the target pools to which all new instances
         in this group are assigned. Existing instances in the
@@ -5578,8 +6008,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -5670,7 +6102,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Modifies the target pools to which all new instances
         in this group are assigned. Existing instances in the
@@ -5734,8 +6166,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -5837,6 +6271,1149 @@ class RegionInstanceGroupManagersClient(
         # Done; return the response.
         return response
 
+    def start_instances_unary(
+        self,
+        request: Optional[
+            Union[compute.StartInstancesRegionInstanceGroupManagerRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        region: Optional[str] = None,
+        instance_group_manager: Optional[str] = None,
+        region_instance_group_managers_start_instances_request_resource: Optional[
+            compute.RegionInstanceGroupManagersStartInstancesRequest
+        ] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> compute.Operation:
+        r"""Flags the specified instances in the managed instance
+        group to be started. This method increases the
+        targetSize and decreases the targetStoppedSize of the
+        managed instance group by the number of instances that
+        you start. The startInstances operation is marked DONE
+        if the startInstances request is successful. The
+        underlying actions take additional time. You must
+        separately verify the status of the STARTING action with
+        the listmanagedinstances method. In this request, you
+        can only specify instances that are stopped. For
+        example, if an instance was previously stopped using the
+        stopInstances method, it can be started using the
+        startInstances method. If a health check is attached to
+        the managed instance group, the specified instances will
+        be verified as healthy after they are started. You can
+        specify a maximum of 1000 instances with this method per
+        request.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_start_instances():
+                # Create a client
+                client = compute_v1.RegionInstanceGroupManagersClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.StartInstancesRegionInstanceGroupManagerRequest(
+                    instance_group_manager="instance_group_manager_value",
+                    project="project_value",
+                    region="region_value",
+                )
+
+                # Make the request
+                response = client.start_instances(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.StartInstancesRegionInstanceGroupManagerRequest, dict]):
+                The request object. A request message for
+                RegionInstanceGroupManagers.StartInstances.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region (str):
+                Name of the region scoping this
+                request.
+
+                This corresponds to the ``region`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            instance_group_manager (str):
+                Name of the managed instance group.
+                This corresponds to the ``instance_group_manager`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region_instance_group_managers_start_instances_request_resource (google.cloud.compute_v1.types.RegionInstanceGroupManagersStartInstancesRequest):
+                The body resource for this request
+                This corresponds to the ``region_instance_group_managers_start_instances_request_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any(
+            [
+                project,
+                region,
+                instance_group_manager,
+                region_instance_group_managers_start_instances_request_resource,
+            ]
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.StartInstancesRegionInstanceGroupManagerRequest
+        ):
+            request = compute.StartInstancesRegionInstanceGroupManagerRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if region is not None:
+                request.region = region
+            if instance_group_manager is not None:
+                request.instance_group_manager = instance_group_manager
+            if (
+                region_instance_group_managers_start_instances_request_resource
+                is not None
+            ):
+                request.region_instance_group_managers_start_instances_request_resource = (
+                    region_instance_group_managers_start_instances_request_resource
+                )
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.start_instances]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("region", request.region),
+                    ("instance_group_manager", request.instance_group_manager),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def start_instances(
+        self,
+        request: Optional[
+            Union[compute.StartInstancesRegionInstanceGroupManagerRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        region: Optional[str] = None,
+        instance_group_manager: Optional[str] = None,
+        region_instance_group_managers_start_instances_request_resource: Optional[
+            compute.RegionInstanceGroupManagersStartInstancesRequest
+        ] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> extended_operation.ExtendedOperation:
+        r"""Flags the specified instances in the managed instance
+        group to be started. This method increases the
+        targetSize and decreases the targetStoppedSize of the
+        managed instance group by the number of instances that
+        you start. The startInstances operation is marked DONE
+        if the startInstances request is successful. The
+        underlying actions take additional time. You must
+        separately verify the status of the STARTING action with
+        the listmanagedinstances method. In this request, you
+        can only specify instances that are stopped. For
+        example, if an instance was previously stopped using the
+        stopInstances method, it can be started using the
+        startInstances method. If a health check is attached to
+        the managed instance group, the specified instances will
+        be verified as healthy after they are started. You can
+        specify a maximum of 1000 instances with this method per
+        request.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_start_instances():
+                # Create a client
+                client = compute_v1.RegionInstanceGroupManagersClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.StartInstancesRegionInstanceGroupManagerRequest(
+                    instance_group_manager="instance_group_manager_value",
+                    project="project_value",
+                    region="region_value",
+                )
+
+                # Make the request
+                response = client.start_instances(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.StartInstancesRegionInstanceGroupManagerRequest, dict]):
+                The request object. A request message for
+                RegionInstanceGroupManagers.StartInstances.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region (str):
+                Name of the region scoping this
+                request.
+
+                This corresponds to the ``region`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            instance_group_manager (str):
+                Name of the managed instance group.
+                This corresponds to the ``instance_group_manager`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region_instance_group_managers_start_instances_request_resource (google.cloud.compute_v1.types.RegionInstanceGroupManagersStartInstancesRequest):
+                The body resource for this request
+                This corresponds to the ``region_instance_group_managers_start_instances_request_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any(
+            [
+                project,
+                region,
+                instance_group_manager,
+                region_instance_group_managers_start_instances_request_resource,
+            ]
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.StartInstancesRegionInstanceGroupManagerRequest
+        ):
+            request = compute.StartInstancesRegionInstanceGroupManagerRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if region is not None:
+                request.region = region
+            if instance_group_manager is not None:
+                request.instance_group_manager = instance_group_manager
+            if (
+                region_instance_group_managers_start_instances_request_resource
+                is not None
+            ):
+                request.region_instance_group_managers_start_instances_request_resource = (
+                    region_instance_group_managers_start_instances_request_resource
+                )
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.start_instances]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("region", request.region),
+                    ("instance_group_manager", request.instance_group_manager),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        operation_service = self._transport._region_operations_client
+        operation_request = compute.GetRegionOperationRequest()
+        operation_request.project = request.project
+        operation_request.region = request.region
+        operation_request.operation = response.name
+
+        get_operation = functools.partial(operation_service.get, operation_request)
+        # Cancel is not part of extended operations yet.
+        cancel_operation = lambda: None
+
+        # Note: this class is an implementation detail to provide a uniform
+        # set of names for certain fields in the extended operation proto message.
+        # See google.api_core.extended_operation.ExtendedOperation for details
+        # on these properties and the  expected interface.
+        class _CustomOperation(extended_operation.ExtendedOperation):
+            @property
+            def error_message(self):
+                return self._extended_operation.http_error_message
+
+            @property
+            def error_code(self):
+                return self._extended_operation.http_error_status_code
+
+        response = _CustomOperation.make(get_operation, cancel_operation, response)
+
+        # Done; return the response.
+        return response
+
+    def stop_instances_unary(
+        self,
+        request: Optional[
+            Union[compute.StopInstancesRegionInstanceGroupManagerRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        region: Optional[str] = None,
+        instance_group_manager: Optional[str] = None,
+        region_instance_group_managers_stop_instances_request_resource: Optional[
+            compute.RegionInstanceGroupManagersStopInstancesRequest
+        ] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> compute.Operation:
+        r"""Flags the specified instances in the managed instance
+        group to be immediately stopped. You can only specify
+        instances that are running in this request. This method
+        reduces the targetSize and increases the
+        targetStoppedSize of the managed instance group by the
+        number of instances that you stop. The stopInstances
+        operation is marked DONE if the stopInstances request is
+        successful. The underlying actions take additional time.
+        You must separately verify the status of the STOPPING
+        action with the listmanagedinstances method. If the
+        standbyPolicy.initialDelaySec field is set, the group
+        delays stopping the instances until initialDelaySec have
+        passed from instance.creationTimestamp (that is, when
+        the instance was created). This delay gives your
+        application time to set itself up and initialize on the
+        instance. If more than initialDelaySec seconds have
+        passed since instance.creationTimestamp when this method
+        is called, there will be zero delay. If the group is
+        part of a backend service that has enabled connection
+        draining, it can take up to 60 seconds after the
+        connection draining duration has elapsed before the VM
+        instance is stopped. Stopped instances can be started
+        using the startInstances method. You can specify a
+        maximum of 1000 instances with this method per request.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_stop_instances():
+                # Create a client
+                client = compute_v1.RegionInstanceGroupManagersClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.StopInstancesRegionInstanceGroupManagerRequest(
+                    instance_group_manager="instance_group_manager_value",
+                    project="project_value",
+                    region="region_value",
+                )
+
+                # Make the request
+                response = client.stop_instances(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.StopInstancesRegionInstanceGroupManagerRequest, dict]):
+                The request object. A request message for
+                RegionInstanceGroupManagers.StopInstances.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region (str):
+                Name of the region scoping this
+                request.
+
+                This corresponds to the ``region`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            instance_group_manager (str):
+                The name of the managed instance
+                group.
+
+                This corresponds to the ``instance_group_manager`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region_instance_group_managers_stop_instances_request_resource (google.cloud.compute_v1.types.RegionInstanceGroupManagersStopInstancesRequest):
+                The body resource for this request
+                This corresponds to the ``region_instance_group_managers_stop_instances_request_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any(
+            [
+                project,
+                region,
+                instance_group_manager,
+                region_instance_group_managers_stop_instances_request_resource,
+            ]
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.StopInstancesRegionInstanceGroupManagerRequest
+        ):
+            request = compute.StopInstancesRegionInstanceGroupManagerRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if region is not None:
+                request.region = region
+            if instance_group_manager is not None:
+                request.instance_group_manager = instance_group_manager
+            if (
+                region_instance_group_managers_stop_instances_request_resource
+                is not None
+            ):
+                request.region_instance_group_managers_stop_instances_request_resource = (
+                    region_instance_group_managers_stop_instances_request_resource
+                )
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.stop_instances]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("region", request.region),
+                    ("instance_group_manager", request.instance_group_manager),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def stop_instances(
+        self,
+        request: Optional[
+            Union[compute.StopInstancesRegionInstanceGroupManagerRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        region: Optional[str] = None,
+        instance_group_manager: Optional[str] = None,
+        region_instance_group_managers_stop_instances_request_resource: Optional[
+            compute.RegionInstanceGroupManagersStopInstancesRequest
+        ] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> extended_operation.ExtendedOperation:
+        r"""Flags the specified instances in the managed instance
+        group to be immediately stopped. You can only specify
+        instances that are running in this request. This method
+        reduces the targetSize and increases the
+        targetStoppedSize of the managed instance group by the
+        number of instances that you stop. The stopInstances
+        operation is marked DONE if the stopInstances request is
+        successful. The underlying actions take additional time.
+        You must separately verify the status of the STOPPING
+        action with the listmanagedinstances method. If the
+        standbyPolicy.initialDelaySec field is set, the group
+        delays stopping the instances until initialDelaySec have
+        passed from instance.creationTimestamp (that is, when
+        the instance was created). This delay gives your
+        application time to set itself up and initialize on the
+        instance. If more than initialDelaySec seconds have
+        passed since instance.creationTimestamp when this method
+        is called, there will be zero delay. If the group is
+        part of a backend service that has enabled connection
+        draining, it can take up to 60 seconds after the
+        connection draining duration has elapsed before the VM
+        instance is stopped. Stopped instances can be started
+        using the startInstances method. You can specify a
+        maximum of 1000 instances with this method per request.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_stop_instances():
+                # Create a client
+                client = compute_v1.RegionInstanceGroupManagersClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.StopInstancesRegionInstanceGroupManagerRequest(
+                    instance_group_manager="instance_group_manager_value",
+                    project="project_value",
+                    region="region_value",
+                )
+
+                # Make the request
+                response = client.stop_instances(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.StopInstancesRegionInstanceGroupManagerRequest, dict]):
+                The request object. A request message for
+                RegionInstanceGroupManagers.StopInstances.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region (str):
+                Name of the region scoping this
+                request.
+
+                This corresponds to the ``region`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            instance_group_manager (str):
+                The name of the managed instance
+                group.
+
+                This corresponds to the ``instance_group_manager`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region_instance_group_managers_stop_instances_request_resource (google.cloud.compute_v1.types.RegionInstanceGroupManagersStopInstancesRequest):
+                The body resource for this request
+                This corresponds to the ``region_instance_group_managers_stop_instances_request_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any(
+            [
+                project,
+                region,
+                instance_group_manager,
+                region_instance_group_managers_stop_instances_request_resource,
+            ]
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.StopInstancesRegionInstanceGroupManagerRequest
+        ):
+            request = compute.StopInstancesRegionInstanceGroupManagerRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if region is not None:
+                request.region = region
+            if instance_group_manager is not None:
+                request.instance_group_manager = instance_group_manager
+            if (
+                region_instance_group_managers_stop_instances_request_resource
+                is not None
+            ):
+                request.region_instance_group_managers_stop_instances_request_resource = (
+                    region_instance_group_managers_stop_instances_request_resource
+                )
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.stop_instances]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("region", request.region),
+                    ("instance_group_manager", request.instance_group_manager),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        operation_service = self._transport._region_operations_client
+        operation_request = compute.GetRegionOperationRequest()
+        operation_request.project = request.project
+        operation_request.region = request.region
+        operation_request.operation = response.name
+
+        get_operation = functools.partial(operation_service.get, operation_request)
+        # Cancel is not part of extended operations yet.
+        cancel_operation = lambda: None
+
+        # Note: this class is an implementation detail to provide a uniform
+        # set of names for certain fields in the extended operation proto message.
+        # See google.api_core.extended_operation.ExtendedOperation for details
+        # on these properties and the  expected interface.
+        class _CustomOperation(extended_operation.ExtendedOperation):
+            @property
+            def error_message(self):
+                return self._extended_operation.http_error_message
+
+            @property
+            def error_code(self):
+                return self._extended_operation.http_error_status_code
+
+        response = _CustomOperation.make(get_operation, cancel_operation, response)
+
+        # Done; return the response.
+        return response
+
+    def suspend_instances_unary(
+        self,
+        request: Optional[
+            Union[compute.SuspendInstancesRegionInstanceGroupManagerRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        region: Optional[str] = None,
+        instance_group_manager: Optional[str] = None,
+        region_instance_group_managers_suspend_instances_request_resource: Optional[
+            compute.RegionInstanceGroupManagersSuspendInstancesRequest
+        ] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> compute.Operation:
+        r"""Flags the specified instances in the managed instance
+        group to be immediately suspended. You can only specify
+        instances that are running in this request. This method
+        reduces the targetSize and increases the
+        targetSuspendedSize of the managed instance group by the
+        number of instances that you suspend. The
+        suspendInstances operation is marked DONE if the
+        suspendInstances request is successful. The underlying
+        actions take additional time. You must separately verify
+        the status of the SUSPENDING action with the
+        listmanagedinstances method. If the
+        standbyPolicy.initialDelaySec field is set, the group
+        delays suspension of the instances until initialDelaySec
+        have passed from instance.creationTimestamp (that is,
+        when the instance was created). This delay gives your
+        application time to set itself up and initialize on the
+        instance. If more than initialDelaySec seconds have
+        passed since instance.creationTimestamp when this method
+        is called, there will be zero delay. If the group is
+        part of a backend service that has enabled connection
+        draining, it can take up to 60 seconds after the
+        connection draining duration has elapsed before the VM
+        instance is suspended. Suspended instances can be
+        resumed using the resumeInstances method. You can
+        specify a maximum of 1000 instances with this method per
+        request.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_suspend_instances():
+                # Create a client
+                client = compute_v1.RegionInstanceGroupManagersClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.SuspendInstancesRegionInstanceGroupManagerRequest(
+                    instance_group_manager="instance_group_manager_value",
+                    project="project_value",
+                    region="region_value",
+                )
+
+                # Make the request
+                response = client.suspend_instances(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.SuspendInstancesRegionInstanceGroupManagerRequest, dict]):
+                The request object. A request message for
+                RegionInstanceGroupManagers.SuspendInstances.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region (str):
+                Name of the region scoping this
+                request.
+
+                This corresponds to the ``region`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            instance_group_manager (str):
+                Name of the managed instance group.
+                This corresponds to the ``instance_group_manager`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region_instance_group_managers_suspend_instances_request_resource (google.cloud.compute_v1.types.RegionInstanceGroupManagersSuspendInstancesRequest):
+                The body resource for this request
+                This corresponds to the ``region_instance_group_managers_suspend_instances_request_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any(
+            [
+                project,
+                region,
+                instance_group_manager,
+                region_instance_group_managers_suspend_instances_request_resource,
+            ]
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.SuspendInstancesRegionInstanceGroupManagerRequest
+        ):
+            request = compute.SuspendInstancesRegionInstanceGroupManagerRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if region is not None:
+                request.region = region
+            if instance_group_manager is not None:
+                request.instance_group_manager = instance_group_manager
+            if (
+                region_instance_group_managers_suspend_instances_request_resource
+                is not None
+            ):
+                request.region_instance_group_managers_suspend_instances_request_resource = (
+                    region_instance_group_managers_suspend_instances_request_resource
+                )
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.suspend_instances]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("region", request.region),
+                    ("instance_group_manager", request.instance_group_manager),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def suspend_instances(
+        self,
+        request: Optional[
+            Union[compute.SuspendInstancesRegionInstanceGroupManagerRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        region: Optional[str] = None,
+        instance_group_manager: Optional[str] = None,
+        region_instance_group_managers_suspend_instances_request_resource: Optional[
+            compute.RegionInstanceGroupManagersSuspendInstancesRequest
+        ] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> extended_operation.ExtendedOperation:
+        r"""Flags the specified instances in the managed instance
+        group to be immediately suspended. You can only specify
+        instances that are running in this request. This method
+        reduces the targetSize and increases the
+        targetSuspendedSize of the managed instance group by the
+        number of instances that you suspend. The
+        suspendInstances operation is marked DONE if the
+        suspendInstances request is successful. The underlying
+        actions take additional time. You must separately verify
+        the status of the SUSPENDING action with the
+        listmanagedinstances method. If the
+        standbyPolicy.initialDelaySec field is set, the group
+        delays suspension of the instances until initialDelaySec
+        have passed from instance.creationTimestamp (that is,
+        when the instance was created). This delay gives your
+        application time to set itself up and initialize on the
+        instance. If more than initialDelaySec seconds have
+        passed since instance.creationTimestamp when this method
+        is called, there will be zero delay. If the group is
+        part of a backend service that has enabled connection
+        draining, it can take up to 60 seconds after the
+        connection draining duration has elapsed before the VM
+        instance is suspended. Suspended instances can be
+        resumed using the resumeInstances method. You can
+        specify a maximum of 1000 instances with this method per
+        request.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_suspend_instances():
+                # Create a client
+                client = compute_v1.RegionInstanceGroupManagersClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.SuspendInstancesRegionInstanceGroupManagerRequest(
+                    instance_group_manager="instance_group_manager_value",
+                    project="project_value",
+                    region="region_value",
+                )
+
+                # Make the request
+                response = client.suspend_instances(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.SuspendInstancesRegionInstanceGroupManagerRequest, dict]):
+                The request object. A request message for
+                RegionInstanceGroupManagers.SuspendInstances.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region (str):
+                Name of the region scoping this
+                request.
+
+                This corresponds to the ``region`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            instance_group_manager (str):
+                Name of the managed instance group.
+                This corresponds to the ``instance_group_manager`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            region_instance_group_managers_suspend_instances_request_resource (google.cloud.compute_v1.types.RegionInstanceGroupManagersSuspendInstancesRequest):
+                The body resource for this request
+                This corresponds to the ``region_instance_group_managers_suspend_instances_request_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any(
+            [
+                project,
+                region,
+                instance_group_manager,
+                region_instance_group_managers_suspend_instances_request_resource,
+            ]
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.SuspendInstancesRegionInstanceGroupManagerRequest
+        ):
+            request = compute.SuspendInstancesRegionInstanceGroupManagerRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if region is not None:
+                request.region = region
+            if instance_group_manager is not None:
+                request.instance_group_manager = instance_group_manager
+            if (
+                region_instance_group_managers_suspend_instances_request_resource
+                is not None
+            ):
+                request.region_instance_group_managers_suspend_instances_request_resource = (
+                    region_instance_group_managers_suspend_instances_request_resource
+                )
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.suspend_instances]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("region", request.region),
+                    ("instance_group_manager", request.instance_group_manager),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        operation_service = self._transport._region_operations_client
+        operation_request = compute.GetRegionOperationRequest()
+        operation_request.project = request.project
+        operation_request.region = request.region
+        operation_request.operation = response.name
+
+        get_operation = functools.partial(operation_service.get, operation_request)
+        # Cancel is not part of extended operations yet.
+        cancel_operation = lambda: None
+
+        # Note: this class is an implementation detail to provide a uniform
+        # set of names for certain fields in the extended operation proto message.
+        # See google.api_core.extended_operation.ExtendedOperation for details
+        # on these properties and the  expected interface.
+        class _CustomOperation(extended_operation.ExtendedOperation):
+            @property
+            def error_message(self):
+                return self._extended_operation.http_error_message
+
+            @property
+            def error_code(self):
+                return self._extended_operation.http_error_status_code
+
+        response = _CustomOperation.make(get_operation, cancel_operation, response)
+
+        # Done; return the response.
+        return response
+
     def update_per_instance_configs_unary(
         self,
         request: Optional[
@@ -5853,7 +7430,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> compute.Operation:
         r"""Inserts or updates per-instance configurations for
         the managed instance group. perInstanceConfig.name
@@ -5920,8 +7497,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:
@@ -6018,7 +7597,7 @@ class RegionInstanceGroupManagersClient(
         ] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> extended_operation.ExtendedOperation:
         r"""Inserts or updates per-instance configurations for
         the managed instance group. perInstanceConfig.name
@@ -6085,8 +7664,10 @@ class RegionInstanceGroupManagersClient(
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.extended_operation.ExtendedOperation:

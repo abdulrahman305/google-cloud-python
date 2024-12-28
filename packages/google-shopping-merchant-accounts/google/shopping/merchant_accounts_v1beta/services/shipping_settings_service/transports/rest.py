@@ -13,38 +13,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.shopping.merchant_accounts_v1beta.types import shippingsettings
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseShippingSettingsServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.shopping.merchant_accounts_v1beta.types import shippingsettings
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import ShippingSettingsServiceTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -88,8 +93,11 @@ class ShippingSettingsServiceRestInterceptor:
     def pre_get_shipping_settings(
         self,
         request: shippingsettings.GetShippingSettingsRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[shippingsettings.GetShippingSettingsRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        shippingsettings.GetShippingSettingsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
         """Pre-rpc interceptor for get_shipping_settings
 
         Override in a subclass to manipulate the request or metadata
@@ -111,9 +119,10 @@ class ShippingSettingsServiceRestInterceptor:
     def pre_insert_shipping_settings(
         self,
         request: shippingsettings.InsertShippingSettingsRequest,
-        metadata: Sequence[Tuple[str, str]],
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
     ) -> Tuple[
-        shippingsettings.InsertShippingSettingsRequest, Sequence[Tuple[str, str]]
+        shippingsettings.InsertShippingSettingsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
     ]:
         """Pre-rpc interceptor for insert_shipping_settings
 
@@ -141,8 +150,8 @@ class ShippingSettingsServiceRestStub:
     _interceptor: ShippingSettingsServiceRestInterceptor
 
 
-class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
-    """REST backend transport for ShippingSettingsService.
+class ShippingSettingsServiceRestTransport(_BaseShippingSettingsServiceRestTransport):
+    """REST backend synchronous transport for ShippingSettingsService.
 
     Service to get method call shipping setting information per
     Merchant API method.
@@ -152,7 +161,6 @@ class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -206,21 +214,12 @@ class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -231,19 +230,34 @@ class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
         self._interceptor = interceptor or ShippingSettingsServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _GetShippingSettings(ShippingSettingsServiceRestStub):
+    class _GetShippingSettings(
+        _BaseShippingSettingsServiceRestTransport._BaseGetShippingSettings,
+        ShippingSettingsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("GetShippingSettings")
+            return hash("ShippingSettingsServiceRestTransport.GetShippingSettings")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -251,7 +265,7 @@ class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> shippingsettings.ShippingSettings:
             r"""Call the get shipping settings method over HTTP.
 
@@ -261,50 +275,71 @@ class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.shippingsettings.ShippingSettings:
-                    The merchant account's [shipping
-                setting]((https://support.google.com/merchants/answer/6069284).
+                    The merchant account's `shipping
+                setting <https://support.google.com/merchants/answer/6069284>`__.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/accounts/v1beta/{name=accounts/*/shippingSettings}",
-                },
-            ]
+            http_options = (
+                _BaseShippingSettingsServiceRestTransport._BaseGetShippingSettings._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_shipping_settings(
                 request, metadata
             )
-            pb_request = shippingsettings.GetShippingSettingsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseShippingSettingsServiceRestTransport._BaseGetShippingSettings._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseShippingSettingsServiceRestTransport._BaseGetShippingSettings._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.accounts_v1beta.ShippingSettingsServiceClient.GetShippingSettings",
+                    extra={
+                        "serviceName": "google.shopping.merchant.accounts.v1beta.ShippingSettingsService",
+                        "rpcName": "GetShippingSettings",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = (
+                ShippingSettingsServiceRestTransport._GetShippingSettings._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -317,22 +352,62 @@ class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
             pb_resp = shippingsettings.ShippingSettings.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_shipping_settings(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = shippingsettings.ShippingSettings.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.merchant.accounts_v1beta.ShippingSettingsServiceClient.get_shipping_settings",
+                    extra={
+                        "serviceName": "google.shopping.merchant.accounts.v1beta.ShippingSettingsService",
+                        "rpcName": "GetShippingSettings",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _InsertShippingSettings(ShippingSettingsServiceRestStub):
+    class _InsertShippingSettings(
+        _BaseShippingSettingsServiceRestTransport._BaseInsertShippingSettings,
+        ShippingSettingsServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("InsertShippingSettings")
+            return hash("ShippingSettingsServiceRestTransport.InsertShippingSettings")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -340,7 +415,7 @@ class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> shippingsettings.ShippingSettings:
             r"""Call the insert shipping settings method over HTTP.
 
@@ -351,57 +426,74 @@ class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.shippingsettings.ShippingSettings:
-                    The merchant account's [shipping
-                setting]((https://support.google.com/merchants/answer/6069284).
+                    The merchant account's `shipping
+                setting <https://support.google.com/merchants/answer/6069284>`__.
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/accounts/v1beta/{parent=accounts/*}/shippingSettings:insert",
-                    "body": "shipping_setting",
-                },
-            ]
+            http_options = (
+                _BaseShippingSettingsServiceRestTransport._BaseInsertShippingSettings._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_insert_shipping_settings(
                 request, metadata
             )
-            pb_request = shippingsettings.InsertShippingSettingsRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseShippingSettingsServiceRestTransport._BaseInsertShippingSettings._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseShippingSettingsServiceRestTransport._BaseInsertShippingSettings._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseShippingSettingsServiceRestTransport._BaseInsertShippingSettings._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.shopping.merchant.accounts_v1beta.ShippingSettingsServiceClient.InsertShippingSettings",
+                    extra={
+                        "serviceName": "google.shopping.merchant.accounts.v1beta.ShippingSettingsService",
+                        "rpcName": "InsertShippingSettings",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = ShippingSettingsServiceRestTransport._InsertShippingSettings._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -414,7 +506,31 @@ class ShippingSettingsServiceRestTransport(ShippingSettingsServiceTransport):
             pb_resp = shippingsettings.ShippingSettings.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_insert_shipping_settings(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = shippingsettings.ShippingSettings.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.shopping.merchant.accounts_v1beta.ShippingSettingsServiceClient.insert_shipping_settings",
+                    extra={
+                        "serviceName": "google.shopping.merchant.accounts.v1beta.ShippingSettingsService",
+                        "rpcName": "InsertShippingSettings",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property

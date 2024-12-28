@@ -13,41 +13,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.cloud.oslogin_v1.common.types import common
+from google.cloud.oslogin_v1.types import oslogin
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseOsLoginServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.protobuf import empty_pb2  # type: ignore
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from google.cloud.oslogin_v1.common.types import common
-from google.cloud.oslogin_v1.types import oslogin
-
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import OsLoginServiceTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -123,8 +127,10 @@ class OsLoginServiceRestInterceptor:
     def pre_create_ssh_public_key(
         self,
         request: oslogin.CreateSshPublicKeyRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[oslogin.CreateSshPublicKeyRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        oslogin.CreateSshPublicKeyRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for create_ssh_public_key
 
         Override in a subclass to manipulate the request or metadata
@@ -146,8 +152,10 @@ class OsLoginServiceRestInterceptor:
     def pre_delete_posix_account(
         self,
         request: oslogin.DeletePosixAccountRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[oslogin.DeletePosixAccountRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        oslogin.DeletePosixAccountRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for delete_posix_account
 
         Override in a subclass to manipulate the request or metadata
@@ -158,8 +166,10 @@ class OsLoginServiceRestInterceptor:
     def pre_delete_ssh_public_key(
         self,
         request: oslogin.DeleteSshPublicKeyRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[oslogin.DeleteSshPublicKeyRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        oslogin.DeleteSshPublicKeyRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for delete_ssh_public_key
 
         Override in a subclass to manipulate the request or metadata
@@ -170,8 +180,8 @@ class OsLoginServiceRestInterceptor:
     def pre_get_login_profile(
         self,
         request: oslogin.GetLoginProfileRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[oslogin.GetLoginProfileRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[oslogin.GetLoginProfileRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for get_login_profile
 
         Override in a subclass to manipulate the request or metadata
@@ -193,8 +203,8 @@ class OsLoginServiceRestInterceptor:
     def pre_get_ssh_public_key(
         self,
         request: oslogin.GetSshPublicKeyRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[oslogin.GetSshPublicKeyRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[oslogin.GetSshPublicKeyRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for get_ssh_public_key
 
         Override in a subclass to manipulate the request or metadata
@@ -216,8 +226,10 @@ class OsLoginServiceRestInterceptor:
     def pre_import_ssh_public_key(
         self,
         request: oslogin.ImportSshPublicKeyRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[oslogin.ImportSshPublicKeyRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        oslogin.ImportSshPublicKeyRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for import_ssh_public_key
 
         Override in a subclass to manipulate the request or metadata
@@ -239,8 +251,10 @@ class OsLoginServiceRestInterceptor:
     def pre_update_ssh_public_key(
         self,
         request: oslogin.UpdateSshPublicKeyRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[oslogin.UpdateSshPublicKeyRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        oslogin.UpdateSshPublicKeyRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for update_ssh_public_key
 
         Override in a subclass to manipulate the request or metadata
@@ -267,8 +281,8 @@ class OsLoginServiceRestStub:
     _interceptor: OsLoginServiceRestInterceptor
 
 
-class OsLoginServiceRestTransport(OsLoginServiceTransport):
-    """REST backend transport for OsLoginService.
+class OsLoginServiceRestTransport(_BaseOsLoginServiceRestTransport):
+    """REST backend synchronous transport for OsLoginService.
 
     Cloud OS Login API
 
@@ -281,7 +295,6 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -335,21 +348,12 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -360,19 +364,34 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
         self._interceptor = interceptor or OsLoginServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _CreateSshPublicKey(OsLoginServiceRestStub):
+    class _CreateSshPublicKey(
+        _BaseOsLoginServiceRestTransport._BaseCreateSshPublicKey, OsLoginServiceRestStub
+    ):
         def __hash__(self):
-            return hash("CreateSshPublicKey")
+            return hash("OsLoginServiceRestTransport.CreateSshPublicKey")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -380,7 +399,7 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> common.SshPublicKey:
             r"""Call the create ssh public key method over HTTP.
 
@@ -391,8 +410,10 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.common.SshPublicKey:
@@ -401,47 +422,62 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=users/*}/sshPublicKeys",
-                    "body": "ssh_public_key",
-                },
-            ]
+            http_options = (
+                _BaseOsLoginServiceRestTransport._BaseCreateSshPublicKey._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_ssh_public_key(
                 request, metadata
             )
-            pb_request = oslogin.CreateSshPublicKeyRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseOsLoginServiceRestTransport._BaseCreateSshPublicKey._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseOsLoginServiceRestTransport._BaseCreateSshPublicKey._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsLoginServiceRestTransport._BaseCreateSshPublicKey._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.oslogin_v1.OsLoginServiceClient.CreateSshPublicKey",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "CreateSshPublicKey",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = OsLoginServiceRestTransport._CreateSshPublicKey._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -454,22 +490,58 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             pb_resp = common.SshPublicKey.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_ssh_public_key(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = common.SshPublicKey.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.oslogin_v1.OsLoginServiceClient.create_ssh_public_key",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "CreateSshPublicKey",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _DeletePosixAccount(OsLoginServiceRestStub):
+    class _DeletePosixAccount(
+        _BaseOsLoginServiceRestTransport._BaseDeletePosixAccount, OsLoginServiceRestStub
+    ):
         def __hash__(self):
-            return hash("DeletePosixAccount")
+            return hash("OsLoginServiceRestTransport.DeletePosixAccount")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -477,7 +549,7 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete posix account method over HTTP.
 
@@ -488,44 +560,63 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=users/*/projects/*}",
-                },
-            ]
+            http_options = (
+                _BaseOsLoginServiceRestTransport._BaseDeletePosixAccount._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_posix_account(
                 request, metadata
             )
-            pb_request = oslogin.DeletePosixAccountRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseOsLoginServiceRestTransport._BaseDeletePosixAccount._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsLoginServiceRestTransport._BaseDeletePosixAccount._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.oslogin_v1.OsLoginServiceClient.DeletePosixAccount",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "DeletePosixAccount",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = OsLoginServiceRestTransport._DeletePosixAccount._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -533,19 +624,33 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _DeleteSshPublicKey(OsLoginServiceRestStub):
+    class _DeleteSshPublicKey(
+        _BaseOsLoginServiceRestTransport._BaseDeleteSshPublicKey, OsLoginServiceRestStub
+    ):
         def __hash__(self):
-            return hash("DeleteSshPublicKey")
+            return hash("OsLoginServiceRestTransport.DeleteSshPublicKey")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -553,7 +658,7 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ):
             r"""Call the delete ssh public key method over HTTP.
 
@@ -564,44 +669,63 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "delete",
-                    "uri": "/v1/{name=users/*/sshPublicKeys/*}",
-                },
-            ]
+            http_options = (
+                _BaseOsLoginServiceRestTransport._BaseDeleteSshPublicKey._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_delete_ssh_public_key(
                 request, metadata
             )
-            pb_request = oslogin.DeleteSshPublicKeyRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseOsLoginServiceRestTransport._BaseDeleteSshPublicKey._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsLoginServiceRestTransport._BaseDeleteSshPublicKey._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.oslogin_v1.OsLoginServiceClient.DeleteSshPublicKey",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "DeleteSshPublicKey",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = OsLoginServiceRestTransport._DeleteSshPublicKey._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -609,19 +733,33 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
-    class _GetLoginProfile(OsLoginServiceRestStub):
+    class _GetLoginProfile(
+        _BaseOsLoginServiceRestTransport._BaseGetLoginProfile, OsLoginServiceRestStub
+    ):
         def __hash__(self):
-            return hash("GetLoginProfile")
+            return hash("OsLoginServiceRestTransport.GetLoginProfile")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -629,7 +767,7 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> oslogin.LoginProfile:
             r"""Call the get login profile method over HTTP.
 
@@ -640,8 +778,10 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.oslogin.LoginProfile:
@@ -651,40 +791,57 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=users/*}/loginProfile",
-                },
-            ]
+            http_options = (
+                _BaseOsLoginServiceRestTransport._BaseGetLoginProfile._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_login_profile(
                 request, metadata
             )
-            pb_request = oslogin.GetLoginProfileRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseOsLoginServiceRestTransport._BaseGetLoginProfile._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsLoginServiceRestTransport._BaseGetLoginProfile._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.oslogin_v1.OsLoginServiceClient.GetLoginProfile",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "GetLoginProfile",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = OsLoginServiceRestTransport._GetLoginProfile._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -697,22 +854,58 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             pb_resp = oslogin.LoginProfile.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_login_profile(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = oslogin.LoginProfile.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.oslogin_v1.OsLoginServiceClient.get_login_profile",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "GetLoginProfile",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetSshPublicKey(OsLoginServiceRestStub):
+    class _GetSshPublicKey(
+        _BaseOsLoginServiceRestTransport._BaseGetSshPublicKey, OsLoginServiceRestStub
+    ):
         def __hash__(self):
-            return hash("GetSshPublicKey")
+            return hash("OsLoginServiceRestTransport.GetSshPublicKey")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -720,7 +913,7 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> common.SshPublicKey:
             r"""Call the get ssh public key method over HTTP.
 
@@ -731,8 +924,10 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.common.SshPublicKey:
@@ -741,40 +936,57 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1/{name=users/*/sshPublicKeys/*}",
-                },
-            ]
+            http_options = (
+                _BaseOsLoginServiceRestTransport._BaseGetSshPublicKey._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_get_ssh_public_key(
                 request, metadata
             )
-            pb_request = oslogin.GetSshPublicKeyRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+            transcoded_request = _BaseOsLoginServiceRestTransport._BaseGetSshPublicKey._get_transcoded_request(
+                http_options, request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsLoginServiceRestTransport._BaseGetSshPublicKey._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.oslogin_v1.OsLoginServiceClient.GetSshPublicKey",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "GetSshPublicKey",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = OsLoginServiceRestTransport._GetSshPublicKey._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -787,22 +999,59 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             pb_resp = common.SshPublicKey.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_ssh_public_key(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = common.SshPublicKey.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.oslogin_v1.OsLoginServiceClient.get_ssh_public_key",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "GetSshPublicKey",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _ImportSshPublicKey(OsLoginServiceRestStub):
+    class _ImportSshPublicKey(
+        _BaseOsLoginServiceRestTransport._BaseImportSshPublicKey, OsLoginServiceRestStub
+    ):
         def __hash__(self):
-            return hash("ImportSshPublicKey")
+            return hash("OsLoginServiceRestTransport.ImportSshPublicKey")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -810,7 +1059,7 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> oslogin.ImportSshPublicKeyResponse:
             r"""Call the import ssh public key method over HTTP.
 
@@ -821,8 +1070,10 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.oslogin.ImportSshPublicKeyResponse:
@@ -831,47 +1082,62 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1/{parent=users/*}:importSshPublicKey",
-                    "body": "ssh_public_key",
-                },
-            ]
+            http_options = (
+                _BaseOsLoginServiceRestTransport._BaseImportSshPublicKey._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_import_ssh_public_key(
                 request, metadata
             )
-            pb_request = oslogin.ImportSshPublicKeyRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseOsLoginServiceRestTransport._BaseImportSshPublicKey._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseOsLoginServiceRestTransport._BaseImportSshPublicKey._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsLoginServiceRestTransport._BaseImportSshPublicKey._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.oslogin_v1.OsLoginServiceClient.ImportSshPublicKey",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "ImportSshPublicKey",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = OsLoginServiceRestTransport._ImportSshPublicKey._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -884,22 +1150,61 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             pb_resp = oslogin.ImportSshPublicKeyResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_import_ssh_public_key(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = oslogin.ImportSshPublicKeyResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.oslogin_v1.OsLoginServiceClient.import_ssh_public_key",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "ImportSshPublicKey",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _UpdateSshPublicKey(OsLoginServiceRestStub):
+    class _UpdateSshPublicKey(
+        _BaseOsLoginServiceRestTransport._BaseUpdateSshPublicKey, OsLoginServiceRestStub
+    ):
         def __hash__(self):
-            return hash("UpdateSshPublicKey")
+            return hash("OsLoginServiceRestTransport.UpdateSshPublicKey")
 
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
-
-        @classmethod
-        def _get_unset_required_fields(cls, message_dict):
-            return {
-                k: v
-                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
-                if k not in message_dict
-            }
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -907,7 +1212,7 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> common.SshPublicKey:
             r"""Call the update ssh public key method over HTTP.
 
@@ -918,8 +1223,10 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.common.SshPublicKey:
@@ -928,47 +1235,62 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "patch",
-                    "uri": "/v1/{name=users/*/sshPublicKeys/*}",
-                    "body": "ssh_public_key",
-                },
-            ]
+            http_options = (
+                _BaseOsLoginServiceRestTransport._BaseUpdateSshPublicKey._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_update_ssh_public_key(
                 request, metadata
             )
-            pb_request = oslogin.UpdateSshPublicKeyRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseOsLoginServiceRestTransport._BaseUpdateSshPublicKey._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseOsLoginServiceRestTransport._BaseUpdateSshPublicKey._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseOsLoginServiceRestTransport._BaseUpdateSshPublicKey._get_query_params_json(
+                transcoded_request
             )
-            query_params.update(self._get_unset_required_fields(query_params))
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.oslogin_v1.OsLoginServiceClient.UpdateSshPublicKey",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "UpdateSshPublicKey",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = OsLoginServiceRestTransport._UpdateSshPublicKey._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -981,7 +1303,29 @@ class OsLoginServiceRestTransport(OsLoginServiceTransport):
             pb_resp = common.SshPublicKey.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_update_ssh_public_key(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = common.SshPublicKey.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.oslogin_v1.OsLoginServiceClient.update_ssh_public_key",
+                    extra={
+                        "serviceName": "google.cloud.oslogin.v1.OsLoginService",
+                        "rpcName": "UpdateSshPublicKey",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property

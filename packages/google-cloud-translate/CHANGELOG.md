@@ -4,6 +4,38 @@
 
 [1]: https://pypi.org/project/google-cloud-translate/#history
 
+
+## [3.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.18.0...google-cloud-translate-v3.19.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([cf4d0e0](https://github.com/googleapis/google-cloud-python/commit/cf4d0e0ddd6d9d8808bde59d8b62acb4ff7f1750))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([cf4d0e0](https://github.com/googleapis/google-cloud-python/commit/cf4d0e0ddd6d9d8808bde59d8b62acb4ff7f1750))
+
+## [3.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.17.0...google-cloud-translate-v3.18.0) (2024-11-11)
+
+
+### Features
+
+* Adds Contextual Glossary support for Translation and AdaptiveMt ([ae4acf3](https://github.com/googleapis/google-cloud-python/commit/ae4acf3d4bbc5941c72cf59e48aab0fbba7ef15d))
+
+
+### Bug Fixes
+
+* disable universe-domain validation  ([#13246](https://github.com/googleapis/google-cloud-python/issues/13246)) ([bcad563](https://github.com/googleapis/google-cloud-python/commit/bcad563acea541bb51f9fbd005f18e9f32e381f0))
+
+## [3.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.16.0...google-cloud-translate-v3.17.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13210](https://github.com/googleapis/google-cloud-python/issues/13210)) ([0b62ac6](https://github.com/googleapis/google-cloud-python/commit/0b62ac6aa99bd3259a088097630f2bd1f06825e6))
+
 ## [3.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.15.5...google-cloud-translate-v3.16.0) (2024-08-08)
 
 

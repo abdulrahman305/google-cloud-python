@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -54,6 +54,15 @@ from google.analytics.data_v1beta.types import analytics_data_api, data
 from .client import BetaAnalyticsDataClient
 from .transports.base import DEFAULT_CLIENT_INFO, BetaAnalyticsDataTransport
 from .transports.grpc_asyncio import BetaAnalyticsDataGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class BetaAnalyticsDataAsyncClient:
@@ -196,9 +205,7 @@ class BetaAnalyticsDataAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(BetaAnalyticsDataClient).get_transport_class, type(BetaAnalyticsDataClient)
-    )
+    get_transport_class = BetaAnalyticsDataClient.get_transport_class
 
     def __init__(
         self,
@@ -270,13 +277,35 @@ class BetaAnalyticsDataAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.analytics.data_v1beta.BetaAnalyticsDataAsyncClient`.",
+                extra={
+                    "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.analytics.data.v1beta.BetaAnalyticsData",
+                    "credentialsType": None,
+                },
+            )
+
     async def run_report(
         self,
         request: Optional[Union[analytics_data_api.RunReportRequest, dict]] = None,
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.RunReportResponse:
         r"""Returns a customized report of your Google Analytics event data.
         Reports contain statistics derived from data collected by the
@@ -322,8 +351,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.types.RunReportResponse:
@@ -369,7 +400,7 @@ class BetaAnalyticsDataAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.RunPivotReportResponse:
         r"""Returns a customized pivot report of your Google
         Analytics event data. Pivot reports are more advanced
@@ -410,8 +441,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.types.RunPivotReportResponse:
@@ -459,10 +492,10 @@ class BetaAnalyticsDataAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.BatchRunReportsResponse:
         r"""Returns multiple reports in a batch. All reports must
-        be for the same GA4 Property.
+        be for the same Google Analytics property.
 
         .. code-block:: python
 
@@ -496,8 +529,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.types.BatchRunReportsResponse:
@@ -545,10 +580,10 @@ class BetaAnalyticsDataAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.BatchRunPivotReportsResponse:
         r"""Returns multiple pivot reports in a batch. All
-        reports must be for the same GA4 Property.
+        reports must be for the same Google Analytics property.
 
         .. code-block:: python
 
@@ -582,8 +617,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.types.BatchRunPivotReportsResponse:
@@ -630,11 +667,11 @@ class BetaAnalyticsDataAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.Metadata:
         r"""Returns metadata for dimensions and metrics available in
         reporting methods. Used to explore the dimensions and metrics.
-        In this method, a Google Analytics GA4 Property Identifier is
+        In this method, a Google Analytics property identifier is
         specified in the request, and the metadata response includes
         Custom dimensions and metrics as well as Universal metadata.
 
@@ -677,8 +714,8 @@ class BetaAnalyticsDataAsyncClient:
             name (:class:`str`):
                 Required. The resource name of the metadata to retrieve.
                 This name field is specified in the URL path and not URL
-                parameters. Property is a numeric Google Analytics GA4
-                Property identifier. To learn more, see `where to find
+                parameters. Property is a numeric Google Analytics
+                property identifier. To learn more, see `where to find
                 your Property
                 ID <https://developers.google.com/analytics/devguides/reporting/data/v1/property-id>`__.
 
@@ -694,8 +731,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.types.Metadata:
@@ -758,7 +797,7 @@ class BetaAnalyticsDataAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.RunRealtimeReportResponse:
         r"""Returns a customized report of realtime event data for your
         property. Events appear in realtime reports seconds after they
@@ -803,8 +842,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.types.RunRealtimeReportResponse:
@@ -852,7 +893,7 @@ class BetaAnalyticsDataAsyncClient:
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.CheckCompatibilityResponse:
         r"""This compatibility method lists dimensions and
         metrics that can be added to a report request and
@@ -903,8 +944,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.types.CheckCompatibilityResponse:
@@ -955,7 +998,7 @@ class BetaAnalyticsDataAsyncClient:
         audience_export: Optional[analytics_data_api.AudienceExport] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
         r"""Creates an audience export for later retrieval. This method
         quickly returns the audience export's resource name and
@@ -1041,8 +1084,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation_async.AsyncOperation:
@@ -1118,7 +1163,7 @@ class BetaAnalyticsDataAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.QueryAudienceExportResponse:
         r"""Retrieves an audience export of users. After creating an
         audience, the users are not immediately available for exporting.
@@ -1182,8 +1227,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.types.QueryAudienceExportResponse:
@@ -1246,7 +1293,7 @@ class BetaAnalyticsDataAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> analytics_data_api.AudienceExport:
         r"""Gets configuration metadata about a specific audience export.
         This method can be used to understand an audience export after
@@ -1304,8 +1351,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.types.AudienceExport:
@@ -1371,7 +1420,7 @@ class BetaAnalyticsDataAsyncClient:
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListAudienceExportsAsyncPager:
         r"""Lists all audience exports for a property. This method can be
         used for you to find and reuse existing audience exports rather
@@ -1432,8 +1481,10 @@ class BetaAnalyticsDataAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.analytics.data_v1beta.services.beta_analytics_data.pagers.ListAudienceExportsAsyncPager:

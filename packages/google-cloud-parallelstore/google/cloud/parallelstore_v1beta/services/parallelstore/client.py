@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+import logging as std_logging
 import os
 import re
 from typing import (
@@ -47,6 +48,15 @@ try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 from google.api_core import operation  # type: ignore
 from google.api_core import operation_async  # type: ignore
@@ -549,36 +559,6 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             raise ValueError("Universe Domain cannot be an empty string.")
         return universe_domain
 
-    @staticmethod
-    def _compare_universes(
-        client_universe: str, credentials: ga_credentials.Credentials
-    ) -> bool:
-        """Returns True iff the universe domains used by the client and credentials match.
-
-        Args:
-            client_universe (str): The universe domain configured via the client options.
-            credentials (ga_credentials.Credentials): The credentials being used in the client.
-
-        Returns:
-            bool: True iff client_universe matches the universe in credentials.
-
-        Raises:
-            ValueError: when client_universe does not match the universe in credentials.
-        """
-
-        default_universe = ParallelstoreClient._DEFAULT_UNIVERSE
-        credentials_universe = getattr(credentials, "universe_domain", default_universe)
-
-        if client_universe != credentials_universe:
-            raise ValueError(
-                "The configured universe domain "
-                f"({client_universe}) does not match the universe domain "
-                f"found in the credentials ({credentials_universe}). "
-                "If you haven't configured the universe domain explicitly, "
-                f"`{default_universe}` is the default."
-            )
-        return True
-
     def _validate_universe_domain(self):
         """Validates client's and credentials' universe domains are consistent.
 
@@ -588,13 +568,9 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         Raises:
             ValueError: If the configured universe domain is not valid.
         """
-        self._is_universe_domain_valid = (
-            self._is_universe_domain_valid
-            or ParallelstoreClient._compare_universes(
-                self.universe_domain, self.transport._credentials
-            )
-        )
-        return self._is_universe_domain_valid
+
+        # NOTE (b/349488459): universe validation is disabled until further notice.
+        return True
 
     @property
     def api_endpoint(self):
@@ -700,6 +676,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         # Initialize the universe domain validation.
         self._is_universe_domain_valid = False
 
+        if CLIENT_LOGGING_SUPPORTED:  # pragma: NO COVER
+            # Setup logging.
+            client_logging.initialize_logging()
+
         api_key_value = getattr(self._client_options, "api_key", None)
         if api_key_value and credentials:
             raise ValueError(
@@ -748,7 +728,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             transport_init: Union[
                 Type[ParallelstoreTransport], Callable[..., ParallelstoreTransport]
             ] = (
-                type(self).get_transport_class(transport)
+                ParallelstoreClient.get_transport_class(transport)
                 if isinstance(transport, str) or transport is None
                 else cast(Callable[..., ParallelstoreTransport], transport)
             )
@@ -765,6 +745,29 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
                 api_audience=self._client_options.api_audience,
             )
 
+        if "async" not in str(self._transport):
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                std_logging.DEBUG
+            ):  # pragma: NO COVER
+                _LOGGER.debug(
+                    "Created client `google.cloud.parallelstore_v1beta.ParallelstoreClient`.",
+                    extra={
+                        "serviceName": "google.cloud.parallelstore.v1beta.Parallelstore",
+                        "universeDomain": getattr(
+                            self._transport._credentials, "universe_domain", ""
+                        ),
+                        "credentialsType": f"{type(self._transport._credentials).__module__}.{type(self._transport._credentials).__qualname__}",
+                        "credentialsInfo": getattr(
+                            self.transport._credentials, "get_cred_info", lambda: None
+                        )(),
+                    }
+                    if hasattr(self._transport, "_credentials")
+                    else {
+                        "serviceName": "google.cloud.parallelstore.v1beta.Parallelstore",
+                        "credentialsType": None,
+                    },
+                )
+
     def list_instances(
         self,
         request: Optional[Union[parallelstore.ListInstancesRequest, dict]] = None,
@@ -772,9 +775,9 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         parent: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListInstancesPager:
-        r"""Lists Instances in a given project and location.
+        r"""Lists all instances in a given project and location.
 
         .. code-block:: python
 
@@ -805,16 +808,14 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         Args:
             request (Union[google.cloud.parallelstore_v1beta.types.ListInstancesRequest, dict]):
-                The request object. Message for requesting list of
-                Instances
+                The request object. List instances request.
             parent (str):
                 Required. The project and location for which to retrieve
                 instance information, in the format
-                ``projects/{project_id}/locations/{location}``. For
-                Parallelstore locations map to Google Cloud zones, for
-                example **us-central1-a**. To retrieve instance
-                information for all locations, use "-" for the
-                ``{location}`` value.
+                ``projects/{project_id}/locations/{location}``.
+
+                To retrieve instance information for all locations, use
+                "-" as the value of ``{location}``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -822,16 +823,18 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.parallelstore_v1beta.services.parallelstore.pagers.ListInstancesPager:
-                Message for response to listing
-                Instances
-                Iterating over this object will yield
-                results and resolve additional pages
-                automatically.
+                Response from
+                   [ListInstances][google.cloud.parallelstore.v1beta.Parallelstore.ListInstances].
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
 
         """
         # Create or coerce a protobuf request object.
@@ -895,9 +898,9 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> parallelstore.Instance:
-        r"""Gets details of a single Instance.
+        r"""Gets details of a single instance.
 
         .. code-block:: python
 
@@ -927,7 +930,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         Args:
             request (Union[google.cloud.parallelstore_v1beta.types.GetInstanceRequest, dict]):
-                The request object. Request to get an instance's details.
+                The request object. Get an instance's details.
             name (str):
                 Required. The instance resource name, in the format
                 ``projects/{project_id}/locations/{location}/instances/{instance_id}``.
@@ -938,8 +941,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.parallelstore_v1beta.types.Instance:
@@ -997,7 +1002,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         instance_id: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
         r"""Creates a Parallelstore instance in a given project
         and location.
@@ -1039,13 +1044,12 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         Args:
             request (Union[google.cloud.parallelstore_v1beta.types.CreateInstanceRequest, dict]):
-                The request object. Request for
-                [CreateInstance][google.cloud.parallelstore.v1beta.Parallelstore.CreateInstance]
+                The request object. Create a new Parallelstore instance.
             parent (str):
                 Required. The instance's project and location, in the
                 format ``projects/{project}/locations/{location}``.
-                Locations map to Google Cloud zones, for example
-                **us-west1-b**.
+                Locations map to Google Cloud zones; for example,
+                ``us-west1-b``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1056,8 +1060,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             instance_id (str):
-                Required. The logical name of the Parallelstore instance
-                in the user project with the following restrictions:
+                Required. The name of the Parallelstore instance.
 
                 -  Must contain only lowercase letters, numbers, and
                    hyphens.
@@ -1072,8 +1075,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -1147,9 +1152,9 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
-        r"""Updates the parameters of a single Instance.
+        r"""Updates the parameters of a single instance.
 
         .. code-block:: python
 
@@ -1186,14 +1191,14 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         Args:
             request (Union[google.cloud.parallelstore_v1beta.types.UpdateInstanceRequest, dict]):
-                The request object. Message for updating a Instance
+                The request object. Update an instance.
             instance (google.cloud.parallelstore_v1beta.types.Instance):
-                Required. The instance to update
+                Required. The instance to update.
                 This corresponds to the ``instance`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             update_mask (google.protobuf.field_mask_pb2.FieldMask):
-                Required. Mask of fields to update .Field mask is used
+                Required. Mask of fields to update. Field mask is used
                 to specify the fields to be overwritten in the Instance
                 resource by the update. At least one path must be
                 supplied in this field. The fields specified in the
@@ -1206,8 +1211,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -1280,9 +1287,9 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
-        r"""Deletes a single Instance.
+        r"""Deletes a single instance.
 
         .. code-block:: python
 
@@ -1316,7 +1323,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         Args:
             request (Union[google.cloud.parallelstore_v1beta.types.DeleteInstanceRequest, dict]):
-                The request object. Message for deleting a Instance
+                The request object. Delete an instance.
             name (str):
                 Required. Name of the resource
                 This corresponds to the ``name`` field
@@ -1325,8 +1332,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -1401,10 +1410,9 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
-        r"""ImportData copies data from Cloud Storage to
-        Parallelstore.
+        r"""Copies data from Cloud Storage to Parallelstore.
 
         .. code-block:: python
 
@@ -1442,14 +1450,15 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         Args:
             request (Union[google.cloud.parallelstore_v1beta.types.ImportDataRequest, dict]):
-                The request object. Message representing the request
-                importing data from parallelstore to
-                Cloud Storage.
+                The request object. Import data from Cloud Storage into a
+                Parallelstore instance.
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -1457,8 +1466,8 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
                 The result type for the operation will be
                 :class:`google.cloud.parallelstore_v1beta.types.ImportDataResponse`
-                ImportDataResponse is the response returned from
-                ImportData rpc.
+                The response to a request to import data to
+                Parallelstore.
 
         """
         # Create or coerce a protobuf request object.
@@ -1505,10 +1514,9 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
-        r"""ExportData copies data from Parallelstore to Cloud
-        Storage
+        r"""Copies data from Parallelstore to Cloud Storage.
 
         .. code-block:: python
 
@@ -1546,14 +1554,15 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         Args:
             request (Union[google.cloud.parallelstore_v1beta.types.ExportDataRequest, dict]):
-                The request object. Message representing the request
-                exporting data from Cloud Storage to
-                parallelstore.
+                The request object. Export data from Parallelstore to
+                Cloud Storage.
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.api_core.operation.Operation:
@@ -1561,8 +1570,8 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
                 The result type for the operation will be
                 :class:`google.cloud.parallelstore_v1beta.types.ExportDataResponse`
-                ExportDataResponse is the response returned from
-                ExportData rpc
+                The response to a request to export data from
+                Parallelstore.
 
         """
         # Create or coerce a protobuf request object.
@@ -1622,7 +1631,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.ListOperationsResponse:
         r"""Lists operations that match the specified filter in the request.
 
@@ -1633,8 +1642,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.ListOperationsResponse:
                 Response message for ``ListOperations`` method.
@@ -1647,11 +1658,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.list_operations,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.list_operations]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -1679,7 +1686,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operations_pb2.Operation:
         r"""Gets the latest state of a long-running operation.
 
@@ -1690,8 +1697,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.operations_pb2.Operation:
                 An ``Operation`` object.
@@ -1704,11 +1713,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.get_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.get_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -1736,7 +1741,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Deletes a long-running operation.
 
@@ -1752,8 +1757,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             None
         """
@@ -1765,11 +1772,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.delete_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.delete_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -1794,7 +1797,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> None:
         r"""Starts asynchronous cancellation on a long-running operation.
 
@@ -1809,8 +1812,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                     if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             None
         """
@@ -1822,11 +1827,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.cancel_operation,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.cancel_operation]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -1851,7 +1852,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.Location:
         r"""Gets information about a location.
 
@@ -1862,8 +1863,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.Location:
                 Location object.
@@ -1876,11 +1879,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.get_location,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.get_location]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -1908,7 +1907,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
         *,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> locations_pb2.ListLocationsResponse:
         r"""Lists information about the supported locations for this service.
 
@@ -1919,8 +1918,10 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
             retry (google.api_core.retry.Retry): Designation of what errors,
                  if any, should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
         Returns:
             ~.location_pb2.ListLocationsResponse:
                 Response message for ``ListLocations`` method.
@@ -1933,11 +1934,7 @@ class ParallelstoreClient(metaclass=ParallelstoreClientMeta):
 
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
-        rpc = gapic_v1.method.wrap_method(
-            self._transport.list_locations,
-            default_timeout=None,
-            client_info=DEFAULT_CLIENT_INFO,
-        )
+        rpc = self._transport._wrapped_methods[self._transport.list_locations]
 
         # Certain fields should be provided within the metadata header;
         # add these here.

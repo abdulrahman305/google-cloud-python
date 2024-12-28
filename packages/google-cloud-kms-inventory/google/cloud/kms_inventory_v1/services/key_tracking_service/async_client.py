@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
+import logging as std_logging
 import re
 from typing import (
     Callable,
@@ -49,6 +49,15 @@ from google.cloud.kms_inventory_v1.types import key_tracking_service
 from .client import KeyTrackingServiceClient
 from .transports.base import DEFAULT_CLIENT_INFO, KeyTrackingServiceTransport
 from .transports.grpc_asyncio import KeyTrackingServiceGrpcAsyncIOTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
 
 
 class KeyTrackingServiceAsyncClient:
@@ -201,10 +210,7 @@ class KeyTrackingServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(KeyTrackingServiceClient).get_transport_class,
-        type(KeyTrackingServiceClient),
-    )
+    get_transport_class = KeyTrackingServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -276,6 +282,28 @@ class KeyTrackingServiceAsyncClient:
             client_info=client_info,
         )
 
+        if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        ):  # pragma: NO COVER
+            _LOGGER.debug(
+                "Created client `google.cloud.kms.inventory_v1.KeyTrackingServiceAsyncClient`.",
+                extra={
+                    "serviceName": "google.cloud.kms.inventory.v1.KeyTrackingService",
+                    "universeDomain": getattr(
+                        self._client._transport._credentials, "universe_domain", ""
+                    ),
+                    "credentialsType": f"{type(self._client._transport._credentials).__module__}.{type(self._client._transport._credentials).__qualname__}",
+                    "credentialsInfo": getattr(
+                        self.transport._credentials, "get_cred_info", lambda: None
+                    )(),
+                }
+                if hasattr(self._client._transport, "_credentials")
+                else {
+                    "serviceName": "google.cloud.kms.inventory.v1.KeyTrackingService",
+                    "credentialsType": None,
+                },
+            )
+
     async def get_protected_resources_summary(
         self,
         request: Optional[
@@ -285,7 +313,7 @@ class KeyTrackingServiceAsyncClient:
         name: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> key_tracking_service.ProtectedResourcesSummary:
         r"""Returns aggregate information about the resources protected by
         the given Cloud KMS [CryptoKey][google.cloud.kms.v1.CryptoKey].
@@ -333,8 +361,10 @@ class KeyTrackingServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.kms_inventory_v1.types.ProtectedResourcesSummary:
@@ -402,7 +432,7 @@ class KeyTrackingServiceAsyncClient:
         crypto_key: Optional[str] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
-        metadata: Sequence[Tuple[str, str]] = (),
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.SearchProtectedResourcesAsyncPager:
         r"""Returns metadata about the resources protected by the given
         Cloud KMS [CryptoKey][google.cloud.kms.v1.CryptoKey] in the
@@ -457,8 +487,10 @@ class KeyTrackingServiceAsyncClient:
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.
-            metadata (Sequence[Tuple[str, str]]): Strings which should be
-                sent along with the request as metadata.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
 
         Returns:
             google.cloud.kms_inventory_v1.services.key_tracking_service.pagers.SearchProtectedResourcesAsyncPager:

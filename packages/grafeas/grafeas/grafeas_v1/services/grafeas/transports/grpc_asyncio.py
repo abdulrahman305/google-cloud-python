@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -22,13 +26,92 @@ from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from grafeas.grafeas_v1.types import grafeas
 
 from .base import DEFAULT_CLIENT_INFO, GrafeasTransport
 from .grpc import GrafeasGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "grafeas.v1.Grafeas",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "grafeas.v1.Grafeas",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
@@ -241,7 +324,13 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -273,7 +362,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_occurrence" not in self._stubs:
-            self._stubs["get_occurrence"] = self.grpc_channel.unary_unary(
+            self._stubs["get_occurrence"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/GetOccurrence",
                 request_serializer=grafeas.GetOccurrenceRequest.serialize,
                 response_deserializer=grafeas.Occurrence.deserialize,
@@ -301,7 +390,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_occurrences" not in self._stubs:
-            self._stubs["list_occurrences"] = self.grpc_channel.unary_unary(
+            self._stubs["list_occurrences"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/ListOccurrences",
                 request_serializer=grafeas.ListOccurrencesRequest.serialize,
                 response_deserializer=grafeas.ListOccurrencesResponse.deserialize,
@@ -329,7 +418,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_occurrence" not in self._stubs:
-            self._stubs["delete_occurrence"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_occurrence"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/DeleteOccurrence",
                 request_serializer=grafeas.DeleteOccurrenceRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -355,7 +444,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_occurrence" not in self._stubs:
-            self._stubs["create_occurrence"] = self.grpc_channel.unary_unary(
+            self._stubs["create_occurrence"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/CreateOccurrence",
                 request_serializer=grafeas.CreateOccurrenceRequest.serialize,
                 response_deserializer=grafeas.Occurrence.deserialize,
@@ -384,7 +473,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "batch_create_occurrences" not in self._stubs:
-            self._stubs["batch_create_occurrences"] = self.grpc_channel.unary_unary(
+            self._stubs["batch_create_occurrences"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/BatchCreateOccurrences",
                 request_serializer=grafeas.BatchCreateOccurrencesRequest.serialize,
                 response_deserializer=grafeas.BatchCreateOccurrencesResponse.deserialize,
@@ -410,7 +499,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_occurrence" not in self._stubs:
-            self._stubs["update_occurrence"] = self.grpc_channel.unary_unary(
+            self._stubs["update_occurrence"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/UpdateOccurrence",
                 request_serializer=grafeas.UpdateOccurrenceRequest.serialize,
                 response_deserializer=grafeas.Occurrence.deserialize,
@@ -438,7 +527,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_occurrence_note" not in self._stubs:
-            self._stubs["get_occurrence_note"] = self.grpc_channel.unary_unary(
+            self._stubs["get_occurrence_note"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/GetOccurrenceNote",
                 request_serializer=grafeas.GetOccurrenceNoteRequest.serialize,
                 response_deserializer=grafeas.Note.deserialize,
@@ -462,7 +551,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_note" not in self._stubs:
-            self._stubs["get_note"] = self.grpc_channel.unary_unary(
+            self._stubs["get_note"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/GetNote",
                 request_serializer=grafeas.GetNoteRequest.serialize,
                 response_deserializer=grafeas.Note.deserialize,
@@ -488,7 +577,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_notes" not in self._stubs:
-            self._stubs["list_notes"] = self.grpc_channel.unary_unary(
+            self._stubs["list_notes"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/ListNotes",
                 request_serializer=grafeas.ListNotesRequest.serialize,
                 response_deserializer=grafeas.ListNotesResponse.deserialize,
@@ -514,7 +603,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_note" not in self._stubs:
-            self._stubs["delete_note"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_note"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/DeleteNote",
                 request_serializer=grafeas.DeleteNoteRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -540,7 +629,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_note" not in self._stubs:
-            self._stubs["create_note"] = self.grpc_channel.unary_unary(
+            self._stubs["create_note"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/CreateNote",
                 request_serializer=grafeas.CreateNoteRequest.serialize,
                 response_deserializer=grafeas.Note.deserialize,
@@ -568,7 +657,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "batch_create_notes" not in self._stubs:
-            self._stubs["batch_create_notes"] = self.grpc_channel.unary_unary(
+            self._stubs["batch_create_notes"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/BatchCreateNotes",
                 request_serializer=grafeas.BatchCreateNotesRequest.serialize,
                 response_deserializer=grafeas.BatchCreateNotesResponse.deserialize,
@@ -594,7 +683,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_note" not in self._stubs:
-            self._stubs["update_note"] = self.grpc_channel.unary_unary(
+            self._stubs["update_note"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/UpdateNote",
                 request_serializer=grafeas.UpdateNoteRequest.serialize,
                 response_deserializer=grafeas.Note.deserialize,
@@ -626,7 +715,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_note_occurrences" not in self._stubs:
-            self._stubs["list_note_occurrences"] = self.grpc_channel.unary_unary(
+            self._stubs["list_note_occurrences"] = self._logged_channel.unary_unary(
                 "/grafeas.v1.Grafeas/ListNoteOccurrences",
                 request_serializer=grafeas.ListNoteOccurrencesRequest.serialize,
                 response_deserializer=grafeas.ListNoteOccurrencesResponse.deserialize,
@@ -636,7 +725,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.get_occurrence: gapic_v1.method_async.wrap_method(
+            self.get_occurrence: self._wrap_method(
                 self.get_occurrence,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -651,7 +740,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.list_occurrences: gapic_v1.method_async.wrap_method(
+            self.list_occurrences: self._wrap_method(
                 self.list_occurrences,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -666,7 +755,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.delete_occurrence: gapic_v1.method_async.wrap_method(
+            self.delete_occurrence: self._wrap_method(
                 self.delete_occurrence,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -681,22 +770,22 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.create_occurrence: gapic_v1.method_async.wrap_method(
+            self.create_occurrence: self._wrap_method(
                 self.create_occurrence,
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.batch_create_occurrences: gapic_v1.method_async.wrap_method(
+            self.batch_create_occurrences: self._wrap_method(
                 self.batch_create_occurrences,
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.update_occurrence: gapic_v1.method_async.wrap_method(
+            self.update_occurrence: self._wrap_method(
                 self.update_occurrence,
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.get_occurrence_note: gapic_v1.method_async.wrap_method(
+            self.get_occurrence_note: self._wrap_method(
                 self.get_occurrence_note,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -711,7 +800,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.get_note: gapic_v1.method_async.wrap_method(
+            self.get_note: self._wrap_method(
                 self.get_note,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -726,7 +815,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.list_notes: gapic_v1.method_async.wrap_method(
+            self.list_notes: self._wrap_method(
                 self.list_notes,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -741,7 +830,7 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.delete_note: gapic_v1.method_async.wrap_method(
+            self.delete_note: self._wrap_method(
                 self.delete_note,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -756,22 +845,22 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.create_note: gapic_v1.method_async.wrap_method(
+            self.create_note: self._wrap_method(
                 self.create_note,
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.batch_create_notes: gapic_v1.method_async.wrap_method(
+            self.batch_create_notes: self._wrap_method(
                 self.batch_create_notes,
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.update_note: gapic_v1.method_async.wrap_method(
+            self.update_note: self._wrap_method(
                 self.update_note,
                 default_timeout=30.0,
                 client_info=client_info,
             ),
-            self.list_note_occurrences: gapic_v1.method_async.wrap_method(
+            self.list_note_occurrences: self._wrap_method(
                 self.list_note_occurrences,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -788,8 +877,17 @@ class GrafeasGrpcAsyncIOTransport(GrafeasTransport):
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("GrafeasGrpcAsyncIOTransport",)

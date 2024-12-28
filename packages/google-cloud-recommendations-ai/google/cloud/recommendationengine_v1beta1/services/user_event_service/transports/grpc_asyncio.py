@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -23,8 +27,11 @@ from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.recommendationengine_v1beta1.types import user_event as gcr_user_event
 from google.cloud.recommendationengine_v1beta1.types import import_
@@ -32,6 +39,82 @@ from google.cloud.recommendationengine_v1beta1.types import user_event_service
 
 from .base import DEFAULT_CLIENT_INFO, UserEventServiceTransport
 from .grpc import UserEventServiceGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.recommendationengine.v1beta1.UserEventService",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.recommendationengine.v1beta1.UserEventService",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
@@ -231,7 +314,13 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -254,7 +343,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -281,7 +370,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "write_user_event" not in self._stubs:
-            self._stubs["write_user_event"] = self.grpc_channel.unary_unary(
+            self._stubs["write_user_event"] = self._logged_channel.unary_unary(
                 "/google.cloud.recommendationengine.v1beta1.UserEventService/WriteUserEvent",
                 request_serializer=user_event_service.WriteUserEventRequest.serialize,
                 response_deserializer=gcr_user_event.UserEvent.deserialize,
@@ -315,7 +404,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "collect_user_event" not in self._stubs:
-            self._stubs["collect_user_event"] = self.grpc_channel.unary_unary(
+            self._stubs["collect_user_event"] = self._logged_channel.unary_unary(
                 "/google.cloud.recommendationengine.v1beta1.UserEventService/CollectUserEvent",
                 request_serializer=user_event_service.CollectUserEventRequest.serialize,
                 response_deserializer=httpbody_pb2.HttpBody.FromString,
@@ -345,7 +434,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_user_events" not in self._stubs:
-            self._stubs["list_user_events"] = self.grpc_channel.unary_unary(
+            self._stubs["list_user_events"] = self._logged_channel.unary_unary(
                 "/google.cloud.recommendationengine.v1beta1.UserEventService/ListUserEvents",
                 request_serializer=user_event_service.ListUserEventsRequest.serialize,
                 response_deserializer=user_event_service.ListUserEventsResponse.deserialize,
@@ -377,7 +466,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "purge_user_events" not in self._stubs:
-            self._stubs["purge_user_events"] = self.grpc_channel.unary_unary(
+            self._stubs["purge_user_events"] = self._logged_channel.unary_unary(
                 "/google.cloud.recommendationengine.v1beta1.UserEventService/PurgeUserEvents",
                 request_serializer=user_event_service.PurgeUserEventsRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -412,7 +501,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "import_user_events" not in self._stubs:
-            self._stubs["import_user_events"] = self.grpc_channel.unary_unary(
+            self._stubs["import_user_events"] = self._logged_channel.unary_unary(
                 "/google.cloud.recommendationengine.v1beta1.UserEventService/ImportUserEvents",
                 request_serializer=import_.ImportUserEventsRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -422,7 +511,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.write_user_event: gapic_v1.method_async.wrap_method(
+            self.write_user_event: self._wrap_method(
                 self.write_user_event,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -437,7 +526,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.collect_user_event: gapic_v1.method_async.wrap_method(
+            self.collect_user_event: self._wrap_method(
                 self.collect_user_event,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -452,7 +541,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.list_user_events: gapic_v1.method_async.wrap_method(
+            self.list_user_events: self._wrap_method(
                 self.list_user_events,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -467,7 +556,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.purge_user_events: gapic_v1.method_async.wrap_method(
+            self.purge_user_events: self._wrap_method(
                 self.purge_user_events,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -482,7 +571,7 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
-            self.import_user_events: gapic_v1.method_async.wrap_method(
+            self.import_user_events: self._wrap_method(
                 self.import_user_events,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -499,8 +588,17 @@ class UserEventServiceGrpcAsyncIOTransport(UserEventServiceTransport):
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("UserEventServiceGrpcAsyncIOTransport",)

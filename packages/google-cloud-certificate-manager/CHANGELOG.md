@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.9.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-certificate-manager-v1.8.1...google-cloud-certificate-manager-v1.9.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([e31cbb0](https://github.com/googleapis/google-cloud-python/commit/e31cbb0e11ab2cb093411005682c2fa2c38e787c))
+
+## [1.8.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-certificate-manager-v1.8.0...google-cloud-certificate-manager-v1.8.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [1.8.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-certificate-manager-v1.7.2...google-cloud-certificate-manager-v1.8.0) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
 ## [1.7.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-certificate-manager-v1.7.1...google-cloud-certificate-manager-v1.7.2) (2024-07-30)
 
 

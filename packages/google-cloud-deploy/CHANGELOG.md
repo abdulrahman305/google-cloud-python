@@ -1,5 +1,83 @@
 # Changelog
 
+## [2.5.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.4.1...google-cloud-deploy-v2.5.0) (2024-12-12)
+
+
+### Features
+
+* A new field `dns_endpoint` is added to message `.google.cloud.deploy.v1.GkeCluster` ([a33d01b](https://github.com/googleapis/google-cloud-python/commit/a33d01b5f63a30bae8afaf90ad7f29f73c66a02d))
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Documentation
+
+* `skaffold_version` field is no longer explicitly marked as optional ([d26c55b](https://github.com/googleapis/google-cloud-python/commit/d26c55b78f1522dd3a1628dc41d4c76063334c25))
+* A comment for field `internal_ip` in message `.google.cloud.deploy.v1.GkeCluster` is changed ([a33d01b](https://github.com/googleapis/google-cloud-python/commit/a33d01b5f63a30bae8afaf90ad7f29f73c66a02d))
+* A comment for field `requested_cancellation` in message `.google.cloud.deploy.v1.OperationMetadata` is changed ([a33d01b](https://github.com/googleapis/google-cloud-python/commit/a33d01b5f63a30bae8afaf90ad7f29f73c66a02d))
+* A comment for field `skaffold_version` in message `.google.cloud.deploy.v1.Release` is changed ([a33d01b](https://github.com/googleapis/google-cloud-python/commit/a33d01b5f63a30bae8afaf90ad7f29f73c66a02d))
+* documentation improvements ([d26c55b](https://github.com/googleapis/google-cloud-python/commit/d26c55b78f1522dd3a1628dc41d4c76063334c25))
+
+## [2.4.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.4.0...google-cloud-deploy-v2.4.1) (2024-11-21)
+
+
+### Documentation
+
+* minor documentation updates ([d64e75a](https://github.com/googleapis/google-cloud-python/commit/d64e75a93577cf7b4acefcbc939a0627557be93e))
+
+## [2.4.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.3.0...google-cloud-deploy-v2.4.0) (2024-11-14)
+
+
+### Features
+
+* A new field `timed_promote_release_condition` is added to message `.google.cloud.deploy.v1.AutomationRuleCondition` ([f7470ad](https://github.com/googleapis/google-cloud-python/commit/f7470ad3e053ad29b3ea9956b04c64c796a94881))
+* A new field `timed_promote_release_operation` is added to message `.google.cloud.deploy.v1.AutomationRun` ([f7470ad](https://github.com/googleapis/google-cloud-python/commit/f7470ad3e053ad29b3ea9956b04c64c796a94881))
+* A new field `timed_promote_release_rule` is added to message `.google.cloud.deploy.v1.AutomationRule` ([f7470ad](https://github.com/googleapis/google-cloud-python/commit/f7470ad3e053ad29b3ea9956b04c64c796a94881))
+* A new message `TimedPromoteReleaseCondition` is added ([f7470ad](https://github.com/googleapis/google-cloud-python/commit/f7470ad3e053ad29b3ea9956b04c64c796a94881))
+* A new message `TimedPromoteReleaseOperation` is added ([f7470ad](https://github.com/googleapis/google-cloud-python/commit/f7470ad3e053ad29b3ea9956b04c64c796a94881))
+* A new message `TimedPromoteReleaseRule` is added ([f7470ad](https://github.com/googleapis/google-cloud-python/commit/f7470ad3e053ad29b3ea9956b04c64c796a94881))
+
+
+### Documentation
+
+* A comment for field `target_id` in message `.google.cloud.deploy.v1.AutomationRun` is changed ([f7470ad](https://github.com/googleapis/google-cloud-python/commit/f7470ad3e053ad29b3ea9956b04c64c796a94881))
+
+## [2.3.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.2.0...google-cloud-deploy-v2.3.0) (2024-10-31)
+
+
+### Features
+
+* added new fields for the Automation Repair rule ([5bad720](https://github.com/googleapis/google-cloud-python/commit/5bad72013c2ad2727bdf3628454437e2047b2c9b))
+* added route destination related fields to Gateway service mesh message ([5bad720](https://github.com/googleapis/google-cloud-python/commit/5bad72013c2ad2727bdf3628454437e2047b2c9b))
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [2.2.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.1.0...google-cloud-deploy-v2.2.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13202](https://github.com/googleapis/google-cloud-python/issues/13202)) ([5b1f2f3](https://github.com/googleapis/google-cloud-python/commit/5b1f2f3a81ed171b643812e67a7ed179b9b703ea))
+
+## [2.1.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.0.1...google-cloud-deploy-v2.1.0) (2024-10-08)
+
+
+### Features
+
+* added support for deploy policies ([bbe5daf](https://github.com/googleapis/google-cloud-python/commit/bbe5daf0c71a02ae780c7609d433787dec1bc168))
+
+
+### Documentation
+
+* Minor documentation updates ([bbe5daf](https://github.com/googleapis/google-cloud-python/commit/bbe5daf0c71a02ae780c7609d433787dec1bc168))
+
 ## [2.0.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.0.0...google-cloud-deploy-v2.0.1) (2024-08-08)
 
 

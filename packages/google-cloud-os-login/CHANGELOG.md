@@ -4,6 +4,32 @@
 
 [1]: https://pypi.org/project/google-cloud-oslogin/#history
 
+## [2.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-login-v2.15.1...google-cloud-os-login-v2.16.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([8e6b0cc](https://github.com/googleapis/google-cloud-python/commit/8e6b0cca8709ae8c7f0c722c5ebf0707358d3359))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([8e6b0cc](https://github.com/googleapis/google-cloud-python/commit/8e6b0cca8709ae8c7f0c722c5ebf0707358d3359))
+
+## [2.15.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-login-v2.15.0...google-cloud-os-login-v2.15.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([#13244](https://github.com/googleapis/google-cloud-python/issues/13244)) ([ae1f471](https://github.com/googleapis/google-cloud-python/commit/ae1f47175bf3354f78cb558a844a9cab00317b95))
+
+## [2.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-login-v2.14.6...google-cloud-os-login-v2.15.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13208](https://github.com/googleapis/google-cloud-python/issues/13208)) ([a019409](https://github.com/googleapis/google-cloud-python/commit/a019409a5b5a983402301f1ac175d8b7e45c3818))
+
 ## [2.14.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-login-v2.14.5...google-cloud-os-login-v2.14.6) (2024-07-30)
 
 

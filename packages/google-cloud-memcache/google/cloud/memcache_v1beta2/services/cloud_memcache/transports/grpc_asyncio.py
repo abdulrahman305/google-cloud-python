@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -23,13 +27,92 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.memcache_v1beta2.types import cloud_memcache
 
 from .base import DEFAULT_CLIENT_INFO, CloudMemcacheTransport
 from .grpc import CloudMemcacheGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.memcache.v1beta2.CloudMemcache",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.memcache.v1beta2.CloudMemcache",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
@@ -246,7 +329,13 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -269,7 +358,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # Quick check: Only create a new client if we do not already have one.
         if self._operations_client is None:
             self._operations_client = operations_v1.OperationsAsyncClient(
-                self.grpc_channel
+                self._logged_channel
             )
 
         # Return the client from cache.
@@ -297,7 +386,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_instances" not in self._stubs:
-            self._stubs["list_instances"] = self.grpc_channel.unary_unary(
+            self._stubs["list_instances"] = self._logged_channel.unary_unary(
                 "/google.cloud.memcache.v1beta2.CloudMemcache/ListInstances",
                 request_serializer=cloud_memcache.ListInstancesRequest.serialize,
                 response_deserializer=cloud_memcache.ListInstancesResponse.deserialize,
@@ -325,7 +414,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_instance" not in self._stubs:
-            self._stubs["get_instance"] = self.grpc_channel.unary_unary(
+            self._stubs["get_instance"] = self._logged_channel.unary_unary(
                 "/google.cloud.memcache.v1beta2.CloudMemcache/GetInstance",
                 request_serializer=cloud_memcache.GetInstanceRequest.serialize,
                 response_deserializer=cloud_memcache.Instance.deserialize,
@@ -353,7 +442,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "create_instance" not in self._stubs:
-            self._stubs["create_instance"] = self.grpc_channel.unary_unary(
+            self._stubs["create_instance"] = self._logged_channel.unary_unary(
                 "/google.cloud.memcache.v1beta2.CloudMemcache/CreateInstance",
                 request_serializer=cloud_memcache.CreateInstanceRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -382,7 +471,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_instance" not in self._stubs:
-            self._stubs["update_instance"] = self.grpc_channel.unary_unary(
+            self._stubs["update_instance"] = self._logged_channel.unary_unary(
                 "/google.cloud.memcache.v1beta2.CloudMemcache/UpdateInstance",
                 request_serializer=cloud_memcache.UpdateInstanceRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -413,7 +502,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "update_parameters" not in self._stubs:
-            self._stubs["update_parameters"] = self.grpc_channel.unary_unary(
+            self._stubs["update_parameters"] = self._logged_channel.unary_unary(
                 "/google.cloud.memcache.v1beta2.CloudMemcache/UpdateParameters",
                 request_serializer=cloud_memcache.UpdateParametersRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -441,7 +530,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_instance" not in self._stubs:
-            self._stubs["delete_instance"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_instance"] = self._logged_channel.unary_unary(
                 "/google.cloud.memcache.v1beta2.CloudMemcache/DeleteInstance",
                 request_serializer=cloud_memcache.DeleteInstanceRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -471,7 +560,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "apply_parameters" not in self._stubs:
-            self._stubs["apply_parameters"] = self.grpc_channel.unary_unary(
+            self._stubs["apply_parameters"] = self._logged_channel.unary_unary(
                 "/google.cloud.memcache.v1beta2.CloudMemcache/ApplyParameters",
                 request_serializer=cloud_memcache.ApplyParametersRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -500,7 +589,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "apply_software_update" not in self._stubs:
-            self._stubs["apply_software_update"] = self.grpc_channel.unary_unary(
+            self._stubs["apply_software_update"] = self._logged_channel.unary_unary(
                 "/google.cloud.memcache.v1beta2.CloudMemcache/ApplySoftwareUpdate",
                 request_serializer=cloud_memcache.ApplySoftwareUpdateRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -530,7 +619,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "reschedule_maintenance" not in self._stubs:
-            self._stubs["reschedule_maintenance"] = self.grpc_channel.unary_unary(
+            self._stubs["reschedule_maintenance"] = self._logged_channel.unary_unary(
                 "/google.cloud.memcache.v1beta2.CloudMemcache/RescheduleMaintenance",
                 request_serializer=cloud_memcache.RescheduleMaintenanceRequest.serialize,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -540,55 +629,94 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.list_instances: gapic_v1.method_async.wrap_method(
+            self.list_instances: self._wrap_method(
                 self.list_instances,
                 default_timeout=1200.0,
                 client_info=client_info,
             ),
-            self.get_instance: gapic_v1.method_async.wrap_method(
+            self.get_instance: self._wrap_method(
                 self.get_instance,
                 default_timeout=1200.0,
                 client_info=client_info,
             ),
-            self.create_instance: gapic_v1.method_async.wrap_method(
+            self.create_instance: self._wrap_method(
                 self.create_instance,
                 default_timeout=1200.0,
                 client_info=client_info,
             ),
-            self.update_instance: gapic_v1.method_async.wrap_method(
+            self.update_instance: self._wrap_method(
                 self.update_instance,
                 default_timeout=1200.0,
                 client_info=client_info,
             ),
-            self.update_parameters: gapic_v1.method_async.wrap_method(
+            self.update_parameters: self._wrap_method(
                 self.update_parameters,
                 default_timeout=1200.0,
                 client_info=client_info,
             ),
-            self.delete_instance: gapic_v1.method_async.wrap_method(
+            self.delete_instance: self._wrap_method(
                 self.delete_instance,
                 default_timeout=1200.0,
                 client_info=client_info,
             ),
-            self.apply_parameters: gapic_v1.method_async.wrap_method(
+            self.apply_parameters: self._wrap_method(
                 self.apply_parameters,
                 default_timeout=1200.0,
                 client_info=client_info,
             ),
-            self.apply_software_update: gapic_v1.method_async.wrap_method(
+            self.apply_software_update: self._wrap_method(
                 self.apply_software_update,
                 default_timeout=1200.0,
                 client_info=client_info,
             ),
-            self.reschedule_maintenance: gapic_v1.method_async.wrap_method(
+            self.reschedule_maintenance: self._wrap_method(
                 self.reschedule_maintenance,
                 default_timeout=1200.0,
                 client_info=client_info,
             ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: self._wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: self._wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: self._wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: self._wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def delete_operation(
@@ -600,7 +728,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "delete_operation" not in self._stubs:
-            self._stubs["delete_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["delete_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/DeleteOperation",
                 request_serializer=operations_pb2.DeleteOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -617,7 +745,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "cancel_operation" not in self._stubs:
-            self._stubs["cancel_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["cancel_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/CancelOperation",
                 request_serializer=operations_pb2.CancelOperationRequest.SerializeToString,
                 response_deserializer=None,
@@ -634,7 +762,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_operation" not in self._stubs:
-            self._stubs["get_operation"] = self.grpc_channel.unary_unary(
+            self._stubs["get_operation"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/GetOperation",
                 request_serializer=operations_pb2.GetOperationRequest.SerializeToString,
                 response_deserializer=operations_pb2.Operation.FromString,
@@ -653,7 +781,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_operations" not in self._stubs:
-            self._stubs["list_operations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_operations"] = self._logged_channel.unary_unary(
                 "/google.longrunning.Operations/ListOperations",
                 request_serializer=operations_pb2.ListOperationsRequest.SerializeToString,
                 response_deserializer=operations_pb2.ListOperationsResponse.FromString,
@@ -672,7 +800,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -689,7 +817,7 @@ class CloudMemcacheGrpcAsyncIOTransport(CloudMemcacheTransport):
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,

@@ -4,6 +4,73 @@
 
 [1]: https://pypi.org/project/google-cloud-dataproc/#history
 
+## [5.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.15.1...google-cloud-dataproc-v5.16.0) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [5.15.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.15.0...google-cloud-dataproc-v5.15.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [5.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.14.0...google-cloud-dataproc-v5.15.0) (2024-10-24)
+
+
+### Features
+
+* Add support for Python 3.13 ([#13202](https://github.com/googleapis/google-cloud-python/issues/13202)) ([5b1f2f3](https://github.com/googleapis/google-cloud-python/commit/5b1f2f3a81ed171b643812e67a7ed179b9b703ea))
+
+## [5.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.13.0...google-cloud-dataproc-v5.14.0) (2024-10-23)
+
+
+### Features
+
+* [google-cloud-dataproc] Add `ProvisioningModelMix` to support mixing of spot and standard instances for secondary workers ([#13169](https://github.com/googleapis/google-cloud-python/issues/13169)) ([3fe76c8](https://github.com/googleapis/google-cloud-python/commit/3fe76c85be9923c7f154c50f2eb55621310bf86f))
+* Add support for configuration of bootdisk IOPS and throughput when ([3fe76c8](https://github.com/googleapis/google-cloud-python/commit/3fe76c85be9923c7f154c50f2eb55621310bf86f))
+
+## [5.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.12.0...google-cloud-dataproc-v5.13.0) (2024-09-30)
+
+
+### Features
+
+* add support for Spark Connect sessions in Dataproc Serverless for Spark ([0d35003](https://github.com/googleapis/google-cloud-python/commit/0d350038411bbdcf10eb7fb6820084abcb362c5a))
+
+
+### Documentation
+
+* update docs for `filter` field in `ListSessionsRequest` ([0d35003](https://github.com/googleapis/google-cloud-python/commit/0d350038411bbdcf10eb7fb6820084abcb362c5a))
+
+## [5.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.11.0...google-cloud-dataproc-v5.12.0) (2024-09-16)
+
+
+### Features
+
+* [google-cloud-dataproc] Add FLINK metric source for Dataproc Metric Source ([2402404](https://github.com/googleapis/google-cloud-python/commit/2402404a5ac48c8289a2dbc24fcc85a1eebe4224))
+* [google-cloud-dataproc] Add kms key input for create cluster API ([2402404](https://github.com/googleapis/google-cloud-python/commit/2402404a5ac48c8289a2dbc24fcc85a1eebe4224))
+* [google-cloud-dataproc] add resource reference for KMS keys and fix comments ([2402404](https://github.com/googleapis/google-cloud-python/commit/2402404a5ac48c8289a2dbc24fcc85a1eebe4224))
+* [google-cloud-dataproc] Add unreachable output field for LIST batch templates API ([2402404](https://github.com/googleapis/google-cloud-python/commit/2402404a5ac48c8289a2dbc24fcc85a1eebe4224))
+* [google-cloud-dataproc] Add unreachable output field for LIST jobs API ([2402404](https://github.com/googleapis/google-cloud-python/commit/2402404a5ac48c8289a2dbc24fcc85a1eebe4224))
+* [google-cloud-dataproc] Add unreachable output field for LIST workflow template API ([2402404](https://github.com/googleapis/google-cloud-python/commit/2402404a5ac48c8289a2dbc24fcc85a1eebe4224))
+* [google-cloud-dataproc] Allow flink and trino job support for workflow templates API ([2402404](https://github.com/googleapis/google-cloud-python/commit/2402404a5ac48c8289a2dbc24fcc85a1eebe4224))
+* [google-cloud-dataproc] Allow flink job support for jobs ([2402404](https://github.com/googleapis/google-cloud-python/commit/2402404a5ac48c8289a2dbc24fcc85a1eebe4224))
+
+## [5.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.10.2...google-cloud-dataproc-v5.11.0) (2024-09-03)
+
+
+### Features
+
+* add optional parameters (tarball-access) in DiagnoseClusterRequest ([127e5c0](https://github.com/googleapis/google-cloud-python/commit/127e5c097b08042989c124ac4cdfb5147181855d))
+
 ## [5.10.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.10.1...google-cloud-dataproc-v5.10.2) (2024-07-30)
 
 

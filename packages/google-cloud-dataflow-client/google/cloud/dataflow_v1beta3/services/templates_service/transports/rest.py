@@ -13,38 +13,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import dataclasses
 import json  # type: ignore
-import re
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import warnings
 
-from google.api_core import gapic_v1, path_template, rest_helpers, rest_streaming
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
-from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.protobuf import json_format
-import grpc  # type: ignore
 from requests import __version__ as requests_version
+
+from google.cloud.dataflow_v1beta3.types import jobs, templates
+
+from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
+from .rest_base import _BaseTemplatesServiceRestTransport
 
 try:
     OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
 
+try:
+    from google.api_core import client_logging  # type: ignore
 
-from google.cloud.dataflow_v1beta3.types import jobs, templates
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
 
-from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
-from .base import TemplatesServiceTransport
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=BASE_DEFAULT_CLIENT_INFO.gapic_version,
     grpc_version=None,
-    rest_version=requests_version,
+    rest_version=f"requests@{requests_version}",
 )
 
 
@@ -96,8 +101,10 @@ class TemplatesServiceRestInterceptor:
     def pre_create_job_from_template(
         self,
         request: templates.CreateJobFromTemplateRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[templates.CreateJobFromTemplateRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        templates.CreateJobFromTemplateRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for create_job_from_template
 
         Override in a subclass to manipulate the request or metadata
@@ -115,8 +122,10 @@ class TemplatesServiceRestInterceptor:
         return response
 
     def pre_get_template(
-        self, request: templates.GetTemplateRequest, metadata: Sequence[Tuple[str, str]]
-    ) -> Tuple[templates.GetTemplateRequest, Sequence[Tuple[str, str]]]:
+        self,
+        request: templates.GetTemplateRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[templates.GetTemplateRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
         """Pre-rpc interceptor for get_template
 
         Override in a subclass to manipulate the request or metadata
@@ -138,8 +147,10 @@ class TemplatesServiceRestInterceptor:
     def pre_launch_template(
         self,
         request: templates.LaunchTemplateRequest,
-        metadata: Sequence[Tuple[str, str]],
-    ) -> Tuple[templates.LaunchTemplateRequest, Sequence[Tuple[str, str]]]:
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        templates.LaunchTemplateRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
         """Pre-rpc interceptor for launch_template
 
         Override in a subclass to manipulate the request or metadata
@@ -166,8 +177,8 @@ class TemplatesServiceRestStub:
     _interceptor: TemplatesServiceRestInterceptor
 
 
-class TemplatesServiceRestTransport(TemplatesServiceTransport):
-    """REST backend transport for TemplatesService.
+class TemplatesServiceRestTransport(_BaseTemplatesServiceRestTransport):
+    """REST backend synchronous transport for TemplatesService.
 
     Provides a method to create Cloud Dataflow jobs from
     templates.
@@ -177,7 +188,6 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
     and call it.
 
     It sends JSON representations of protocol buffers over HTTP/1.1
-
     """
 
     def __init__(
@@ -231,21 +241,12 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
         # TODO(yon-mg): resolve other ctor params i.e. scopes, quota, etc.
         # TODO: When custom host (api_endpoint) is set, `scopes` must *also* be set on the
         # credentials object
-        maybe_url_match = re.match("^(?P<scheme>http(?:s)?://)?(?P<host>.*)$", host)
-        if maybe_url_match is None:
-            raise ValueError(
-                f"Unexpected hostname structure: {host}"
-            )  # pragma: NO COVER
-
-        url_match_items = maybe_url_match.groupdict()
-
-        host = f"{url_scheme}://{host}" if not url_match_items["scheme"] else host
-
         super().__init__(
             host=host,
             credentials=credentials,
             client_info=client_info,
             always_use_jwt_access=always_use_jwt_access,
+            url_scheme=url_scheme,
             api_audience=api_audience,
         )
         self._session = AuthorizedSession(
@@ -256,9 +257,35 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
         self._interceptor = interceptor or TemplatesServiceRestInterceptor()
         self._prep_wrapped_messages(client_info)
 
-    class _CreateJobFromTemplate(TemplatesServiceRestStub):
+    class _CreateJobFromTemplate(
+        _BaseTemplatesServiceRestTransport._BaseCreateJobFromTemplate,
+        TemplatesServiceRestStub,
+    ):
         def __hash__(self):
-            return hash("CreateJobFromTemplate")
+            return hash("TemplatesServiceRestTransport.CreateJobFromTemplate")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -266,7 +293,7 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> jobs.Job:
             r"""Call the create job from template method over HTTP.
 
@@ -277,8 +304,10 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.jobs.Job:
@@ -287,51 +316,64 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1b3/projects/{project_id}/locations/{location}/templates",
-                    "body": "*",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1b3/projects/{project_id}/templates",
-                    "body": "*",
-                },
-            ]
+            http_options = (
+                _BaseTemplatesServiceRestTransport._BaseCreateJobFromTemplate._get_http_options()
+            )
+
             request, metadata = self._interceptor.pre_create_job_from_template(
                 request, metadata
             )
-            pb_request = templates.CreateJobFromTemplateRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            transcoded_request = _BaseTemplatesServiceRestTransport._BaseCreateJobFromTemplate._get_transcoded_request(
+                http_options, request
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            body = _BaseTemplatesServiceRestTransport._BaseCreateJobFromTemplate._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseTemplatesServiceRestTransport._BaseCreateJobFromTemplate._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.dataflow_v1beta3.TemplatesServiceClient.CreateJobFromTemplate",
+                    extra={
+                        "serviceName": "google.dataflow.v1beta3.TemplatesService",
+                        "rpcName": "CreateJobFromTemplate",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = (
+                TemplatesServiceRestTransport._CreateJobFromTemplate._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -344,12 +386,58 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
             pb_resp = jobs.Job.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_create_job_from_template(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = jobs.Job.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.dataflow_v1beta3.TemplatesServiceClient.create_job_from_template",
+                    extra={
+                        "serviceName": "google.dataflow.v1beta3.TemplatesService",
+                        "rpcName": "CreateJobFromTemplate",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _GetTemplate(TemplatesServiceRestStub):
+    class _GetTemplate(
+        _BaseTemplatesServiceRestTransport._BaseGetTemplate, TemplatesServiceRestStub
+    ):
         def __hash__(self):
-            return hash("GetTemplate")
+            return hash("TemplatesServiceRestTransport.GetTemplate")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
 
         def __call__(
             self,
@@ -357,7 +445,7 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> templates.GetTemplateResponse:
             r"""Call the get template method over HTTP.
 
@@ -368,8 +456,10 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.templates.GetTemplateResponse:
@@ -378,41 +468,55 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "get",
-                    "uri": "/v1b3/projects/{project_id}/locations/{location}/templates:get",
-                },
-                {
-                    "method": "get",
-                    "uri": "/v1b3/projects/{project_id}/templates:get",
-                },
-            ]
-            request, metadata = self._interceptor.pre_get_template(request, metadata)
-            pb_request = templates.GetTemplateRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
-
-            # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            http_options = (
+                _BaseTemplatesServiceRestTransport._BaseGetTemplate._get_http_options()
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            request, metadata = self._interceptor.pre_get_template(request, metadata)
+            transcoded_request = _BaseTemplatesServiceRestTransport._BaseGetTemplate._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseTemplatesServiceRestTransport._BaseGetTemplate._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.dataflow_v1beta3.TemplatesServiceClient.GetTemplate",
+                    extra={
+                        "serviceName": "google.dataflow.v1beta3.TemplatesService",
+                        "rpcName": "GetTemplate",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            response = TemplatesServiceRestTransport._GetTemplate._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -425,12 +529,59 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
             pb_resp = templates.GetTemplateResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_get_template(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = templates.GetTemplateResponse.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.dataflow_v1beta3.TemplatesServiceClient.get_template",
+                    extra={
+                        "serviceName": "google.dataflow.v1beta3.TemplatesService",
+                        "rpcName": "GetTemplate",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
-    class _LaunchTemplate(TemplatesServiceRestStub):
+    class _LaunchTemplate(
+        _BaseTemplatesServiceRestTransport._BaseLaunchTemplate, TemplatesServiceRestStub
+    ):
         def __hash__(self):
-            return hash("LaunchTemplate")
+            return hash("TemplatesServiceRestTransport.LaunchTemplate")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
 
         def __call__(
             self,
@@ -438,7 +589,7 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
             *,
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
-            metadata: Sequence[Tuple[str, str]] = (),
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
         ) -> templates.LaunchTemplateResponse:
             r"""Call the launch template method over HTTP.
 
@@ -448,8 +599,10 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
-                metadata (Sequence[Tuple[str, str]]): Strings which should be
-                    sent along with the request as metadata.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
 
             Returns:
                 ~.templates.LaunchTemplateResponse:
@@ -458,49 +611,60 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
 
             """
 
-            http_options: List[Dict[str, str]] = [
-                {
-                    "method": "post",
-                    "uri": "/v1b3/projects/{project_id}/locations/{location}/templates:launch",
-                    "body": "launch_parameters",
-                },
-                {
-                    "method": "post",
-                    "uri": "/v1b3/projects/{project_id}/templates:launch",
-                    "body": "launch_parameters",
-                },
-            ]
-            request, metadata = self._interceptor.pre_launch_template(request, metadata)
-            pb_request = templates.LaunchTemplateRequest.pb(request)
-            transcoded_request = path_template.transcode(http_options, pb_request)
-
-            # Jsonify the request body
-
-            body = json_format.MessageToJson(
-                transcoded_request["body"], use_integers_for_enums=True
+            http_options = (
+                _BaseTemplatesServiceRestTransport._BaseLaunchTemplate._get_http_options()
             )
-            uri = transcoded_request["uri"]
-            method = transcoded_request["method"]
+
+            request, metadata = self._interceptor.pre_launch_template(request, metadata)
+            transcoded_request = _BaseTemplatesServiceRestTransport._BaseLaunchTemplate._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseTemplatesServiceRestTransport._BaseLaunchTemplate._get_request_body_json(
+                transcoded_request
+            )
 
             # Jsonify the query params
-            query_params = json.loads(
-                json_format.MessageToJson(
-                    transcoded_request["query_params"],
-                    use_integers_for_enums=True,
-                )
+            query_params = _BaseTemplatesServiceRestTransport._BaseLaunchTemplate._get_query_params_json(
+                transcoded_request
             )
 
-            query_params["$alt"] = "json;enum-encoding=int"
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.dataflow_v1beta3.TemplatesServiceClient.LaunchTemplate",
+                    extra={
+                        "serviceName": "google.dataflow.v1beta3.TemplatesService",
+                        "rpcName": "LaunchTemplate",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
 
             # Send the request
-            headers = dict(metadata)
-            headers["Content-Type"] = "application/json"
-            response = getattr(self._session, method)(
-                "{host}{uri}".format(host=self._host, uri=uri),
-                timeout=timeout,
-                headers=headers,
-                params=rest_helpers.flatten_query_params(query_params, strict=True),
-                data=body,
+            response = TemplatesServiceRestTransport._LaunchTemplate._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
             )
 
             # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
@@ -513,7 +677,31 @@ class TemplatesServiceRestTransport(TemplatesServiceTransport):
             pb_resp = templates.LaunchTemplateResponse.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
             resp = self._interceptor.post_launch_template(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = templates.LaunchTemplateResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.dataflow_v1beta3.TemplatesServiceClient.launch_template",
+                    extra={
+                        "serviceName": "google.dataflow.v1beta3.TemplatesService",
+                        "rpcName": "LaunchTemplate",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     @property

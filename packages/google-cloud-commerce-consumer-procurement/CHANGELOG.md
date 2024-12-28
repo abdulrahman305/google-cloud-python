@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.10...google-cloud-commerce-consumer-procurement-v0.1.11) (2024-12-12)
+
+
+### Features
+
+* Add support for opt-in debug logging ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+
+### Bug Fixes
+
+* Fix typing issue with gRPC metadata when key ends in -bin ([19ed3be](https://github.com/googleapis/google-cloud-python/commit/19ed3bec7fcbc09aa5828180778ffc828d3eafa3))
+
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.9...google-cloud-commerce-consumer-procurement-v0.1.10) (2024-10-31)
+
+
+### Bug Fixes
+
+* disable universe-domain validation ([53c951e](https://github.com/googleapis/google-cloud-python/commit/53c951e90ad1d702fa507495532086d5d2f6b3c0))
+
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.8...google-cloud-commerce-consumer-procurement-v0.1.9) (2024-10-24)
+
+
+### Features
+
+* Add support for  Python 3.13 ([6252476](https://github.com/googleapis/google-cloud-python/commit/6252476e5938352fb2417d098a1edcc08558fe10))
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.7...google-cloud-commerce-consumer-procurement-v0.1.8) (2024-10-08)
+
+
+### Features
+
+* add Order modification RPCs and License Management Service ([852d797](https://github.com/googleapis/google-cloud-python/commit/852d797f21d4809c32d98b384c60bf9852b14216))
+
+
+### Documentation
+
+* A comment for enum value `LINE_ITEM_CHANGE_STATE_ABANDONED` in enum `LineItemChangeState` is changed ([852d797](https://github.com/googleapis/google-cloud-python/commit/852d797f21d4809c32d98b384c60bf9852b14216))
+* A comment for enum value `LINE_ITEM_CHANGE_STATE_ACTIVATING` in enum `LineItemChangeState` is changed ([852d797](https://github.com/googleapis/google-cloud-python/commit/852d797f21d4809c32d98b384c60bf9852b14216))
+* A comment for enum value `LINE_ITEM_CHANGE_STATE_APPROVED` in enum `LineItemChangeState` is changed ([852d797](https://github.com/googleapis/google-cloud-python/commit/852d797f21d4809c32d98b384c60bf9852b14216))
+* A comment for enum value `LINE_ITEM_CHANGE_STATE_COMPLETED` in enum `LineItemChangeState` is changed ([852d797](https://github.com/googleapis/google-cloud-python/commit/852d797f21d4809c32d98b384c60bf9852b14216))
+* A comment for enum value `LINE_ITEM_CHANGE_STATE_PENDING_APPROVAL` in enum `LineItemChangeState` is changed ([852d797](https://github.com/googleapis/google-cloud-python/commit/852d797f21d4809c32d98b384c60bf9852b14216))
+* A comment for enum value `LINE_ITEM_CHANGE_STATE_REJECTED` in enum `LineItemChangeState` is changed ([852d797](https://github.com/googleapis/google-cloud-python/commit/852d797f21d4809c32d98b384c60bf9852b14216))
+* A comment for field `filter` in message `.google.cloud.commerce.consumer.procurement.v1.ListOrdersRequest` is changed ([852d797](https://github.com/googleapis/google-cloud-python/commit/852d797f21d4809c32d98b384c60bf9852b14216))
+* A comment for field `request_id` in message `.google.cloud.commerce.consumer.procurement.v1.PlaceOrderRequest` is changed ([852d797](https://github.com/googleapis/google-cloud-python/commit/852d797f21d4809c32d98b384c60bf9852b14216))
+
 ## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.6...google-cloud-commerce-consumer-procurement-v0.1.7) (2024-07-30)
 
 

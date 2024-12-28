@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -21,8 +25,11 @@ from google.api_core import gapic_v1, grpc_helpers_async
 from google.api_core import retry_async as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.cloudcontrolspartner_v1.types import (
     access_approval_requests,
@@ -35,6 +42,82 @@ from google.cloud.cloudcontrolspartner_v1.types import (
 
 from .base import DEFAULT_CLIENT_INFO, CloudControlsPartnerCoreTransport
 from .grpc import CloudControlsPartnerCoreGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTransport):
@@ -232,7 +315,13 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -266,7 +355,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_workload" not in self._stubs:
-            self._stubs["get_workload"] = self.grpc_channel.unary_unary(
+            self._stubs["get_workload"] = self._logged_channel.unary_unary(
                 "/google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore/GetWorkload",
                 request_serializer=customer_workloads.GetWorkloadRequest.serialize,
                 response_deserializer=customer_workloads.Workload.deserialize,
@@ -295,7 +384,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_workloads" not in self._stubs:
-            self._stubs["list_workloads"] = self.grpc_channel.unary_unary(
+            self._stubs["list_workloads"] = self._logged_channel.unary_unary(
                 "/google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore/ListWorkloads",
                 request_serializer=customer_workloads.ListWorkloadsRequest.serialize,
                 response_deserializer=customer_workloads.ListWorkloadsResponse.deserialize,
@@ -321,7 +410,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_customer" not in self._stubs:
-            self._stubs["get_customer"] = self.grpc_channel.unary_unary(
+            self._stubs["get_customer"] = self._logged_channel.unary_unary(
                 "/google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore/GetCustomer",
                 request_serializer=customers.GetCustomerRequest.serialize,
                 response_deserializer=customers.Customer.deserialize,
@@ -350,7 +439,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_customers" not in self._stubs:
-            self._stubs["list_customers"] = self.grpc_channel.unary_unary(
+            self._stubs["list_customers"] = self._logged_channel.unary_unary(
                 "/google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore/ListCustomers",
                 request_serializer=customers.ListCustomersRequest.serialize,
                 response_deserializer=customers.ListCustomersResponse.deserialize,
@@ -379,7 +468,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_ekm_connections" not in self._stubs:
-            self._stubs["get_ekm_connections"] = self.grpc_channel.unary_unary(
+            self._stubs["get_ekm_connections"] = self._logged_channel.unary_unary(
                 "/google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore/GetEkmConnections",
                 request_serializer=ekm_connections.GetEkmConnectionsRequest.serialize,
                 response_deserializer=ekm_connections.EkmConnections.deserialize,
@@ -408,7 +497,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_partner_permissions" not in self._stubs:
-            self._stubs["get_partner_permissions"] = self.grpc_channel.unary_unary(
+            self._stubs["get_partner_permissions"] = self._logged_channel.unary_unary(
                 "/google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore/GetPartnerPermissions",
                 request_serializer=partner_permissions.GetPartnerPermissionsRequest.serialize,
                 response_deserializer=partner_permissions.PartnerPermissions.deserialize,
@@ -440,7 +529,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
         if "list_access_approval_requests" not in self._stubs:
             self._stubs[
                 "list_access_approval_requests"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore/ListAccessApprovalRequests",
                 request_serializer=access_approval_requests.ListAccessApprovalRequestsRequest.serialize,
                 response_deserializer=access_approval_requests.ListAccessApprovalRequestsResponse.deserialize,
@@ -466,7 +555,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_partner" not in self._stubs:
-            self._stubs["get_partner"] = self.grpc_channel.unary_unary(
+            self._stubs["get_partner"] = self._logged_channel.unary_unary(
                 "/google.cloud.cloudcontrolspartner.v1.CloudControlsPartnerCore/GetPartner",
                 request_serializer=partners.GetPartnerRequest.serialize,
                 response_deserializer=partners.Partner.deserialize,
@@ -476,7 +565,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.get_workload: gapic_v1.method_async.wrap_method(
+            self.get_workload: self._wrap_method(
                 self.get_workload,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -490,7 +579,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_workloads: gapic_v1.method_async.wrap_method(
+            self.list_workloads: self._wrap_method(
                 self.list_workloads,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -504,7 +593,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_customer: gapic_v1.method_async.wrap_method(
+            self.get_customer: self._wrap_method(
                 self.get_customer,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -518,7 +607,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_customers: gapic_v1.method_async.wrap_method(
+            self.list_customers: self._wrap_method(
                 self.list_customers,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -532,7 +621,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_ekm_connections: gapic_v1.method_async.wrap_method(
+            self.get_ekm_connections: self._wrap_method(
                 self.get_ekm_connections,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -546,7 +635,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_partner_permissions: gapic_v1.method_async.wrap_method(
+            self.get_partner_permissions: self._wrap_method(
                 self.get_partner_permissions,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -560,7 +649,7 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_access_approval_requests: gapic_v1.method_async.wrap_method(
+            self.list_access_approval_requests: self._wrap_method(
                 self.list_access_approval_requests,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
@@ -574,15 +663,24 @@ class CloudControlsPartnerCoreGrpcAsyncIOTransport(CloudControlsPartnerCoreTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_partner: gapic_v1.method_async.wrap_method(
+            self.get_partner: self._wrap_method(
                 self.get_partner,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
 
 __all__ = ("CloudControlsPartnerCoreGrpcAsyncIOTransport",)

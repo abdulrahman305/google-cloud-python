@@ -252,6 +252,20 @@ class GDCHardwareManagementTransport(abc.ABC):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.delete_site: gapic_v1.method.wrap_method(
+                self.delete_site,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
             self.list_hardware_groups: gapic_v1.method.wrap_method(
                 self.list_hardware_groups,
                 default_retry=retries.Retry(
@@ -407,6 +421,11 @@ class GDCHardwareManagementTransport(abc.ABC):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.record_action_on_comment: gapic_v1.method.wrap_method(
+                self.record_action_on_comment,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.list_change_log_entries: gapic_v1.method.wrap_method(
                 self.list_change_log_entries,
                 default_retry=retries.Retry(
@@ -529,6 +548,36 @@ class GDCHardwareManagementTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.get_location: gapic_v1.method.wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: gapic_v1.method.wrap_method(
+                self.list_locations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.cancel_operation: gapic_v1.method.wrap_method(
+                self.cancel_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_operation: gapic_v1.method.wrap_method(
+                self.delete_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_operation: gapic_v1.method.wrap_method(
+                self.get_operation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_operations: gapic_v1.method.wrap_method(
+                self.list_operations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
     def close(self):
@@ -629,6 +678,15 @@ class GDCHardwareManagementTransport(abc.ABC):
         self,
     ) -> Callable[
         [service.UpdateSiteRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_site(
+        self,
+    ) -> Callable[
+        [service.DeleteSiteRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()
@@ -750,6 +808,15 @@ class GDCHardwareManagementTransport(abc.ABC):
     ) -> Callable[
         [service.CreateCommentRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def record_action_on_comment(
+        self,
+    ) -> Callable[
+        [service.RecordActionOnCommentRequest],
+        Union[resources.Comment, Awaitable[resources.Comment]],
     ]:
         raise NotImplementedError()
 

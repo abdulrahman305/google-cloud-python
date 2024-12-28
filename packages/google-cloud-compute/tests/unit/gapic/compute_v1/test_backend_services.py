@@ -22,25 +22,11 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import (
-    future,
-    gapic_v1,
-    grpc_helpers,
-    grpc_helpers_async,
-    path_template,
-)
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import extended_operation  # type: ignore
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
+from google.api_core import api_core_version
 from google.protobuf import json_format
 import grpc
 from grpc.experimental import aio
@@ -50,6 +36,29 @@ import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
 
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import (
+    future,
+    gapic_v1,
+    grpc_helpers,
+    grpc_helpers_async,
+    path_template,
+)
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import extended_operation  # type: ignore
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
+
 from google.cloud.compute_v1.services.backend_services import (
     BackendServicesClient,
     pagers,
@@ -58,8 +67,22 @@ from google.cloud.compute_v1.services.backend_services import (
 from google.cloud.compute_v1.types import compute
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -294,85 +317,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         BackendServicesClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (BackendServicesClient, transports.BackendServicesRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -972,163 +916,6 @@ def test_backend_services_client_client_options_credentials_file(
         )
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.AddSignedUrlKeyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_add_signed_url_key_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["signed_url_key_resource"] = {
-        "key_name": "key_name_value",
-        "key_value": "key_value_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.AddSignedUrlKeyBackendServiceRequest.meta.fields[
-        "signed_url_key_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "signed_url_key_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["signed_url_key_resource"][field])):
-                    del request_init["signed_url_key_resource"][field][i][subfield]
-            else:
-                del request_init["signed_url_key_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.add_signed_url_key(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
-
-
 def test_add_signed_url_key_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -1246,6 +1033,7 @@ def test_add_signed_url_key_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.add_signed_url_key(request)
 
@@ -1270,85 +1058,6 @@ def test_add_signed_url_key_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_add_signed_url_key_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_add_signed_url_key"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_add_signed_url_key"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.AddSignedUrlKeyBackendServiceRequest.pb(
-            compute.AddSignedUrlKeyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.AddSignedUrlKeyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.add_signed_url_key(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_add_signed_url_key_rest_bad_request(
-    transport: str = "rest", request_type=compute.AddSignedUrlKeyBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.add_signed_url_key(request)
 
 
 def test_add_signed_url_key_rest_flattened():
@@ -1381,6 +1090,7 @@ def test_add_signed_url_key_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.add_signed_url_key(**mock_args)
 
@@ -1410,147 +1120,6 @@ def test_add_signed_url_key_rest_flattened_error(transport: str = "rest"):
             backend_service="backend_service_value",
             signed_url_key_resource=compute.SignedUrlKey(key_name="key_name_value"),
         )
-
-
-def test_add_signed_url_key_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.AddSignedUrlKeyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_add_signed_url_key_unary_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["signed_url_key_resource"] = {
-        "key_name": "key_name_value",
-        "key_value": "key_value_value",
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.AddSignedUrlKeyBackendServiceRequest.meta.fields[
-        "signed_url_key_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "signed_url_key_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["signed_url_key_resource"][field])):
-                    del request_init["signed_url_key_resource"][field][i][subfield]
-            else:
-                del request_init["signed_url_key_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.add_signed_url_key_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_add_signed_url_key_unary_rest_use_cached_wrapped_rpc():
@@ -1670,6 +1239,7 @@ def test_add_signed_url_key_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.add_signed_url_key_unary(request)
 
@@ -1694,85 +1264,6 @@ def test_add_signed_url_key_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_add_signed_url_key_unary_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_add_signed_url_key"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_add_signed_url_key"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.AddSignedUrlKeyBackendServiceRequest.pb(
-            compute.AddSignedUrlKeyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.AddSignedUrlKeyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.add_signed_url_key_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_add_signed_url_key_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.AddSignedUrlKeyBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.add_signed_url_key_unary(request)
 
 
 def test_add_signed_url_key_unary_rest_flattened():
@@ -1805,6 +1296,7 @@ def test_add_signed_url_key_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.add_signed_url_key_unary(**mock_args)
 
@@ -1834,60 +1326,6 @@ def test_add_signed_url_key_unary_rest_flattened_error(transport: str = "rest"):
             backend_service="backend_service_value",
             signed_url_key_resource=compute.SignedUrlKey(key_name="key_name_value"),
         )
-
-
-def test_add_signed_url_key_unary_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.AggregatedListBackendServicesRequest,
-        dict,
-    ],
-)
-def test_aggregated_list_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.BackendServiceAggregatedList(
-            id="id_value",
-            kind="kind_value",
-            next_page_token="next_page_token_value",
-            self_link="self_link_value",
-            unreachables=["unreachables_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.BackendServiceAggregatedList.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.aggregated_list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.AggregatedListPager)
-    assert response.id == "id_value"
-    assert response.kind == "kind_value"
-    assert response.next_page_token == "next_page_token_value"
-    assert response.self_link == "self_link_value"
-    assert response.unreachables == ["unreachables_value"]
 
 
 def test_aggregated_list_rest_use_cached_wrapped_rpc():
@@ -2004,6 +1442,7 @@ def test_aggregated_list_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.aggregated_list(request)
 
@@ -2034,87 +1473,6 @@ def test_aggregated_list_rest_unset_required_fields():
     )
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_aggregated_list_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_aggregated_list"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_aggregated_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.AggregatedListBackendServicesRequest.pb(
-            compute.AggregatedListBackendServicesRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.BackendServiceAggregatedList.to_json(
-            compute.BackendServiceAggregatedList()
-        )
-
-        request = compute.AggregatedListBackendServicesRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.BackendServiceAggregatedList()
-
-        client.aggregated_list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_aggregated_list_rest_bad_request(
-    transport: str = "rest", request_type=compute.AggregatedListBackendServicesRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.aggregated_list(request)
-
-
 def test_aggregated_list_rest_flattened():
     client = BackendServicesClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -2143,6 +1501,7 @@ def test_aggregated_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.aggregated_list(**mock_args)
 
@@ -2245,88 +1604,6 @@ def test_aggregated_list_rest_pager(transport: str = "rest"):
         pages = list(client.aggregated_list(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteBackendServiceRequest,
-        dict,
-    ],
-)
-def test_delete_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_delete_rest_use_cached_wrapped_rpc():
@@ -2439,6 +1716,7 @@ def test_delete_rest_required_fields(request_type=compute.DeleteBackendServiceRe
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete(request)
 
@@ -2462,85 +1740,6 @@ def test_delete_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_delete"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_delete"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteBackendServiceRequest.pb(
-            compute.DeleteBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_rest_bad_request(
-    transport: str = "rest", request_type=compute.DeleteBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete(request)
 
 
 def test_delete_rest_flattened():
@@ -2572,6 +1771,7 @@ def test_delete_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete(**mock_args)
 
@@ -2600,72 +1800,6 @@ def test_delete_rest_flattened_error(transport: str = "rest"):
             project="project_value",
             backend_service="backend_service_value",
         )
-
-
-def test_delete_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteBackendServiceRequest,
-        dict,
-    ],
-)
-def test_delete_unary_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_delete_unary_rest_use_cached_wrapped_rpc():
@@ -2780,6 +1914,7 @@ def test_delete_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_unary(request)
 
@@ -2803,85 +1938,6 @@ def test_delete_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_unary_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_delete"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_delete"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteBackendServiceRequest.pb(
-            compute.DeleteBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.DeleteBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_unary(request)
 
 
 def test_delete_unary_rest_flattened():
@@ -2913,6 +1969,7 @@ def test_delete_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_unary(**mock_args)
 
@@ -2941,94 +1998,6 @@ def test_delete_unary_rest_flattened_error(transport: str = "rest"):
             project="project_value",
             backend_service="backend_service_value",
         )
-
-
-def test_delete_unary_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteSignedUrlKeyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_delete_signed_url_key_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_signed_url_key(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_delete_signed_url_key_rest_use_cached_wrapped_rpc():
@@ -3160,6 +2129,7 @@ def test_delete_signed_url_key_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_signed_url_key(request)
 
@@ -3196,86 +2166,6 @@ def test_delete_signed_url_key_rest_unset_required_fields():
     )
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_signed_url_key_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_delete_signed_url_key"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_delete_signed_url_key"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteSignedUrlKeyBackendServiceRequest.pb(
-            compute.DeleteSignedUrlKeyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteSignedUrlKeyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_signed_url_key(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_signed_url_key_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.DeleteSignedUrlKeyBackendServiceRequest,
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_signed_url_key(request)
-
-
 def test_delete_signed_url_key_rest_flattened():
     client = BackendServicesClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -3306,6 +2196,7 @@ def test_delete_signed_url_key_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_signed_url_key(**mock_args)
 
@@ -3335,72 +2226,6 @@ def test_delete_signed_url_key_rest_flattened_error(transport: str = "rest"):
             backend_service="backend_service_value",
             key_name="key_name_value",
         )
-
-
-def test_delete_signed_url_key_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.DeleteSignedUrlKeyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_delete_signed_url_key_unary_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.delete_signed_url_key_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_delete_signed_url_key_unary_rest_use_cached_wrapped_rpc():
@@ -3532,6 +2357,7 @@ def test_delete_signed_url_key_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.delete_signed_url_key_unary(request)
 
@@ -3568,86 +2394,6 @@ def test_delete_signed_url_key_unary_rest_unset_required_fields():
     )
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_delete_signed_url_key_unary_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_delete_signed_url_key"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_delete_signed_url_key"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.DeleteSignedUrlKeyBackendServiceRequest.pb(
-            compute.DeleteSignedUrlKeyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.DeleteSignedUrlKeyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.delete_signed_url_key_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_delete_signed_url_key_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.DeleteSignedUrlKeyBackendServiceRequest,
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.delete_signed_url_key_unary(request)
-
-
 def test_delete_signed_url_key_unary_rest_flattened():
     client = BackendServicesClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -3678,6 +2424,7 @@ def test_delete_signed_url_key_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.delete_signed_url_key_unary(**mock_args)
 
@@ -3707,102 +2454,6 @@ def test_delete_signed_url_key_unary_rest_flattened_error(transport: str = "rest
             backend_service="backend_service_value",
             key_name="key_name_value",
         )
-
-
-def test_delete_signed_url_key_unary_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.GetBackendServiceRequest,
-        dict,
-    ],
-)
-def test_get_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.BackendService(
-            affinity_cookie_ttl_sec=2432,
-            compression_mode="compression_mode_value",
-            creation_timestamp="creation_timestamp_value",
-            custom_request_headers=["custom_request_headers_value"],
-            custom_response_headers=["custom_response_headers_value"],
-            description="description_value",
-            edge_security_policy="edge_security_policy_value",
-            enable_c_d_n=True,
-            fingerprint="fingerprint_value",
-            health_checks=["health_checks_value"],
-            id=205,
-            kind="kind_value",
-            load_balancing_scheme="load_balancing_scheme_value",
-            locality_lb_policy="locality_lb_policy_value",
-            name="name_value",
-            network="network_value",
-            port=453,
-            port_name="port_name_value",
-            protocol="protocol_value",
-            region="region_value",
-            security_policy="security_policy_value",
-            self_link="self_link_value",
-            service_bindings=["service_bindings_value"],
-            service_lb_policy="service_lb_policy_value",
-            session_affinity="session_affinity_value",
-            timeout_sec=1185,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.BackendService.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.BackendService)
-    assert response.affinity_cookie_ttl_sec == 2432
-    assert response.compression_mode == "compression_mode_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.custom_request_headers == ["custom_request_headers_value"]
-    assert response.custom_response_headers == ["custom_response_headers_value"]
-    assert response.description == "description_value"
-    assert response.edge_security_policy == "edge_security_policy_value"
-    assert response.enable_c_d_n is True
-    assert response.fingerprint == "fingerprint_value"
-    assert response.health_checks == ["health_checks_value"]
-    assert response.id == 205
-    assert response.kind == "kind_value"
-    assert response.load_balancing_scheme == "load_balancing_scheme_value"
-    assert response.locality_lb_policy == "locality_lb_policy_value"
-    assert response.name == "name_value"
-    assert response.network == "network_value"
-    assert response.port == 453
-    assert response.port_name == "port_name_value"
-    assert response.protocol == "protocol_value"
-    assert response.region == "region_value"
-    assert response.security_policy == "security_policy_value"
-    assert response.self_link == "self_link_value"
-    assert response.service_bindings == ["service_bindings_value"]
-    assert response.service_lb_policy == "service_lb_policy_value"
-    assert response.session_affinity == "session_affinity_value"
-    assert response.timeout_sec == 1185
 
 
 def test_get_rest_use_cached_wrapped_rpc():
@@ -3909,6 +2560,7 @@ def test_get_rest_required_fields(request_type=compute.GetBackendServiceRequest)
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get(request)
 
@@ -3932,87 +2584,6 @@ def test_get_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_get"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_get"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.GetBackendServiceRequest.pb(
-            compute.GetBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.BackendService.to_json(
-            compute.BackendService()
-        )
-
-        request = compute.GetBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.BackendService()
-
-        client.get(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_rest_bad_request(
-    transport: str = "rest", request_type=compute.GetBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get(request)
 
 
 def test_get_rest_flattened():
@@ -4044,6 +2615,7 @@ def test_get_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get(**mock_args)
 
@@ -4072,128 +2644,6 @@ def test_get_rest_flattened_error(transport: str = "rest"):
             project="project_value",
             backend_service="backend_service_value",
         )
-
-
-def test_get_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.GetHealthBackendServiceRequest,
-        dict,
-    ],
-)
-def test_get_health_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["resource_group_reference_resource"] = {"group": "group_value"}
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.GetHealthBackendServiceRequest.meta.fields[
-        "resource_group_reference_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "resource_group_reference_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["resource_group_reference_resource"][field])
-                ):
-                    del request_init["resource_group_reference_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["resource_group_reference_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.BackendServiceGroupHealth(
-            kind="kind_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.BackendServiceGroupHealth.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_health(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.BackendServiceGroupHealth)
-    assert response.kind == "kind_value"
 
 
 def test_get_health_rest_use_cached_wrapped_rpc():
@@ -4303,6 +2753,7 @@ def test_get_health_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_health(request)
 
@@ -4327,87 +2778,6 @@ def test_get_health_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_health_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_get_health"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_get_health"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.GetHealthBackendServiceRequest.pb(
-            compute.GetHealthBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.BackendServiceGroupHealth.to_json(
-            compute.BackendServiceGroupHealth()
-        )
-
-        request = compute.GetHealthBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.BackendServiceGroupHealth()
-
-        client.get_health(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_health_rest_bad_request(
-    transport: str = "rest", request_type=compute.GetHealthBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_health(request)
 
 
 def test_get_health_rest_flattened():
@@ -4442,6 +2812,7 @@ def test_get_health_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_health(**mock_args)
 
@@ -4473,56 +2844,6 @@ def test_get_health_rest_flattened_error(transport: str = "rest"):
                 group="group_value"
             ),
         )
-
-
-def test_get_health_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.GetIamPolicyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_get_iam_policy_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "resource": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Policy(
-            etag="etag_value",
-            iam_owned=True,
-            version=774,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Policy.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_iam_policy(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Policy)
-    assert response.etag == "etag_value"
-    assert response.iam_owned is True
-    assert response.version == 774
 
 
 def test_get_iam_policy_rest_use_cached_wrapped_rpc():
@@ -4633,6 +2954,7 @@ def test_get_iam_policy_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_iam_policy(request)
 
@@ -4656,85 +2978,6 @@ def test_get_iam_policy_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_iam_policy_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_get_iam_policy"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_get_iam_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.GetIamPolicyBackendServiceRequest.pb(
-            compute.GetIamPolicyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Policy.to_json(compute.Policy())
-
-        request = compute.GetIamPolicyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Policy()
-
-        client.get_iam_policy(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_iam_policy_rest_bad_request(
-    transport: str = "rest", request_type=compute.GetIamPolicyBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "resource": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_iam_policy(request)
 
 
 def test_get_iam_policy_rest_flattened():
@@ -4766,6 +3009,7 @@ def test_get_iam_policy_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_iam_policy(**mock_args)
 
@@ -4794,329 +3038,6 @@ def test_get_iam_policy_rest_flattened_error(transport: str = "rest"):
             project="project_value",
             resource="resource_value",
         )
-
-
-def test_get_iam_policy_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.InsertBackendServiceRequest,
-        dict,
-    ],
-)
-def test_insert_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request_init["backend_service_resource"] = {
-        "affinity_cookie_ttl_sec": 2432,
-        "backends": [
-            {
-                "balancing_mode": "balancing_mode_value",
-                "capacity_scaler": 0.1575,
-                "description": "description_value",
-                "failover": True,
-                "group": "group_value",
-                "max_connections": 1608,
-                "max_connections_per_endpoint": 2990,
-                "max_connections_per_instance": 2978,
-                "max_rate": 849,
-                "max_rate_per_endpoint": 0.22310000000000002,
-                "max_rate_per_instance": 0.22190000000000001,
-                "max_utilization": 0.1633,
-                "preference": "preference_value",
-            }
-        ],
-        "cdn_policy": {
-            "bypass_cache_on_request_headers": [{"header_name": "header_name_value"}],
-            "cache_key_policy": {
-                "include_host": True,
-                "include_http_headers": [
-                    "include_http_headers_value1",
-                    "include_http_headers_value2",
-                ],
-                "include_named_cookies": [
-                    "include_named_cookies_value1",
-                    "include_named_cookies_value2",
-                ],
-                "include_protocol": True,
-                "include_query_string": True,
-                "query_string_blacklist": [
-                    "query_string_blacklist_value1",
-                    "query_string_blacklist_value2",
-                ],
-                "query_string_whitelist": [
-                    "query_string_whitelist_value1",
-                    "query_string_whitelist_value2",
-                ],
-            },
-            "cache_mode": "cache_mode_value",
-            "client_ttl": 1074,
-            "default_ttl": 1176,
-            "max_ttl": 761,
-            "negative_caching": True,
-            "negative_caching_policy": [{"code": 411, "ttl": 340}],
-            "request_coalescing": True,
-            "serve_while_stale": 1813,
-            "signed_url_cache_max_age_sec": 2890,
-            "signed_url_key_names": [
-                "signed_url_key_names_value1",
-                "signed_url_key_names_value2",
-            ],
-        },
-        "circuit_breakers": {
-            "max_connections": 1608,
-            "max_pending_requests": 2149,
-            "max_requests": 1313,
-            "max_requests_per_connection": 2902,
-            "max_retries": 1187,
-        },
-        "compression_mode": "compression_mode_value",
-        "connection_draining": {"draining_timeout_sec": 2124},
-        "connection_tracking_policy": {
-            "connection_persistence_on_unhealthy_backends": "connection_persistence_on_unhealthy_backends_value",
-            "enable_strong_affinity": True,
-            "idle_timeout_sec": 1694,
-            "tracking_mode": "tracking_mode_value",
-        },
-        "consistent_hash": {
-            "http_cookie": {
-                "name": "name_value",
-                "path": "path_value",
-                "ttl": {"nanos": 543, "seconds": 751},
-            },
-            "http_header_name": "http_header_name_value",
-            "minimum_ring_size": 1829,
-        },
-        "creation_timestamp": "creation_timestamp_value",
-        "custom_request_headers": [
-            "custom_request_headers_value1",
-            "custom_request_headers_value2",
-        ],
-        "custom_response_headers": [
-            "custom_response_headers_value1",
-            "custom_response_headers_value2",
-        ],
-        "description": "description_value",
-        "edge_security_policy": "edge_security_policy_value",
-        "enable_c_d_n": True,
-        "failover_policy": {
-            "disable_connection_drain_on_failover": True,
-            "drop_traffic_if_unhealthy": True,
-            "failover_ratio": 0.1494,
-        },
-        "fingerprint": "fingerprint_value",
-        "health_checks": ["health_checks_value1", "health_checks_value2"],
-        "iap": {
-            "enabled": True,
-            "oauth2_client_id": "oauth2_client_id_value",
-            "oauth2_client_secret": "oauth2_client_secret_value",
-            "oauth2_client_secret_sha256": "oauth2_client_secret_sha256_value",
-        },
-        "id": 205,
-        "kind": "kind_value",
-        "load_balancing_scheme": "load_balancing_scheme_value",
-        "locality_lb_policies": [
-            {
-                "custom_policy": {"data": "data_value", "name": "name_value"},
-                "policy": {"name": "name_value"},
-            }
-        ],
-        "locality_lb_policy": "locality_lb_policy_value",
-        "log_config": {
-            "enable": True,
-            "optional_fields": ["optional_fields_value1", "optional_fields_value2"],
-            "optional_mode": "optional_mode_value",
-            "sample_rate": 0.1165,
-        },
-        "max_stream_duration": {},
-        "metadatas": {},
-        "name": "name_value",
-        "network": "network_value",
-        "outlier_detection": {
-            "base_ejection_time": {},
-            "consecutive_errors": 1956,
-            "consecutive_gateway_failure": 2880,
-            "enforcing_consecutive_errors": 3006,
-            "enforcing_consecutive_gateway_failure": 3930,
-            "enforcing_success_rate": 2334,
-            "interval": {},
-            "max_ejection_percent": 2118,
-            "success_rate_minimum_hosts": 2799,
-            "success_rate_request_volume": 2915,
-            "success_rate_stdev_factor": 2663,
-        },
-        "port": 453,
-        "port_name": "port_name_value",
-        "protocol": "protocol_value",
-        "region": "region_value",
-        "security_policy": "security_policy_value",
-        "security_settings": {
-            "aws_v4_authentication": {
-                "access_key": "access_key_value",
-                "access_key_id": "access_key_id_value",
-                "access_key_version": "access_key_version_value",
-                "origin_region": "origin_region_value",
-            },
-            "client_tls_policy": "client_tls_policy_value",
-            "subject_alt_names": [
-                "subject_alt_names_value1",
-                "subject_alt_names_value2",
-            ],
-        },
-        "self_link": "self_link_value",
-        "service_bindings": ["service_bindings_value1", "service_bindings_value2"],
-        "service_lb_policy": "service_lb_policy_value",
-        "session_affinity": "session_affinity_value",
-        "subsetting": {"policy": "policy_value"},
-        "timeout_sec": 1185,
-        "used_by": [{"reference": "reference_value"}],
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.InsertBackendServiceRequest.meta.fields[
-        "backend_service_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "backend_service_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["backend_service_resource"][field])):
-                    del request_init["backend_service_resource"][field][i][subfield]
-            else:
-                del request_init["backend_service_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.insert(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_insert_rest_use_cached_wrapped_rpc():
@@ -5226,6 +3147,7 @@ def test_insert_rest_required_fields(request_type=compute.InsertBackendServiceRe
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.insert(request)
 
@@ -5249,85 +3171,6 @@ def test_insert_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_insert_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_insert"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_insert"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.InsertBackendServiceRequest.pb(
-            compute.InsertBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.InsertBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.insert(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_insert_rest_bad_request(
-    transport: str = "rest", request_type=compute.InsertBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.insert(request)
 
 
 def test_insert_rest_flattened():
@@ -5361,6 +3204,7 @@ def test_insert_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.insert(**mock_args)
 
@@ -5391,307 +3235,6 @@ def test_insert_rest_flattened_error(transport: str = "rest"):
                 affinity_cookie_ttl_sec=2432
             ),
         )
-
-
-def test_insert_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.InsertBackendServiceRequest,
-        dict,
-    ],
-)
-def test_insert_unary_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request_init["backend_service_resource"] = {
-        "affinity_cookie_ttl_sec": 2432,
-        "backends": [
-            {
-                "balancing_mode": "balancing_mode_value",
-                "capacity_scaler": 0.1575,
-                "description": "description_value",
-                "failover": True,
-                "group": "group_value",
-                "max_connections": 1608,
-                "max_connections_per_endpoint": 2990,
-                "max_connections_per_instance": 2978,
-                "max_rate": 849,
-                "max_rate_per_endpoint": 0.22310000000000002,
-                "max_rate_per_instance": 0.22190000000000001,
-                "max_utilization": 0.1633,
-                "preference": "preference_value",
-            }
-        ],
-        "cdn_policy": {
-            "bypass_cache_on_request_headers": [{"header_name": "header_name_value"}],
-            "cache_key_policy": {
-                "include_host": True,
-                "include_http_headers": [
-                    "include_http_headers_value1",
-                    "include_http_headers_value2",
-                ],
-                "include_named_cookies": [
-                    "include_named_cookies_value1",
-                    "include_named_cookies_value2",
-                ],
-                "include_protocol": True,
-                "include_query_string": True,
-                "query_string_blacklist": [
-                    "query_string_blacklist_value1",
-                    "query_string_blacklist_value2",
-                ],
-                "query_string_whitelist": [
-                    "query_string_whitelist_value1",
-                    "query_string_whitelist_value2",
-                ],
-            },
-            "cache_mode": "cache_mode_value",
-            "client_ttl": 1074,
-            "default_ttl": 1176,
-            "max_ttl": 761,
-            "negative_caching": True,
-            "negative_caching_policy": [{"code": 411, "ttl": 340}],
-            "request_coalescing": True,
-            "serve_while_stale": 1813,
-            "signed_url_cache_max_age_sec": 2890,
-            "signed_url_key_names": [
-                "signed_url_key_names_value1",
-                "signed_url_key_names_value2",
-            ],
-        },
-        "circuit_breakers": {
-            "max_connections": 1608,
-            "max_pending_requests": 2149,
-            "max_requests": 1313,
-            "max_requests_per_connection": 2902,
-            "max_retries": 1187,
-        },
-        "compression_mode": "compression_mode_value",
-        "connection_draining": {"draining_timeout_sec": 2124},
-        "connection_tracking_policy": {
-            "connection_persistence_on_unhealthy_backends": "connection_persistence_on_unhealthy_backends_value",
-            "enable_strong_affinity": True,
-            "idle_timeout_sec": 1694,
-            "tracking_mode": "tracking_mode_value",
-        },
-        "consistent_hash": {
-            "http_cookie": {
-                "name": "name_value",
-                "path": "path_value",
-                "ttl": {"nanos": 543, "seconds": 751},
-            },
-            "http_header_name": "http_header_name_value",
-            "minimum_ring_size": 1829,
-        },
-        "creation_timestamp": "creation_timestamp_value",
-        "custom_request_headers": [
-            "custom_request_headers_value1",
-            "custom_request_headers_value2",
-        ],
-        "custom_response_headers": [
-            "custom_response_headers_value1",
-            "custom_response_headers_value2",
-        ],
-        "description": "description_value",
-        "edge_security_policy": "edge_security_policy_value",
-        "enable_c_d_n": True,
-        "failover_policy": {
-            "disable_connection_drain_on_failover": True,
-            "drop_traffic_if_unhealthy": True,
-            "failover_ratio": 0.1494,
-        },
-        "fingerprint": "fingerprint_value",
-        "health_checks": ["health_checks_value1", "health_checks_value2"],
-        "iap": {
-            "enabled": True,
-            "oauth2_client_id": "oauth2_client_id_value",
-            "oauth2_client_secret": "oauth2_client_secret_value",
-            "oauth2_client_secret_sha256": "oauth2_client_secret_sha256_value",
-        },
-        "id": 205,
-        "kind": "kind_value",
-        "load_balancing_scheme": "load_balancing_scheme_value",
-        "locality_lb_policies": [
-            {
-                "custom_policy": {"data": "data_value", "name": "name_value"},
-                "policy": {"name": "name_value"},
-            }
-        ],
-        "locality_lb_policy": "locality_lb_policy_value",
-        "log_config": {
-            "enable": True,
-            "optional_fields": ["optional_fields_value1", "optional_fields_value2"],
-            "optional_mode": "optional_mode_value",
-            "sample_rate": 0.1165,
-        },
-        "max_stream_duration": {},
-        "metadatas": {},
-        "name": "name_value",
-        "network": "network_value",
-        "outlier_detection": {
-            "base_ejection_time": {},
-            "consecutive_errors": 1956,
-            "consecutive_gateway_failure": 2880,
-            "enforcing_consecutive_errors": 3006,
-            "enforcing_consecutive_gateway_failure": 3930,
-            "enforcing_success_rate": 2334,
-            "interval": {},
-            "max_ejection_percent": 2118,
-            "success_rate_minimum_hosts": 2799,
-            "success_rate_request_volume": 2915,
-            "success_rate_stdev_factor": 2663,
-        },
-        "port": 453,
-        "port_name": "port_name_value",
-        "protocol": "protocol_value",
-        "region": "region_value",
-        "security_policy": "security_policy_value",
-        "security_settings": {
-            "aws_v4_authentication": {
-                "access_key": "access_key_value",
-                "access_key_id": "access_key_id_value",
-                "access_key_version": "access_key_version_value",
-                "origin_region": "origin_region_value",
-            },
-            "client_tls_policy": "client_tls_policy_value",
-            "subject_alt_names": [
-                "subject_alt_names_value1",
-                "subject_alt_names_value2",
-            ],
-        },
-        "self_link": "self_link_value",
-        "service_bindings": ["service_bindings_value1", "service_bindings_value2"],
-        "service_lb_policy": "service_lb_policy_value",
-        "session_affinity": "session_affinity_value",
-        "subsetting": {"policy": "policy_value"},
-        "timeout_sec": 1185,
-        "used_by": [{"reference": "reference_value"}],
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.InsertBackendServiceRequest.meta.fields[
-        "backend_service_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "backend_service_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["backend_service_resource"][field])):
-                    del request_init["backend_service_resource"][field][i][subfield]
-            else:
-                del request_init["backend_service_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.insert_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_insert_unary_rest_use_cached_wrapped_rpc():
@@ -5803,6 +3346,7 @@ def test_insert_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.insert_unary(request)
 
@@ -5826,85 +3370,6 @@ def test_insert_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_insert_unary_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_insert"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_insert"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.InsertBackendServiceRequest.pb(
-            compute.InsertBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.InsertBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.insert_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_insert_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.InsertBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.insert_unary(request)
 
 
 def test_insert_unary_rest_flattened():
@@ -5938,6 +3403,7 @@ def test_insert_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.insert_unary(**mock_args)
 
@@ -5968,58 +3434,6 @@ def test_insert_unary_rest_flattened_error(transport: str = "rest"):
                 affinity_cookie_ttl_sec=2432
             ),
         )
-
-
-def test_insert_unary_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ListBackendServicesRequest,
-        dict,
-    ],
-)
-def test_list_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.BackendServiceList(
-            id="id_value",
-            kind="kind_value",
-            next_page_token="next_page_token_value",
-            self_link="self_link_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.BackendServiceList.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListPager)
-    assert response.id == "id_value"
-    assert response.kind == "kind_value"
-    assert response.next_page_token == "next_page_token_value"
-    assert response.self_link == "self_link_value"
 
 
 def test_list_rest_use_cached_wrapped_rpc():
@@ -6132,6 +3546,7 @@ def test_list_rest_required_fields(request_type=compute.ListBackendServicesReque
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list(request)
 
@@ -6158,87 +3573,6 @@ def test_list_rest_unset_required_fields():
         )
         & set(("project",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_list"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ListBackendServicesRequest.pb(
-            compute.ListBackendServicesRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.BackendServiceList.to_json(
-            compute.BackendServiceList()
-        )
-
-        request = compute.ListBackendServicesRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.BackendServiceList()
-
-        client.list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_rest_bad_request(
-    transport: str = "rest", request_type=compute.ListBackendServicesRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list(request)
 
 
 def test_list_rest_flattened():
@@ -6269,6 +3603,7 @@ def test_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list(**mock_args)
 
@@ -6357,52 +3692,6 @@ def test_list_rest_pager(transport: str = "rest"):
         pages = list(client.list(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.ListUsableBackendServicesRequest,
-        dict,
-    ],
-)
-def test_list_usable_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.BackendServiceListUsable(
-            id="id_value",
-            kind="kind_value",
-            next_page_token="next_page_token_value",
-            self_link="self_link_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.BackendServiceListUsable.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_usable(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListUsablePager)
-    assert response.id == "id_value"
-    assert response.kind == "kind_value"
-    assert response.next_page_token == "next_page_token_value"
-    assert response.self_link == "self_link_value"
 
 
 def test_list_usable_rest_use_cached_wrapped_rpc():
@@ -6517,6 +3806,7 @@ def test_list_usable_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_usable(request)
 
@@ -6543,87 +3833,6 @@ def test_list_usable_rest_unset_required_fields():
         )
         & set(("project",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_usable_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_list_usable"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_list_usable"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.ListUsableBackendServicesRequest.pb(
-            compute.ListUsableBackendServicesRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.BackendServiceListUsable.to_json(
-            compute.BackendServiceListUsable()
-        )
-
-        request = compute.ListUsableBackendServicesRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.BackendServiceListUsable()
-
-        client.list_usable(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_usable_rest_bad_request(
-    transport: str = "rest", request_type=compute.ListUsableBackendServicesRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_usable(request)
 
 
 def test_list_usable_rest_flattened():
@@ -6654,6 +3863,7 @@ def test_list_usable_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_usable(**mock_args)
 
@@ -6742,323 +3952,6 @@ def test_list_usable_rest_pager(transport: str = "rest"):
         pages = list(client.list_usable(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.PatchBackendServiceRequest,
-        dict,
-    ],
-)
-def test_patch_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["backend_service_resource"] = {
-        "affinity_cookie_ttl_sec": 2432,
-        "backends": [
-            {
-                "balancing_mode": "balancing_mode_value",
-                "capacity_scaler": 0.1575,
-                "description": "description_value",
-                "failover": True,
-                "group": "group_value",
-                "max_connections": 1608,
-                "max_connections_per_endpoint": 2990,
-                "max_connections_per_instance": 2978,
-                "max_rate": 849,
-                "max_rate_per_endpoint": 0.22310000000000002,
-                "max_rate_per_instance": 0.22190000000000001,
-                "max_utilization": 0.1633,
-                "preference": "preference_value",
-            }
-        ],
-        "cdn_policy": {
-            "bypass_cache_on_request_headers": [{"header_name": "header_name_value"}],
-            "cache_key_policy": {
-                "include_host": True,
-                "include_http_headers": [
-                    "include_http_headers_value1",
-                    "include_http_headers_value2",
-                ],
-                "include_named_cookies": [
-                    "include_named_cookies_value1",
-                    "include_named_cookies_value2",
-                ],
-                "include_protocol": True,
-                "include_query_string": True,
-                "query_string_blacklist": [
-                    "query_string_blacklist_value1",
-                    "query_string_blacklist_value2",
-                ],
-                "query_string_whitelist": [
-                    "query_string_whitelist_value1",
-                    "query_string_whitelist_value2",
-                ],
-            },
-            "cache_mode": "cache_mode_value",
-            "client_ttl": 1074,
-            "default_ttl": 1176,
-            "max_ttl": 761,
-            "negative_caching": True,
-            "negative_caching_policy": [{"code": 411, "ttl": 340}],
-            "request_coalescing": True,
-            "serve_while_stale": 1813,
-            "signed_url_cache_max_age_sec": 2890,
-            "signed_url_key_names": [
-                "signed_url_key_names_value1",
-                "signed_url_key_names_value2",
-            ],
-        },
-        "circuit_breakers": {
-            "max_connections": 1608,
-            "max_pending_requests": 2149,
-            "max_requests": 1313,
-            "max_requests_per_connection": 2902,
-            "max_retries": 1187,
-        },
-        "compression_mode": "compression_mode_value",
-        "connection_draining": {"draining_timeout_sec": 2124},
-        "connection_tracking_policy": {
-            "connection_persistence_on_unhealthy_backends": "connection_persistence_on_unhealthy_backends_value",
-            "enable_strong_affinity": True,
-            "idle_timeout_sec": 1694,
-            "tracking_mode": "tracking_mode_value",
-        },
-        "consistent_hash": {
-            "http_cookie": {
-                "name": "name_value",
-                "path": "path_value",
-                "ttl": {"nanos": 543, "seconds": 751},
-            },
-            "http_header_name": "http_header_name_value",
-            "minimum_ring_size": 1829,
-        },
-        "creation_timestamp": "creation_timestamp_value",
-        "custom_request_headers": [
-            "custom_request_headers_value1",
-            "custom_request_headers_value2",
-        ],
-        "custom_response_headers": [
-            "custom_response_headers_value1",
-            "custom_response_headers_value2",
-        ],
-        "description": "description_value",
-        "edge_security_policy": "edge_security_policy_value",
-        "enable_c_d_n": True,
-        "failover_policy": {
-            "disable_connection_drain_on_failover": True,
-            "drop_traffic_if_unhealthy": True,
-            "failover_ratio": 0.1494,
-        },
-        "fingerprint": "fingerprint_value",
-        "health_checks": ["health_checks_value1", "health_checks_value2"],
-        "iap": {
-            "enabled": True,
-            "oauth2_client_id": "oauth2_client_id_value",
-            "oauth2_client_secret": "oauth2_client_secret_value",
-            "oauth2_client_secret_sha256": "oauth2_client_secret_sha256_value",
-        },
-        "id": 205,
-        "kind": "kind_value",
-        "load_balancing_scheme": "load_balancing_scheme_value",
-        "locality_lb_policies": [
-            {
-                "custom_policy": {"data": "data_value", "name": "name_value"},
-                "policy": {"name": "name_value"},
-            }
-        ],
-        "locality_lb_policy": "locality_lb_policy_value",
-        "log_config": {
-            "enable": True,
-            "optional_fields": ["optional_fields_value1", "optional_fields_value2"],
-            "optional_mode": "optional_mode_value",
-            "sample_rate": 0.1165,
-        },
-        "max_stream_duration": {},
-        "metadatas": {},
-        "name": "name_value",
-        "network": "network_value",
-        "outlier_detection": {
-            "base_ejection_time": {},
-            "consecutive_errors": 1956,
-            "consecutive_gateway_failure": 2880,
-            "enforcing_consecutive_errors": 3006,
-            "enforcing_consecutive_gateway_failure": 3930,
-            "enforcing_success_rate": 2334,
-            "interval": {},
-            "max_ejection_percent": 2118,
-            "success_rate_minimum_hosts": 2799,
-            "success_rate_request_volume": 2915,
-            "success_rate_stdev_factor": 2663,
-        },
-        "port": 453,
-        "port_name": "port_name_value",
-        "protocol": "protocol_value",
-        "region": "region_value",
-        "security_policy": "security_policy_value",
-        "security_settings": {
-            "aws_v4_authentication": {
-                "access_key": "access_key_value",
-                "access_key_id": "access_key_id_value",
-                "access_key_version": "access_key_version_value",
-                "origin_region": "origin_region_value",
-            },
-            "client_tls_policy": "client_tls_policy_value",
-            "subject_alt_names": [
-                "subject_alt_names_value1",
-                "subject_alt_names_value2",
-            ],
-        },
-        "self_link": "self_link_value",
-        "service_bindings": ["service_bindings_value1", "service_bindings_value2"],
-        "service_lb_policy": "service_lb_policy_value",
-        "session_affinity": "session_affinity_value",
-        "subsetting": {"policy": "policy_value"},
-        "timeout_sec": 1185,
-        "used_by": [{"reference": "reference_value"}],
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.PatchBackendServiceRequest.meta.fields[
-        "backend_service_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "backend_service_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["backend_service_resource"][field])):
-                    del request_init["backend_service_resource"][field][i][subfield]
-            else:
-                del request_init["backend_service_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.patch(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_patch_rest_use_cached_wrapped_rpc():
@@ -7172,6 +4065,7 @@ def test_patch_rest_required_fields(request_type=compute.PatchBackendServiceRequ
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.patch(request)
 
@@ -7196,85 +4090,6 @@ def test_patch_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_patch_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_patch"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_patch"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.PatchBackendServiceRequest.pb(
-            compute.PatchBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.PatchBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.patch(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_patch_rest_bad_request(
-    transport: str = "rest", request_type=compute.PatchBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.patch(request)
 
 
 def test_patch_rest_flattened():
@@ -7309,6 +4124,7 @@ def test_patch_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.patch(**mock_args)
 
@@ -7340,307 +4156,6 @@ def test_patch_rest_flattened_error(transport: str = "rest"):
                 affinity_cookie_ttl_sec=2432
             ),
         )
-
-
-def test_patch_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.PatchBackendServiceRequest,
-        dict,
-    ],
-)
-def test_patch_unary_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["backend_service_resource"] = {
-        "affinity_cookie_ttl_sec": 2432,
-        "backends": [
-            {
-                "balancing_mode": "balancing_mode_value",
-                "capacity_scaler": 0.1575,
-                "description": "description_value",
-                "failover": True,
-                "group": "group_value",
-                "max_connections": 1608,
-                "max_connections_per_endpoint": 2990,
-                "max_connections_per_instance": 2978,
-                "max_rate": 849,
-                "max_rate_per_endpoint": 0.22310000000000002,
-                "max_rate_per_instance": 0.22190000000000001,
-                "max_utilization": 0.1633,
-                "preference": "preference_value",
-            }
-        ],
-        "cdn_policy": {
-            "bypass_cache_on_request_headers": [{"header_name": "header_name_value"}],
-            "cache_key_policy": {
-                "include_host": True,
-                "include_http_headers": [
-                    "include_http_headers_value1",
-                    "include_http_headers_value2",
-                ],
-                "include_named_cookies": [
-                    "include_named_cookies_value1",
-                    "include_named_cookies_value2",
-                ],
-                "include_protocol": True,
-                "include_query_string": True,
-                "query_string_blacklist": [
-                    "query_string_blacklist_value1",
-                    "query_string_blacklist_value2",
-                ],
-                "query_string_whitelist": [
-                    "query_string_whitelist_value1",
-                    "query_string_whitelist_value2",
-                ],
-            },
-            "cache_mode": "cache_mode_value",
-            "client_ttl": 1074,
-            "default_ttl": 1176,
-            "max_ttl": 761,
-            "negative_caching": True,
-            "negative_caching_policy": [{"code": 411, "ttl": 340}],
-            "request_coalescing": True,
-            "serve_while_stale": 1813,
-            "signed_url_cache_max_age_sec": 2890,
-            "signed_url_key_names": [
-                "signed_url_key_names_value1",
-                "signed_url_key_names_value2",
-            ],
-        },
-        "circuit_breakers": {
-            "max_connections": 1608,
-            "max_pending_requests": 2149,
-            "max_requests": 1313,
-            "max_requests_per_connection": 2902,
-            "max_retries": 1187,
-        },
-        "compression_mode": "compression_mode_value",
-        "connection_draining": {"draining_timeout_sec": 2124},
-        "connection_tracking_policy": {
-            "connection_persistence_on_unhealthy_backends": "connection_persistence_on_unhealthy_backends_value",
-            "enable_strong_affinity": True,
-            "idle_timeout_sec": 1694,
-            "tracking_mode": "tracking_mode_value",
-        },
-        "consistent_hash": {
-            "http_cookie": {
-                "name": "name_value",
-                "path": "path_value",
-                "ttl": {"nanos": 543, "seconds": 751},
-            },
-            "http_header_name": "http_header_name_value",
-            "minimum_ring_size": 1829,
-        },
-        "creation_timestamp": "creation_timestamp_value",
-        "custom_request_headers": [
-            "custom_request_headers_value1",
-            "custom_request_headers_value2",
-        ],
-        "custom_response_headers": [
-            "custom_response_headers_value1",
-            "custom_response_headers_value2",
-        ],
-        "description": "description_value",
-        "edge_security_policy": "edge_security_policy_value",
-        "enable_c_d_n": True,
-        "failover_policy": {
-            "disable_connection_drain_on_failover": True,
-            "drop_traffic_if_unhealthy": True,
-            "failover_ratio": 0.1494,
-        },
-        "fingerprint": "fingerprint_value",
-        "health_checks": ["health_checks_value1", "health_checks_value2"],
-        "iap": {
-            "enabled": True,
-            "oauth2_client_id": "oauth2_client_id_value",
-            "oauth2_client_secret": "oauth2_client_secret_value",
-            "oauth2_client_secret_sha256": "oauth2_client_secret_sha256_value",
-        },
-        "id": 205,
-        "kind": "kind_value",
-        "load_balancing_scheme": "load_balancing_scheme_value",
-        "locality_lb_policies": [
-            {
-                "custom_policy": {"data": "data_value", "name": "name_value"},
-                "policy": {"name": "name_value"},
-            }
-        ],
-        "locality_lb_policy": "locality_lb_policy_value",
-        "log_config": {
-            "enable": True,
-            "optional_fields": ["optional_fields_value1", "optional_fields_value2"],
-            "optional_mode": "optional_mode_value",
-            "sample_rate": 0.1165,
-        },
-        "max_stream_duration": {},
-        "metadatas": {},
-        "name": "name_value",
-        "network": "network_value",
-        "outlier_detection": {
-            "base_ejection_time": {},
-            "consecutive_errors": 1956,
-            "consecutive_gateway_failure": 2880,
-            "enforcing_consecutive_errors": 3006,
-            "enforcing_consecutive_gateway_failure": 3930,
-            "enforcing_success_rate": 2334,
-            "interval": {},
-            "max_ejection_percent": 2118,
-            "success_rate_minimum_hosts": 2799,
-            "success_rate_request_volume": 2915,
-            "success_rate_stdev_factor": 2663,
-        },
-        "port": 453,
-        "port_name": "port_name_value",
-        "protocol": "protocol_value",
-        "region": "region_value",
-        "security_policy": "security_policy_value",
-        "security_settings": {
-            "aws_v4_authentication": {
-                "access_key": "access_key_value",
-                "access_key_id": "access_key_id_value",
-                "access_key_version": "access_key_version_value",
-                "origin_region": "origin_region_value",
-            },
-            "client_tls_policy": "client_tls_policy_value",
-            "subject_alt_names": [
-                "subject_alt_names_value1",
-                "subject_alt_names_value2",
-            ],
-        },
-        "self_link": "self_link_value",
-        "service_bindings": ["service_bindings_value1", "service_bindings_value2"],
-        "service_lb_policy": "service_lb_policy_value",
-        "session_affinity": "session_affinity_value",
-        "subsetting": {"policy": "policy_value"},
-        "timeout_sec": 1185,
-        "used_by": [{"reference": "reference_value"}],
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.PatchBackendServiceRequest.meta.fields[
-        "backend_service_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "backend_service_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["backend_service_resource"][field])):
-                    del request_init["backend_service_resource"][field][i][subfield]
-            else:
-                del request_init["backend_service_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.patch_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_patch_unary_rest_use_cached_wrapped_rpc():
@@ -7756,6 +4271,7 @@ def test_patch_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.patch_unary(request)
 
@@ -7780,85 +4296,6 @@ def test_patch_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_patch_unary_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_patch"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_patch"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.PatchBackendServiceRequest.pb(
-            compute.PatchBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.PatchBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.patch_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_patch_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.PatchBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.patch_unary(request)
 
 
 def test_patch_unary_rest_flattened():
@@ -7893,6 +4330,7 @@ def test_patch_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.patch_unary(**mock_args)
 
@@ -7924,172 +4362,6 @@ def test_patch_unary_rest_flattened_error(transport: str = "rest"):
                 affinity_cookie_ttl_sec=2432
             ),
         )
-
-
-def test_patch_unary_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetEdgeSecurityPolicyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_set_edge_security_policy_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["security_policy_reference_resource"] = {
-        "security_policy": "security_policy_value"
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetEdgeSecurityPolicyBackendServiceRequest.meta.fields[
-        "security_policy_reference_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "security_policy_reference_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["security_policy_reference_resource"][field])
-                ):
-                    del request_init["security_policy_reference_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["security_policy_reference_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_edge_security_policy(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_set_edge_security_policy_rest_use_cached_wrapped_rpc():
@@ -8210,6 +4482,7 @@ def test_set_edge_security_policy_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_edge_security_policy(request)
 
@@ -8234,86 +4507,6 @@ def test_set_edge_security_policy_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_edge_security_policy_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_set_edge_security_policy"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_set_edge_security_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetEdgeSecurityPolicyBackendServiceRequest.pb(
-            compute.SetEdgeSecurityPolicyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.SetEdgeSecurityPolicyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_edge_security_policy(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_edge_security_policy_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.SetEdgeSecurityPolicyBackendServiceRequest,
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_edge_security_policy(request)
 
 
 def test_set_edge_security_policy_rest_flattened():
@@ -8348,6 +4541,7 @@ def test_set_edge_security_policy_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_edge_security_policy(**mock_args)
 
@@ -8379,150 +4573,6 @@ def test_set_edge_security_policy_rest_flattened_error(transport: str = "rest"):
                 security_policy="security_policy_value"
             ),
         )
-
-
-def test_set_edge_security_policy_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetEdgeSecurityPolicyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_set_edge_security_policy_unary_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["security_policy_reference_resource"] = {
-        "security_policy": "security_policy_value"
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetEdgeSecurityPolicyBackendServiceRequest.meta.fields[
-        "security_policy_reference_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "security_policy_reference_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["security_policy_reference_resource"][field])
-                ):
-                    del request_init["security_policy_reference_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["security_policy_reference_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_edge_security_policy_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_set_edge_security_policy_unary_rest_use_cached_wrapped_rpc():
@@ -8643,6 +4693,7 @@ def test_set_edge_security_policy_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_edge_security_policy_unary(request)
 
@@ -8667,86 +4718,6 @@ def test_set_edge_security_policy_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_edge_security_policy_unary_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_set_edge_security_policy"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_set_edge_security_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetEdgeSecurityPolicyBackendServiceRequest.pb(
-            compute.SetEdgeSecurityPolicyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.SetEdgeSecurityPolicyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_edge_security_policy_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_edge_security_policy_unary_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.SetEdgeSecurityPolicyBackendServiceRequest,
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_edge_security_policy_unary(request)
 
 
 def test_set_edge_security_policy_unary_rest_flattened():
@@ -8781,6 +4752,7 @@ def test_set_edge_security_policy_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_edge_security_policy_unary(**mock_args)
 
@@ -8812,208 +4784,6 @@ def test_set_edge_security_policy_unary_rest_flattened_error(transport: str = "r
                 security_policy="security_policy_value"
             ),
         )
-
-
-def test_set_edge_security_policy_unary_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetIamPolicyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_set_iam_policy_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "resource": "sample2"}
-    request_init["global_set_policy_request_resource"] = {
-        "bindings": [
-            {
-                "binding_id": "binding_id_value",
-                "condition": {
-                    "description": "description_value",
-                    "expression": "expression_value",
-                    "location": "location_value",
-                    "title": "title_value",
-                },
-                "members": ["members_value1", "members_value2"],
-                "role": "role_value",
-            }
-        ],
-        "etag": "etag_value",
-        "policy": {
-            "audit_configs": [
-                {
-                    "audit_log_configs": [
-                        {
-                            "exempted_members": [
-                                "exempted_members_value1",
-                                "exempted_members_value2",
-                            ],
-                            "ignore_child_exemptions": True,
-                            "log_type": "log_type_value",
-                        }
-                    ],
-                    "exempted_members": [
-                        "exempted_members_value1",
-                        "exempted_members_value2",
-                    ],
-                    "service": "service_value",
-                }
-            ],
-            "bindings": {},
-            "etag": "etag_value",
-            "iam_owned": True,
-            "rules": [
-                {
-                    "action": "action_value",
-                    "conditions": [
-                        {
-                            "iam": "iam_value",
-                            "op": "op_value",
-                            "svc": "svc_value",
-                            "sys": "sys_value",
-                            "values": ["values_value1", "values_value2"],
-                        }
-                    ],
-                    "description": "description_value",
-                    "ins": ["ins_value1", "ins_value2"],
-                    "log_configs": [
-                        {
-                            "cloud_audit": {
-                                "authorization_logging_options": {
-                                    "permission_type": "permission_type_value"
-                                },
-                                "log_name": "log_name_value",
-                            },
-                            "counter": {
-                                "custom_fields": [
-                                    {"name": "name_value", "value": "value_value"}
-                                ],
-                                "field": "field_value",
-                                "metric": "metric_value",
-                            },
-                            "data_access": {"log_mode": "log_mode_value"},
-                        }
-                    ],
-                    "not_ins": ["not_ins_value1", "not_ins_value2"],
-                    "permissions": ["permissions_value1", "permissions_value2"],
-                }
-            ],
-            "version": 774,
-        },
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetIamPolicyBackendServiceRequest.meta.fields[
-        "global_set_policy_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "global_set_policy_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["global_set_policy_request_resource"][field])
-                ):
-                    del request_init["global_set_policy_request_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["global_set_policy_request_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Policy(
-            etag="etag_value",
-            iam_owned=True,
-            version=774,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Policy.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_iam_policy(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Policy)
-    assert response.etag == "etag_value"
-    assert response.iam_owned is True
-    assert response.version == 774
 
 
 def test_set_iam_policy_rest_use_cached_wrapped_rpc():
@@ -9123,6 +4893,7 @@ def test_set_iam_policy_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_iam_policy(request)
 
@@ -9147,85 +4918,6 @@ def test_set_iam_policy_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_iam_policy_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_set_iam_policy"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_set_iam_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetIamPolicyBackendServiceRequest.pb(
-            compute.SetIamPolicyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Policy.to_json(compute.Policy())
-
-        request = compute.SetIamPolicyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Policy()
-
-        client.set_iam_policy(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_iam_policy_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetIamPolicyBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "resource": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_iam_policy(request)
 
 
 def test_set_iam_policy_rest_flattened():
@@ -9260,6 +4952,7 @@ def test_set_iam_policy_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_iam_policy(**mock_args)
 
@@ -9291,172 +4984,6 @@ def test_set_iam_policy_rest_flattened_error(transport: str = "rest"):
                 bindings=[compute.Binding(binding_id="binding_id_value")]
             ),
         )
-
-
-def test_set_iam_policy_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetSecurityPolicyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_set_security_policy_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["security_policy_reference_resource"] = {
-        "security_policy": "security_policy_value"
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetSecurityPolicyBackendServiceRequest.meta.fields[
-        "security_policy_reference_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "security_policy_reference_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["security_policy_reference_resource"][field])
-                ):
-                    del request_init["security_policy_reference_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["security_policy_reference_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_security_policy(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_set_security_policy_rest_use_cached_wrapped_rpc():
@@ -9576,6 +5103,7 @@ def test_set_security_policy_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_security_policy(request)
 
@@ -9600,85 +5128,6 @@ def test_set_security_policy_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_security_policy_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_set_security_policy"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_set_security_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetSecurityPolicyBackendServiceRequest.pb(
-            compute.SetSecurityPolicyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.SetSecurityPolicyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_security_policy(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_security_policy_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetSecurityPolicyBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_security_policy(request)
 
 
 def test_set_security_policy_rest_flattened():
@@ -9713,6 +5162,7 @@ def test_set_security_policy_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_security_policy(**mock_args)
 
@@ -9744,150 +5194,6 @@ def test_set_security_policy_rest_flattened_error(transport: str = "rest"):
                 security_policy="security_policy_value"
             ),
         )
-
-
-def test_set_security_policy_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.SetSecurityPolicyBackendServiceRequest,
-        dict,
-    ],
-)
-def test_set_security_policy_unary_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["security_policy_reference_resource"] = {
-        "security_policy": "security_policy_value"
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.SetSecurityPolicyBackendServiceRequest.meta.fields[
-        "security_policy_reference_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "security_policy_reference_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["security_policy_reference_resource"][field])
-                ):
-                    del request_init["security_policy_reference_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["security_policy_reference_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.set_security_policy_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_set_security_policy_unary_rest_use_cached_wrapped_rpc():
@@ -10007,6 +5313,7 @@ def test_set_security_policy_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.set_security_policy_unary(request)
 
@@ -10031,85 +5338,6 @@ def test_set_security_policy_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_set_security_policy_unary_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_set_security_policy"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_set_security_policy"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.SetSecurityPolicyBackendServiceRequest.pb(
-            compute.SetSecurityPolicyBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.SetSecurityPolicyBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.set_security_policy_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_set_security_policy_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.SetSecurityPolicyBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.set_security_policy_unary(request)
 
 
 def test_set_security_policy_unary_rest_flattened():
@@ -10144,6 +5372,7 @@ def test_set_security_policy_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.set_security_policy_unary(**mock_args)
 
@@ -10175,130 +5404,6 @@ def test_set_security_policy_unary_rest_flattened_error(transport: str = "rest")
                 security_policy="security_policy_value"
             ),
         )
-
-
-def test_set_security_policy_unary_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.TestIamPermissionsBackendServiceRequest,
-        dict,
-    ],
-)
-def test_test_iam_permissions_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "resource": "sample2"}
-    request_init["test_permissions_request_resource"] = {
-        "permissions": ["permissions_value1", "permissions_value2"]
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.TestIamPermissionsBackendServiceRequest.meta.fields[
-        "test_permissions_request_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "test_permissions_request_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(
-                    0, len(request_init["test_permissions_request_resource"][field])
-                ):
-                    del request_init["test_permissions_request_resource"][field][i][
-                        subfield
-                    ]
-            else:
-                del request_init["test_permissions_request_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.TestPermissionsResponse(
-            permissions=["permissions_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.TestPermissionsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.test_iam_permissions(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.TestPermissionsResponse)
-    assert response.permissions == ["permissions_value"]
 
 
 def test_test_iam_permissions_rest_use_cached_wrapped_rpc():
@@ -10412,6 +5517,7 @@ def test_test_iam_permissions_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.test_iam_permissions(request)
 
@@ -10436,88 +5542,6 @@ def test_test_iam_permissions_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_test_iam_permissions_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_test_iam_permissions"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_test_iam_permissions"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.TestIamPermissionsBackendServiceRequest.pb(
-            compute.TestIamPermissionsBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.TestPermissionsResponse.to_json(
-            compute.TestPermissionsResponse()
-        )
-
-        request = compute.TestIamPermissionsBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.TestPermissionsResponse()
-
-        client.test_iam_permissions(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_test_iam_permissions_rest_bad_request(
-    transport: str = "rest",
-    request_type=compute.TestIamPermissionsBackendServiceRequest,
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "resource": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.test_iam_permissions(request)
 
 
 def test_test_iam_permissions_rest_flattened():
@@ -10552,6 +5576,7 @@ def test_test_iam_permissions_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.test_iam_permissions(**mock_args)
 
@@ -10583,329 +5608,6 @@ def test_test_iam_permissions_rest_flattened_error(transport: str = "rest"):
                 permissions=["permissions_value"]
             ),
         )
-
-
-def test_test_iam_permissions_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.UpdateBackendServiceRequest,
-        dict,
-    ],
-)
-def test_update_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["backend_service_resource"] = {
-        "affinity_cookie_ttl_sec": 2432,
-        "backends": [
-            {
-                "balancing_mode": "balancing_mode_value",
-                "capacity_scaler": 0.1575,
-                "description": "description_value",
-                "failover": True,
-                "group": "group_value",
-                "max_connections": 1608,
-                "max_connections_per_endpoint": 2990,
-                "max_connections_per_instance": 2978,
-                "max_rate": 849,
-                "max_rate_per_endpoint": 0.22310000000000002,
-                "max_rate_per_instance": 0.22190000000000001,
-                "max_utilization": 0.1633,
-                "preference": "preference_value",
-            }
-        ],
-        "cdn_policy": {
-            "bypass_cache_on_request_headers": [{"header_name": "header_name_value"}],
-            "cache_key_policy": {
-                "include_host": True,
-                "include_http_headers": [
-                    "include_http_headers_value1",
-                    "include_http_headers_value2",
-                ],
-                "include_named_cookies": [
-                    "include_named_cookies_value1",
-                    "include_named_cookies_value2",
-                ],
-                "include_protocol": True,
-                "include_query_string": True,
-                "query_string_blacklist": [
-                    "query_string_blacklist_value1",
-                    "query_string_blacklist_value2",
-                ],
-                "query_string_whitelist": [
-                    "query_string_whitelist_value1",
-                    "query_string_whitelist_value2",
-                ],
-            },
-            "cache_mode": "cache_mode_value",
-            "client_ttl": 1074,
-            "default_ttl": 1176,
-            "max_ttl": 761,
-            "negative_caching": True,
-            "negative_caching_policy": [{"code": 411, "ttl": 340}],
-            "request_coalescing": True,
-            "serve_while_stale": 1813,
-            "signed_url_cache_max_age_sec": 2890,
-            "signed_url_key_names": [
-                "signed_url_key_names_value1",
-                "signed_url_key_names_value2",
-            ],
-        },
-        "circuit_breakers": {
-            "max_connections": 1608,
-            "max_pending_requests": 2149,
-            "max_requests": 1313,
-            "max_requests_per_connection": 2902,
-            "max_retries": 1187,
-        },
-        "compression_mode": "compression_mode_value",
-        "connection_draining": {"draining_timeout_sec": 2124},
-        "connection_tracking_policy": {
-            "connection_persistence_on_unhealthy_backends": "connection_persistence_on_unhealthy_backends_value",
-            "enable_strong_affinity": True,
-            "idle_timeout_sec": 1694,
-            "tracking_mode": "tracking_mode_value",
-        },
-        "consistent_hash": {
-            "http_cookie": {
-                "name": "name_value",
-                "path": "path_value",
-                "ttl": {"nanos": 543, "seconds": 751},
-            },
-            "http_header_name": "http_header_name_value",
-            "minimum_ring_size": 1829,
-        },
-        "creation_timestamp": "creation_timestamp_value",
-        "custom_request_headers": [
-            "custom_request_headers_value1",
-            "custom_request_headers_value2",
-        ],
-        "custom_response_headers": [
-            "custom_response_headers_value1",
-            "custom_response_headers_value2",
-        ],
-        "description": "description_value",
-        "edge_security_policy": "edge_security_policy_value",
-        "enable_c_d_n": True,
-        "failover_policy": {
-            "disable_connection_drain_on_failover": True,
-            "drop_traffic_if_unhealthy": True,
-            "failover_ratio": 0.1494,
-        },
-        "fingerprint": "fingerprint_value",
-        "health_checks": ["health_checks_value1", "health_checks_value2"],
-        "iap": {
-            "enabled": True,
-            "oauth2_client_id": "oauth2_client_id_value",
-            "oauth2_client_secret": "oauth2_client_secret_value",
-            "oauth2_client_secret_sha256": "oauth2_client_secret_sha256_value",
-        },
-        "id": 205,
-        "kind": "kind_value",
-        "load_balancing_scheme": "load_balancing_scheme_value",
-        "locality_lb_policies": [
-            {
-                "custom_policy": {"data": "data_value", "name": "name_value"},
-                "policy": {"name": "name_value"},
-            }
-        ],
-        "locality_lb_policy": "locality_lb_policy_value",
-        "log_config": {
-            "enable": True,
-            "optional_fields": ["optional_fields_value1", "optional_fields_value2"],
-            "optional_mode": "optional_mode_value",
-            "sample_rate": 0.1165,
-        },
-        "max_stream_duration": {},
-        "metadatas": {},
-        "name": "name_value",
-        "network": "network_value",
-        "outlier_detection": {
-            "base_ejection_time": {},
-            "consecutive_errors": 1956,
-            "consecutive_gateway_failure": 2880,
-            "enforcing_consecutive_errors": 3006,
-            "enforcing_consecutive_gateway_failure": 3930,
-            "enforcing_success_rate": 2334,
-            "interval": {},
-            "max_ejection_percent": 2118,
-            "success_rate_minimum_hosts": 2799,
-            "success_rate_request_volume": 2915,
-            "success_rate_stdev_factor": 2663,
-        },
-        "port": 453,
-        "port_name": "port_name_value",
-        "protocol": "protocol_value",
-        "region": "region_value",
-        "security_policy": "security_policy_value",
-        "security_settings": {
-            "aws_v4_authentication": {
-                "access_key": "access_key_value",
-                "access_key_id": "access_key_id_value",
-                "access_key_version": "access_key_version_value",
-                "origin_region": "origin_region_value",
-            },
-            "client_tls_policy": "client_tls_policy_value",
-            "subject_alt_names": [
-                "subject_alt_names_value1",
-                "subject_alt_names_value2",
-            ],
-        },
-        "self_link": "self_link_value",
-        "service_bindings": ["service_bindings_value1", "service_bindings_value2"],
-        "service_lb_policy": "service_lb_policy_value",
-        "session_affinity": "session_affinity_value",
-        "subsetting": {"policy": "policy_value"},
-        "timeout_sec": 1185,
-        "used_by": [{"reference": "reference_value"}],
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.UpdateBackendServiceRequest.meta.fields[
-        "backend_service_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "backend_service_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["backend_service_resource"][field])):
-                    del request_init["backend_service_resource"][field][i][subfield]
-            else:
-                del request_init["backend_service_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, extended_operation.ExtendedOperation)
-    assert response.client_operation_id == "client_operation_id_value"
-    assert response.creation_timestamp == "creation_timestamp_value"
-    assert response.description == "description_value"
-    assert response.end_time == "end_time_value"
-    assert response.http_error_message == "http_error_message_value"
-    assert response.http_error_status_code == 2374
-    assert response.id == 205
-    assert response.insert_time == "insert_time_value"
-    assert response.kind == "kind_value"
-    assert response.name == "name_value"
-    assert response.operation_group_id == "operation_group_id_value"
-    assert response.operation_type == "operation_type_value"
-    assert response.progress == 885
-    assert response.region == "region_value"
-    assert response.self_link == "self_link_value"
-    assert response.start_time == "start_time_value"
-    assert response.status == compute.Operation.Status.DONE
-    assert response.status_message == "status_message_value"
-    assert response.target_id == 947
-    assert response.target_link == "target_link_value"
-    assert response.user == "user_value"
-    assert response.zone == "zone_value"
 
 
 def test_update_rest_use_cached_wrapped_rpc():
@@ -11019,6 +5721,7 @@ def test_update_rest_required_fields(request_type=compute.UpdateBackendServiceRe
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update(request)
 
@@ -11043,85 +5746,6 @@ def test_update_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_update"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_update"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.UpdateBackendServiceRequest.pb(
-            compute.UpdateBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.UpdateBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.update(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_rest_bad_request(
-    transport: str = "rest", request_type=compute.UpdateBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update(request)
 
 
 def test_update_rest_flattened():
@@ -11156,6 +5780,7 @@ def test_update_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update(**mock_args)
 
@@ -11187,307 +5812,6 @@ def test_update_rest_flattened_error(transport: str = "rest"):
                 affinity_cookie_ttl_sec=2432
             ),
         )
-
-
-def test_update_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        compute.UpdateBackendServiceRequest,
-        dict,
-    ],
-)
-def test_update_unary_rest(request_type):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request_init["backend_service_resource"] = {
-        "affinity_cookie_ttl_sec": 2432,
-        "backends": [
-            {
-                "balancing_mode": "balancing_mode_value",
-                "capacity_scaler": 0.1575,
-                "description": "description_value",
-                "failover": True,
-                "group": "group_value",
-                "max_connections": 1608,
-                "max_connections_per_endpoint": 2990,
-                "max_connections_per_instance": 2978,
-                "max_rate": 849,
-                "max_rate_per_endpoint": 0.22310000000000002,
-                "max_rate_per_instance": 0.22190000000000001,
-                "max_utilization": 0.1633,
-                "preference": "preference_value",
-            }
-        ],
-        "cdn_policy": {
-            "bypass_cache_on_request_headers": [{"header_name": "header_name_value"}],
-            "cache_key_policy": {
-                "include_host": True,
-                "include_http_headers": [
-                    "include_http_headers_value1",
-                    "include_http_headers_value2",
-                ],
-                "include_named_cookies": [
-                    "include_named_cookies_value1",
-                    "include_named_cookies_value2",
-                ],
-                "include_protocol": True,
-                "include_query_string": True,
-                "query_string_blacklist": [
-                    "query_string_blacklist_value1",
-                    "query_string_blacklist_value2",
-                ],
-                "query_string_whitelist": [
-                    "query_string_whitelist_value1",
-                    "query_string_whitelist_value2",
-                ],
-            },
-            "cache_mode": "cache_mode_value",
-            "client_ttl": 1074,
-            "default_ttl": 1176,
-            "max_ttl": 761,
-            "negative_caching": True,
-            "negative_caching_policy": [{"code": 411, "ttl": 340}],
-            "request_coalescing": True,
-            "serve_while_stale": 1813,
-            "signed_url_cache_max_age_sec": 2890,
-            "signed_url_key_names": [
-                "signed_url_key_names_value1",
-                "signed_url_key_names_value2",
-            ],
-        },
-        "circuit_breakers": {
-            "max_connections": 1608,
-            "max_pending_requests": 2149,
-            "max_requests": 1313,
-            "max_requests_per_connection": 2902,
-            "max_retries": 1187,
-        },
-        "compression_mode": "compression_mode_value",
-        "connection_draining": {"draining_timeout_sec": 2124},
-        "connection_tracking_policy": {
-            "connection_persistence_on_unhealthy_backends": "connection_persistence_on_unhealthy_backends_value",
-            "enable_strong_affinity": True,
-            "idle_timeout_sec": 1694,
-            "tracking_mode": "tracking_mode_value",
-        },
-        "consistent_hash": {
-            "http_cookie": {
-                "name": "name_value",
-                "path": "path_value",
-                "ttl": {"nanos": 543, "seconds": 751},
-            },
-            "http_header_name": "http_header_name_value",
-            "minimum_ring_size": 1829,
-        },
-        "creation_timestamp": "creation_timestamp_value",
-        "custom_request_headers": [
-            "custom_request_headers_value1",
-            "custom_request_headers_value2",
-        ],
-        "custom_response_headers": [
-            "custom_response_headers_value1",
-            "custom_response_headers_value2",
-        ],
-        "description": "description_value",
-        "edge_security_policy": "edge_security_policy_value",
-        "enable_c_d_n": True,
-        "failover_policy": {
-            "disable_connection_drain_on_failover": True,
-            "drop_traffic_if_unhealthy": True,
-            "failover_ratio": 0.1494,
-        },
-        "fingerprint": "fingerprint_value",
-        "health_checks": ["health_checks_value1", "health_checks_value2"],
-        "iap": {
-            "enabled": True,
-            "oauth2_client_id": "oauth2_client_id_value",
-            "oauth2_client_secret": "oauth2_client_secret_value",
-            "oauth2_client_secret_sha256": "oauth2_client_secret_sha256_value",
-        },
-        "id": 205,
-        "kind": "kind_value",
-        "load_balancing_scheme": "load_balancing_scheme_value",
-        "locality_lb_policies": [
-            {
-                "custom_policy": {"data": "data_value", "name": "name_value"},
-                "policy": {"name": "name_value"},
-            }
-        ],
-        "locality_lb_policy": "locality_lb_policy_value",
-        "log_config": {
-            "enable": True,
-            "optional_fields": ["optional_fields_value1", "optional_fields_value2"],
-            "optional_mode": "optional_mode_value",
-            "sample_rate": 0.1165,
-        },
-        "max_stream_duration": {},
-        "metadatas": {},
-        "name": "name_value",
-        "network": "network_value",
-        "outlier_detection": {
-            "base_ejection_time": {},
-            "consecutive_errors": 1956,
-            "consecutive_gateway_failure": 2880,
-            "enforcing_consecutive_errors": 3006,
-            "enforcing_consecutive_gateway_failure": 3930,
-            "enforcing_success_rate": 2334,
-            "interval": {},
-            "max_ejection_percent": 2118,
-            "success_rate_minimum_hosts": 2799,
-            "success_rate_request_volume": 2915,
-            "success_rate_stdev_factor": 2663,
-        },
-        "port": 453,
-        "port_name": "port_name_value",
-        "protocol": "protocol_value",
-        "region": "region_value",
-        "security_policy": "security_policy_value",
-        "security_settings": {
-            "aws_v4_authentication": {
-                "access_key": "access_key_value",
-                "access_key_id": "access_key_id_value",
-                "access_key_version": "access_key_version_value",
-                "origin_region": "origin_region_value",
-            },
-            "client_tls_policy": "client_tls_policy_value",
-            "subject_alt_names": [
-                "subject_alt_names_value1",
-                "subject_alt_names_value2",
-            ],
-        },
-        "self_link": "self_link_value",
-        "service_bindings": ["service_bindings_value1", "service_bindings_value2"],
-        "service_lb_policy": "service_lb_policy_value",
-        "session_affinity": "session_affinity_value",
-        "subsetting": {"policy": "policy_value"},
-        "timeout_sec": 1185,
-        "used_by": [{"reference": "reference_value"}],
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = compute.UpdateBackendServiceRequest.meta.fields[
-        "backend_service_resource"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "backend_service_resource"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["backend_service_resource"][field])):
-                    del request_init["backend_service_resource"][field][i][subfield]
-            else:
-                del request_init["backend_service_resource"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = compute.Operation(
-            client_operation_id="client_operation_id_value",
-            creation_timestamp="creation_timestamp_value",
-            description="description_value",
-            end_time="end_time_value",
-            http_error_message="http_error_message_value",
-            http_error_status_code=2374,
-            id=205,
-            insert_time="insert_time_value",
-            kind="kind_value",
-            name="name_value",
-            operation_group_id="operation_group_id_value",
-            operation_type="operation_type_value",
-            progress=885,
-            region="region_value",
-            self_link="self_link_value",
-            start_time="start_time_value",
-            status=compute.Operation.Status.DONE,
-            status_message="status_message_value",
-            target_id=947,
-            target_link="target_link_value",
-            user="user_value",
-            zone="zone_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = compute.Operation.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.update_unary(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, compute.Operation)
 
 
 def test_update_unary_rest_use_cached_wrapped_rpc():
@@ -11603,6 +5927,7 @@ def test_update_unary_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.update_unary(request)
 
@@ -11627,85 +5952,6 @@ def test_update_unary_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_update_unary_rest_interceptors(null_interceptor):
-    transport = transports.BackendServicesRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.BackendServicesRestInterceptor(),
-    )
-    client = BackendServicesClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "post_update"
-    ) as post, mock.patch.object(
-        transports.BackendServicesRestInterceptor, "pre_update"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = compute.UpdateBackendServiceRequest.pb(
-            compute.UpdateBackendServiceRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = compute.Operation.to_json(compute.Operation())
-
-        request = compute.UpdateBackendServiceRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = compute.Operation()
-
-        client.update_unary(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_update_unary_rest_bad_request(
-    transport: str = "rest", request_type=compute.UpdateBackendServiceRequest
-):
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"project": "sample1", "backend_service": "sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.update_unary(request)
 
 
 def test_update_unary_rest_flattened():
@@ -11740,6 +5986,7 @@ def test_update_unary_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.update_unary(**mock_args)
 
@@ -11771,12 +6018,6 @@ def test_update_unary_rest_flattened_error(transport: str = "rest"):
                 affinity_cookie_ttl_sec=2432
             ),
         )
-
-
-def test_update_unary_rest_error():
-    client = BackendServicesClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
 
 
 def test_credentials_transport_error():
@@ -11854,17 +6095,3936 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_rest():
+    transport = BackendServicesClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_add_signed_url_key_rest_bad_request(
+    request_type=compute.AddSignedUrlKeyBackendServiceRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.add_signed_url_key(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "rest",
+        compute.AddSignedUrlKeyBackendServiceRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = BackendServicesClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_add_signed_url_key_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request_init["signed_url_key_resource"] = {
+        "key_name": "key_name_value",
+        "key_value": "key_value_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.AddSignedUrlKeyBackendServiceRequest.meta.fields[
+        "signed_url_key_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "signed_url_key_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["signed_url_key_resource"][field])):
+                    del request_init["signed_url_key_resource"][field][i][subfield]
+            else:
+                del request_init["signed_url_key_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.add_signed_url_key(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_add_signed_url_key_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_add_signed_url_key"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_add_signed_url_key"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.AddSignedUrlKeyBackendServiceRequest.pb(
+            compute.AddSignedUrlKeyBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.AddSignedUrlKeyBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.add_signed_url_key(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_aggregated_list_rest_bad_request(
+    request_type=compute.AggregatedListBackendServicesRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.aggregated_list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.AggregatedListBackendServicesRequest,
+        dict,
+    ],
+)
+def test_aggregated_list_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.BackendServiceAggregatedList(
+            id="id_value",
+            kind="kind_value",
+            next_page_token="next_page_token_value",
+            self_link="self_link_value",
+            unreachables=["unreachables_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.BackendServiceAggregatedList.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.aggregated_list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.AggregatedListPager)
+    assert response.id == "id_value"
+    assert response.kind == "kind_value"
+    assert response.next_page_token == "next_page_token_value"
+    assert response.self_link == "self_link_value"
+    assert response.unreachables == ["unreachables_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_aggregated_list_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_aggregated_list"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_aggregated_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.AggregatedListBackendServicesRequest.pb(
+            compute.AggregatedListBackendServicesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.BackendServiceAggregatedList.to_json(
+            compute.BackendServiceAggregatedList()
+        )
+        req.return_value.content = return_value
+
+        request = compute.AggregatedListBackendServicesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.BackendServiceAggregatedList()
+
+        client.aggregated_list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_rest_bad_request(request_type=compute.DeleteBackendServiceRequest):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.DeleteBackendServiceRequest,
+        dict,
+    ],
+)
+def test_delete_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_delete"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_delete"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.DeleteBackendServiceRequest.pb(
+            compute.DeleteBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.DeleteBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.delete(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_delete_signed_url_key_rest_bad_request(
+    request_type=compute.DeleteSignedUrlKeyBackendServiceRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_signed_url_key(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.DeleteSignedUrlKeyBackendServiceRequest,
+        dict,
+    ],
+)
+def test_delete_signed_url_key_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_signed_url_key(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_signed_url_key_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_delete_signed_url_key"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_delete_signed_url_key"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.DeleteSignedUrlKeyBackendServiceRequest.pb(
+            compute.DeleteSignedUrlKeyBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.DeleteSignedUrlKeyBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.delete_signed_url_key(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_rest_bad_request(request_type=compute.GetBackendServiceRequest):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.GetBackendServiceRequest,
+        dict,
+    ],
+)
+def test_get_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.BackendService(
+            affinity_cookie_ttl_sec=2432,
+            compression_mode="compression_mode_value",
+            creation_timestamp="creation_timestamp_value",
+            custom_request_headers=["custom_request_headers_value"],
+            custom_response_headers=["custom_response_headers_value"],
+            description="description_value",
+            edge_security_policy="edge_security_policy_value",
+            enable_c_d_n=True,
+            fingerprint="fingerprint_value",
+            health_checks=["health_checks_value"],
+            id=205,
+            ip_address_selection_policy="ip_address_selection_policy_value",
+            kind="kind_value",
+            load_balancing_scheme="load_balancing_scheme_value",
+            locality_lb_policy="locality_lb_policy_value",
+            name="name_value",
+            network="network_value",
+            port=453,
+            port_name="port_name_value",
+            protocol="protocol_value",
+            region="region_value",
+            security_policy="security_policy_value",
+            self_link="self_link_value",
+            service_bindings=["service_bindings_value"],
+            service_lb_policy="service_lb_policy_value",
+            session_affinity="session_affinity_value",
+            timeout_sec=1185,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.BackendService.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.BackendService)
+    assert response.affinity_cookie_ttl_sec == 2432
+    assert response.compression_mode == "compression_mode_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.custom_request_headers == ["custom_request_headers_value"]
+    assert response.custom_response_headers == ["custom_response_headers_value"]
+    assert response.description == "description_value"
+    assert response.edge_security_policy == "edge_security_policy_value"
+    assert response.enable_c_d_n is True
+    assert response.fingerprint == "fingerprint_value"
+    assert response.health_checks == ["health_checks_value"]
+    assert response.id == 205
+    assert response.ip_address_selection_policy == "ip_address_selection_policy_value"
+    assert response.kind == "kind_value"
+    assert response.load_balancing_scheme == "load_balancing_scheme_value"
+    assert response.locality_lb_policy == "locality_lb_policy_value"
+    assert response.name == "name_value"
+    assert response.network == "network_value"
+    assert response.port == 453
+    assert response.port_name == "port_name_value"
+    assert response.protocol == "protocol_value"
+    assert response.region == "region_value"
+    assert response.security_policy == "security_policy_value"
+    assert response.self_link == "self_link_value"
+    assert response.service_bindings == ["service_bindings_value"]
+    assert response.service_lb_policy == "service_lb_policy_value"
+    assert response.session_affinity == "session_affinity_value"
+    assert response.timeout_sec == 1185
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_get"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_get"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.GetBackendServiceRequest.pb(
+            compute.GetBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.BackendService.to_json(compute.BackendService())
+        req.return_value.content = return_value
+
+        request = compute.GetBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.BackendService()
+
+        client.get(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_health_rest_bad_request(
+    request_type=compute.GetHealthBackendServiceRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_health(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.GetHealthBackendServiceRequest,
+        dict,
+    ],
+)
+def test_get_health_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request_init["resource_group_reference_resource"] = {"group": "group_value"}
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.GetHealthBackendServiceRequest.meta.fields[
+        "resource_group_reference_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "resource_group_reference_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["resource_group_reference_resource"][field])
+                ):
+                    del request_init["resource_group_reference_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["resource_group_reference_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.BackendServiceGroupHealth(
+            kind="kind_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.BackendServiceGroupHealth.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_health(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.BackendServiceGroupHealth)
+    assert response.kind == "kind_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_health_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_get_health"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_get_health"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.GetHealthBackendServiceRequest.pb(
+            compute.GetHealthBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.BackendServiceGroupHealth.to_json(
+            compute.BackendServiceGroupHealth()
+        )
+        req.return_value.content = return_value
+
+        request = compute.GetHealthBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.BackendServiceGroupHealth()
+
+        client.get_health(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_iam_policy_rest_bad_request(
+    request_type=compute.GetIamPolicyBackendServiceRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "resource": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_iam_policy(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.GetIamPolicyBackendServiceRequest,
+        dict,
+    ],
+)
+def test_get_iam_policy_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "resource": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Policy(
+            etag="etag_value",
+            iam_owned=True,
+            version=774,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Policy.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_iam_policy(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.Policy)
+    assert response.etag == "etag_value"
+    assert response.iam_owned is True
+    assert response.version == 774
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_iam_policy_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_get_iam_policy"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_get_iam_policy"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.GetIamPolicyBackendServiceRequest.pb(
+            compute.GetIamPolicyBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Policy.to_json(compute.Policy())
+        req.return_value.content = return_value
+
+        request = compute.GetIamPolicyBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Policy()
+
+        client.get_iam_policy(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_insert_rest_bad_request(request_type=compute.InsertBackendServiceRequest):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.insert(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.InsertBackendServiceRequest,
+        dict,
+    ],
+)
+def test_insert_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request_init["backend_service_resource"] = {
+        "affinity_cookie_ttl_sec": 2432,
+        "backends": [
+            {
+                "balancing_mode": "balancing_mode_value",
+                "capacity_scaler": 0.1575,
+                "description": "description_value",
+                "failover": True,
+                "group": "group_value",
+                "max_connections": 1608,
+                "max_connections_per_endpoint": 2990,
+                "max_connections_per_instance": 2978,
+                "max_rate": 849,
+                "max_rate_per_endpoint": 0.22310000000000002,
+                "max_rate_per_instance": 0.22190000000000001,
+                "max_utilization": 0.1633,
+                "preference": "preference_value",
+            }
+        ],
+        "cdn_policy": {
+            "bypass_cache_on_request_headers": [{"header_name": "header_name_value"}],
+            "cache_key_policy": {
+                "include_host": True,
+                "include_http_headers": [
+                    "include_http_headers_value1",
+                    "include_http_headers_value2",
+                ],
+                "include_named_cookies": [
+                    "include_named_cookies_value1",
+                    "include_named_cookies_value2",
+                ],
+                "include_protocol": True,
+                "include_query_string": True,
+                "query_string_blacklist": [
+                    "query_string_blacklist_value1",
+                    "query_string_blacklist_value2",
+                ],
+                "query_string_whitelist": [
+                    "query_string_whitelist_value1",
+                    "query_string_whitelist_value2",
+                ],
+            },
+            "cache_mode": "cache_mode_value",
+            "client_ttl": 1074,
+            "default_ttl": 1176,
+            "max_ttl": 761,
+            "negative_caching": True,
+            "negative_caching_policy": [{"code": 411, "ttl": 340}],
+            "request_coalescing": True,
+            "serve_while_stale": 1813,
+            "signed_url_cache_max_age_sec": 2890,
+            "signed_url_key_names": [
+                "signed_url_key_names_value1",
+                "signed_url_key_names_value2",
+            ],
+        },
+        "circuit_breakers": {
+            "max_connections": 1608,
+            "max_pending_requests": 2149,
+            "max_requests": 1313,
+            "max_requests_per_connection": 2902,
+            "max_retries": 1187,
+        },
+        "compression_mode": "compression_mode_value",
+        "connection_draining": {"draining_timeout_sec": 2124},
+        "connection_tracking_policy": {
+            "connection_persistence_on_unhealthy_backends": "connection_persistence_on_unhealthy_backends_value",
+            "enable_strong_affinity": True,
+            "idle_timeout_sec": 1694,
+            "tracking_mode": "tracking_mode_value",
+        },
+        "consistent_hash": {
+            "http_cookie": {
+                "name": "name_value",
+                "path": "path_value",
+                "ttl": {"nanos": 543, "seconds": 751},
+            },
+            "http_header_name": "http_header_name_value",
+            "minimum_ring_size": 1829,
+        },
+        "creation_timestamp": "creation_timestamp_value",
+        "custom_request_headers": [
+            "custom_request_headers_value1",
+            "custom_request_headers_value2",
+        ],
+        "custom_response_headers": [
+            "custom_response_headers_value1",
+            "custom_response_headers_value2",
+        ],
+        "description": "description_value",
+        "edge_security_policy": "edge_security_policy_value",
+        "enable_c_d_n": True,
+        "failover_policy": {
+            "disable_connection_drain_on_failover": True,
+            "drop_traffic_if_unhealthy": True,
+            "failover_ratio": 0.1494,
+        },
+        "fingerprint": "fingerprint_value",
+        "health_checks": ["health_checks_value1", "health_checks_value2"],
+        "iap": {
+            "enabled": True,
+            "oauth2_client_id": "oauth2_client_id_value",
+            "oauth2_client_secret": "oauth2_client_secret_value",
+            "oauth2_client_secret_sha256": "oauth2_client_secret_sha256_value",
+        },
+        "id": 205,
+        "ip_address_selection_policy": "ip_address_selection_policy_value",
+        "kind": "kind_value",
+        "load_balancing_scheme": "load_balancing_scheme_value",
+        "locality_lb_policies": [
+            {
+                "custom_policy": {"data": "data_value", "name": "name_value"},
+                "policy": {"name": "name_value"},
+            }
+        ],
+        "locality_lb_policy": "locality_lb_policy_value",
+        "log_config": {
+            "enable": True,
+            "optional_fields": ["optional_fields_value1", "optional_fields_value2"],
+            "optional_mode": "optional_mode_value",
+            "sample_rate": 0.1165,
+        },
+        "max_stream_duration": {},
+        "metadatas": {},
+        "name": "name_value",
+        "network": "network_value",
+        "outlier_detection": {
+            "base_ejection_time": {},
+            "consecutive_errors": 1956,
+            "consecutive_gateway_failure": 2880,
+            "enforcing_consecutive_errors": 3006,
+            "enforcing_consecutive_gateway_failure": 3930,
+            "enforcing_success_rate": 2334,
+            "interval": {},
+            "max_ejection_percent": 2118,
+            "success_rate_minimum_hosts": 2799,
+            "success_rate_request_volume": 2915,
+            "success_rate_stdev_factor": 2663,
+        },
+        "port": 453,
+        "port_name": "port_name_value",
+        "protocol": "protocol_value",
+        "region": "region_value",
+        "security_policy": "security_policy_value",
+        "security_settings": {
+            "aws_v4_authentication": {
+                "access_key": "access_key_value",
+                "access_key_id": "access_key_id_value",
+                "access_key_version": "access_key_version_value",
+                "origin_region": "origin_region_value",
+            },
+            "client_tls_policy": "client_tls_policy_value",
+            "subject_alt_names": [
+                "subject_alt_names_value1",
+                "subject_alt_names_value2",
+            ],
+        },
+        "self_link": "self_link_value",
+        "service_bindings": ["service_bindings_value1", "service_bindings_value2"],
+        "service_lb_policy": "service_lb_policy_value",
+        "session_affinity": "session_affinity_value",
+        "strong_session_affinity_cookie": {
+            "name": "name_value",
+            "path": "path_value",
+            "ttl": {},
+        },
+        "subsetting": {"policy": "policy_value"},
+        "timeout_sec": 1185,
+        "used_by": [{"reference": "reference_value"}],
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.InsertBackendServiceRequest.meta.fields[
+        "backend_service_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "backend_service_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["backend_service_resource"][field])):
+                    del request_init["backend_service_resource"][field][i][subfield]
+            else:
+                del request_init["backend_service_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.insert(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_insert_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_insert"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_insert"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.InsertBackendServiceRequest.pb(
+            compute.InsertBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.InsertBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.insert(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_rest_bad_request(request_type=compute.ListBackendServicesRequest):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ListBackendServicesRequest,
+        dict,
+    ],
+)
+def test_list_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.BackendServiceList(
+            id="id_value",
+            kind="kind_value",
+            next_page_token="next_page_token_value",
+            self_link="self_link_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.BackendServiceList.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListPager)
+    assert response.id == "id_value"
+    assert response.kind == "kind_value"
+    assert response.next_page_token == "next_page_token_value"
+    assert response.self_link == "self_link_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_list"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ListBackendServicesRequest.pb(
+            compute.ListBackendServicesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.BackendServiceList.to_json(compute.BackendServiceList())
+        req.return_value.content = return_value
+
+        request = compute.ListBackendServicesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.BackendServiceList()
+
+        client.list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_usable_rest_bad_request(
+    request_type=compute.ListUsableBackendServicesRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_usable(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ListUsableBackendServicesRequest,
+        dict,
+    ],
+)
+def test_list_usable_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.BackendServiceListUsable(
+            id="id_value",
+            kind="kind_value",
+            next_page_token="next_page_token_value",
+            self_link="self_link_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.BackendServiceListUsable.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_usable(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListUsablePager)
+    assert response.id == "id_value"
+    assert response.kind == "kind_value"
+    assert response.next_page_token == "next_page_token_value"
+    assert response.self_link == "self_link_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_usable_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_list_usable"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_list_usable"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.ListUsableBackendServicesRequest.pb(
+            compute.ListUsableBackendServicesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.BackendServiceListUsable.to_json(
+            compute.BackendServiceListUsable()
+        )
+        req.return_value.content = return_value
+
+        request = compute.ListUsableBackendServicesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.BackendServiceListUsable()
+
+        client.list_usable(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_patch_rest_bad_request(request_type=compute.PatchBackendServiceRequest):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.patch(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.PatchBackendServiceRequest,
+        dict,
+    ],
+)
+def test_patch_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request_init["backend_service_resource"] = {
+        "affinity_cookie_ttl_sec": 2432,
+        "backends": [
+            {
+                "balancing_mode": "balancing_mode_value",
+                "capacity_scaler": 0.1575,
+                "description": "description_value",
+                "failover": True,
+                "group": "group_value",
+                "max_connections": 1608,
+                "max_connections_per_endpoint": 2990,
+                "max_connections_per_instance": 2978,
+                "max_rate": 849,
+                "max_rate_per_endpoint": 0.22310000000000002,
+                "max_rate_per_instance": 0.22190000000000001,
+                "max_utilization": 0.1633,
+                "preference": "preference_value",
+            }
+        ],
+        "cdn_policy": {
+            "bypass_cache_on_request_headers": [{"header_name": "header_name_value"}],
+            "cache_key_policy": {
+                "include_host": True,
+                "include_http_headers": [
+                    "include_http_headers_value1",
+                    "include_http_headers_value2",
+                ],
+                "include_named_cookies": [
+                    "include_named_cookies_value1",
+                    "include_named_cookies_value2",
+                ],
+                "include_protocol": True,
+                "include_query_string": True,
+                "query_string_blacklist": [
+                    "query_string_blacklist_value1",
+                    "query_string_blacklist_value2",
+                ],
+                "query_string_whitelist": [
+                    "query_string_whitelist_value1",
+                    "query_string_whitelist_value2",
+                ],
+            },
+            "cache_mode": "cache_mode_value",
+            "client_ttl": 1074,
+            "default_ttl": 1176,
+            "max_ttl": 761,
+            "negative_caching": True,
+            "negative_caching_policy": [{"code": 411, "ttl": 340}],
+            "request_coalescing": True,
+            "serve_while_stale": 1813,
+            "signed_url_cache_max_age_sec": 2890,
+            "signed_url_key_names": [
+                "signed_url_key_names_value1",
+                "signed_url_key_names_value2",
+            ],
+        },
+        "circuit_breakers": {
+            "max_connections": 1608,
+            "max_pending_requests": 2149,
+            "max_requests": 1313,
+            "max_requests_per_connection": 2902,
+            "max_retries": 1187,
+        },
+        "compression_mode": "compression_mode_value",
+        "connection_draining": {"draining_timeout_sec": 2124},
+        "connection_tracking_policy": {
+            "connection_persistence_on_unhealthy_backends": "connection_persistence_on_unhealthy_backends_value",
+            "enable_strong_affinity": True,
+            "idle_timeout_sec": 1694,
+            "tracking_mode": "tracking_mode_value",
+        },
+        "consistent_hash": {
+            "http_cookie": {
+                "name": "name_value",
+                "path": "path_value",
+                "ttl": {"nanos": 543, "seconds": 751},
+            },
+            "http_header_name": "http_header_name_value",
+            "minimum_ring_size": 1829,
+        },
+        "creation_timestamp": "creation_timestamp_value",
+        "custom_request_headers": [
+            "custom_request_headers_value1",
+            "custom_request_headers_value2",
+        ],
+        "custom_response_headers": [
+            "custom_response_headers_value1",
+            "custom_response_headers_value2",
+        ],
+        "description": "description_value",
+        "edge_security_policy": "edge_security_policy_value",
+        "enable_c_d_n": True,
+        "failover_policy": {
+            "disable_connection_drain_on_failover": True,
+            "drop_traffic_if_unhealthy": True,
+            "failover_ratio": 0.1494,
+        },
+        "fingerprint": "fingerprint_value",
+        "health_checks": ["health_checks_value1", "health_checks_value2"],
+        "iap": {
+            "enabled": True,
+            "oauth2_client_id": "oauth2_client_id_value",
+            "oauth2_client_secret": "oauth2_client_secret_value",
+            "oauth2_client_secret_sha256": "oauth2_client_secret_sha256_value",
+        },
+        "id": 205,
+        "ip_address_selection_policy": "ip_address_selection_policy_value",
+        "kind": "kind_value",
+        "load_balancing_scheme": "load_balancing_scheme_value",
+        "locality_lb_policies": [
+            {
+                "custom_policy": {"data": "data_value", "name": "name_value"},
+                "policy": {"name": "name_value"},
+            }
+        ],
+        "locality_lb_policy": "locality_lb_policy_value",
+        "log_config": {
+            "enable": True,
+            "optional_fields": ["optional_fields_value1", "optional_fields_value2"],
+            "optional_mode": "optional_mode_value",
+            "sample_rate": 0.1165,
+        },
+        "max_stream_duration": {},
+        "metadatas": {},
+        "name": "name_value",
+        "network": "network_value",
+        "outlier_detection": {
+            "base_ejection_time": {},
+            "consecutive_errors": 1956,
+            "consecutive_gateway_failure": 2880,
+            "enforcing_consecutive_errors": 3006,
+            "enforcing_consecutive_gateway_failure": 3930,
+            "enforcing_success_rate": 2334,
+            "interval": {},
+            "max_ejection_percent": 2118,
+            "success_rate_minimum_hosts": 2799,
+            "success_rate_request_volume": 2915,
+            "success_rate_stdev_factor": 2663,
+        },
+        "port": 453,
+        "port_name": "port_name_value",
+        "protocol": "protocol_value",
+        "region": "region_value",
+        "security_policy": "security_policy_value",
+        "security_settings": {
+            "aws_v4_authentication": {
+                "access_key": "access_key_value",
+                "access_key_id": "access_key_id_value",
+                "access_key_version": "access_key_version_value",
+                "origin_region": "origin_region_value",
+            },
+            "client_tls_policy": "client_tls_policy_value",
+            "subject_alt_names": [
+                "subject_alt_names_value1",
+                "subject_alt_names_value2",
+            ],
+        },
+        "self_link": "self_link_value",
+        "service_bindings": ["service_bindings_value1", "service_bindings_value2"],
+        "service_lb_policy": "service_lb_policy_value",
+        "session_affinity": "session_affinity_value",
+        "strong_session_affinity_cookie": {
+            "name": "name_value",
+            "path": "path_value",
+            "ttl": {},
+        },
+        "subsetting": {"policy": "policy_value"},
+        "timeout_sec": 1185,
+        "used_by": [{"reference": "reference_value"}],
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.PatchBackendServiceRequest.meta.fields[
+        "backend_service_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "backend_service_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["backend_service_resource"][field])):
+                    del request_init["backend_service_resource"][field][i][subfield]
+            else:
+                del request_init["backend_service_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.patch(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_patch_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_patch"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_patch"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.PatchBackendServiceRequest.pb(
+            compute.PatchBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.PatchBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.patch(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_edge_security_policy_rest_bad_request(
+    request_type=compute.SetEdgeSecurityPolicyBackendServiceRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_edge_security_policy(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.SetEdgeSecurityPolicyBackendServiceRequest,
+        dict,
+    ],
+)
+def test_set_edge_security_policy_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request_init["security_policy_reference_resource"] = {
+        "security_policy": "security_policy_value"
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.SetEdgeSecurityPolicyBackendServiceRequest.meta.fields[
+        "security_policy_reference_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "security_policy_reference_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["security_policy_reference_resource"][field])
+                ):
+                    del request_init["security_policy_reference_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["security_policy_reference_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_edge_security_policy(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_edge_security_policy_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_set_edge_security_policy"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_set_edge_security_policy"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.SetEdgeSecurityPolicyBackendServiceRequest.pb(
+            compute.SetEdgeSecurityPolicyBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.SetEdgeSecurityPolicyBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.set_edge_security_policy(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_iam_policy_rest_bad_request(
+    request_type=compute.SetIamPolicyBackendServiceRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "resource": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_iam_policy(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.SetIamPolicyBackendServiceRequest,
+        dict,
+    ],
+)
+def test_set_iam_policy_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "resource": "sample2"}
+    request_init["global_set_policy_request_resource"] = {
+        "bindings": [
+            {
+                "binding_id": "binding_id_value",
+                "condition": {
+                    "description": "description_value",
+                    "expression": "expression_value",
+                    "location": "location_value",
+                    "title": "title_value",
+                },
+                "members": ["members_value1", "members_value2"],
+                "role": "role_value",
+            }
+        ],
+        "etag": "etag_value",
+        "policy": {
+            "audit_configs": [
+                {
+                    "audit_log_configs": [
+                        {
+                            "exempted_members": [
+                                "exempted_members_value1",
+                                "exempted_members_value2",
+                            ],
+                            "ignore_child_exemptions": True,
+                            "log_type": "log_type_value",
+                        }
+                    ],
+                    "exempted_members": [
+                        "exempted_members_value1",
+                        "exempted_members_value2",
+                    ],
+                    "service": "service_value",
+                }
+            ],
+            "bindings": {},
+            "etag": "etag_value",
+            "iam_owned": True,
+            "version": 774,
+        },
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.SetIamPolicyBackendServiceRequest.meta.fields[
+        "global_set_policy_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "global_set_policy_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["global_set_policy_request_resource"][field])
+                ):
+                    del request_init["global_set_policy_request_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["global_set_policy_request_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Policy(
+            etag="etag_value",
+            iam_owned=True,
+            version=774,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Policy.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_iam_policy(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.Policy)
+    assert response.etag == "etag_value"
+    assert response.iam_owned is True
+    assert response.version == 774
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_iam_policy_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_set_iam_policy"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_set_iam_policy"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.SetIamPolicyBackendServiceRequest.pb(
+            compute.SetIamPolicyBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Policy.to_json(compute.Policy())
+        req.return_value.content = return_value
+
+        request = compute.SetIamPolicyBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Policy()
+
+        client.set_iam_policy(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_set_security_policy_rest_bad_request(
+    request_type=compute.SetSecurityPolicyBackendServiceRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.set_security_policy(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.SetSecurityPolicyBackendServiceRequest,
+        dict,
+    ],
+)
+def test_set_security_policy_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request_init["security_policy_reference_resource"] = {
+        "security_policy": "security_policy_value"
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.SetSecurityPolicyBackendServiceRequest.meta.fields[
+        "security_policy_reference_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "security_policy_reference_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["security_policy_reference_resource"][field])
+                ):
+                    del request_init["security_policy_reference_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["security_policy_reference_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.set_security_policy(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_set_security_policy_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_set_security_policy"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_set_security_policy"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.SetSecurityPolicyBackendServiceRequest.pb(
+            compute.SetSecurityPolicyBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.SetSecurityPolicyBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.set_security_policy(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_test_iam_permissions_rest_bad_request(
+    request_type=compute.TestIamPermissionsBackendServiceRequest,
+):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "resource": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.test_iam_permissions(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.TestIamPermissionsBackendServiceRequest,
+        dict,
+    ],
+)
+def test_test_iam_permissions_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "resource": "sample2"}
+    request_init["test_permissions_request_resource"] = {
+        "permissions": ["permissions_value1", "permissions_value2"]
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.TestIamPermissionsBackendServiceRequest.meta.fields[
+        "test_permissions_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "test_permissions_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0, len(request_init["test_permissions_request_resource"][field])
+                ):
+                    del request_init["test_permissions_request_resource"][field][i][
+                        subfield
+                    ]
+            else:
+                del request_init["test_permissions_request_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.TestPermissionsResponse(
+            permissions=["permissions_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.TestPermissionsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.test_iam_permissions(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, compute.TestPermissionsResponse)
+    assert response.permissions == ["permissions_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_test_iam_permissions_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_test_iam_permissions"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_test_iam_permissions"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.TestIamPermissionsBackendServiceRequest.pb(
+            compute.TestIamPermissionsBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.TestPermissionsResponse.to_json(
+            compute.TestPermissionsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = compute.TestIamPermissionsBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.TestPermissionsResponse()
+
+        client.test_iam_permissions(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_update_rest_bad_request(request_type=compute.UpdateBackendServiceRequest):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.UpdateBackendServiceRequest,
+        dict,
+    ],
+)
+def test_update_rest_call_success(request_type):
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "backend_service": "sample2"}
+    request_init["backend_service_resource"] = {
+        "affinity_cookie_ttl_sec": 2432,
+        "backends": [
+            {
+                "balancing_mode": "balancing_mode_value",
+                "capacity_scaler": 0.1575,
+                "description": "description_value",
+                "failover": True,
+                "group": "group_value",
+                "max_connections": 1608,
+                "max_connections_per_endpoint": 2990,
+                "max_connections_per_instance": 2978,
+                "max_rate": 849,
+                "max_rate_per_endpoint": 0.22310000000000002,
+                "max_rate_per_instance": 0.22190000000000001,
+                "max_utilization": 0.1633,
+                "preference": "preference_value",
+            }
+        ],
+        "cdn_policy": {
+            "bypass_cache_on_request_headers": [{"header_name": "header_name_value"}],
+            "cache_key_policy": {
+                "include_host": True,
+                "include_http_headers": [
+                    "include_http_headers_value1",
+                    "include_http_headers_value2",
+                ],
+                "include_named_cookies": [
+                    "include_named_cookies_value1",
+                    "include_named_cookies_value2",
+                ],
+                "include_protocol": True,
+                "include_query_string": True,
+                "query_string_blacklist": [
+                    "query_string_blacklist_value1",
+                    "query_string_blacklist_value2",
+                ],
+                "query_string_whitelist": [
+                    "query_string_whitelist_value1",
+                    "query_string_whitelist_value2",
+                ],
+            },
+            "cache_mode": "cache_mode_value",
+            "client_ttl": 1074,
+            "default_ttl": 1176,
+            "max_ttl": 761,
+            "negative_caching": True,
+            "negative_caching_policy": [{"code": 411, "ttl": 340}],
+            "request_coalescing": True,
+            "serve_while_stale": 1813,
+            "signed_url_cache_max_age_sec": 2890,
+            "signed_url_key_names": [
+                "signed_url_key_names_value1",
+                "signed_url_key_names_value2",
+            ],
+        },
+        "circuit_breakers": {
+            "max_connections": 1608,
+            "max_pending_requests": 2149,
+            "max_requests": 1313,
+            "max_requests_per_connection": 2902,
+            "max_retries": 1187,
+        },
+        "compression_mode": "compression_mode_value",
+        "connection_draining": {"draining_timeout_sec": 2124},
+        "connection_tracking_policy": {
+            "connection_persistence_on_unhealthy_backends": "connection_persistence_on_unhealthy_backends_value",
+            "enable_strong_affinity": True,
+            "idle_timeout_sec": 1694,
+            "tracking_mode": "tracking_mode_value",
+        },
+        "consistent_hash": {
+            "http_cookie": {
+                "name": "name_value",
+                "path": "path_value",
+                "ttl": {"nanos": 543, "seconds": 751},
+            },
+            "http_header_name": "http_header_name_value",
+            "minimum_ring_size": 1829,
+        },
+        "creation_timestamp": "creation_timestamp_value",
+        "custom_request_headers": [
+            "custom_request_headers_value1",
+            "custom_request_headers_value2",
+        ],
+        "custom_response_headers": [
+            "custom_response_headers_value1",
+            "custom_response_headers_value2",
+        ],
+        "description": "description_value",
+        "edge_security_policy": "edge_security_policy_value",
+        "enable_c_d_n": True,
+        "failover_policy": {
+            "disable_connection_drain_on_failover": True,
+            "drop_traffic_if_unhealthy": True,
+            "failover_ratio": 0.1494,
+        },
+        "fingerprint": "fingerprint_value",
+        "health_checks": ["health_checks_value1", "health_checks_value2"],
+        "iap": {
+            "enabled": True,
+            "oauth2_client_id": "oauth2_client_id_value",
+            "oauth2_client_secret": "oauth2_client_secret_value",
+            "oauth2_client_secret_sha256": "oauth2_client_secret_sha256_value",
+        },
+        "id": 205,
+        "ip_address_selection_policy": "ip_address_selection_policy_value",
+        "kind": "kind_value",
+        "load_balancing_scheme": "load_balancing_scheme_value",
+        "locality_lb_policies": [
+            {
+                "custom_policy": {"data": "data_value", "name": "name_value"},
+                "policy": {"name": "name_value"},
+            }
+        ],
+        "locality_lb_policy": "locality_lb_policy_value",
+        "log_config": {
+            "enable": True,
+            "optional_fields": ["optional_fields_value1", "optional_fields_value2"],
+            "optional_mode": "optional_mode_value",
+            "sample_rate": 0.1165,
+        },
+        "max_stream_duration": {},
+        "metadatas": {},
+        "name": "name_value",
+        "network": "network_value",
+        "outlier_detection": {
+            "base_ejection_time": {},
+            "consecutive_errors": 1956,
+            "consecutive_gateway_failure": 2880,
+            "enforcing_consecutive_errors": 3006,
+            "enforcing_consecutive_gateway_failure": 3930,
+            "enforcing_success_rate": 2334,
+            "interval": {},
+            "max_ejection_percent": 2118,
+            "success_rate_minimum_hosts": 2799,
+            "success_rate_request_volume": 2915,
+            "success_rate_stdev_factor": 2663,
+        },
+        "port": 453,
+        "port_name": "port_name_value",
+        "protocol": "protocol_value",
+        "region": "region_value",
+        "security_policy": "security_policy_value",
+        "security_settings": {
+            "aws_v4_authentication": {
+                "access_key": "access_key_value",
+                "access_key_id": "access_key_id_value",
+                "access_key_version": "access_key_version_value",
+                "origin_region": "origin_region_value",
+            },
+            "client_tls_policy": "client_tls_policy_value",
+            "subject_alt_names": [
+                "subject_alt_names_value1",
+                "subject_alt_names_value2",
+            ],
+        },
+        "self_link": "self_link_value",
+        "service_bindings": ["service_bindings_value1", "service_bindings_value2"],
+        "service_lb_policy": "service_lb_policy_value",
+        "session_affinity": "session_affinity_value",
+        "strong_session_affinity_cookie": {
+            "name": "name_value",
+            "path": "path_value",
+            "ttl": {},
+        },
+        "subsetting": {"policy": "policy_value"},
+        "timeout_sec": 1185,
+        "used_by": [{"reference": "reference_value"}],
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.UpdateBackendServiceRequest.meta.fields[
+        "backend_service_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "backend_service_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["backend_service_resource"][field])):
+                    del request_init["backend_service_resource"][field][i][subfield]
+            else:
+                del request_init["backend_service_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_rest_interceptors(null_interceptor):
+    transport = transports.BackendServicesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackendServicesRestInterceptor(),
+    )
+    client = BackendServicesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "post_update"
+    ) as post, mock.patch.object(
+        transports.BackendServicesRestInterceptor, "pre_update"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = compute.UpdateBackendServiceRequest.pb(
+            compute.UpdateBackendServiceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.UpdateBackendServiceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+
+        client.update(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_initialize_client_w_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_add_signed_url_key_unary_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.add_signed_url_key), "__call__"
+    ) as call:
+        client.add_signed_url_key_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.AddSignedUrlKeyBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_aggregated_list_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.aggregated_list), "__call__") as call:
+        client.aggregated_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.AggregatedListBackendServicesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_unary_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.delete), "__call__") as call:
+        client.delete_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.DeleteBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_signed_url_key_unary_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_signed_url_key), "__call__"
+    ) as call:
+        client.delete_signed_url_key_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.DeleteSignedUrlKeyBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get), "__call__") as call:
+        client.get(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.GetBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_health_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_health), "__call__") as call:
+        client.get_health(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.GetHealthBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_iam_policy_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_iam_policy), "__call__") as call:
+        client.get_iam_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.GetIamPolicyBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_insert_unary_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.insert), "__call__") as call:
+        client.insert_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.InsertBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list), "__call__") as call:
+        client.list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ListBackendServicesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_usable_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_usable), "__call__") as call:
+        client.list_usable(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ListUsableBackendServicesRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_patch_unary_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.patch), "__call__") as call:
+        client.patch_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.PatchBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_edge_security_policy_unary_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_edge_security_policy), "__call__"
+    ) as call:
+        client.set_edge_security_policy_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetEdgeSecurityPolicyBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_iam_policy_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.set_iam_policy), "__call__") as call:
+        client.set_iam_policy(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetIamPolicyBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_set_security_policy_unary_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.set_security_policy), "__call__"
+    ) as call:
+        client.set_security_policy_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.SetSecurityPolicyBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_test_iam_permissions_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.test_iam_permissions), "__call__"
+    ) as call:
+        client.test_iam_permissions(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.TestIamPermissionsBackendServiceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_unary_empty_call_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update), "__call__") as call:
+        client.update_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.UpdateBackendServiceRequest()
+
+        assert args[0] == request_msg
 
 
 def test_backend_services_base_transport_error():
@@ -12218,21 +10378,16 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-    }
-
-    for transport, close_name in transports.items():
-        client = BackendServicesClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = BackendServicesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

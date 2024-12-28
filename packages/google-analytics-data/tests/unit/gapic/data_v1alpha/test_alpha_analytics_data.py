@@ -22,9 +22,26 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
+
+from google.api_core import api_core_version
+from google.protobuf import json_format
+import grpc
+from grpc.experimental import aio
+from proto.marshal.rules import wrappers
+from proto.marshal.rules.dates import DurationRule, TimestampRule
+import pytest
+from requests import PreparedRequest, Request, Response
+from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
 
 from google.api_core import (
     future,
@@ -35,7 +52,7 @@ from google.api_core import (
     operations_v1,
     path_template,
 )
-from google.api_core import api_core_version, client_options
+from google.api_core import client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
 from google.api_core import retry as retries
@@ -45,15 +62,7 @@ from google.auth.exceptions import MutualTLSChannelError
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
 from google.protobuf import duration_pb2  # type: ignore
-from google.protobuf import json_format
 from google.protobuf import timestamp_pb2  # type: ignore
-import grpc
-from grpc.experimental import aio
-from proto.marshal.rules import wrappers
-from proto.marshal.rules.dates import DurationRule, TimestampRule
-import pytest
-from requests import PreparedRequest, Request, Response
-from requests.sessions import Session
 
 from google.analytics.data_v1alpha.services.alpha_analytics_data import (
     AlphaAnalyticsDataAsyncClient,
@@ -64,8 +73,22 @@ from google.analytics.data_v1alpha.services.alpha_analytics_data import (
 from google.analytics.data_v1alpha.types import analytics_data_api, data
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -318,86 +341,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         AlphaAnalyticsDataClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (AlphaAnalyticsDataClient, transports.AlphaAnalyticsDataGrpcTransport, "grpc"),
-        (AlphaAnalyticsDataClient, transports.AlphaAnalyticsDataRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1215,27 +1158,6 @@ def test_run_funnel_report(request_type, transport: str = "grpc"):
     assert response.kind == "kind_value"
 
 
-def test_run_funnel_report_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.run_funnel_report), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.run_funnel_report()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.RunFunnelReportRequest()
-
-
 def test_run_funnel_report_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1304,31 +1226,6 @@ def test_run_funnel_report_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_run_funnel_report_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.run_funnel_report), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.RunFunnelReportResponse(
-                kind="kind_value",
-            )
-        )
-        response = await client.run_funnel_report()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.RunFunnelReportRequest()
-
-
-@pytest.mark.asyncio
 async def test_run_funnel_report_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1336,7 +1233,7 @@ async def test_run_funnel_report_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1351,22 +1248,23 @@ async def test_run_funnel_report_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.run_funnel_report
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.run_funnel_report(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.run_funnel_report(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1375,7 +1273,7 @@ async def test_run_funnel_report_async(
     request_type=analytics_data_api.RunFunnelReportRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1445,7 +1343,7 @@ def test_run_funnel_report_field_headers():
 @pytest.mark.asyncio
 async def test_run_funnel_report_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1511,27 +1409,6 @@ def test_create_audience_list(request_type, transport: str = "grpc"):
     assert isinstance(response, future.Future)
 
 
-def test_create_audience_list_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_audience_list), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.CreateAudienceListRequest()
-
-
 def test_create_audience_list_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1594,8 +1471,9 @@ def test_create_audience_list_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_audience_list(request)
@@ -1606,29 +1484,6 @@ def test_create_audience_list_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_audience_list_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_audience_list), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.create_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.CreateAudienceListRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_audience_list_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1636,7 +1491,7 @@ async def test_create_audience_list_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1651,26 +1506,28 @@ async def test_create_audience_list_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_audience_list
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_audience_list(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_audience_list(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1679,7 +1536,7 @@ async def test_create_audience_list_async(
     request_type=analytics_data_api.CreateAudienceListRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1746,7 +1603,7 @@ def test_create_audience_list_field_headers():
 @pytest.mark.asyncio
 async def test_create_audience_list_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1825,7 +1682,7 @@ def test_create_audience_list_flattened_error():
 @pytest.mark.asyncio
 async def test_create_audience_list_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1860,7 +1717,7 @@ async def test_create_audience_list_flattened_async():
 @pytest.mark.asyncio
 async def test_create_audience_list_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1909,27 +1766,6 @@ def test_query_audience_list(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, analytics_data_api.QueryAudienceListResponse)
     assert response.row_count == 992
-
-
-def test_query_audience_list_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.query_audience_list), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.query_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.QueryAudienceListRequest()
 
 
 def test_query_audience_list_non_empty_request_with_auto_populated_field():
@@ -2002,31 +1838,6 @@ def test_query_audience_list_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_query_audience_list_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.query_audience_list), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.QueryAudienceListResponse(
-                row_count=992,
-            )
-        )
-        response = await client.query_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.QueryAudienceListRequest()
-
-
-@pytest.mark.asyncio
 async def test_query_audience_list_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2034,7 +1845,7 @@ async def test_query_audience_list_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2049,22 +1860,23 @@ async def test_query_audience_list_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.query_audience_list
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.query_audience_list(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.query_audience_list(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2073,7 +1885,7 @@ async def test_query_audience_list_async(
     request_type=analytics_data_api.QueryAudienceListRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2143,7 +1955,7 @@ def test_query_audience_list_field_headers():
 @pytest.mark.asyncio
 async def test_query_audience_list_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2217,7 +2029,7 @@ def test_query_audience_list_flattened_error():
 @pytest.mark.asyncio
 async def test_query_audience_list_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2248,7 +2060,7 @@ async def test_query_audience_list_flattened_async():
 @pytest.mark.asyncio
 async def test_query_audience_list_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2300,27 +2112,6 @@ def test_sheet_export_audience_list(request_type, transport: str = "grpc"):
     assert response.spreadsheet_uri == "spreadsheet_uri_value"
     assert response.spreadsheet_id == "spreadsheet_id_value"
     assert response.row_count == 992
-
-
-def test_sheet_export_audience_list_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.sheet_export_audience_list), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.sheet_export_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.SheetExportAudienceListRequest()
 
 
 def test_sheet_export_audience_list_non_empty_request_with_auto_populated_field():
@@ -2394,33 +2185,6 @@ def test_sheet_export_audience_list_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_sheet_export_audience_list_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.sheet_export_audience_list), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.SheetExportAudienceListResponse(
-                spreadsheet_uri="spreadsheet_uri_value",
-                spreadsheet_id="spreadsheet_id_value",
-                row_count=992,
-            )
-        )
-        response = await client.sheet_export_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.SheetExportAudienceListRequest()
-
-
-@pytest.mark.asyncio
 async def test_sheet_export_audience_list_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2428,7 +2192,7 @@ async def test_sheet_export_audience_list_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2443,22 +2207,23 @@ async def test_sheet_export_audience_list_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.sheet_export_audience_list
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.sheet_export_audience_list(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.sheet_export_audience_list(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2467,7 +2232,7 @@ async def test_sheet_export_audience_list_async(
     request_type=analytics_data_api.SheetExportAudienceListRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2541,7 +2306,7 @@ def test_sheet_export_audience_list_field_headers():
 @pytest.mark.asyncio
 async def test_sheet_export_audience_list_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2615,7 +2380,7 @@ def test_sheet_export_audience_list_flattened_error():
 @pytest.mark.asyncio
 async def test_sheet_export_audience_list_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2646,7 +2411,7 @@ async def test_sheet_export_audience_list_flattened_async():
 @pytest.mark.asyncio
 async def test_sheet_export_audience_list_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2710,27 +2475,6 @@ def test_get_audience_list(request_type, transport: str = "grpc"):
     assert response.error_message == "error_message_value"
     assert math.isclose(response.percentage_completed, 0.2106, rel_tol=1e-6)
     assert response.recurring_audience_list == "recurring_audience_list_value"
-
-
-def test_get_audience_list_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_audience_list), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.GetAudienceListRequest()
 
 
 def test_get_audience_list_non_empty_request_with_auto_populated_field():
@@ -2801,39 +2545,6 @@ def test_get_audience_list_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_audience_list_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_audience_list), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.AudienceList(
-                name="name_value",
-                audience="audience_value",
-                audience_display_name="audience_display_name_value",
-                state=analytics_data_api.AudienceList.State.CREATING,
-                creation_quota_tokens_charged=3070,
-                row_count=992,
-                error_message="error_message_value",
-                percentage_completed=0.2106,
-                recurring_audience_list="recurring_audience_list_value",
-            )
-        )
-        response = await client.get_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.GetAudienceListRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_audience_list_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -2841,7 +2552,7 @@ async def test_get_audience_list_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -2856,22 +2567,23 @@ async def test_get_audience_list_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_audience_list
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_audience_list(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_audience_list(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2880,7 +2592,7 @@ async def test_get_audience_list_async(
     request_type=analytics_data_api.GetAudienceListRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -2966,7 +2678,7 @@ def test_get_audience_list_field_headers():
 @pytest.mark.asyncio
 async def test_get_audience_list_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3040,7 +2752,7 @@ def test_get_audience_list_flattened_error():
 @pytest.mark.asyncio
 async def test_get_audience_list_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3071,7 +2783,7 @@ async def test_get_audience_list_flattened_async():
 @pytest.mark.asyncio
 async def test_get_audience_list_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3119,27 +2831,6 @@ def test_list_audience_lists(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListAudienceListsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_audience_lists_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_audience_lists), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_audience_lists()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.ListAudienceListsRequest()
 
 
 def test_list_audience_lists_non_empty_request_with_auto_populated_field():
@@ -3214,31 +2905,6 @@ def test_list_audience_lists_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_audience_lists_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_audience_lists), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.ListAudienceListsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_audience_lists()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.ListAudienceListsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_audience_lists_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3246,7 +2912,7 @@ async def test_list_audience_lists_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3261,22 +2927,23 @@ async def test_list_audience_lists_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_audience_lists
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_audience_lists(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_audience_lists(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3285,7 +2952,7 @@ async def test_list_audience_lists_async(
     request_type=analytics_data_api.ListAudienceListsRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3355,7 +3022,7 @@ def test_list_audience_lists_field_headers():
 @pytest.mark.asyncio
 async def test_list_audience_lists_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -3429,7 +3096,7 @@ def test_list_audience_lists_flattened_error():
 @pytest.mark.asyncio
 async def test_list_audience_lists_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3460,7 +3127,7 @@ async def test_list_audience_lists_flattened_async():
 @pytest.mark.asyncio
 async def test_list_audience_lists_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -3574,7 +3241,7 @@ def test_list_audience_lists_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_audience_lists_async_pager():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3626,7 +3293,7 @@ async def test_list_audience_lists_async_pager():
 @pytest.mark.asyncio
 async def test_list_audience_lists_async_pages():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -3720,27 +3387,6 @@ def test_create_recurring_audience_list(request_type, transport: str = "grpc"):
     assert response.audience_lists == ["audience_lists_value"]
 
 
-def test_create_recurring_audience_list_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_recurring_audience_list), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_recurring_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.CreateRecurringAudienceListRequest()
-
-
 def test_create_recurring_audience_list_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -3812,35 +3458,6 @@ def test_create_recurring_audience_list_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_recurring_audience_list_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_recurring_audience_list), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.RecurringAudienceList(
-                name="name_value",
-                audience="audience_value",
-                audience_display_name="audience_display_name_value",
-                active_days_remaining=2213,
-                audience_lists=["audience_lists_value"],
-            )
-        )
-        response = await client.create_recurring_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.CreateRecurringAudienceListRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_recurring_audience_list_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -3848,7 +3465,7 @@ async def test_create_recurring_audience_list_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -3863,22 +3480,23 @@ async def test_create_recurring_audience_list_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_recurring_audience_list
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_recurring_audience_list(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_recurring_audience_list(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3887,7 +3505,7 @@ async def test_create_recurring_audience_list_async(
     request_type=analytics_data_api.CreateRecurringAudienceListRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -3965,7 +3583,7 @@ def test_create_recurring_audience_list_field_headers():
 @pytest.mark.asyncio
 async def test_create_recurring_audience_list_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4048,7 +3666,7 @@ def test_create_recurring_audience_list_flattened_error():
 @pytest.mark.asyncio
 async def test_create_recurring_audience_list_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4085,7 +3703,7 @@ async def test_create_recurring_audience_list_flattened_async():
 @pytest.mark.asyncio
 async def test_create_recurring_audience_list_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4144,27 +3762,6 @@ def test_get_recurring_audience_list(request_type, transport: str = "grpc"):
     assert response.audience_display_name == "audience_display_name_value"
     assert response.active_days_remaining == 2213
     assert response.audience_lists == ["audience_lists_value"]
-
-
-def test_get_recurring_audience_list_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_recurring_audience_list), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_recurring_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.GetRecurringAudienceListRequest()
 
 
 def test_get_recurring_audience_list_non_empty_request_with_auto_populated_field():
@@ -4238,35 +3835,6 @@ def test_get_recurring_audience_list_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_recurring_audience_list_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_recurring_audience_list), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.RecurringAudienceList(
-                name="name_value",
-                audience="audience_value",
-                audience_display_name="audience_display_name_value",
-                active_days_remaining=2213,
-                audience_lists=["audience_lists_value"],
-            )
-        )
-        response = await client.get_recurring_audience_list()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.GetRecurringAudienceListRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_recurring_audience_list_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4274,7 +3842,7 @@ async def test_get_recurring_audience_list_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4289,22 +3857,23 @@ async def test_get_recurring_audience_list_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_recurring_audience_list
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_recurring_audience_list(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_recurring_audience_list(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4313,7 +3882,7 @@ async def test_get_recurring_audience_list_async(
     request_type=analytics_data_api.GetRecurringAudienceListRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4391,7 +3960,7 @@ def test_get_recurring_audience_list_field_headers():
 @pytest.mark.asyncio
 async def test_get_recurring_audience_list_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4465,7 +4034,7 @@ def test_get_recurring_audience_list_flattened_error():
 @pytest.mark.asyncio
 async def test_get_recurring_audience_list_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4496,7 +4065,7 @@ async def test_get_recurring_audience_list_flattened_async():
 @pytest.mark.asyncio
 async def test_get_recurring_audience_list_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -4544,27 +4113,6 @@ def test_list_recurring_audience_lists(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListRecurringAudienceListsPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_recurring_audience_lists_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_recurring_audience_lists), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_recurring_audience_lists()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.ListRecurringAudienceListsRequest()
 
 
 def test_list_recurring_audience_lists_non_empty_request_with_auto_populated_field():
@@ -4640,31 +4188,6 @@ def test_list_recurring_audience_lists_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_recurring_audience_lists_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_recurring_audience_lists), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.ListRecurringAudienceListsResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_recurring_audience_lists()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.ListRecurringAudienceListsRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_recurring_audience_lists_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -4672,7 +4195,7 @@ async def test_list_recurring_audience_lists_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -4687,22 +4210,23 @@ async def test_list_recurring_audience_lists_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_recurring_audience_lists
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_recurring_audience_lists(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_recurring_audience_lists(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4711,7 +4235,7 @@ async def test_list_recurring_audience_lists_async(
     request_type=analytics_data_api.ListRecurringAudienceListsRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -4781,7 +4305,7 @@ def test_list_recurring_audience_lists_field_headers():
 @pytest.mark.asyncio
 async def test_list_recurring_audience_lists_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -4855,7 +4379,7 @@ def test_list_recurring_audience_lists_flattened_error():
 @pytest.mark.asyncio
 async def test_list_recurring_audience_lists_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -4886,7 +4410,7 @@ async def test_list_recurring_audience_lists_flattened_async():
 @pytest.mark.asyncio
 async def test_list_recurring_audience_lists_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5004,7 +4528,7 @@ def test_list_recurring_audience_lists_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_recurring_audience_lists_async_pager():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5058,7 +4582,7 @@ async def test_list_recurring_audience_lists_async_pager():
 @pytest.mark.asyncio
 async def test_list_recurring_audience_lists_async_pages():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5109,6 +4633,349 @@ async def test_list_recurring_audience_lists_async_pages():
 @pytest.mark.parametrize(
     "request_type",
     [
+        analytics_data_api.GetPropertyQuotasSnapshotRequest,
+        dict,
+    ],
+)
+def test_get_property_quotas_snapshot(request_type, transport: str = "grpc"):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = analytics_data_api.PropertyQuotasSnapshot(
+            name="name_value",
+        )
+        response = client.get_property_quotas_snapshot(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = analytics_data_api.GetPropertyQuotasSnapshotRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.PropertyQuotasSnapshot)
+    assert response.name == "name_value"
+
+
+def test_get_property_quotas_snapshot_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = analytics_data_api.GetPropertyQuotasSnapshotRequest(
+        name="name_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.get_property_quotas_snapshot(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == analytics_data_api.GetPropertyQuotasSnapshotRequest(
+            name="name_value",
+        )
+
+
+def test_get_property_quotas_snapshot_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AlphaAnalyticsDataClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_property_quotas_snapshot
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_property_quotas_snapshot
+        ] = mock_rpc
+        request = {}
+        client.get_property_quotas_snapshot(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_property_quotas_snapshot(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_property_quotas_snapshot_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = AlphaAnalyticsDataAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.get_property_quotas_snapshot
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.get_property_quotas_snapshot
+        ] = mock_rpc
+
+        request = {}
+        await client.get_property_quotas_snapshot(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.get_property_quotas_snapshot(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_property_quotas_snapshot_async(
+    transport: str = "grpc_asyncio",
+    request_type=analytics_data_api.GetPropertyQuotasSnapshotRequest,
+):
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.PropertyQuotasSnapshot(
+                name="name_value",
+            )
+        )
+        response = await client.get_property_quotas_snapshot(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = analytics_data_api.GetPropertyQuotasSnapshotRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.PropertyQuotasSnapshot)
+    assert response.name == "name_value"
+
+
+@pytest.mark.asyncio
+async def test_get_property_quotas_snapshot_async_from_dict():
+    await test_get_property_quotas_snapshot_async(request_type=dict)
+
+
+def test_get_property_quotas_snapshot_field_headers():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = analytics_data_api.GetPropertyQuotasSnapshotRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.PropertyQuotasSnapshot()
+        client.get_property_quotas_snapshot(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_get_property_quotas_snapshot_field_headers_async():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = analytics_data_api.GetPropertyQuotasSnapshotRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.PropertyQuotasSnapshot()
+        )
+        await client.get_property_quotas_snapshot(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_get_property_quotas_snapshot_flattened():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = analytics_data_api.PropertyQuotasSnapshot()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.get_property_quotas_snapshot(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+def test_get_property_quotas_snapshot_flattened_error():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_property_quotas_snapshot(
+            analytics_data_api.GetPropertyQuotasSnapshotRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_property_quotas_snapshot_flattened_async():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = analytics_data_api.PropertyQuotasSnapshot()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.PropertyQuotasSnapshot()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.get_property_quotas_snapshot(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_get_property_quotas_snapshot_flattened_error_async():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.get_property_quotas_snapshot(
+            analytics_data_api.GetPropertyQuotasSnapshotRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
         analytics_data_api.CreateReportTaskRequest,
         dict,
     ],
@@ -5139,27 +5006,6 @@ def test_create_report_task(request_type, transport: str = "grpc"):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, future.Future)
-
-
-def test_create_report_task_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_report_task), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.create_report_task()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.CreateReportTaskRequest()
 
 
 def test_create_report_task_non_empty_request_with_auto_populated_field():
@@ -5224,8 +5070,9 @@ def test_create_report_task_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_report_task(request)
@@ -5236,29 +5083,6 @@ def test_create_report_task_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_create_report_task_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.create_report_task), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            operations_pb2.Operation(name="operations/spam")
-        )
-        response = await client.create_report_task()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.CreateReportTaskRequest()
-
-
-@pytest.mark.asyncio
 async def test_create_report_task_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5266,7 +5090,7 @@ async def test_create_report_task_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5281,26 +5105,28 @@ async def test_create_report_task_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_report_task
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_report_task(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_report_task(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5309,7 +5135,7 @@ async def test_create_report_task_async(
     request_type=analytics_data_api.CreateReportTaskRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5376,7 +5202,7 @@ def test_create_report_task_field_headers():
 @pytest.mark.asyncio
 async def test_create_report_task_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5455,7 +5281,7 @@ def test_create_report_task_flattened_error():
 @pytest.mark.asyncio
 async def test_create_report_task_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5490,7 +5316,7 @@ async def test_create_report_task_flattened_async():
 @pytest.mark.asyncio
 async def test_create_report_task_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5539,27 +5365,6 @@ def test_query_report_task(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, analytics_data_api.QueryReportTaskResponse)
     assert response.row_count == 992
-
-
-def test_query_report_task_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.query_report_task), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.query_report_task()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.QueryReportTaskRequest()
 
 
 def test_query_report_task_non_empty_request_with_auto_populated_field():
@@ -5630,31 +5435,6 @@ def test_query_report_task_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_query_report_task_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.query_report_task), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.QueryReportTaskResponse(
-                row_count=992,
-            )
-        )
-        response = await client.query_report_task()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.QueryReportTaskRequest()
-
-
-@pytest.mark.asyncio
 async def test_query_report_task_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -5662,7 +5442,7 @@ async def test_query_report_task_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -5677,22 +5457,23 @@ async def test_query_report_task_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.query_report_task
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.query_report_task(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.query_report_task(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5701,7 +5482,7 @@ async def test_query_report_task_async(
     request_type=analytics_data_api.QueryReportTaskRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -5771,7 +5552,7 @@ def test_query_report_task_field_headers():
 @pytest.mark.asyncio
 async def test_query_report_task_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -5845,7 +5626,7 @@ def test_query_report_task_flattened_error():
 @pytest.mark.asyncio
 async def test_query_report_task_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -5876,7 +5657,7 @@ async def test_query_report_task_flattened_async():
 @pytest.mark.asyncio
 async def test_query_report_task_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -5922,25 +5703,6 @@ def test_get_report_task(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, analytics_data_api.ReportTask)
     assert response.name == "name_value"
-
-
-def test_get_report_task_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_report_task), "__call__") as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_report_task()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.GetReportTaskRequest()
 
 
 def test_get_report_task_non_empty_request_with_auto_populated_field():
@@ -6007,29 +5769,6 @@ def test_get_report_task_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_report_task_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(type(client.transport.get_report_task), "__call__") as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.ReportTask(
-                name="name_value",
-            )
-        )
-        response = await client.get_report_task()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.GetReportTaskRequest()
-
-
-@pytest.mark.asyncio
 async def test_get_report_task_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6037,7 +5776,7 @@ async def test_get_report_task_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6052,22 +5791,23 @@ async def test_get_report_task_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_report_task
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_report_task(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_report_task(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6076,7 +5816,7 @@ async def test_get_report_task_async(
     request_type=analytics_data_api.GetReportTaskRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6142,7 +5882,7 @@ def test_get_report_task_field_headers():
 @pytest.mark.asyncio
 async def test_get_report_task_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6212,7 +5952,7 @@ def test_get_report_task_flattened_error():
 @pytest.mark.asyncio
 async def test_get_report_task_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6241,7 +5981,7 @@ async def test_get_report_task_flattened_async():
 @pytest.mark.asyncio
 async def test_get_report_task_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6289,27 +6029,6 @@ def test_list_report_tasks(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListReportTasksPager)
     assert response.next_page_token == "next_page_token_value"
-
-
-def test_list_report_tasks_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_report_tasks), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.list_report_tasks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.ListReportTasksRequest()
 
 
 def test_list_report_tasks_non_empty_request_with_auto_populated_field():
@@ -6382,31 +6101,6 @@ def test_list_report_tasks_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_list_report_tasks_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.list_report_tasks), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            analytics_data_api.ListReportTasksResponse(
-                next_page_token="next_page_token_value",
-            )
-        )
-        response = await client.list_report_tasks()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert args[0] == analytics_data_api.ListReportTasksRequest()
-
-
-@pytest.mark.asyncio
 async def test_list_report_tasks_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -6414,7 +6108,7 @@ async def test_list_report_tasks_async_use_cached_wrapped_rpc(
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = AlphaAnalyticsDataAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -6429,22 +6123,23 @@ async def test_list_report_tasks_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_report_tasks
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_report_tasks(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_report_tasks(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6453,7 +6148,7 @@ async def test_list_report_tasks_async(
     request_type=analytics_data_api.ListReportTasksRequest,
 ):
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -6523,7 +6218,7 @@ def test_list_report_tasks_field_headers():
 @pytest.mark.asyncio
 async def test_list_report_tasks_field_headers_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -6597,7 +6292,7 @@ def test_list_report_tasks_flattened_error():
 @pytest.mark.asyncio
 async def test_list_report_tasks_flattened_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6628,7 +6323,7 @@ async def test_list_report_tasks_flattened_async():
 @pytest.mark.asyncio
 async def test_list_report_tasks_flattened_error_async():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -6742,7 +6437,7 @@ def test_list_report_tasks_pages(transport_name: str = "grpc"):
 @pytest.mark.asyncio
 async def test_list_report_tasks_async_pager():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6794,7 +6489,7 @@ async def test_list_report_tasks_async_pager():
 @pytest.mark.asyncio
 async def test_list_report_tasks_async_pages():
     client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -6842,46 +6537,6 @@ async def test_list_report_tasks_async_pages():
             assert page_.raw_page.next_page_token == token
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.RunFunnelReportRequest,
-        dict,
-    ],
-)
-def test_run_funnel_report_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"property": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.RunFunnelReportResponse(
-            kind="kind_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.RunFunnelReportResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.run_funnel_report(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, analytics_data_api.RunFunnelReportResponse)
-    assert response.kind == "kind_value"
-
-
 def test_run_funnel_report_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -6918,214 +6573,6 @@ def test_run_funnel_report_rest_use_cached_wrapped_rpc():
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
         assert mock_rpc.call_count == 2
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_run_funnel_report_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_run_funnel_report"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_run_funnel_report"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.RunFunnelReportRequest.pb(
-            analytics_data_api.RunFunnelReportRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = analytics_data_api.RunFunnelReportResponse.to_json(
-            analytics_data_api.RunFunnelReportResponse()
-        )
-
-        request = analytics_data_api.RunFunnelReportRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.RunFunnelReportResponse()
-
-        client.run_funnel_report(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_run_funnel_report_rest_bad_request(
-    transport: str = "rest", request_type=analytics_data_api.RunFunnelReportRequest
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"property": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.run_funnel_report(request)
-
-
-def test_run_funnel_report_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.CreateAudienceListRequest,
-        dict,
-    ],
-)
-def test_create_audience_list_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request_init["audience_list"] = {
-        "name": "name_value",
-        "audience": "audience_value",
-        "audience_display_name": "audience_display_name_value",
-        "dimensions": [{"dimension_name": "dimension_name_value"}],
-        "state": 1,
-        "begin_creating_time": {"seconds": 751, "nanos": 543},
-        "creation_quota_tokens_charged": 3070,
-        "row_count": 992,
-        "error_message": "error_message_value",
-        "percentage_completed": 0.2106,
-        "recurring_audience_list": "recurring_audience_list_value",
-        "webhook_notification": {
-            "uri": "uri_value",
-            "channel_token": "channel_token_value",
-        },
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = analytics_data_api.CreateAudienceListRequest.meta.fields[
-        "audience_list"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["audience_list"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["audience_list"][field])):
-                    del request_init["audience_list"][field][i][subfield]
-            else:
-                del request_init["audience_list"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_audience_list(request)
-
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
 
 
 def test_create_audience_list_rest_use_cached_wrapped_rpc():
@@ -7236,6 +6683,7 @@ def test_create_audience_list_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_audience_list(request)
 
@@ -7259,89 +6707,6 @@ def test_create_audience_list_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_audience_list_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_create_audience_list"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_create_audience_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.CreateAudienceListRequest.pb(
-            analytics_data_api.CreateAudienceListRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = analytics_data_api.CreateAudienceListRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.create_audience_list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_audience_list_rest_bad_request(
-    transport: str = "rest", request_type=analytics_data_api.CreateAudienceListRequest
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_audience_list(request)
 
 
 def test_create_audience_list_rest_flattened():
@@ -7371,6 +6736,7 @@ def test_create_audience_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_audience_list(**mock_args)
 
@@ -7398,52 +6764,6 @@ def test_create_audience_list_rest_flattened_error(transport: str = "rest"):
             parent="parent_value",
             audience_list=analytics_data_api.AudienceList(name="name_value"),
         )
-
-
-def test_create_audience_list_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.QueryAudienceListRequest,
-        dict,
-    ],
-)
-def test_query_audience_list_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/audienceLists/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.QueryAudienceListResponse(
-            row_count=992,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.QueryAudienceListResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.query_audience_list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, analytics_data_api.QueryAudienceListResponse)
-    assert response.row_count == 992
 
 
 def test_query_audience_list_rest_use_cached_wrapped_rpc():
@@ -7553,6 +6873,7 @@ def test_query_audience_list_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.query_audience_list(request)
 
@@ -7568,89 +6889,6 @@ def test_query_audience_list_rest_unset_required_fields():
 
     unset_fields = transport.query_audience_list._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_query_audience_list_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_query_audience_list"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_query_audience_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.QueryAudienceListRequest.pb(
-            analytics_data_api.QueryAudienceListRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            analytics_data_api.QueryAudienceListResponse.to_json(
-                analytics_data_api.QueryAudienceListResponse()
-            )
-        )
-
-        request = analytics_data_api.QueryAudienceListRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.QueryAudienceListResponse()
-
-        client.query_audience_list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_query_audience_list_rest_bad_request(
-    transport: str = "rest", request_type=analytics_data_api.QueryAudienceListRequest
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/audienceLists/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.query_audience_list(request)
 
 
 def test_query_audience_list_rest_flattened():
@@ -7681,6 +6919,7 @@ def test_query_audience_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.query_audience_list(**mock_args)
 
@@ -7708,58 +6947,6 @@ def test_query_audience_list_rest_flattened_error(transport: str = "rest"):
             analytics_data_api.QueryAudienceListRequest(),
             name="name_value",
         )
-
-
-def test_query_audience_list_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.SheetExportAudienceListRequest,
-        dict,
-    ],
-)
-def test_sheet_export_audience_list_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/audienceLists/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.SheetExportAudienceListResponse(
-            spreadsheet_uri="spreadsheet_uri_value",
-            spreadsheet_id="spreadsheet_id_value",
-            row_count=992,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.SheetExportAudienceListResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.sheet_export_audience_list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, analytics_data_api.SheetExportAudienceListResponse)
-    assert response.spreadsheet_uri == "spreadsheet_uri_value"
-    assert response.spreadsheet_id == "spreadsheet_id_value"
-    assert response.row_count == 992
 
 
 def test_sheet_export_audience_list_rest_use_cached_wrapped_rpc():
@@ -7872,6 +7059,7 @@ def test_sheet_export_audience_list_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.sheet_export_audience_list(request)
 
@@ -7887,90 +7075,6 @@ def test_sheet_export_audience_list_rest_unset_required_fields():
 
     unset_fields = transport.sheet_export_audience_list._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_sheet_export_audience_list_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_sheet_export_audience_list"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_sheet_export_audience_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.SheetExportAudienceListRequest.pb(
-            analytics_data_api.SheetExportAudienceListRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            analytics_data_api.SheetExportAudienceListResponse.to_json(
-                analytics_data_api.SheetExportAudienceListResponse()
-            )
-        )
-
-        request = analytics_data_api.SheetExportAudienceListRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.SheetExportAudienceListResponse()
-
-        client.sheet_export_audience_list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_sheet_export_audience_list_rest_bad_request(
-    transport: str = "rest",
-    request_type=analytics_data_api.SheetExportAudienceListRequest,
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/audienceLists/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.sheet_export_audience_list(request)
 
 
 def test_sheet_export_audience_list_rest_flattened():
@@ -8003,6 +7107,7 @@ def test_sheet_export_audience_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.sheet_export_audience_list(**mock_args)
 
@@ -8030,68 +7135,6 @@ def test_sheet_export_audience_list_rest_flattened_error(transport: str = "rest"
             analytics_data_api.SheetExportAudienceListRequest(),
             name="name_value",
         )
-
-
-def test_sheet_export_audience_list_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.GetAudienceListRequest,
-        dict,
-    ],
-)
-def test_get_audience_list_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/audienceLists/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.AudienceList(
-            name="name_value",
-            audience="audience_value",
-            audience_display_name="audience_display_name_value",
-            state=analytics_data_api.AudienceList.State.CREATING,
-            creation_quota_tokens_charged=3070,
-            row_count=992,
-            error_message="error_message_value",
-            percentage_completed=0.2106,
-            recurring_audience_list="recurring_audience_list_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.AudienceList.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_audience_list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, analytics_data_api.AudienceList)
-    assert response.name == "name_value"
-    assert response.audience == "audience_value"
-    assert response.audience_display_name == "audience_display_name_value"
-    assert response.state == analytics_data_api.AudienceList.State.CREATING
-    assert response.creation_quota_tokens_charged == 3070
-    assert response.row_count == 992
-    assert response.error_message == "error_message_value"
-    assert math.isclose(response.percentage_completed, 0.2106, rel_tol=1e-6)
-    assert response.recurring_audience_list == "recurring_audience_list_value"
 
 
 def test_get_audience_list_rest_use_cached_wrapped_rpc():
@@ -8198,6 +7241,7 @@ def test_get_audience_list_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_audience_list(request)
 
@@ -8213,87 +7257,6 @@ def test_get_audience_list_rest_unset_required_fields():
 
     unset_fields = transport.get_audience_list._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_audience_list_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_get_audience_list"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_get_audience_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.GetAudienceListRequest.pb(
-            analytics_data_api.GetAudienceListRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = analytics_data_api.AudienceList.to_json(
-            analytics_data_api.AudienceList()
-        )
-
-        request = analytics_data_api.GetAudienceListRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.AudienceList()
-
-        client.get_audience_list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_audience_list_rest_bad_request(
-    transport: str = "rest", request_type=analytics_data_api.GetAudienceListRequest
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/audienceLists/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_audience_list(request)
 
 
 def test_get_audience_list_rest_flattened():
@@ -8324,6 +7287,7 @@ def test_get_audience_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_audience_list(**mock_args)
 
@@ -8350,52 +7314,6 @@ def test_get_audience_list_rest_flattened_error(transport: str = "rest"):
             analytics_data_api.GetAudienceListRequest(),
             name="name_value",
         )
-
-
-def test_get_audience_list_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.ListAudienceListsRequest,
-        dict,
-    ],
-)
-def test_list_audience_lists_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.ListAudienceListsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.ListAudienceListsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_audience_lists(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListAudienceListsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_audience_lists_rest_use_cached_wrapped_rpc():
@@ -8511,6 +7429,7 @@ def test_list_audience_lists_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_audience_lists(request)
 
@@ -8534,89 +7453,6 @@ def test_list_audience_lists_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_audience_lists_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_list_audience_lists"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_list_audience_lists"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.ListAudienceListsRequest.pb(
-            analytics_data_api.ListAudienceListsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            analytics_data_api.ListAudienceListsResponse.to_json(
-                analytics_data_api.ListAudienceListsResponse()
-            )
-        )
-
-        request = analytics_data_api.ListAudienceListsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.ListAudienceListsResponse()
-
-        client.list_audience_lists(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_audience_lists_rest_bad_request(
-    transport: str = "rest", request_type=analytics_data_api.ListAudienceListsRequest
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_audience_lists(request)
 
 
 def test_list_audience_lists_rest_flattened():
@@ -8647,6 +7483,7 @@ def test_list_audience_lists_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_audience_lists(**mock_args)
 
@@ -8736,137 +7573,6 @@ def test_list_audience_lists_rest_pager(transport: str = "rest"):
         pages = list(client.list_audience_lists(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.CreateRecurringAudienceListRequest,
-        dict,
-    ],
-)
-def test_create_recurring_audience_list_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request_init["recurring_audience_list"] = {
-        "name": "name_value",
-        "audience": "audience_value",
-        "audience_display_name": "audience_display_name_value",
-        "dimensions": [{"dimension_name": "dimension_name_value"}],
-        "active_days_remaining": 2213,
-        "audience_lists": ["audience_lists_value1", "audience_lists_value2"],
-        "webhook_notification": {
-            "uri": "uri_value",
-            "channel_token": "channel_token_value",
-        },
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = analytics_data_api.CreateRecurringAudienceListRequest.meta.fields[
-        "recurring_audience_list"
-    ]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init[
-        "recurring_audience_list"
-    ].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["recurring_audience_list"][field])):
-                    del request_init["recurring_audience_list"][field][i][subfield]
-            else:
-                del request_init["recurring_audience_list"][field][subfield]
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.RecurringAudienceList(
-            name="name_value",
-            audience="audience_value",
-            audience_display_name="audience_display_name_value",
-            active_days_remaining=2213,
-            audience_lists=["audience_lists_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.RecurringAudienceList.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.create_recurring_audience_list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, analytics_data_api.RecurringAudienceList)
-    assert response.name == "name_value"
-    assert response.audience == "audience_value"
-    assert response.audience_display_name == "audience_display_name_value"
-    assert response.active_days_remaining == 2213
-    assert response.audience_lists == ["audience_lists_value"]
 
 
 def test_create_recurring_audience_list_rest_use_cached_wrapped_rpc():
@@ -8977,6 +7683,7 @@ def test_create_recurring_audience_list_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_recurring_audience_list(request)
 
@@ -9002,90 +7709,6 @@ def test_create_recurring_audience_list_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_recurring_audience_list_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor,
-        "post_create_recurring_audience_list",
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor,
-        "pre_create_recurring_audience_list",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.CreateRecurringAudienceListRequest.pb(
-            analytics_data_api.CreateRecurringAudienceListRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = analytics_data_api.RecurringAudienceList.to_json(
-            analytics_data_api.RecurringAudienceList()
-        )
-
-        request = analytics_data_api.CreateRecurringAudienceListRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.RecurringAudienceList()
-
-        client.create_recurring_audience_list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_recurring_audience_list_rest_bad_request(
-    transport: str = "rest",
-    request_type=analytics_data_api.CreateRecurringAudienceListRequest,
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_recurring_audience_list(request)
 
 
 def test_create_recurring_audience_list_rest_flattened():
@@ -9119,6 +7742,7 @@ def test_create_recurring_audience_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_recurring_audience_list(**mock_args)
 
@@ -9149,60 +7773,6 @@ def test_create_recurring_audience_list_rest_flattened_error(transport: str = "r
                 name="name_value"
             ),
         )
-
-
-def test_create_recurring_audience_list_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.GetRecurringAudienceListRequest,
-        dict,
-    ],
-)
-def test_get_recurring_audience_list_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/recurringAudienceLists/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.RecurringAudienceList(
-            name="name_value",
-            audience="audience_value",
-            audience_display_name="audience_display_name_value",
-            active_days_remaining=2213,
-            audience_lists=["audience_lists_value"],
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.RecurringAudienceList.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_recurring_audience_list(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, analytics_data_api.RecurringAudienceList)
-    assert response.name == "name_value"
-    assert response.audience == "audience_value"
-    assert response.audience_display_name == "audience_display_name_value"
-    assert response.active_days_remaining == 2213
-    assert response.audience_lists == ["audience_lists_value"]
 
 
 def test_get_recurring_audience_list_rest_use_cached_wrapped_rpc():
@@ -9312,6 +7882,7 @@ def test_get_recurring_audience_list_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_recurring_audience_list(request)
 
@@ -9327,88 +7898,6 @@ def test_get_recurring_audience_list_rest_unset_required_fields():
 
     unset_fields = transport.get_recurring_audience_list._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_recurring_audience_list_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_get_recurring_audience_list"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_get_recurring_audience_list"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.GetRecurringAudienceListRequest.pb(
-            analytics_data_api.GetRecurringAudienceListRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = analytics_data_api.RecurringAudienceList.to_json(
-            analytics_data_api.RecurringAudienceList()
-        )
-
-        request = analytics_data_api.GetRecurringAudienceListRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.RecurringAudienceList()
-
-        client.get_recurring_audience_list(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_recurring_audience_list_rest_bad_request(
-    transport: str = "rest",
-    request_type=analytics_data_api.GetRecurringAudienceListRequest,
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/recurringAudienceLists/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_recurring_audience_list(request)
 
 
 def test_get_recurring_audience_list_rest_flattened():
@@ -9439,6 +7928,7 @@ def test_get_recurring_audience_list_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_recurring_audience_list(**mock_args)
 
@@ -9466,54 +7956,6 @@ def test_get_recurring_audience_list_rest_flattened_error(transport: str = "rest
             analytics_data_api.GetRecurringAudienceListRequest(),
             name="name_value",
         )
-
-
-def test_get_recurring_audience_list_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.ListRecurringAudienceListsRequest,
-        dict,
-    ],
-)
-def test_list_recurring_audience_lists_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.ListRecurringAudienceListsResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.ListRecurringAudienceListsResponse.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_recurring_audience_lists(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListRecurringAudienceListsPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_recurring_audience_lists_rest_use_cached_wrapped_rpc():
@@ -9632,6 +8074,7 @@ def test_list_recurring_audience_lists_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_recurring_audience_lists(request)
 
@@ -9657,92 +8100,6 @@ def test_list_recurring_audience_lists_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_recurring_audience_lists_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor,
-        "post_list_recurring_audience_lists",
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor,
-        "pre_list_recurring_audience_lists",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.ListRecurringAudienceListsRequest.pb(
-            analytics_data_api.ListRecurringAudienceListsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            analytics_data_api.ListRecurringAudienceListsResponse.to_json(
-                analytics_data_api.ListRecurringAudienceListsResponse()
-            )
-        )
-
-        request = analytics_data_api.ListRecurringAudienceListsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.ListRecurringAudienceListsResponse()
-
-        client.list_recurring_audience_lists(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_recurring_audience_lists_rest_bad_request(
-    transport: str = "rest",
-    request_type=analytics_data_api.ListRecurringAudienceListsRequest,
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_recurring_audience_lists(request)
 
 
 def test_list_recurring_audience_lists_rest_flattened():
@@ -9775,6 +8132,7 @@ def test_list_recurring_audience_lists_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_recurring_audience_lists(**mock_args)
 
@@ -9870,205 +8228,187 @@ def test_list_recurring_audience_lists_rest_pager(transport: str = "rest"):
             assert page_.raw_page.next_page_token == token
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.CreateReportTaskRequest,
-        dict,
-    ],
-)
-def test_create_report_task_rest(request_type):
+def test_get_property_quotas_snapshot_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AlphaAnalyticsDataClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_property_quotas_snapshot
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_property_quotas_snapshot
+        ] = mock_rpc
+
+        request = {}
+        client.get_property_quotas_snapshot(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_property_quotas_snapshot(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_get_property_quotas_snapshot_rest_required_fields(
+    request_type=analytics_data_api.GetPropertyQuotasSnapshotRequest,
+):
+    transport_class = transports.AlphaAnalyticsDataRestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_property_quotas_snapshot._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_property_quotas_snapshot._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = analytics_data_api.PropertyQuotasSnapshot()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = analytics_data_api.PropertyQuotasSnapshot.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.get_property_quotas_snapshot(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_get_property_quotas_snapshot_rest_unset_required_fields():
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.get_property_quotas_snapshot._get_unset_required_fields({})
+    assert set(unset_fields) == (set(()) & set(("name",)))
+
+
+def test_get_property_quotas_snapshot_rest_flattened():
     client = AlphaAnalyticsDataClient(
         credentials=ga_credentials.AnonymousCredentials(),
         transport="rest",
     )
 
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request_init["report_task"] = {
-        "name": "name_value",
-        "report_definition": {
-            "dimensions": [
-                {
-                    "name": "name_value",
-                    "dimension_expression": {
-                        "lower_case": {"dimension_name": "dimension_name_value"},
-                        "upper_case": {},
-                        "concatenate": {
-                            "dimension_names": [
-                                "dimension_names_value1",
-                                "dimension_names_value2",
-                            ],
-                            "delimiter": "delimiter_value",
-                        },
-                    },
-                }
-            ],
-            "metrics": [
-                {
-                    "name": "name_value",
-                    "expression": "expression_value",
-                    "invisible": True,
-                }
-            ],
-            "date_ranges": [
-                {
-                    "start_date": "start_date_value",
-                    "end_date": "end_date_value",
-                    "name": "name_value",
-                }
-            ],
-            "dimension_filter": {
-                "and_group": {"expressions": {}},
-                "or_group": {},
-                "not_expression": {},
-                "filter": {
-                    "field_name": "field_name_value",
-                    "string_filter": {
-                        "match_type": 1,
-                        "value": "value_value",
-                        "case_sensitive": True,
-                    },
-                    "in_list_filter": {
-                        "values": ["values_value1", "values_value2"],
-                        "case_sensitive": True,
-                    },
-                    "numeric_filter": {
-                        "operation": 1,
-                        "value": {
-                            "int64_value": 1073,
-                            "double_value": 0.12710000000000002,
-                        },
-                    },
-                    "between_filter": {"from_value": {}, "to_value": {}},
-                },
-            },
-            "metric_filter": {},
-            "offset": 647,
-            "limit": 543,
-            "metric_aggregations": [1],
-            "order_bys": [
-                {
-                    "metric": {"metric_name": "metric_name_value"},
-                    "dimension": {
-                        "dimension_name": "dimension_name_value",
-                        "order_type": 1,
-                    },
-                    "desc": True,
-                }
-            ],
-            "currency_code": "currency_code_value",
-            "cohort_spec": {
-                "cohorts": [
-                    {
-                        "name": "name_value",
-                        "dimension": "dimension_value",
-                        "date_range": {},
-                    }
-                ],
-                "cohorts_range": {
-                    "granularity": 1,
-                    "start_offset": 1300,
-                    "end_offset": 1053,
-                },
-                "cohort_report_settings": {"accumulate": True},
-            },
-            "keep_empty_rows": True,
-        },
-        "report_metadata": {
-            "state": 1,
-            "begin_creating_time": {"seconds": 751, "nanos": 543},
-            "creation_quota_tokens_charged": 3070,
-            "task_row_count": 1522,
-            "error_message": "error_message_value",
-            "total_row_count": 1635,
-        },
-    }
-    # The version of a generated dependency at test runtime may differ from the version used during generation.
-    # Delete any fields which are not present in the current runtime dependency
-    # See https://github.com/googleapis/gapic-generator-python/issues/1748
-
-    # Determine if the message type is proto-plus or protobuf
-    test_field = analytics_data_api.CreateReportTaskRequest.meta.fields["report_task"]
-
-    def get_message_fields(field):
-        # Given a field which is a message (composite type), return a list with
-        # all the fields of the message.
-        # If the field is not a composite type, return an empty list.
-        message_fields = []
-
-        if hasattr(field, "message") and field.message:
-            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
-
-            if is_field_type_proto_plus_type:
-                message_fields = field.message.meta.fields.values()
-            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
-            else:  # pragma: NO COVER
-                message_fields = field.message.DESCRIPTOR.fields
-        return message_fields
-
-    runtime_nested_fields = [
-        (field.name, nested_field.name)
-        for field in get_message_fields(test_field)
-        for nested_field in get_message_fields(field)
-    ]
-
-    subfields_not_in_runtime = []
-
-    # For each item in the sample request, create a list of sub fields which are not present at runtime
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for field, value in request_init["report_task"].items():  # pragma: NO COVER
-        result = None
-        is_repeated = False
-        # For repeated fields
-        if isinstance(value, list) and len(value):
-            is_repeated = True
-            result = value[0]
-        # For fields where the type is another message
-        if isinstance(value, dict):
-            result = value
-
-        if result and hasattr(result, "keys"):
-            for subfield in result.keys():
-                if (field, subfield) not in runtime_nested_fields:
-                    subfields_not_in_runtime.append(
-                        {
-                            "field": field,
-                            "subfield": subfield,
-                            "is_repeated": is_repeated,
-                        }
-                    )
-
-    # Remove fields from the sample request which are not present in the runtime version of the dependency
-    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
-    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
-        field = subfield_to_delete.get("field")
-        field_repeated = subfield_to_delete.get("is_repeated")
-        subfield = subfield_to_delete.get("subfield")
-        if subfield:
-            if field_repeated:
-                for i in range(0, len(request_init["report_task"][field])):
-                    del request_init["report_task"][field][i][subfield]
-            else:
-                del request_init["report_task"][field][subfield]
-    request = request_type(**request_init)
-
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation(name="operations/spam")
+        return_value = analytics_data_api.PropertyQuotasSnapshot()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"name": "properties/sample1/propertyQuotasSnapshot"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
 
         # Wrap the value into a proper Response obj
         response_value = Response()
         response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.PropertyQuotasSnapshot.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
-
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
-        response = client.create_report_task(request)
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
-    # Establish that the response is the type that we expect.
-    assert response.operation.name == "operations/spam"
+        client.get_property_quotas_snapshot(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1alpha/{name=properties/*/propertyQuotasSnapshot}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_get_property_quotas_snapshot_rest_flattened_error(transport: str = "rest"):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_property_quotas_snapshot(
+            analytics_data_api.GetPropertyQuotasSnapshotRequest(),
+            name="name_value",
+        )
 
 
 def test_create_report_task_rest_use_cached_wrapped_rpc():
@@ -10179,6 +8519,7 @@ def test_create_report_task_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.create_report_task(request)
 
@@ -10202,89 +8543,6 @@ def test_create_report_task_rest_unset_required_fields():
             )
         )
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_create_report_task_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        operation.Operation, "_set_result_from_operation"
-    ), mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_create_report_task"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_create_report_task"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.CreateReportTaskRequest.pb(
-            analytics_data_api.CreateReportTaskRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = json_format.MessageToJson(
-            operations_pb2.Operation()
-        )
-
-        request = analytics_data_api.CreateReportTaskRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = operations_pb2.Operation()
-
-        client.create_report_task(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_create_report_task_rest_bad_request(
-    transport: str = "rest", request_type=analytics_data_api.CreateReportTaskRequest
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.create_report_task(request)
 
 
 def test_create_report_task_rest_flattened():
@@ -10314,6 +8572,7 @@ def test_create_report_task_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.create_report_task(**mock_args)
 
@@ -10341,52 +8600,6 @@ def test_create_report_task_rest_flattened_error(transport: str = "rest"):
             parent="parent_value",
             report_task=analytics_data_api.ReportTask(name="name_value"),
         )
-
-
-def test_create_report_task_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.QueryReportTaskRequest,
-        dict,
-    ],
-)
-def test_query_report_task_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/reportTasks/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.QueryReportTaskResponse(
-            row_count=992,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.QueryReportTaskResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.query_report_task(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, analytics_data_api.QueryReportTaskResponse)
-    assert response.row_count == 992
 
 
 def test_query_report_task_rest_use_cached_wrapped_rpc():
@@ -10494,6 +8707,7 @@ def test_query_report_task_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.query_report_task(request)
 
@@ -10509,87 +8723,6 @@ def test_query_report_task_rest_unset_required_fields():
 
     unset_fields = transport.query_report_task._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_query_report_task_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_query_report_task"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_query_report_task"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.QueryReportTaskRequest.pb(
-            analytics_data_api.QueryReportTaskRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = analytics_data_api.QueryReportTaskResponse.to_json(
-            analytics_data_api.QueryReportTaskResponse()
-        )
-
-        request = analytics_data_api.QueryReportTaskRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.QueryReportTaskResponse()
-
-        client.query_report_task(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_query_report_task_rest_bad_request(
-    transport: str = "rest", request_type=analytics_data_api.QueryReportTaskRequest
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/reportTasks/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.query_report_task(request)
 
 
 def test_query_report_task_rest_flattened():
@@ -10620,6 +8753,7 @@ def test_query_report_task_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.query_report_task(**mock_args)
 
@@ -10647,52 +8781,6 @@ def test_query_report_task_rest_flattened_error(transport: str = "rest"):
             analytics_data_api.QueryReportTaskRequest(),
             name="name_value",
         )
-
-
-def test_query_report_task_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.GetReportTaskRequest,
-        dict,
-    ],
-)
-def test_get_report_task_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/reportTasks/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.ReportTask(
-            name="name_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.ReportTask.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_report_task(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, analytics_data_api.ReportTask)
-    assert response.name == "name_value"
 
 
 def test_get_report_task_rest_use_cached_wrapped_rpc():
@@ -10797,6 +8885,7 @@ def test_get_report_task_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_report_task(request)
 
@@ -10812,87 +8901,6 @@ def test_get_report_task_rest_unset_required_fields():
 
     unset_fields = transport.get_report_task._get_unset_required_fields({})
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_report_task_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_get_report_task"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_get_report_task"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.GetReportTaskRequest.pb(
-            analytics_data_api.GetReportTaskRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = analytics_data_api.ReportTask.to_json(
-            analytics_data_api.ReportTask()
-        )
-
-        request = analytics_data_api.GetReportTaskRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.ReportTask()
-
-        client.get_report_task(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_report_task_rest_bad_request(
-    transport: str = "rest", request_type=analytics_data_api.GetReportTaskRequest
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "properties/sample1/reportTasks/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_report_task(request)
 
 
 def test_get_report_task_rest_flattened():
@@ -10923,6 +8931,7 @@ def test_get_report_task_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_report_task(**mock_args)
 
@@ -10949,52 +8958,6 @@ def test_get_report_task_rest_flattened_error(transport: str = "rest"):
             analytics_data_api.GetReportTaskRequest(),
             name="name_value",
         )
-
-
-def test_get_report_task_rest_error():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        analytics_data_api.ListReportTasksRequest,
-        dict,
-    ],
-)
-def test_list_report_tasks_rest(request_type):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = analytics_data_api.ListReportTasksResponse(
-            next_page_token="next_page_token_value",
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = analytics_data_api.ListReportTasksResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_report_tasks(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListReportTasksPager)
-    assert response.next_page_token == "next_page_token_value"
 
 
 def test_list_report_tasks_rest_use_cached_wrapped_rpc():
@@ -11108,6 +9071,7 @@ def test_list_report_tasks_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_report_tasks(request)
 
@@ -11131,87 +9095,6 @@ def test_list_report_tasks_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_report_tasks_rest_interceptors(null_interceptor):
-    transport = transports.AlphaAnalyticsDataRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AlphaAnalyticsDataRestInterceptor(),
-    )
-    client = AlphaAnalyticsDataClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "post_list_report_tasks"
-    ) as post, mock.patch.object(
-        transports.AlphaAnalyticsDataRestInterceptor, "pre_list_report_tasks"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = analytics_data_api.ListReportTasksRequest.pb(
-            analytics_data_api.ListReportTasksRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = analytics_data_api.ListReportTasksResponse.to_json(
-            analytics_data_api.ListReportTasksResponse()
-        )
-
-        request = analytics_data_api.ListReportTasksRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = analytics_data_api.ListReportTasksResponse()
-
-        client.list_report_tasks(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_report_tasks_rest_bad_request(
-    transport: str = "rest", request_type=analytics_data_api.ListReportTasksRequest
-):
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "properties/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_report_tasks(request)
 
 
 def test_list_report_tasks_rest_flattened():
@@ -11242,6 +9125,7 @@ def test_list_report_tasks_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_report_tasks(**mock_args)
 
@@ -11425,18 +9309,3213 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_grpc():
+    transport = AlphaAnalyticsDataClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_run_funnel_report_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.run_funnel_report), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.RunFunnelReportResponse()
+        client.run_funnel_report(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.RunFunnelReportRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_audience_list_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_audience_list), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.CreateAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_query_audience_list_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.query_audience_list), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.QueryAudienceListResponse()
+        client.query_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.QueryAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_sheet_export_audience_list_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.sheet_export_audience_list), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.SheetExportAudienceListResponse()
+        client.sheet_export_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.SheetExportAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_audience_list_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_audience_list), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.AudienceList()
+        client.get_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_audience_lists_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_audience_lists), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.ListAudienceListsResponse()
+        client.list_audience_lists(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.ListAudienceListsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_recurring_audience_list_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_recurring_audience_list), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.RecurringAudienceList()
+        client.create_recurring_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.CreateRecurringAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_recurring_audience_list_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_recurring_audience_list), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.RecurringAudienceList()
+        client.get_recurring_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetRecurringAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_recurring_audience_lists_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_recurring_audience_lists), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.ListRecurringAudienceListsResponse()
+        client.list_recurring_audience_lists(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.ListRecurringAudienceListsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_property_quotas_snapshot_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.PropertyQuotasSnapshot()
+        client.get_property_quotas_snapshot(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetPropertyQuotasSnapshotRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_report_task_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_report_task), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_report_task(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.CreateReportTaskRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_query_report_task_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.query_report_task), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.QueryReportTaskResponse()
+        client.query_report_task(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.QueryReportTaskRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_report_task_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_report_task), "__call__") as call:
+        call.return_value = analytics_data_api.ReportTask()
+        client.get_report_task(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetReportTaskRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_report_tasks_empty_call_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_report_tasks), "__call__"
+    ) as call:
+        call.return_value = analytics_data_api.ListReportTasksResponse()
+        client.list_report_tasks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.ListReportTasksRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = AlphaAnalyticsDataAsyncClient.get_transport_class("grpc_asyncio")(
+        credentials=async_anonymous_credentials()
+    )
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_run_funnel_report_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.run_funnel_report), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.RunFunnelReportResponse(
+                kind="kind_value",
+            )
+        )
+        await client.run_funnel_report(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.RunFunnelReportRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_audience_list_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_audience_list), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.create_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.CreateAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_query_audience_list_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.query_audience_list), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.QueryAudienceListResponse(
+                row_count=992,
+            )
+        )
+        await client.query_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.QueryAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_sheet_export_audience_list_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.sheet_export_audience_list), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.SheetExportAudienceListResponse(
+                spreadsheet_uri="spreadsheet_uri_value",
+                spreadsheet_id="spreadsheet_id_value",
+                row_count=992,
+            )
+        )
+        await client.sheet_export_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.SheetExportAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_audience_list_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_audience_list), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.AudienceList(
+                name="name_value",
+                audience="audience_value",
+                audience_display_name="audience_display_name_value",
+                state=analytics_data_api.AudienceList.State.CREATING,
+                creation_quota_tokens_charged=3070,
+                row_count=992,
+                error_message="error_message_value",
+                percentage_completed=0.2106,
+                recurring_audience_list="recurring_audience_list_value",
+            )
+        )
+        await client.get_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_audience_lists_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_audience_lists), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.ListAudienceListsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_audience_lists(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.ListAudienceListsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_recurring_audience_list_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_recurring_audience_list), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.RecurringAudienceList(
+                name="name_value",
+                audience="audience_value",
+                audience_display_name="audience_display_name_value",
+                active_days_remaining=2213,
+                audience_lists=["audience_lists_value"],
+            )
+        )
+        await client.create_recurring_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.CreateRecurringAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_recurring_audience_list_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_recurring_audience_list), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.RecurringAudienceList(
+                name="name_value",
+                audience="audience_value",
+                audience_display_name="audience_display_name_value",
+                active_days_remaining=2213,
+                audience_lists=["audience_lists_value"],
+            )
+        )
+        await client.get_recurring_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetRecurringAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_recurring_audience_lists_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_recurring_audience_lists), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.ListRecurringAudienceListsResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_recurring_audience_lists(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.ListRecurringAudienceListsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_property_quotas_snapshot_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.PropertyQuotasSnapshot(
+                name="name_value",
+            )
+        )
+        await client.get_property_quotas_snapshot(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetPropertyQuotasSnapshotRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_report_task_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_report_task), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.create_report_task(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.CreateReportTaskRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_query_report_task_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.query_report_task), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.QueryReportTaskResponse(
+                row_count=992,
+            )
+        )
+        await client.query_report_task(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.QueryReportTaskRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_report_task_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_report_task), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.ReportTask(
+                name="name_value",
+            )
+        )
+        await client.get_report_task(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetReportTaskRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_report_tasks_empty_call_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_report_tasks), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            analytics_data_api.ListReportTasksResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        await client.list_report_tasks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.ListReportTasksRequest()
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = AlphaAnalyticsDataClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_run_funnel_report_rest_bad_request(
+    request_type=analytics_data_api.RunFunnelReportRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"property": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.run_funnel_report(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "grpc",
-        "rest",
+        analytics_data_api.RunFunnelReportRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = AlphaAnalyticsDataClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_run_funnel_report_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"property": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.RunFunnelReportResponse(
+            kind="kind_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.RunFunnelReportResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.run_funnel_report(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.RunFunnelReportResponse)
+    assert response.kind == "kind_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_run_funnel_report_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_run_funnel_report"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_run_funnel_report"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.RunFunnelReportRequest.pb(
+            analytics_data_api.RunFunnelReportRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.RunFunnelReportResponse.to_json(
+            analytics_data_api.RunFunnelReportResponse()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.RunFunnelReportRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.RunFunnelReportResponse()
+
+        client.run_funnel_report(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_audience_list_rest_bad_request(
+    request_type=analytics_data_api.CreateAudienceListRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_audience_list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.CreateAudienceListRequest,
+        dict,
+    ],
+)
+def test_create_audience_list_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request_init["audience_list"] = {
+        "name": "name_value",
+        "audience": "audience_value",
+        "audience_display_name": "audience_display_name_value",
+        "dimensions": [{"dimension_name": "dimension_name_value"}],
+        "state": 1,
+        "begin_creating_time": {"seconds": 751, "nanos": 543},
+        "creation_quota_tokens_charged": 3070,
+        "row_count": 992,
+        "error_message": "error_message_value",
+        "percentage_completed": 0.2106,
+        "recurring_audience_list": "recurring_audience_list_value",
+        "webhook_notification": {
+            "uri": "uri_value",
+            "channel_token": "channel_token_value",
+        },
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = analytics_data_api.CreateAudienceListRequest.meta.fields[
+        "audience_list"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["audience_list"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["audience_list"][field])):
+                    del request_init["audience_list"][field][i][subfield]
+            else:
+                del request_init["audience_list"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_audience_list(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_audience_list_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_create_audience_list"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_create_audience_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.CreateAudienceListRequest.pb(
+            analytics_data_api.CreateAudienceListRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = analytics_data_api.CreateAudienceListRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.create_audience_list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_query_audience_list_rest_bad_request(
+    request_type=analytics_data_api.QueryAudienceListRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/audienceLists/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.query_audience_list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.QueryAudienceListRequest,
+        dict,
+    ],
+)
+def test_query_audience_list_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/audienceLists/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.QueryAudienceListResponse(
+            row_count=992,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.QueryAudienceListResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.query_audience_list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.QueryAudienceListResponse)
+    assert response.row_count == 992
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_query_audience_list_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_query_audience_list"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_query_audience_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.QueryAudienceListRequest.pb(
+            analytics_data_api.QueryAudienceListRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.QueryAudienceListResponse.to_json(
+            analytics_data_api.QueryAudienceListResponse()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.QueryAudienceListRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.QueryAudienceListResponse()
+
+        client.query_audience_list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_sheet_export_audience_list_rest_bad_request(
+    request_type=analytics_data_api.SheetExportAudienceListRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/audienceLists/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.sheet_export_audience_list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.SheetExportAudienceListRequest,
+        dict,
+    ],
+)
+def test_sheet_export_audience_list_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/audienceLists/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.SheetExportAudienceListResponse(
+            spreadsheet_uri="spreadsheet_uri_value",
+            spreadsheet_id="spreadsheet_id_value",
+            row_count=992,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.SheetExportAudienceListResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.sheet_export_audience_list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.SheetExportAudienceListResponse)
+    assert response.spreadsheet_uri == "spreadsheet_uri_value"
+    assert response.spreadsheet_id == "spreadsheet_id_value"
+    assert response.row_count == 992
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_sheet_export_audience_list_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_sheet_export_audience_list"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_sheet_export_audience_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.SheetExportAudienceListRequest.pb(
+            analytics_data_api.SheetExportAudienceListRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.SheetExportAudienceListResponse.to_json(
+            analytics_data_api.SheetExportAudienceListResponse()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.SheetExportAudienceListRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.SheetExportAudienceListResponse()
+
+        client.sheet_export_audience_list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_audience_list_rest_bad_request(
+    request_type=analytics_data_api.GetAudienceListRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/audienceLists/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_audience_list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.GetAudienceListRequest,
+        dict,
+    ],
+)
+def test_get_audience_list_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/audienceLists/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.AudienceList(
+            name="name_value",
+            audience="audience_value",
+            audience_display_name="audience_display_name_value",
+            state=analytics_data_api.AudienceList.State.CREATING,
+            creation_quota_tokens_charged=3070,
+            row_count=992,
+            error_message="error_message_value",
+            percentage_completed=0.2106,
+            recurring_audience_list="recurring_audience_list_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.AudienceList.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_audience_list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.AudienceList)
+    assert response.name == "name_value"
+    assert response.audience == "audience_value"
+    assert response.audience_display_name == "audience_display_name_value"
+    assert response.state == analytics_data_api.AudienceList.State.CREATING
+    assert response.creation_quota_tokens_charged == 3070
+    assert response.row_count == 992
+    assert response.error_message == "error_message_value"
+    assert math.isclose(response.percentage_completed, 0.2106, rel_tol=1e-6)
+    assert response.recurring_audience_list == "recurring_audience_list_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_audience_list_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_get_audience_list"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_get_audience_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.GetAudienceListRequest.pb(
+            analytics_data_api.GetAudienceListRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.AudienceList.to_json(
+            analytics_data_api.AudienceList()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.GetAudienceListRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.AudienceList()
+
+        client.get_audience_list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_audience_lists_rest_bad_request(
+    request_type=analytics_data_api.ListAudienceListsRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_audience_lists(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.ListAudienceListsRequest,
+        dict,
+    ],
+)
+def test_list_audience_lists_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.ListAudienceListsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.ListAudienceListsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_audience_lists(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListAudienceListsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_audience_lists_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_list_audience_lists"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_list_audience_lists"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.ListAudienceListsRequest.pb(
+            analytics_data_api.ListAudienceListsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.ListAudienceListsResponse.to_json(
+            analytics_data_api.ListAudienceListsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.ListAudienceListsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.ListAudienceListsResponse()
+
+        client.list_audience_lists(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_recurring_audience_list_rest_bad_request(
+    request_type=analytics_data_api.CreateRecurringAudienceListRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_recurring_audience_list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.CreateRecurringAudienceListRequest,
+        dict,
+    ],
+)
+def test_create_recurring_audience_list_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request_init["recurring_audience_list"] = {
+        "name": "name_value",
+        "audience": "audience_value",
+        "audience_display_name": "audience_display_name_value",
+        "dimensions": [{"dimension_name": "dimension_name_value"}],
+        "active_days_remaining": 2213,
+        "audience_lists": ["audience_lists_value1", "audience_lists_value2"],
+        "webhook_notification": {
+            "uri": "uri_value",
+            "channel_token": "channel_token_value",
+        },
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = analytics_data_api.CreateRecurringAudienceListRequest.meta.fields[
+        "recurring_audience_list"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "recurring_audience_list"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["recurring_audience_list"][field])):
+                    del request_init["recurring_audience_list"][field][i][subfield]
+            else:
+                del request_init["recurring_audience_list"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.RecurringAudienceList(
+            name="name_value",
+            audience="audience_value",
+            audience_display_name="audience_display_name_value",
+            active_days_remaining=2213,
+            audience_lists=["audience_lists_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.RecurringAudienceList.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_recurring_audience_list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.RecurringAudienceList)
+    assert response.name == "name_value"
+    assert response.audience == "audience_value"
+    assert response.audience_display_name == "audience_display_name_value"
+    assert response.active_days_remaining == 2213
+    assert response.audience_lists == ["audience_lists_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_recurring_audience_list_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor,
+        "post_create_recurring_audience_list",
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor,
+        "pre_create_recurring_audience_list",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.CreateRecurringAudienceListRequest.pb(
+            analytics_data_api.CreateRecurringAudienceListRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.RecurringAudienceList.to_json(
+            analytics_data_api.RecurringAudienceList()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.CreateRecurringAudienceListRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.RecurringAudienceList()
+
+        client.create_recurring_audience_list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_recurring_audience_list_rest_bad_request(
+    request_type=analytics_data_api.GetRecurringAudienceListRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/recurringAudienceLists/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_recurring_audience_list(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.GetRecurringAudienceListRequest,
+        dict,
+    ],
+)
+def test_get_recurring_audience_list_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/recurringAudienceLists/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.RecurringAudienceList(
+            name="name_value",
+            audience="audience_value",
+            audience_display_name="audience_display_name_value",
+            active_days_remaining=2213,
+            audience_lists=["audience_lists_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.RecurringAudienceList.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_recurring_audience_list(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.RecurringAudienceList)
+    assert response.name == "name_value"
+    assert response.audience == "audience_value"
+    assert response.audience_display_name == "audience_display_name_value"
+    assert response.active_days_remaining == 2213
+    assert response.audience_lists == ["audience_lists_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_recurring_audience_list_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_get_recurring_audience_list"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_get_recurring_audience_list"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.GetRecurringAudienceListRequest.pb(
+            analytics_data_api.GetRecurringAudienceListRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.RecurringAudienceList.to_json(
+            analytics_data_api.RecurringAudienceList()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.GetRecurringAudienceListRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.RecurringAudienceList()
+
+        client.get_recurring_audience_list(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_recurring_audience_lists_rest_bad_request(
+    request_type=analytics_data_api.ListRecurringAudienceListsRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_recurring_audience_lists(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.ListRecurringAudienceListsRequest,
+        dict,
+    ],
+)
+def test_list_recurring_audience_lists_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.ListRecurringAudienceListsResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.ListRecurringAudienceListsResponse.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_recurring_audience_lists(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListRecurringAudienceListsPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_recurring_audience_lists_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor,
+        "post_list_recurring_audience_lists",
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor,
+        "pre_list_recurring_audience_lists",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.ListRecurringAudienceListsRequest.pb(
+            analytics_data_api.ListRecurringAudienceListsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.ListRecurringAudienceListsResponse.to_json(
+            analytics_data_api.ListRecurringAudienceListsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.ListRecurringAudienceListsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.ListRecurringAudienceListsResponse()
+
+        client.list_recurring_audience_lists(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_property_quotas_snapshot_rest_bad_request(
+    request_type=analytics_data_api.GetPropertyQuotasSnapshotRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/propertyQuotasSnapshot"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_property_quotas_snapshot(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.GetPropertyQuotasSnapshotRequest,
+        dict,
+    ],
+)
+def test_get_property_quotas_snapshot_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/propertyQuotasSnapshot"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.PropertyQuotasSnapshot(
+            name="name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.PropertyQuotasSnapshot.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_property_quotas_snapshot(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.PropertyQuotasSnapshot)
+    assert response.name == "name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_property_quotas_snapshot_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor,
+        "post_get_property_quotas_snapshot",
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_get_property_quotas_snapshot"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.GetPropertyQuotasSnapshotRequest.pb(
+            analytics_data_api.GetPropertyQuotasSnapshotRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.PropertyQuotasSnapshot.to_json(
+            analytics_data_api.PropertyQuotasSnapshot()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.GetPropertyQuotasSnapshotRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.PropertyQuotasSnapshot()
+
+        client.get_property_quotas_snapshot(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_create_report_task_rest_bad_request(
+    request_type=analytics_data_api.CreateReportTaskRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_report_task(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.CreateReportTaskRequest,
+        dict,
+    ],
+)
+def test_create_report_task_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request_init["report_task"] = {
+        "name": "name_value",
+        "report_definition": {
+            "dimensions": [
+                {
+                    "name": "name_value",
+                    "dimension_expression": {
+                        "lower_case": {"dimension_name": "dimension_name_value"},
+                        "upper_case": {},
+                        "concatenate": {
+                            "dimension_names": [
+                                "dimension_names_value1",
+                                "dimension_names_value2",
+                            ],
+                            "delimiter": "delimiter_value",
+                        },
+                    },
+                }
+            ],
+            "metrics": [
+                {
+                    "name": "name_value",
+                    "expression": "expression_value",
+                    "invisible": True,
+                }
+            ],
+            "date_ranges": [
+                {
+                    "start_date": "start_date_value",
+                    "end_date": "end_date_value",
+                    "name": "name_value",
+                }
+            ],
+            "dimension_filter": {
+                "and_group": {"expressions": {}},
+                "or_group": {},
+                "not_expression": {},
+                "filter": {
+                    "field_name": "field_name_value",
+                    "string_filter": {
+                        "match_type": 1,
+                        "value": "value_value",
+                        "case_sensitive": True,
+                    },
+                    "in_list_filter": {
+                        "values": ["values_value1", "values_value2"],
+                        "case_sensitive": True,
+                    },
+                    "numeric_filter": {
+                        "operation": 1,
+                        "value": {
+                            "int64_value": 1073,
+                            "double_value": 0.12710000000000002,
+                        },
+                    },
+                    "between_filter": {"from_value": {}, "to_value": {}},
+                    "empty_filter": {},
+                },
+            },
+            "metric_filter": {},
+            "offset": 647,
+            "limit": 543,
+            "metric_aggregations": [1],
+            "order_bys": [
+                {
+                    "metric": {"metric_name": "metric_name_value"},
+                    "dimension": {
+                        "dimension_name": "dimension_name_value",
+                        "order_type": 1,
+                    },
+                    "desc": True,
+                }
+            ],
+            "currency_code": "currency_code_value",
+            "cohort_spec": {
+                "cohorts": [
+                    {
+                        "name": "name_value",
+                        "dimension": "dimension_value",
+                        "date_range": {},
+                    }
+                ],
+                "cohorts_range": {
+                    "granularity": 1,
+                    "start_offset": 1300,
+                    "end_offset": 1053,
+                },
+                "cohort_report_settings": {"accumulate": True},
+            },
+            "keep_empty_rows": True,
+            "sampling_level": 1,
+        },
+        "report_metadata": {
+            "state": 1,
+            "begin_creating_time": {"seconds": 751, "nanos": 543},
+            "creation_quota_tokens_charged": 3070,
+            "task_row_count": 1522,
+            "error_message": "error_message_value",
+            "total_row_count": 1635,
+        },
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = analytics_data_api.CreateReportTaskRequest.meta.fields["report_task"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["report_task"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["report_task"][field])):
+                    del request_init["report_task"][field][i][subfield]
+            else:
+                del request_init["report_task"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_report_task(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_report_task_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_create_report_task"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_create_report_task"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.CreateReportTaskRequest.pb(
+            analytics_data_api.CreateReportTaskRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = analytics_data_api.CreateReportTaskRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+
+        client.create_report_task(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_query_report_task_rest_bad_request(
+    request_type=analytics_data_api.QueryReportTaskRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/reportTasks/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.query_report_task(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.QueryReportTaskRequest,
+        dict,
+    ],
+)
+def test_query_report_task_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/reportTasks/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.QueryReportTaskResponse(
+            row_count=992,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.QueryReportTaskResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.query_report_task(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.QueryReportTaskResponse)
+    assert response.row_count == 992
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_query_report_task_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_query_report_task"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_query_report_task"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.QueryReportTaskRequest.pb(
+            analytics_data_api.QueryReportTaskRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.QueryReportTaskResponse.to_json(
+            analytics_data_api.QueryReportTaskResponse()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.QueryReportTaskRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.QueryReportTaskResponse()
+
+        client.query_report_task(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_report_task_rest_bad_request(
+    request_type=analytics_data_api.GetReportTaskRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/reportTasks/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_report_task(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.GetReportTaskRequest,
+        dict,
+    ],
+)
+def test_get_report_task_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "properties/sample1/reportTasks/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.ReportTask(
+            name="name_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.ReportTask.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_report_task(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, analytics_data_api.ReportTask)
+    assert response.name == "name_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_report_task_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_get_report_task"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_get_report_task"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.GetReportTaskRequest.pb(
+            analytics_data_api.GetReportTaskRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.ReportTask.to_json(
+            analytics_data_api.ReportTask()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.GetReportTaskRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.ReportTask()
+
+        client.get_report_task(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_report_tasks_rest_bad_request(
+    request_type=analytics_data_api.ListReportTasksRequest,
+):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_report_tasks(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        analytics_data_api.ListReportTasksRequest,
+        dict,
+    ],
+)
+def test_list_report_tasks_rest_call_success(request_type):
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "properties/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = analytics_data_api.ListReportTasksResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = analytics_data_api.ListReportTasksResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_report_tasks(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListReportTasksPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_report_tasks_rest_interceptors(null_interceptor):
+    transport = transports.AlphaAnalyticsDataRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlphaAnalyticsDataRestInterceptor(),
+    )
+    client = AlphaAnalyticsDataClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "post_list_report_tasks"
+    ) as post, mock.patch.object(
+        transports.AlphaAnalyticsDataRestInterceptor, "pre_list_report_tasks"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = analytics_data_api.ListReportTasksRequest.pb(
+            analytics_data_api.ListReportTasksRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = analytics_data_api.ListReportTasksResponse.to_json(
+            analytics_data_api.ListReportTasksResponse()
+        )
+        req.return_value.content = return_value
+
+        request = analytics_data_api.ListReportTasksRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = analytics_data_api.ListReportTasksResponse()
+
+        client.list_report_tasks(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_initialize_client_w_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_run_funnel_report_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.run_funnel_report), "__call__"
+    ) as call:
+        client.run_funnel_report(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.RunFunnelReportRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_audience_list_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_audience_list), "__call__"
+    ) as call:
+        client.create_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.CreateAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_query_audience_list_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.query_audience_list), "__call__"
+    ) as call:
+        client.query_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.QueryAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_sheet_export_audience_list_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.sheet_export_audience_list), "__call__"
+    ) as call:
+        client.sheet_export_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.SheetExportAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_audience_list_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_audience_list), "__call__"
+    ) as call:
+        client.get_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_audience_lists_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_audience_lists), "__call__"
+    ) as call:
+        client.list_audience_lists(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.ListAudienceListsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_recurring_audience_list_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_recurring_audience_list), "__call__"
+    ) as call:
+        client.create_recurring_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.CreateRecurringAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_recurring_audience_list_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_recurring_audience_list), "__call__"
+    ) as call:
+        client.get_recurring_audience_list(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetRecurringAudienceListRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_recurring_audience_lists_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_recurring_audience_lists), "__call__"
+    ) as call:
+        client.list_recurring_audience_lists(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.ListRecurringAudienceListsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_property_quotas_snapshot_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_property_quotas_snapshot), "__call__"
+    ) as call:
+        client.get_property_quotas_snapshot(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetPropertyQuotasSnapshotRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_report_task_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_report_task), "__call__"
+    ) as call:
+        client.create_report_task(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.CreateReportTaskRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_query_report_task_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.query_report_task), "__call__"
+    ) as call:
+        client.query_report_task(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.QueryReportTaskRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_report_task_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_report_task), "__call__") as call:
+        client.get_report_task(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.GetReportTaskRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_report_tasks_empty_call_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_report_tasks), "__call__"
+    ) as call:
+        client.list_report_tasks(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = analytics_data_api.ListReportTasksRequest()
+
+        assert args[0] == request_msg
+
+
+def test_alpha_analytics_data_rest_lro_client():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    transport = client.transport
+
+    # Ensure that we have an api-core operations client.
+    assert isinstance(
+        transport.operations_client,
+        operations_v1.AbstractOperationsClient,
+    )
+
+    # Ensure that subsequent calls to the property send the exact same object.
+    assert transport.operations_client is transport.operations_client
 
 
 def test_transport_grpc_default():
@@ -11481,6 +12560,7 @@ def test_alpha_analytics_data_base_transport():
         "create_recurring_audience_list",
         "get_recurring_audience_list",
         "list_recurring_audience_lists",
+        "get_property_quotas_snapshot",
         "create_report_task",
         "query_report_task",
         "get_report_task",
@@ -11711,23 +12791,6 @@ def test_alpha_analytics_data_http_transport_client_cert_source_for_mtls():
         mock_configure_mtls_channel.assert_called_once_with(client_cert_source_callback)
 
 
-def test_alpha_analytics_data_rest_lro_client():
-    client = AlphaAnalyticsDataClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    transport = client.transport
-
-    # Ensure that we have a api-core operations client.
-    assert isinstance(
-        transport.operations_client,
-        operations_v1.AbstractOperationsClient,
-    )
-
-    # Ensure that subsequent calls to the property send the exact same object.
-    assert transport.operations_client is transport.operations_client
-
-
 @pytest.mark.parametrize(
     "transport_name",
     [
@@ -11817,6 +12880,9 @@ def test_alpha_analytics_data_client_transport_session_collision(transport_name)
     assert session1 != session2
     session1 = client1.transport.list_recurring_audience_lists._session
     session2 = client2.transport.list_recurring_audience_lists._session
+    assert session1 != session2
+    session1 = client1.transport.get_property_quotas_snapshot._session
+    session2 = client2.transport.get_property_quotas_snapshot._session
     assert session1 != session2
     session1 = client1.transport.create_report_task._session
     session2 = client2.transport.create_report_task._session
@@ -12015,9 +13081,29 @@ def test_parse_audience_list_path():
     assert expected == actual
 
 
-def test_recurring_audience_list_path():
+def test_property_quotas_snapshot_path():
     property = "oyster"
-    recurring_audience_list = "nudibranch"
+    expected = "properties/{property}/propertyQuotasSnapshot".format(
+        property=property,
+    )
+    actual = AlphaAnalyticsDataClient.property_quotas_snapshot_path(property)
+    assert expected == actual
+
+
+def test_parse_property_quotas_snapshot_path():
+    expected = {
+        "property": "nudibranch",
+    }
+    path = AlphaAnalyticsDataClient.property_quotas_snapshot_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = AlphaAnalyticsDataClient.parse_property_quotas_snapshot_path(path)
+    assert expected == actual
+
+
+def test_recurring_audience_list_path():
+    property = "cuttlefish"
+    recurring_audience_list = "mussel"
     expected = (
         "properties/{property}/recurringAudienceLists/{recurring_audience_list}".format(
             property=property,
@@ -12032,8 +13118,8 @@ def test_recurring_audience_list_path():
 
 def test_parse_recurring_audience_list_path():
     expected = {
-        "property": "cuttlefish",
-        "recurring_audience_list": "mussel",
+        "property": "winkle",
+        "recurring_audience_list": "nautilus",
     }
     path = AlphaAnalyticsDataClient.recurring_audience_list_path(**expected)
 
@@ -12043,8 +13129,8 @@ def test_parse_recurring_audience_list_path():
 
 
 def test_report_task_path():
-    property = "winkle"
-    report_task = "nautilus"
+    property = "scallop"
+    report_task = "abalone"
     expected = "properties/{property}/reportTasks/{report_task}".format(
         property=property,
         report_task=report_task,
@@ -12055,8 +13141,8 @@ def test_report_task_path():
 
 def test_parse_report_task_path():
     expected = {
-        "property": "scallop",
-        "report_task": "abalone",
+        "property": "squid",
+        "report_task": "clam",
     }
     path = AlphaAnalyticsDataClient.report_task_path(**expected)
 
@@ -12066,7 +13152,7 @@ def test_parse_report_task_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "squid"
+    billing_account = "whelk"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -12076,7 +13162,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "clam",
+        "billing_account": "octopus",
     }
     path = AlphaAnalyticsDataClient.common_billing_account_path(**expected)
 
@@ -12086,7 +13172,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "whelk"
+    folder = "oyster"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -12096,7 +13182,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "octopus",
+        "folder": "nudibranch",
     }
     path = AlphaAnalyticsDataClient.common_folder_path(**expected)
 
@@ -12106,7 +13192,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "oyster"
+    organization = "cuttlefish"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -12116,7 +13202,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "nudibranch",
+        "organization": "mussel",
     }
     path = AlphaAnalyticsDataClient.common_organization_path(**expected)
 
@@ -12126,7 +13212,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "cuttlefish"
+    project = "winkle"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -12136,7 +13222,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "mussel",
+        "project": "nautilus",
     }
     path = AlphaAnalyticsDataClient.common_project_path(**expected)
 
@@ -12146,8 +13232,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "winkle"
-    location = "nautilus"
+    project = "scallop"
+    location = "abalone"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -12158,8 +13244,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "scallop",
-        "location": "abalone",
+        "project": "squid",
+        "location": "clam",
     }
     path = AlphaAnalyticsDataClient.common_location_path(**expected)
 
@@ -12191,36 +13277,41 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = AlphaAnalyticsDataAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+def test_transport_close_grpc():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = AlphaAnalyticsDataAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
         async with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = AlphaAnalyticsDataClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = AlphaAnalyticsDataClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

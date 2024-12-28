@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import inspect
+import json
+import logging as std_logging
+import pickle
 from typing import Awaitable, Callable, Dict, Optional, Sequence, Tuple, Union
 import warnings
 
@@ -23,13 +27,92 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
+from google.protobuf.json_format import MessageToJson
+import google.protobuf.message
 import grpc  # type: ignore
 from grpc.experimental import aio  # type: ignore
+import proto  # type: ignore
 
 from google.cloud.securitycentermanagement_v1.types import security_center_management
 
 from .base import DEFAULT_CLIENT_INFO, SecurityCenterManagementTransport
 from .grpc import SecurityCenterManagementGrpcTransport
+
+try:
+    from google.api_core import client_logging  # type: ignore
+
+    CLIENT_LOGGING_SUPPORTED = True  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
+    CLIENT_LOGGING_SUPPORTED = False
+
+_LOGGER = std_logging.getLogger(__name__)
+
+
+class _LoggingClientAIOInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor
+):  # pragma: NO COVER
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        logging_enabled = CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+            std_logging.DEBUG
+        )
+        if logging_enabled:  # pragma: NO COVER
+            request_metadata = client_call_details.metadata
+            if isinstance(request, proto.Message):
+                request_payload = type(request).to_json(request)
+            elif isinstance(request, google.protobuf.message.Message):
+                request_payload = MessageToJson(request)
+            else:
+                request_payload = f"{type(request).__name__}: {pickle.dumps(request)}"
+
+            request_metadata = {
+                key: value.decode("utf-8") if isinstance(value, bytes) else value
+                for key, value in request_metadata
+            }
+            grpc_request = {
+                "payload": request_payload,
+                "requestMethod": "grpc",
+                "metadata": dict(request_metadata),
+            }
+            _LOGGER.debug(
+                f"Sending request for {client_call_details.method}",
+                extra={
+                    "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                    "rpcName": str(client_call_details.method),
+                    "request": grpc_request,
+                    "metadata": grpc_request["metadata"],
+                },
+            )
+        response = await continuation(client_call_details, request)
+        if logging_enabled:  # pragma: NO COVER
+            response_metadata = await response.trailing_metadata()
+            # Convert gRPC metadata `<class 'grpc.aio._metadata.Metadata'>` to list of tuples
+            metadata = (
+                dict([(k, str(v)) for k, v in response_metadata])
+                if response_metadata
+                else None
+            )
+            result = await response
+            if isinstance(result, proto.Message):
+                response_payload = type(result).to_json(result)
+            elif isinstance(result, google.protobuf.message.Message):
+                response_payload = MessageToJson(result)
+            else:
+                response_payload = f"{type(result).__name__}: {pickle.dumps(result)}"
+            grpc_response = {
+                "payload": response_payload,
+                "metadata": metadata,
+                "status": "OK",
+            }
+            _LOGGER.debug(
+                f"Received response to rpc {client_call_details.method}.",
+                extra={
+                    "serviceName": "google.cloud.securitycentermanagement.v1.SecurityCenterManagement",
+                    "rpcName": str(client_call_details.method),
+                    "response": grpc_response,
+                    "metadata": grpc_response["metadata"],
+                },
+            )
+        return response
 
 
 class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTransport):
@@ -227,7 +310,13 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 ],
             )
 
-        # Wrap messages. This must be done after self._grpc_channel exists
+        self._interceptor = _LoggingClientAIOInterceptor()
+        self._grpc_channel._unary_unary_interceptors.append(self._interceptor)
+        self._logged_channel = self._grpc_channel
+        self._wrap_with_kind = (
+            "kind" in inspect.signature(gapic_v1.method_async.wrap_method).parameters
+        )
+        # Wrap messages. This must be done after self._logged_channel exists
         self._prep_wrapped_messages(client_info)
 
     @property
@@ -255,10 +344,11 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         analytics custom modules method over gRPC.
 
         Returns a list of all
-        EffectiveSecurityHealthAnalyticsCustomModules for the
-        given parent. This includes resident modules defined at
-        the scope of the parent, and inherited modules,
-        inherited from CRM ancestors (no descendants).
+        [EffectiveSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.EffectiveSecurityHealthAnalyticsCustomModule]
+        resources for the given parent. This includes resident modules
+        defined at the scope of the parent, and inherited modules,
+        inherited from ancestor organizations, folders, and projects (no
+        descendants).
 
         Returns:
             Callable[[~.ListEffectiveSecurityHealthAnalyticsCustomModulesRequest],
@@ -273,7 +363,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "list_effective_security_health_analytics_custom_modules" not in self._stubs:
             self._stubs[
                 "list_effective_security_health_analytics_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/ListEffectiveSecurityHealthAnalyticsCustomModules",
                 request_serializer=security_center_management.ListEffectiveSecurityHealthAnalyticsCustomModulesRequest.serialize,
                 response_deserializer=security_center_management.ListEffectiveSecurityHealthAnalyticsCustomModulesResponse.deserialize,
@@ -295,7 +385,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         analytics custom module method over gRPC.
 
         Gets details of a single
-        EffectiveSecurityHealthAnalyticsCustomModule.
+        [EffectiveSecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.EffectiveSecurityHealthAnalyticsCustomModule].
 
         Returns:
             Callable[[~.GetEffectiveSecurityHealthAnalyticsCustomModuleRequest],
@@ -310,7 +400,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "get_effective_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "get_effective_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/GetEffectiveSecurityHealthAnalyticsCustomModule",
                 request_serializer=security_center_management.GetEffectiveSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.EffectiveSecurityHealthAnalyticsCustomModule.deserialize,
@@ -330,10 +420,11 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         custom modules method over gRPC.
 
         Returns a list of all
-        SecurityHealthAnalyticsCustomModules for the given
-        parent. This includes resident modules defined at the
-        scope of the parent, and inherited modules, inherited
-        from CRM ancestors (no descendants).
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        resources for the given parent. This includes resident modules
+        defined at the scope of the parent, and inherited modules,
+        inherited from ancestor organizations, folders, and projects (no
+        descendants).
 
         Returns:
             Callable[[~.ListSecurityHealthAnalyticsCustomModulesRequest],
@@ -348,7 +439,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "list_security_health_analytics_custom_modules" not in self._stubs:
             self._stubs[
                 "list_security_health_analytics_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/ListSecurityHealthAnalyticsCustomModules",
                 request_serializer=security_center_management.ListSecurityHealthAnalyticsCustomModulesRequest.serialize,
                 response_deserializer=security_center_management.ListSecurityHealthAnalyticsCustomModulesResponse.deserialize,
@@ -370,8 +461,9 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         health analytics custom modules method over gRPC.
 
         Returns a list of all resident
-        SecurityHealthAnalyticsCustomModules under the given CRM
-        parent and all of the parent's CRM descendants.
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        resources under the given organization, folder, or project and
+        all of its descendants.
 
         Returns:
             Callable[[~.ListDescendantSecurityHealthAnalyticsCustomModulesRequest],
@@ -389,7 +481,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         ):
             self._stubs[
                 "list_descendant_security_health_analytics_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/ListDescendantSecurityHealthAnalyticsCustomModules",
                 request_serializer=security_center_management.ListDescendantSecurityHealthAnalyticsCustomModulesRequest.serialize,
                 response_deserializer=security_center_management.ListDescendantSecurityHealthAnalyticsCustomModulesResponse.deserialize,
@@ -406,7 +498,8 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         r"""Return a callable for the get security health analytics
         custom module method over gRPC.
 
-        Retrieves a SecurityHealthAnalyticsCustomModule.
+        Retrieves a
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule].
 
         Returns:
             Callable[[~.GetSecurityHealthAnalyticsCustomModuleRequest],
@@ -421,7 +514,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "get_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "get_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/GetSecurityHealthAnalyticsCustomModule",
                 request_serializer=security_center_management.GetSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.SecurityHealthAnalyticsCustomModule.deserialize,
@@ -439,11 +532,11 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         analytics custom module method over gRPC.
 
         Creates a resident
-        SecurityHealthAnalyticsCustomModule at the scope of the
-        given CRM parent, and also creates inherited
-        SecurityHealthAnalyticsCustomModules for all CRM
-        descendants of the given parent. These modules are
-        enabled by default.
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        at the scope of the given organization, folder, or project, and
+        also creates inherited ``SecurityHealthAnalyticsCustomModule``
+        resources for all folders and projects that are descendants of
+        the given parent. These modules are enabled by default.
 
         Returns:
             Callable[[~.CreateSecurityHealthAnalyticsCustomModuleRequest],
@@ -458,7 +551,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "create_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "create_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/CreateSecurityHealthAnalyticsCustomModule",
                 request_serializer=security_center_management.CreateSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.SecurityHealthAnalyticsCustomModule.deserialize,
@@ -475,13 +568,13 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         r"""Return a callable for the update security health
         analytics custom module method over gRPC.
 
-        Updates the SecurityHealthAnalyticsCustomModule under
-        the given name based on the given update mask. Updating
-        the enablement state is supported on both resident and
-        inherited modules (though resident modules cannot have
-        an enablement state of "inherited"). Updating the
-        display name and custom config of a module is supported
-        on resident modules only.
+        Updates the
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        under the given name based on the given update mask. Updating
+        the enablement state is supported on both resident and inherited
+        modules (though resident modules cannot have an enablement state
+        of "inherited"). Updating the display name and custom
+        configuration of a module is supported on resident modules only.
 
         Returns:
             Callable[[~.UpdateSecurityHealthAnalyticsCustomModuleRequest],
@@ -496,7 +589,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "update_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "update_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/UpdateSecurityHealthAnalyticsCustomModule",
                 request_serializer=security_center_management.UpdateSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.SecurityHealthAnalyticsCustomModule.deserialize,
@@ -514,9 +607,9 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         analytics custom module method over gRPC.
 
         Deletes the specified
-        SecurityHealthAnalyticsCustomModule and all of its
-        descendants in the CRM hierarchy. This method is only
-        supported for resident custom modules.
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        and all of its descendants in the resource hierarchy. This
+        method is only supported for resident custom modules.
 
         Returns:
             Callable[[~.DeleteSecurityHealthAnalyticsCustomModuleRequest],
@@ -531,7 +624,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "delete_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "delete_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/DeleteSecurityHealthAnalyticsCustomModule",
                 request_serializer=security_center_management.DeleteSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -550,8 +643,9 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         r"""Return a callable for the simulate security health
         analytics custom module method over gRPC.
 
-        Simulates a given SecurityHealthAnalyticsCustomModule
-        and Resource.
+        Simulates the result of using a
+        [SecurityHealthAnalyticsCustomModule][google.cloud.securitycentermanagement.v1.SecurityHealthAnalyticsCustomModule]
+        to check a resource.
 
         Returns:
             Callable[[~.SimulateSecurityHealthAnalyticsCustomModuleRequest],
@@ -566,7 +660,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "simulate_security_health_analytics_custom_module" not in self._stubs:
             self._stubs[
                 "simulate_security_health_analytics_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/SimulateSecurityHealthAnalyticsCustomModule",
                 request_serializer=security_center_management.SimulateSecurityHealthAnalyticsCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.SimulateSecurityHealthAnalyticsCustomModuleResponse.deserialize,
@@ -605,7 +699,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "list_effective_event_threat_detection_custom_modules" not in self._stubs:
             self._stubs[
                 "list_effective_event_threat_detection_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/ListEffectiveEventThreatDetectionCustomModules",
                 request_serializer=security_center_management.ListEffectiveEventThreatDetectionCustomModulesRequest.serialize,
                 response_deserializer=security_center_management.ListEffectiveEventThreatDetectionCustomModulesResponse.deserialize,
@@ -624,14 +718,20 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         r"""Return a callable for the get effective event threat
         detection custom module method over gRPC.
 
-        Gets an effective ETD custom module. Retrieves the effective
-        module at the given level. The difference between an
-        EffectiveCustomModule and a CustomModule is that the fields for
-        an EffectiveCustomModule are computed from ancestors if needed.
-        For example, the enablement_state for a CustomModule can be
-        either ENABLED, DISABLED, or INHERITED. Where as the
-        enablement_state for an EffectiveCustomModule is always computed
-        to ENABLED or DISABLED (the effective enablement_state).
+        Gets the effective Event Threat Detection custom module at the
+        given level.
+
+        The difference between an
+        [EffectiveEventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.EffectiveEventThreatDetectionCustomModule]
+        and an
+        [EventThreatDetectionCustomModule][google.cloud.securitycentermanagement.v1.EventThreatDetectionCustomModule]
+        is that the fields for an
+        ``EffectiveEventThreatDetectionCustomModule`` are computed from
+        ancestors if needed. For example, the enablement state for an
+        ``EventThreatDetectionCustomModule`` can be ``ENABLED``,
+        ``DISABLED``, or ``INHERITED``. In contrast, the enablement
+        state for an ``EffectiveEventThreatDetectionCustomModule`` is
+        always computed as ``ENABLED`` or ``DISABLED``.
 
         Returns:
             Callable[[~.GetEffectiveEventThreatDetectionCustomModuleRequest],
@@ -646,7 +746,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "get_effective_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "get_effective_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/GetEffectiveEventThreatDetectionCustomModule",
                 request_serializer=security_center_management.GetEffectiveEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.EffectiveEventThreatDetectionCustomModule.deserialize,
@@ -666,9 +766,9 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         custom modules method over gRPC.
 
         Lists all Event Threat Detection custom modules for
-        the given Resource Manager parent. This includes
-        resident modules defined at the scope of the parent
-        along with modules inherited from ancestors.
+        the given organization, folder, or project. This
+        includes resident modules defined at the scope of the
+        parent along with modules inherited from ancestors.
 
         Returns:
             Callable[[~.ListEventThreatDetectionCustomModulesRequest],
@@ -683,7 +783,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "list_event_threat_detection_custom_modules" not in self._stubs:
             self._stubs[
                 "list_event_threat_detection_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/ListEventThreatDetectionCustomModules",
                 request_serializer=security_center_management.ListEventThreatDetectionCustomModulesRequest.serialize,
                 response_deserializer=security_center_management.ListEventThreatDetectionCustomModulesResponse.deserialize,
@@ -705,8 +805,8 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         detection custom modules method over gRPC.
 
         Lists all resident Event Threat Detection custom
-        modules under the given Resource Manager parent and its
-        descendants.
+        modules for the given organization, folder, or project
+        and its descendants.
 
         Returns:
             Callable[[~.ListDescendantEventThreatDetectionCustomModulesRequest],
@@ -721,7 +821,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "list_descendant_event_threat_detection_custom_modules" not in self._stubs:
             self._stubs[
                 "list_descendant_event_threat_detection_custom_modules"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/ListDescendantEventThreatDetectionCustomModules",
                 request_serializer=security_center_management.ListDescendantEventThreatDetectionCustomModulesRequest.serialize,
                 response_deserializer=security_center_management.ListDescendantEventThreatDetectionCustomModulesResponse.deserialize,
@@ -753,7 +853,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "get_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "get_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/GetEventThreatDetectionCustomModule",
                 request_serializer=security_center_management.GetEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.EventThreatDetectionCustomModule.deserialize,
@@ -771,9 +871,9 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         custom module method over gRPC.
 
         Creates a resident Event Threat Detection custom
-        module at the scope of the given Resource Manager
-        parent, and also creates inherited custom modules for
-        all descendants of the given parent. These modules are
+        module at the scope of the given organization, folder,
+        or project, and creates inherited custom modules for all
+        descendants of the given parent. These modules are
         enabled by default.
 
         Returns:
@@ -789,7 +889,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "create_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "create_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/CreateEventThreatDetectionCustomModule",
                 request_serializer=security_center_management.CreateEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.EventThreatDetectionCustomModule.deserialize,
@@ -828,7 +928,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "update_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "update_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/UpdateEventThreatDetectionCustomModule",
                 request_serializer=security_center_management.UpdateEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.EventThreatDetectionCustomModule.deserialize,
@@ -846,9 +946,9 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         custom module method over gRPC.
 
         Deletes the specified Event Threat Detection custom
-        module and all of its descendants in the Resource
-        Manager hierarchy. This method is only supported for
-        resident custom modules.
+        module and all of its descendants in the resource
+        hierarchy. This method is only supported for resident
+        custom modules.
 
         Returns:
             Callable[[~.DeleteEventThreatDetectionCustomModuleRequest],
@@ -863,7 +963,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "delete_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "delete_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/DeleteEventThreatDetectionCustomModule",
                 request_serializer=security_center_management.DeleteEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=empty_pb2.Empty.FromString,
@@ -898,7 +998,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "validate_event_threat_detection_custom_module" not in self._stubs:
             self._stubs[
                 "validate_event_threat_detection_custom_module"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/ValidateEventThreatDetectionCustomModule",
                 request_serializer=security_center_management.ValidateEventThreatDetectionCustomModuleRequest.serialize,
                 response_deserializer=security_center_management.ValidateEventThreatDetectionCustomModuleResponse.deserialize,
@@ -928,7 +1028,9 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_security_center_service" not in self._stubs:
-            self._stubs["get_security_center_service"] = self.grpc_channel.unary_unary(
+            self._stubs[
+                "get_security_center_service"
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/GetSecurityCenterService",
                 request_serializer=security_center_management.GetSecurityCenterServiceRequest.serialize,
                 response_deserializer=security_center_management.SecurityCenterService.deserialize,
@@ -960,7 +1062,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "list_security_center_services" not in self._stubs:
             self._stubs[
                 "list_security_center_services"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/ListSecurityCenterServices",
                 request_serializer=security_center_management.ListSecurityCenterServicesRequest.serialize,
                 response_deserializer=security_center_management.ListSecurityCenterServicesResponse.deserialize,
@@ -992,7 +1094,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         if "update_security_center_service" not in self._stubs:
             self._stubs[
                 "update_security_center_service"
-            ] = self.grpc_channel.unary_unary(
+            ] = self._logged_channel.unary_unary(
                 "/google.cloud.securitycentermanagement.v1.SecurityCenterManagement/UpdateSecurityCenterService",
                 request_serializer=security_center_management.UpdateSecurityCenterServiceRequest.serialize,
                 response_deserializer=security_center_management.SecurityCenterService.deserialize,
@@ -1002,7 +1104,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
         self._wrapped_methods = {
-            self.list_effective_security_health_analytics_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_effective_security_health_analytics_custom_modules: self._wrap_method(
                 self.list_effective_security_health_analytics_custom_modules,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1017,7 +1119,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_effective_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.get_effective_security_health_analytics_custom_module: self._wrap_method(
                 self.get_effective_security_health_analytics_custom_module,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1032,7 +1134,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_security_health_analytics_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_security_health_analytics_custom_modules: self._wrap_method(
                 self.list_security_health_analytics_custom_modules,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1047,7 +1149,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_descendant_security_health_analytics_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_descendant_security_health_analytics_custom_modules: self._wrap_method(
                 self.list_descendant_security_health_analytics_custom_modules,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1062,7 +1164,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.get_security_health_analytics_custom_module: self._wrap_method(
                 self.get_security_health_analytics_custom_module,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1077,22 +1179,22 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.create_security_health_analytics_custom_module: self._wrap_method(
                 self.create_security_health_analytics_custom_module,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.update_security_health_analytics_custom_module: self._wrap_method(
                 self.update_security_health_analytics_custom_module,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.delete_security_health_analytics_custom_module: self._wrap_method(
                 self.delete_security_health_analytics_custom_module,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.simulate_security_health_analytics_custom_module: gapic_v1.method_async.wrap_method(
+            self.simulate_security_health_analytics_custom_module: self._wrap_method(
                 self.simulate_security_health_analytics_custom_module,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1107,7 +1209,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_effective_event_threat_detection_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_effective_event_threat_detection_custom_modules: self._wrap_method(
                 self.list_effective_event_threat_detection_custom_modules,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1122,7 +1224,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_effective_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.get_effective_event_threat_detection_custom_module: self._wrap_method(
                 self.get_effective_event_threat_detection_custom_module,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1137,7 +1239,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_event_threat_detection_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_event_threat_detection_custom_modules: self._wrap_method(
                 self.list_event_threat_detection_custom_modules,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1152,7 +1254,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.list_descendant_event_threat_detection_custom_modules: gapic_v1.method_async.wrap_method(
+            self.list_descendant_event_threat_detection_custom_modules: self._wrap_method(
                 self.list_descendant_event_threat_detection_custom_modules,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1167,7 +1269,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.get_event_threat_detection_custom_module: self._wrap_method(
                 self.get_event_threat_detection_custom_module,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1182,22 +1284,22 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.create_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.create_event_threat_detection_custom_module: self._wrap_method(
                 self.create_event_threat_detection_custom_module,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.update_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.update_event_threat_detection_custom_module: self._wrap_method(
                 self.update_event_threat_detection_custom_module,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.delete_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.delete_event_threat_detection_custom_module: self._wrap_method(
                 self.delete_event_threat_detection_custom_module,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.validate_event_threat_detection_custom_module: gapic_v1.method_async.wrap_method(
+            self.validate_event_threat_detection_custom_module: self._wrap_method(
                 self.validate_event_threat_detection_custom_module,
                 default_retry=retries.AsyncRetry(
                     initial=0.1,
@@ -1212,25 +1314,44 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
                 default_timeout=60.0,
                 client_info=client_info,
             ),
-            self.get_security_center_service: gapic_v1.method_async.wrap_method(
+            self.get_security_center_service: self._wrap_method(
                 self.get_security_center_service,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.list_security_center_services: gapic_v1.method_async.wrap_method(
+            self.list_security_center_services: self._wrap_method(
                 self.list_security_center_services,
                 default_timeout=None,
                 client_info=client_info,
             ),
-            self.update_security_center_service: gapic_v1.method_async.wrap_method(
+            self.update_security_center_service: self._wrap_method(
                 self.update_security_center_service,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_location: self._wrap_method(
+                self.get_location,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_locations: self._wrap_method(
+                self.list_locations,
                 default_timeout=None,
                 client_info=client_info,
             ),
         }
 
+    def _wrap_method(self, func, *args, **kwargs):
+        if self._wrap_with_kind:  # pragma: NO COVER
+            kwargs["kind"] = self.kind
+        return gapic_v1.method_async.wrap_method(func, *args, **kwargs)
+
     def close(self):
-        return self.grpc_channel.close()
+        return self._logged_channel.close()
+
+    @property
+    def kind(self) -> str:
+        return "grpc_asyncio"
 
     @property
     def list_locations(
@@ -1244,7 +1365,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "list_locations" not in self._stubs:
-            self._stubs["list_locations"] = self.grpc_channel.unary_unary(
+            self._stubs["list_locations"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/ListLocations",
                 request_serializer=locations_pb2.ListLocationsRequest.SerializeToString,
                 response_deserializer=locations_pb2.ListLocationsResponse.FromString,
@@ -1261,7 +1382,7 @@ class SecurityCenterManagementGrpcAsyncIOTransport(SecurityCenterManagementTrans
         # gRPC handles serialization and deserialization, so we just need
         # to pass in the functions for each.
         if "get_location" not in self._stubs:
-            self._stubs["get_location"] = self.grpc_channel.unary_unary(
+            self._stubs["get_location"] = self._logged_channel.unary_unary(
                 "/google.cloud.location.Locations/GetLocation",
                 request_serializer=locations_pb2.GetLocationRequest.SerializeToString,
                 response_deserializer=locations_pb2.Location.FromString,

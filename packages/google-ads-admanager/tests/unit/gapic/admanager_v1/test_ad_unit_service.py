@@ -22,22 +22,12 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.longrunning import operations_pb2  # type: ignore
-from google.oauth2 import service_account
-from google.protobuf import duration_pb2  # type: ignore
+from google.api_core import api_core_version
 from google.protobuf import json_format
-from google.protobuf import timestamp_pb2  # type: ignore
 import grpc
 from grpc.experimental import aio
 from proto.marshal.rules import wrappers
@@ -46,6 +36,25 @@ import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
 
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.longrunning import operations_pb2  # type: ignore
+from google.oauth2 import service_account
+from google.protobuf import duration_pb2  # type: ignore
+from google.protobuf import timestamp_pb2  # type: ignore
+
 from google.ads.admanager_v1.services.ad_unit_service import (
     AdUnitServiceClient,
     pagers,
@@ -53,14 +62,28 @@ from google.ads.admanager_v1.services.ad_unit_service import (
 )
 from google.ads.admanager_v1.types import (
     ad_unit_enums,
+    ad_unit_messages,
     ad_unit_service,
-    ad_unit_size,
     applied_label,
 )
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -291,85 +314,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         AdUnitServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (AdUnitServiceClient, transports.AdUnitServiceRestTransport, "rest"),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -955,86 +899,6 @@ def test_ad_unit_service_client_client_options_credentials_file(
         )
 
 
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        ad_unit_service.GetAdUnitRequest,
-        dict,
-    ],
-)
-def test_get_ad_unit_rest(request_type):
-    client = AdUnitServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "networks/sample1/adUnits/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = ad_unit_service.AdUnit(
-            name="name_value",
-            ad_unit_id=1040,
-            parent_ad_unit="parent_ad_unit_value",
-            display_name="display_name_value",
-            ad_unit_code="ad_unit_code_value",
-            status=ad_unit_service.AdUnit.Status.ACTIVE,
-            target_window=ad_unit_service.TargetWindowEnum.TargetWindow.TOP,
-            applied_teams=["applied_teams_value"],
-            teams=["teams_value"],
-            description="description_value",
-            explicitly_targeted=True,
-            has_children=True,
-            external_set_top_box_channel_id="external_set_top_box_channel_id_value",
-            ctv_application_id=1900,
-            smart_size_mode=ad_unit_service.SmartSizeModeEnum.SmartSizeMode.NONE,
-            applied_adsense_enabled=ad_unit_enums.AppliedAdsenseEnabledEnum.AppliedAdsenseEnabled.TRUE,
-            effective_adsense_enabled=True,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = ad_unit_service.AdUnit.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_ad_unit(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, ad_unit_service.AdUnit)
-    assert response.name == "name_value"
-    assert response.ad_unit_id == 1040
-    assert response.parent_ad_unit == "parent_ad_unit_value"
-    assert response.display_name == "display_name_value"
-    assert response.ad_unit_code == "ad_unit_code_value"
-    assert response.status == ad_unit_service.AdUnit.Status.ACTIVE
-    assert response.target_window == ad_unit_service.TargetWindowEnum.TargetWindow.TOP
-    assert response.applied_teams == ["applied_teams_value"]
-    assert response.teams == ["teams_value"]
-    assert response.description == "description_value"
-    assert response.explicitly_targeted is True
-    assert response.has_children is True
-    assert (
-        response.external_set_top_box_channel_id
-        == "external_set_top_box_channel_id_value"
-    )
-    assert response.ctv_application_id == 1900
-    assert (
-        response.smart_size_mode == ad_unit_service.SmartSizeModeEnum.SmartSizeMode.NONE
-    )
-    assert (
-        response.applied_adsense_enabled
-        == ad_unit_enums.AppliedAdsenseEnabledEnum.AppliedAdsenseEnabled.TRUE
-    )
-    assert response.effective_adsense_enabled is True
-
-
 def test_get_ad_unit_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -1111,7 +975,7 @@ def test_get_ad_unit_rest_required_fields(
     request = request_type(**request_init)
 
     # Designate an appropriate value for the returned response.
-    return_value = ad_unit_service.AdUnit()
+    return_value = ad_unit_messages.AdUnit()
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(Session, "request") as req:
         # We need to mock transcode() because providing default values
@@ -1132,11 +996,12 @@ def test_get_ad_unit_rest_required_fields(
             response_value.status_code = 200
 
             # Convert return value to protobuf type
-            return_value = ad_unit_service.AdUnit.pb(return_value)
+            return_value = ad_unit_messages.AdUnit.pb(return_value)
             json_return_value = json_format.MessageToJson(return_value)
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_ad_unit(request)
 
@@ -1154,87 +1019,6 @@ def test_get_ad_unit_rest_unset_required_fields():
     assert set(unset_fields) == (set(()) & set(("name",)))
 
 
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_ad_unit_rest_interceptors(null_interceptor):
-    transport = transports.AdUnitServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AdUnitServiceRestInterceptor(),
-    )
-    client = AdUnitServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AdUnitServiceRestInterceptor, "post_get_ad_unit"
-    ) as post, mock.patch.object(
-        transports.AdUnitServiceRestInterceptor, "pre_get_ad_unit"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = ad_unit_service.GetAdUnitRequest.pb(
-            ad_unit_service.GetAdUnitRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = ad_unit_service.AdUnit.to_json(
-            ad_unit_service.AdUnit()
-        )
-
-        request = ad_unit_service.GetAdUnitRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = ad_unit_service.AdUnit()
-
-        client.get_ad_unit(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_ad_unit_rest_bad_request(
-    transport: str = "rest", request_type=ad_unit_service.GetAdUnitRequest
-):
-    client = AdUnitServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "networks/sample1/adUnits/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_ad_unit(request)
-
-
 def test_get_ad_unit_rest_flattened():
     client = AdUnitServiceClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -1244,7 +1028,7 @@ def test_get_ad_unit_rest_flattened():
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = ad_unit_service.AdUnit()
+        return_value = ad_unit_messages.AdUnit()
 
         # get arguments that satisfy an http rule for this method
         sample_request = {"name": "networks/sample1/adUnits/sample2"}
@@ -1259,10 +1043,11 @@ def test_get_ad_unit_rest_flattened():
         response_value = Response()
         response_value.status_code = 200
         # Convert return value to protobuf type
-        return_value = ad_unit_service.AdUnit.pb(return_value)
+        return_value = ad_unit_messages.AdUnit.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_ad_unit(**mock_args)
 
@@ -1288,54 +1073,6 @@ def test_get_ad_unit_rest_flattened_error(transport: str = "rest"):
             ad_unit_service.GetAdUnitRequest(),
             name="name_value",
         )
-
-
-def test_get_ad_unit_rest_error():
-    client = AdUnitServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        ad_unit_service.ListAdUnitsRequest,
-        dict,
-    ],
-)
-def test_list_ad_units_rest(request_type):
-    client = AdUnitServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "networks/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = ad_unit_service.ListAdUnitsResponse(
-            next_page_token="next_page_token_value",
-            total_size=1086,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = ad_unit_service.ListAdUnitsResponse.pb(return_value)
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.list_ad_units(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, pagers.ListAdUnitsPager)
-    assert response.next_page_token == "next_page_token_value"
-    assert response.total_size == 1086
 
 
 def test_list_ad_units_rest_use_cached_wrapped_rpc():
@@ -1450,6 +1187,7 @@ def test_list_ad_units_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.list_ad_units(request)
 
@@ -1476,87 +1214,6 @@ def test_list_ad_units_rest_unset_required_fields():
         )
         & set(("parent",))
     )
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_list_ad_units_rest_interceptors(null_interceptor):
-    transport = transports.AdUnitServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.AdUnitServiceRestInterceptor(),
-    )
-    client = AdUnitServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.AdUnitServiceRestInterceptor, "post_list_ad_units"
-    ) as post, mock.patch.object(
-        transports.AdUnitServiceRestInterceptor, "pre_list_ad_units"
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = ad_unit_service.ListAdUnitsRequest.pb(
-            ad_unit_service.ListAdUnitsRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = ad_unit_service.ListAdUnitsResponse.to_json(
-            ad_unit_service.ListAdUnitsResponse()
-        )
-
-        request = ad_unit_service.ListAdUnitsRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = ad_unit_service.ListAdUnitsResponse()
-
-        client.list_ad_units(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_list_ad_units_rest_bad_request(
-    transport: str = "rest", request_type=ad_unit_service.ListAdUnitsRequest
-):
-    client = AdUnitServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "networks/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.list_ad_units(request)
 
 
 def test_list_ad_units_rest_flattened():
@@ -1587,6 +1244,7 @@ def test_list_ad_units_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.list_ad_units(**mock_args)
 
@@ -1628,9 +1286,9 @@ def test_list_ad_units_rest_pager(transport: str = "rest"):
         response = (
             ad_unit_service.ListAdUnitsResponse(
                 ad_units=[
-                    ad_unit_service.AdUnit(),
-                    ad_unit_service.AdUnit(),
-                    ad_unit_service.AdUnit(),
+                    ad_unit_messages.AdUnit(),
+                    ad_unit_messages.AdUnit(),
+                    ad_unit_messages.AdUnit(),
                 ],
                 next_page_token="abc",
             ),
@@ -1640,14 +1298,14 @@ def test_list_ad_units_rest_pager(transport: str = "rest"):
             ),
             ad_unit_service.ListAdUnitsResponse(
                 ad_units=[
-                    ad_unit_service.AdUnit(),
+                    ad_unit_messages.AdUnit(),
                 ],
                 next_page_token="ghi",
             ),
             ad_unit_service.ListAdUnitsResponse(
                 ad_units=[
-                    ad_unit_service.AdUnit(),
-                    ad_unit_service.AdUnit(),
+                    ad_unit_messages.AdUnit(),
+                    ad_unit_messages.AdUnit(),
                 ],
             ),
         )
@@ -1670,9 +1328,273 @@ def test_list_ad_units_rest_pager(transport: str = "rest"):
 
         results = list(pager)
         assert len(results) == 6
-        assert all(isinstance(i, ad_unit_service.AdUnit) for i in results)
+        assert all(isinstance(i, ad_unit_messages.AdUnit) for i in results)
 
         pages = list(client.list_ad_units(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+def test_list_ad_unit_sizes_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AdUnitServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_ad_unit_sizes in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_ad_unit_sizes
+        ] = mock_rpc
+
+        request = {}
+        client.list_ad_unit_sizes(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_ad_unit_sizes(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_ad_unit_sizes_rest_required_fields(
+    request_type=ad_unit_service.ListAdUnitSizesRequest,
+):
+    transport_class = transports.AdUnitServiceRestTransport
+
+    request_init = {}
+    request_init["parent"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_ad_unit_sizes._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["parent"] = "parent_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_ad_unit_sizes._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(
+        (
+            "filter",
+            "order_by",
+            "page_size",
+            "page_token",
+            "skip",
+        )
+    )
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "parent" in jsonified_request
+    assert jsonified_request["parent"] == "parent_value"
+
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = ad_unit_service.ListAdUnitSizesResponse()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = ad_unit_service.ListAdUnitSizesResponse.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.list_ad_unit_sizes(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_list_ad_unit_sizes_rest_unset_required_fields():
+    transport = transports.AdUnitServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.list_ad_unit_sizes._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(
+            (
+                "filter",
+                "orderBy",
+                "pageSize",
+                "pageToken",
+                "skip",
+            )
+        )
+        & set(("parent",))
+    )
+
+
+def test_list_ad_unit_sizes_rest_flattened():
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = ad_unit_service.ListAdUnitSizesResponse()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"parent": "networks/sample1"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            parent="parent_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = ad_unit_service.ListAdUnitSizesResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.list_ad_unit_sizes(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{parent=networks/*}/adUnitSizes" % client.transport._host, args[1]
+        )
+
+
+def test_list_ad_unit_sizes_rest_flattened_error(transport: str = "rest"):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_ad_unit_sizes(
+            ad_unit_service.ListAdUnitSizesRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_ad_unit_sizes_rest_pager(transport: str = "rest"):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            ad_unit_service.ListAdUnitSizesResponse(
+                ad_unit_sizes=[
+                    ad_unit_messages.AdUnitSize(),
+                    ad_unit_messages.AdUnitSize(),
+                    ad_unit_messages.AdUnitSize(),
+                ],
+                next_page_token="abc",
+            ),
+            ad_unit_service.ListAdUnitSizesResponse(
+                ad_unit_sizes=[],
+                next_page_token="def",
+            ),
+            ad_unit_service.ListAdUnitSizesResponse(
+                ad_unit_sizes=[
+                    ad_unit_messages.AdUnitSize(),
+                ],
+                next_page_token="ghi",
+            ),
+            ad_unit_service.ListAdUnitSizesResponse(
+                ad_unit_sizes=[
+                    ad_unit_messages.AdUnitSize(),
+                    ad_unit_messages.AdUnitSize(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            ad_unit_service.ListAdUnitSizesResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {"parent": "networks/sample1"}
+
+        pager = client.list_ad_unit_sizes(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, ad_unit_messages.AdUnitSize) for i in results)
+
+        pages = list(client.list_ad_unit_sizes(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
 
@@ -1752,17 +1674,557 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_rest():
+    transport = AdUnitServiceClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_get_ad_unit_rest_bad_request(request_type=ad_unit_service.GetAdUnitRequest):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "networks/sample1/adUnits/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_ad_unit(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "rest",
+        ad_unit_service.GetAdUnitRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = AdUnitServiceClient.get_transport_class(transport_name)(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_get_ad_unit_rest_call_success(request_type):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "networks/sample1/adUnits/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = ad_unit_messages.AdUnit(
+            name="name_value",
+            ad_unit_id=1040,
+            parent_ad_unit="parent_ad_unit_value",
+            display_name="display_name_value",
+            ad_unit_code="ad_unit_code_value",
+            status=ad_unit_enums.AdUnitStatusEnum.AdUnitStatus.ACTIVE,
+            applied_target_window=ad_unit_enums.TargetWindowEnum.TargetWindow.TOP,
+            effective_target_window=ad_unit_enums.TargetWindowEnum.TargetWindow.TOP,
+            applied_teams=["applied_teams_value"],
+            teams=["teams_value"],
+            description="description_value",
+            explicitly_targeted=True,
+            has_children=True,
+            external_set_top_box_channel_id="external_set_top_box_channel_id_value",
+            smart_size_mode=ad_unit_enums.SmartSizeModeEnum.SmartSizeMode.NONE,
+            applied_adsense_enabled=True,
+            effective_adsense_enabled=True,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = ad_unit_messages.AdUnit.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_ad_unit(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, ad_unit_messages.AdUnit)
+    assert response.name == "name_value"
+    assert response.ad_unit_id == 1040
+    assert response.parent_ad_unit == "parent_ad_unit_value"
+    assert response.display_name == "display_name_value"
+    assert response.ad_unit_code == "ad_unit_code_value"
+    assert response.status == ad_unit_enums.AdUnitStatusEnum.AdUnitStatus.ACTIVE
+    assert (
+        response.applied_target_window
+        == ad_unit_enums.TargetWindowEnum.TargetWindow.TOP
+    )
+    assert (
+        response.effective_target_window
+        == ad_unit_enums.TargetWindowEnum.TargetWindow.TOP
+    )
+    assert response.applied_teams == ["applied_teams_value"]
+    assert response.teams == ["teams_value"]
+    assert response.description == "description_value"
+    assert response.explicitly_targeted is True
+    assert response.has_children is True
+    assert (
+        response.external_set_top_box_channel_id
+        == "external_set_top_box_channel_id_value"
+    )
+    assert (
+        response.smart_size_mode == ad_unit_enums.SmartSizeModeEnum.SmartSizeMode.NONE
+    )
+    assert response.applied_adsense_enabled is True
+    assert response.effective_adsense_enabled is True
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_ad_unit_rest_interceptors(null_interceptor):
+    transport = transports.AdUnitServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AdUnitServiceRestInterceptor(),
+    )
+    client = AdUnitServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AdUnitServiceRestInterceptor, "post_get_ad_unit"
+    ) as post, mock.patch.object(
+        transports.AdUnitServiceRestInterceptor, "pre_get_ad_unit"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = ad_unit_service.GetAdUnitRequest.pb(
+            ad_unit_service.GetAdUnitRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = ad_unit_messages.AdUnit.to_json(ad_unit_messages.AdUnit())
+        req.return_value.content = return_value
+
+        request = ad_unit_service.GetAdUnitRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = ad_unit_messages.AdUnit()
+
+        client.get_ad_unit(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_ad_units_rest_bad_request(
+    request_type=ad_unit_service.ListAdUnitsRequest,
+):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "networks/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_ad_units(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        ad_unit_service.ListAdUnitsRequest,
+        dict,
+    ],
+)
+def test_list_ad_units_rest_call_success(request_type):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "networks/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = ad_unit_service.ListAdUnitsResponse(
+            next_page_token="next_page_token_value",
+            total_size=1086,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = ad_unit_service.ListAdUnitsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_ad_units(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListAdUnitsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.total_size == 1086
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_ad_units_rest_interceptors(null_interceptor):
+    transport = transports.AdUnitServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AdUnitServiceRestInterceptor(),
+    )
+    client = AdUnitServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AdUnitServiceRestInterceptor, "post_list_ad_units"
+    ) as post, mock.patch.object(
+        transports.AdUnitServiceRestInterceptor, "pre_list_ad_units"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = ad_unit_service.ListAdUnitsRequest.pb(
+            ad_unit_service.ListAdUnitsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = ad_unit_service.ListAdUnitsResponse.to_json(
+            ad_unit_service.ListAdUnitsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = ad_unit_service.ListAdUnitsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = ad_unit_service.ListAdUnitsResponse()
+
+        client.list_ad_units(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_ad_unit_sizes_rest_bad_request(
+    request_type=ad_unit_service.ListAdUnitSizesRequest,
+):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "networks/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_ad_unit_sizes(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        ad_unit_service.ListAdUnitSizesRequest,
+        dict,
+    ],
+)
+def test_list_ad_unit_sizes_rest_call_success(request_type):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "networks/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = ad_unit_service.ListAdUnitSizesResponse(
+            next_page_token="next_page_token_value",
+            total_size=1086,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = ad_unit_service.ListAdUnitSizesResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_ad_unit_sizes(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListAdUnitSizesPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.total_size == 1086
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_ad_unit_sizes_rest_interceptors(null_interceptor):
+    transport = transports.AdUnitServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AdUnitServiceRestInterceptor(),
+    )
+    client = AdUnitServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.AdUnitServiceRestInterceptor, "post_list_ad_unit_sizes"
+    ) as post, mock.patch.object(
+        transports.AdUnitServiceRestInterceptor, "pre_list_ad_unit_sizes"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = ad_unit_service.ListAdUnitSizesRequest.pb(
+            ad_unit_service.ListAdUnitSizesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = ad_unit_service.ListAdUnitSizesResponse.to_json(
+            ad_unit_service.ListAdUnitSizesResponse()
+        )
+        req.return_value.content = return_value
+
+        request = ad_unit_service.ListAdUnitSizesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = ad_unit_service.ListAdUnitSizesResponse()
+
+        client.list_ad_unit_sizes(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_operation_rest_bad_request(
+    request_type=operations_pb2.GetOperationRequest,
+):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type()
+    request = json_format.ParseDict(
+        {"name": "networks/sample1/operations/reports/runs/sample2"}, request
+    )
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_operation(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        operations_pb2.GetOperationRequest,
+        dict,
+    ],
+)
+def test_get_operation_rest(request_type):
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    request_init = {"name": "networks/sample1/operations/reports/runs/sample2"}
+    request = request_type(**request_init)
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation()
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        response = client.get_operation(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, operations_pb2.Operation)
+
+
+def test_initialize_client_w_rest():
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_ad_unit_empty_call_rest():
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.get_ad_unit), "__call__") as call:
+        client.get_ad_unit(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = ad_unit_service.GetAdUnitRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_ad_units_empty_call_rest():
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.list_ad_units), "__call__") as call:
+        client.list_ad_units(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = ad_unit_service.ListAdUnitsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_ad_unit_sizes_empty_call_rest():
+    client = AdUnitServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_ad_unit_sizes), "__call__"
+    ) as call:
+        client.list_ad_unit_sizes(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = ad_unit_service.ListAdUnitSizesRequest()
+
+        assert args[0] == request_msg
 
 
 def test_ad_unit_service_base_transport_error():
@@ -1789,6 +2251,7 @@ def test_ad_unit_service_base_transport():
     methods = (
         "get_ad_unit",
         "list_ad_units",
+        "list_ad_unit_sizes",
         "get_operation",
     )
     for method in methods:
@@ -1926,6 +2389,9 @@ def test_ad_unit_service_client_transport_session_collision(transport_name):
     assert session1 != session2
     session1 = client1.transport.list_ad_units._session
     session2 = client2.transport.list_ad_units._session
+    assert session1 != session2
+    session1 = client1.transport.list_ad_unit_sizes._session
+    session2 = client2.transport.list_ad_unit_sizes._session
     assert session1 != session2
 
 
@@ -2144,79 +2610,16 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-def test_get_operation_rest_bad_request(
-    transport: str = "rest", request_type=operations_pb2.GetOperationRequest
-):
+def test_transport_close_rest():
     client = AdUnitServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-
-    request = request_type()
-    request = json_format.ParseDict(
-        {"name": "networks/sample1/operations/reports/exports/sample2"}, request
-    )
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_operation(request)
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        operations_pb2.GetOperationRequest,
-        dict,
-    ],
-)
-def test_get_operation_rest(request_type):
-    client = AdUnitServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-    request_init = {"name": "networks/sample1/operations/reports/exports/sample2"}
-    request = request_type(**request_init)
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = operations_pb2.Operation()
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-
-        response = client.get_operation(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(response, operations_pb2.Operation)
-
-
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-    }
-
-    for transport, close_name in transports.items():
-        client = AdUnitServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():

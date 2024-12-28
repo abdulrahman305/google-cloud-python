@@ -22,18 +22,11 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 import json
 import math
 
-from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
-from google.api_core import api_core_version, client_options
-from google.api_core import exceptions as core_exceptions
-from google.api_core import retry as retries
-import google.auth
-from google.auth import credentials as ga_credentials
-from google.auth.exceptions import MutualTLSChannelError
-from google.oauth2 import service_account
+from google.api_core import api_core_version
 from google.protobuf import json_format
 import grpc
 from grpc.experimental import aio
@@ -42,6 +35,22 @@ from proto.marshal.rules.dates import DurationRule, TimestampRule
 import pytest
 from requests import PreparedRequest, Request, Response
 from requests.sessions import Session
+
+try:
+    from google.auth.aio import credentials as ga_credentials_async
+
+    HAS_GOOGLE_AUTH_AIO = True
+except ImportError:  # pragma: NO COVER
+    HAS_GOOGLE_AUTH_AIO = False
+
+from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
+from google.api_core import client_options
+from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
+import google.auth
+from google.auth import credentials as ga_credentials
+from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
 
 from google.shopping.merchant_accounts_v1beta.services.terms_of_service_agreement_state_service import (
     TermsOfServiceAgreementStateServiceAsyncClient,
@@ -54,8 +63,22 @@ from google.shopping.merchant_accounts_v1beta.types import (
 )
 
 
+async def mock_async_gen(data, chunk_size=1):
+    for i in range(0, len(data)):  # pragma: NO COVER
+        chunk = data[i : i + chunk_size]
+        yield chunk.encode("utf-8")
+
+
 def client_cert_source_callback():
     return b"cert bytes", b"key bytes"
+
+
+# TODO: use async auth anon credentials by default once the minimum version of google-auth is upgraded.
+# See related issue: https://github.com/googleapis/gapic-generator-python/issues/2107.
+def async_anonymous_credentials():
+    if HAS_GOOGLE_AUTH_AIO:
+        return ga_credentials_async.AnonymousCredentials()
+    return ga_credentials.AnonymousCredentials()
 
 
 # If default endpoint is localhost, then default mtls endpoint will be the same.
@@ -330,94 +353,6 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         TermsOfServiceAgreementStateServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
-
-
-@pytest.mark.parametrize(
-    "client_class,transport_class,transport_name",
-    [
-        (
-            TermsOfServiceAgreementStateServiceClient,
-            transports.TermsOfServiceAgreementStateServiceGrpcTransport,
-            "grpc",
-        ),
-        (
-            TermsOfServiceAgreementStateServiceClient,
-            transports.TermsOfServiceAgreementStateServiceRestTransport,
-            "rest",
-        ),
-    ],
-)
-def test__validate_universe_domain(client_class, transport_class, transport_name):
-    client = client_class(
-        transport=transport_class(credentials=ga_credentials.AnonymousCredentials())
-    )
-    assert client._validate_universe_domain() == True
-
-    # Test the case when universe is already validated.
-    assert client._validate_universe_domain() == True
-
-    if transport_name == "grpc":
-        # Test the case where credentials are provided by the
-        # `local_channel_credentials`. The default universes in both match.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        client = client_class(transport=transport_class(channel=channel))
-        assert client._validate_universe_domain() == True
-
-        # Test the case where credentials do not exist: e.g. a transport is provided
-        # with no credentials. Validation should still succeed because there is no
-        # mismatch with non-existent credentials.
-        channel = grpc.secure_channel(
-            "http://localhost/", grpc.local_channel_credentials()
-        )
-        transport = transport_class(channel=channel)
-        transport._credentials = None
-        client = client_class(transport=transport)
-        assert client._validate_universe_domain() == True
-
-    # TODO: This is needed to cater for older versions of google-auth
-    # Make this test unconditional once the minimum supported version of
-    # google-auth becomes 2.23.0 or higher.
-    google_auth_major, google_auth_minor = [
-        int(part) for part in google.auth.__version__.split(".")[0:2]
-    ]
-    if google_auth_major > 2 or (google_auth_major == 2 and google_auth_minor >= 23):
-        credentials = ga_credentials.AnonymousCredentials()
-        credentials._universe_domain = "foo.com"
-        # Test the case when there is a universe mismatch from the credentials.
-        client = client_class(transport=transport_class(credentials=credentials))
-        with pytest.raises(ValueError) as excinfo:
-            client._validate_universe_domain()
-        assert (
-            str(excinfo.value)
-            == "The configured universe domain (googleapis.com) does not match the universe domain found in the credentials (foo.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-        )
-
-        # Test the case when there is a universe mismatch from the client.
-        #
-        # TODO: Make this test unconditional once the minimum supported version of
-        # google-api-core becomes 2.15.0 or higher.
-        api_core_major, api_core_minor = [
-            int(part) for part in api_core_version.__version__.split(".")[0:2]
-        ]
-        if api_core_major > 2 or (api_core_major == 2 and api_core_minor >= 15):
-            client = client_class(
-                client_options={"universe_domain": "bar.com"},
-                transport=transport_class(
-                    credentials=ga_credentials.AnonymousCredentials(),
-                ),
-            )
-            with pytest.raises(ValueError) as excinfo:
-                client._validate_universe_domain()
-            assert (
-                str(excinfo.value)
-                == "The configured universe domain (bar.com) does not match the universe domain found in the credentials (googleapis.com). If you haven't configured the universe domain explicitly, `googleapis.com` is the default."
-            )
-
-    # Test that ValueError is raised if universe_domain is provided via client options and credentials is None
-    with pytest.raises(ValueError):
-        client._compare_universes("foo.bar", None)
 
 
 @pytest.mark.parametrize(
@@ -1277,30 +1212,6 @@ def test_get_terms_of_service_agreement_state(request_type, transport: str = "gr
     )
 
 
-def test_get_terms_of_service_agreement_state_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = TermsOfServiceAgreementStateServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_terms_of_service_agreement_state), "__call__"
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.get_terms_of_service_agreement_state()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert (
-            args[0]
-            == termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest()
-        )
-
-
 def test_get_terms_of_service_agreement_state_non_empty_request_with_auto_populated_field():
     # This test is a coverage failsafe to make sure that UUID4 fields are
     # automatically populated, according to AIP-4235, with non-empty requests.
@@ -1374,36 +1285,6 @@ def test_get_terms_of_service_agreement_state_use_cached_wrapped_rpc():
 
 
 @pytest.mark.asyncio
-async def test_get_terms_of_service_agreement_state_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(client.transport.get_terms_of_service_agreement_state), "__call__"
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            termsofserviceagreementstate.TermsOfServiceAgreementState(
-                name="name_value",
-                region_code="region_code_value",
-                terms_of_service_kind=termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER,
-            )
-        )
-        response = await client.get_terms_of_service_agreement_state()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert (
-            args[0]
-            == termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest()
-        )
-
-
-@pytest.mark.asyncio
 async def test_get_terms_of_service_agreement_state_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1411,7 +1292,7 @@ async def test_get_terms_of_service_agreement_state_async_use_cached_wrapped_rpc
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = TermsOfServiceAgreementStateServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1426,22 +1307,23 @@ async def test_get_terms_of_service_agreement_state_async_use_cached_wrapped_rpc
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_terms_of_service_agreement_state
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_terms_of_service_agreement_state(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_terms_of_service_agreement_state(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1450,7 +1332,7 @@ async def test_get_terms_of_service_agreement_state_async(
     request_type=termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest,
 ):
     client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1529,7 +1411,7 @@ def test_get_terms_of_service_agreement_state_field_headers():
 @pytest.mark.asyncio
 async def test_get_terms_of_service_agreement_state_field_headers_async():
     client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -1603,7 +1485,7 @@ def test_get_terms_of_service_agreement_state_flattened_error():
 @pytest.mark.asyncio
 async def test_get_terms_of_service_agreement_state_flattened_async():
     client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1634,7 +1516,7 @@ async def test_get_terms_of_service_agreement_state_flattened_async():
 @pytest.mark.asyncio
 async def test_get_terms_of_service_agreement_state_flattened_error_async():
     client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -1700,33 +1582,6 @@ def test_retrieve_for_application_terms_of_service_agreement_state(
         response.terms_of_service_kind
         == termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER
     )
-
-
-def test_retrieve_for_application_terms_of_service_agreement_state_empty_call():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = TermsOfServiceAgreementStateServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(
-            client.transport.retrieve_for_application_terms_of_service_agreement_state
-        ),
-        "__call__",
-    ) as call:
-        call.return_value.name = (
-            "foo"  # operation_request.operation in compute client(s) expect a string.
-        )
-        client.retrieve_for_application_terms_of_service_agreement_state()
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert (
-            args[0]
-            == termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest()
-        )
 
 
 def test_retrieve_for_application_terms_of_service_agreement_state_non_empty_request_with_auto_populated_field():
@@ -1807,41 +1662,6 @@ def test_retrieve_for_application_terms_of_service_agreement_state_use_cached_wr
 
 
 @pytest.mark.asyncio
-async def test_retrieve_for_application_terms_of_service_agreement_state_empty_call_async():
-    # This test is a coverage failsafe to make sure that totally empty calls,
-    # i.e. request == None and no flattened fields passed, work.
-    client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
-    )
-
-    # Mock the actual call within the gRPC stub, and fake the request.
-    with mock.patch.object(
-        type(
-            client.transport.retrieve_for_application_terms_of_service_agreement_state
-        ),
-        "__call__",
-    ) as call:
-        # Designate an appropriate return value for the call.
-        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
-            termsofserviceagreementstate.TermsOfServiceAgreementState(
-                name="name_value",
-                region_code="region_code_value",
-                terms_of_service_kind=termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER,
-            )
-        )
-        response = (
-            await client.retrieve_for_application_terms_of_service_agreement_state()
-        )
-        call.assert_called()
-        _, args, _ = call.mock_calls[0]
-        assert (
-            args[0]
-            == termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest()
-        )
-
-
-@pytest.mark.asyncio
 async def test_retrieve_for_application_terms_of_service_agreement_state_async_use_cached_wrapped_rpc(
     transport: str = "grpc_asyncio",
 ):
@@ -1849,7 +1669,7 @@ async def test_retrieve_for_application_terms_of_service_agreement_state_async_u
     # instead of constructing them on each call
     with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
         client = TermsOfServiceAgreementStateServiceAsyncClient(
-            credentials=ga_credentials.AnonymousCredentials(),
+            credentials=async_anonymous_credentials(),
             transport=transport,
         )
 
@@ -1864,22 +1684,23 @@ async def test_retrieve_for_application_terms_of_service_agreement_state_async_u
         )
 
         # Replace cached wrapped function with mock
-        mock_object = mock.AsyncMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.retrieve_for_application_terms_of_service_agreement_state
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.retrieve_for_application_terms_of_service_agreement_state(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.retrieve_for_application_terms_of_service_agreement_state(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1888,7 +1709,7 @@ async def test_retrieve_for_application_terms_of_service_agreement_state_async(
     request_type=termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest,
 ):
     client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
         transport=transport,
     )
 
@@ -1983,7 +1804,7 @@ def test_retrieve_for_application_terms_of_service_agreement_state_field_headers
 @pytest.mark.asyncio
 async def test_retrieve_for_application_terms_of_service_agreement_state_field_headers_async():
     client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Any value that is part of the HTTP/1.1 URI should be sent as
@@ -2065,7 +1886,7 @@ def test_retrieve_for_application_terms_of_service_agreement_state_flattened_err
 @pytest.mark.asyncio
 async def test_retrieve_for_application_terms_of_service_agreement_state_flattened_async():
     client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -2101,7 +1922,7 @@ async def test_retrieve_for_application_terms_of_service_agreement_state_flatten
 @pytest.mark.asyncio
 async def test_retrieve_for_application_terms_of_service_agreement_state_flattened_error_async():
     client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
+        credentials=async_anonymous_credentials(),
     )
 
     # Attempting to call a method with both a request object and flattened
@@ -2111,57 +1932,6 @@ async def test_retrieve_for_application_terms_of_service_agreement_state_flatten
             termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest(),
             parent="parent_value",
         )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest,
-        dict,
-    ],
-)
-def test_get_terms_of_service_agreement_state_rest(request_type):
-    client = TermsOfServiceAgreementStateServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "accounts/sample1/termsOfServiceAgreementStates/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = termsofserviceagreementstate.TermsOfServiceAgreementState(
-            name="name_value",
-            region_code="region_code_value",
-            terms_of_service_kind=termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = termsofserviceagreementstate.TermsOfServiceAgreementState.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.get_terms_of_service_agreement_state(request)
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(
-        response, termsofserviceagreementstate.TermsOfServiceAgreementState
-    )
-    assert response.name == "name_value"
-    assert response.region_code == "region_code_value"
-    assert (
-        response.terms_of_service_kind
-        == termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER
-    )
 
 
 def test_get_terms_of_service_agreement_state_rest_use_cached_wrapped_rpc():
@@ -2273,6 +2043,7 @@ def test_get_terms_of_service_agreement_state_rest_required_fields(
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.get_terms_of_service_agreement_state(request)
 
@@ -2290,94 +2061,6 @@ def test_get_terms_of_service_agreement_state_rest_unset_required_fields():
         transport.get_terms_of_service_agreement_state._get_unset_required_fields({})
     )
     assert set(unset_fields) == (set(()) & set(("name",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_get_terms_of_service_agreement_state_rest_interceptors(null_interceptor):
-    transport = transports.TermsOfServiceAgreementStateServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TermsOfServiceAgreementStateServiceRestInterceptor(),
-    )
-    client = TermsOfServiceAgreementStateServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TermsOfServiceAgreementStateServiceRestInterceptor,
-        "post_get_terms_of_service_agreement_state",
-    ) as post, mock.patch.object(
-        transports.TermsOfServiceAgreementStateServiceRestInterceptor,
-        "pre_get_terms_of_service_agreement_state",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = (
-            termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest.pb(
-                termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest()
-            )
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            termsofserviceagreementstate.TermsOfServiceAgreementState.to_json(
-                termsofserviceagreementstate.TermsOfServiceAgreementState()
-            )
-        )
-
-        request = termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest()
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = termsofserviceagreementstate.TermsOfServiceAgreementState()
-
-        client.get_terms_of_service_agreement_state(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_get_terms_of_service_agreement_state_rest_bad_request(
-    transport: str = "rest",
-    request_type=termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest,
-):
-    client = TermsOfServiceAgreementStateServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"name": "accounts/sample1/termsOfServiceAgreementStates/sample2"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.get_terms_of_service_agreement_state(request)
 
 
 def test_get_terms_of_service_agreement_state_rest_flattened():
@@ -2412,6 +2095,7 @@ def test_get_terms_of_service_agreement_state_rest_flattened():
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.get_terms_of_service_agreement_state(**mock_args)
 
@@ -2441,65 +2125,6 @@ def test_get_terms_of_service_agreement_state_rest_flattened_error(
             termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest(),
             name="name_value",
         )
-
-
-def test_get_terms_of_service_agreement_state_rest_error():
-    client = TermsOfServiceAgreementStateServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
-
-
-@pytest.mark.parametrize(
-    "request_type",
-    [
-        termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest,
-        dict,
-    ],
-)
-def test_retrieve_for_application_terms_of_service_agreement_state_rest(request_type):
-    client = TermsOfServiceAgreementStateServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="rest",
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "accounts/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a response.
-    with mock.patch.object(type(client.transport._session), "request") as req:
-        # Designate an appropriate value for the returned response.
-        return_value = termsofserviceagreementstate.TermsOfServiceAgreementState(
-            name="name_value",
-            region_code="region_code_value",
-            terms_of_service_kind=termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER,
-        )
-
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 200
-        # Convert return value to protobuf type
-        return_value = termsofserviceagreementstate.TermsOfServiceAgreementState.pb(
-            return_value
-        )
-        json_return_value = json_format.MessageToJson(return_value)
-
-        response_value._content = json_return_value.encode("UTF-8")
-        req.return_value = response_value
-        response = client.retrieve_for_application_terms_of_service_agreement_state(
-            request
-        )
-
-    # Establish that the response is the type that we expect.
-    assert isinstance(
-        response, termsofserviceagreementstate.TermsOfServiceAgreementState
-    )
-    assert response.name == "name_value"
-    assert response.region_code == "region_code_value"
-    assert (
-        response.terms_of_service_kind
-        == termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER
-    )
 
 
 def test_retrieve_for_application_terms_of_service_agreement_state_rest_use_cached_wrapped_rpc():
@@ -2615,6 +2240,7 @@ def test_retrieve_for_application_terms_of_service_agreement_state_rest_required
 
             response_value._content = json_return_value.encode("UTF-8")
             req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
             response = client.retrieve_for_application_terms_of_service_agreement_state(
                 request
@@ -2634,96 +2260,6 @@ def test_retrieve_for_application_terms_of_service_agreement_state_rest_unset_re
         {}
     )
     assert set(unset_fields) == (set(()) & set(("parent",)))
-
-
-@pytest.mark.parametrize("null_interceptor", [True, False])
-def test_retrieve_for_application_terms_of_service_agreement_state_rest_interceptors(
-    null_interceptor,
-):
-    transport = transports.TermsOfServiceAgreementStateServiceRestTransport(
-        credentials=ga_credentials.AnonymousCredentials(),
-        interceptor=None
-        if null_interceptor
-        else transports.TermsOfServiceAgreementStateServiceRestInterceptor(),
-    )
-    client = TermsOfServiceAgreementStateServiceClient(transport=transport)
-    with mock.patch.object(
-        type(client.transport._session), "request"
-    ) as req, mock.patch.object(
-        path_template, "transcode"
-    ) as transcode, mock.patch.object(
-        transports.TermsOfServiceAgreementStateServiceRestInterceptor,
-        "post_retrieve_for_application_terms_of_service_agreement_state",
-    ) as post, mock.patch.object(
-        transports.TermsOfServiceAgreementStateServiceRestInterceptor,
-        "pre_retrieve_for_application_terms_of_service_agreement_state",
-    ) as pre:
-        pre.assert_not_called()
-        post.assert_not_called()
-        pb_message = termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest.pb(
-            termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest()
-        )
-        transcode.return_value = {
-            "method": "post",
-            "uri": "my_uri",
-            "body": pb_message,
-            "query_params": pb_message,
-        }
-
-        req.return_value = Response()
-        req.return_value.status_code = 200
-        req.return_value.request = PreparedRequest()
-        req.return_value._content = (
-            termsofserviceagreementstate.TermsOfServiceAgreementState.to_json(
-                termsofserviceagreementstate.TermsOfServiceAgreementState()
-            )
-        )
-
-        request = (
-            termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest()
-        )
-        metadata = [
-            ("key", "val"),
-            ("cephalopod", "squid"),
-        ]
-        pre.return_value = request, metadata
-        post.return_value = termsofserviceagreementstate.TermsOfServiceAgreementState()
-
-        client.retrieve_for_application_terms_of_service_agreement_state(
-            request,
-            metadata=[
-                ("key", "val"),
-                ("cephalopod", "squid"),
-            ],
-        )
-
-        pre.assert_called_once()
-        post.assert_called_once()
-
-
-def test_retrieve_for_application_terms_of_service_agreement_state_rest_bad_request(
-    transport: str = "rest",
-    request_type=termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest,
-):
-    client = TermsOfServiceAgreementStateServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport=transport,
-    )
-
-    # send a request that will satisfy transcoding
-    request_init = {"parent": "accounts/sample1"}
-    request = request_type(**request_init)
-
-    # Mock the http request call within the method and fake a BadRequest error.
-    with mock.patch.object(Session, "request") as req, pytest.raises(
-        core_exceptions.BadRequest
-    ):
-        # Wrap the value into a proper Response obj
-        response_value = Response()
-        response_value.status_code = 400
-        response_value.request = Request()
-        req.return_value = response_value
-        client.retrieve_for_application_terms_of_service_agreement_state(request)
 
 
 def test_retrieve_for_application_terms_of_service_agreement_state_rest_flattened():
@@ -2756,6 +2292,7 @@ def test_retrieve_for_application_terms_of_service_agreement_state_rest_flattene
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
 
         client.retrieve_for_application_terms_of_service_agreement_state(**mock_args)
 
@@ -2785,12 +2322,6 @@ def test_retrieve_for_application_terms_of_service_agreement_state_rest_flattene
             termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest(),
             parent="parent_value",
         )
-
-
-def test_retrieve_for_application_terms_of_service_agreement_state_rest_error():
-    client = TermsOfServiceAgreementStateServiceClient(
-        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
-    )
 
 
 def test_credentials_transport_error():
@@ -2885,20 +2416,509 @@ def test_transport_adc(transport_class):
         adc.assert_called_once()
 
 
+def test_transport_kind_grpc():
+    transport = TermsOfServiceAgreementStateServiceClient.get_transport_class("grpc")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "grpc"
+
+
+def test_initialize_client_w_grpc():
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_terms_of_service_agreement_state_empty_call_grpc():
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_terms_of_service_agreement_state), "__call__"
+    ) as call:
+        call.return_value = termsofserviceagreementstate.TermsOfServiceAgreementState()
+        client.get_terms_of_service_agreement_state(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = (
+            termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest()
+        )
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_retrieve_for_application_terms_of_service_agreement_state_empty_call_grpc():
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(
+            client.transport.retrieve_for_application_terms_of_service_agreement_state
+        ),
+        "__call__",
+    ) as call:
+        call.return_value = termsofserviceagreementstate.TermsOfServiceAgreementState()
+        client.retrieve_for_application_terms_of_service_agreement_state(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = (
+            termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest()
+        )
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_grpc_asyncio():
+    transport = TermsOfServiceAgreementStateServiceAsyncClient.get_transport_class(
+        "grpc_asyncio"
+    )(credentials=async_anonymous_credentials())
+    assert transport.kind == "grpc_asyncio"
+
+
+def test_initialize_client_w_grpc_asyncio():
+    client = TermsOfServiceAgreementStateServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_terms_of_service_agreement_state_empty_call_grpc_asyncio():
+    client = TermsOfServiceAgreementStateServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_terms_of_service_agreement_state), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            termsofserviceagreementstate.TermsOfServiceAgreementState(
+                name="name_value",
+                region_code="region_code_value",
+                terms_of_service_kind=termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER,
+            )
+        )
+        await client.get_terms_of_service_agreement_state(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = (
+            termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest()
+        )
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_retrieve_for_application_terms_of_service_agreement_state_empty_call_grpc_asyncio():
+    client = TermsOfServiceAgreementStateServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(
+            client.transport.retrieve_for_application_terms_of_service_agreement_state
+        ),
+        "__call__",
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            termsofserviceagreementstate.TermsOfServiceAgreementState(
+                name="name_value",
+                region_code="region_code_value",
+                terms_of_service_kind=termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER,
+            )
+        )
+        await client.retrieve_for_application_terms_of_service_agreement_state(
+            request=None
+        )
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = (
+            termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest()
+        )
+
+        assert args[0] == request_msg
+
+
+def test_transport_kind_rest():
+    transport = TermsOfServiceAgreementStateServiceClient.get_transport_class("rest")(
+        credentials=ga_credentials.AnonymousCredentials()
+    )
+    assert transport.kind == "rest"
+
+
+def test_get_terms_of_service_agreement_state_rest_bad_request(
+    request_type=termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest,
+):
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "accounts/sample1/termsOfServiceAgreementStates/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_terms_of_service_agreement_state(request)
+
+
 @pytest.mark.parametrize(
-    "transport_name",
+    "request_type",
     [
-        "grpc",
-        "rest",
+        termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest,
+        dict,
     ],
 )
-def test_transport_kind(transport_name):
-    transport = TermsOfServiceAgreementStateServiceClient.get_transport_class(
-        transport_name
-    )(
-        credentials=ga_credentials.AnonymousCredentials(),
+def test_get_terms_of_service_agreement_state_rest_call_success(request_type):
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
-    assert transport.kind == transport_name
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "accounts/sample1/termsOfServiceAgreementStates/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = termsofserviceagreementstate.TermsOfServiceAgreementState(
+            name="name_value",
+            region_code="region_code_value",
+            terms_of_service_kind=termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = termsofserviceagreementstate.TermsOfServiceAgreementState.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_terms_of_service_agreement_state(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(
+        response, termsofserviceagreementstate.TermsOfServiceAgreementState
+    )
+    assert response.name == "name_value"
+    assert response.region_code == "region_code_value"
+    assert (
+        response.terms_of_service_kind
+        == termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER
+    )
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_terms_of_service_agreement_state_rest_interceptors(null_interceptor):
+    transport = transports.TermsOfServiceAgreementStateServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.TermsOfServiceAgreementStateServiceRestInterceptor(),
+    )
+    client = TermsOfServiceAgreementStateServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.TermsOfServiceAgreementStateServiceRestInterceptor,
+        "post_get_terms_of_service_agreement_state",
+    ) as post, mock.patch.object(
+        transports.TermsOfServiceAgreementStateServiceRestInterceptor,
+        "pre_get_terms_of_service_agreement_state",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = (
+            termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest.pb(
+                termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest()
+            )
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = (
+            termsofserviceagreementstate.TermsOfServiceAgreementState.to_json(
+                termsofserviceagreementstate.TermsOfServiceAgreementState()
+            )
+        )
+        req.return_value.content = return_value
+
+        request = termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = termsofserviceagreementstate.TermsOfServiceAgreementState()
+
+        client.get_terms_of_service_agreement_state(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_retrieve_for_application_terms_of_service_agreement_state_rest_bad_request(
+    request_type=termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest,
+):
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "accounts/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.retrieve_for_application_terms_of_service_agreement_state(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest,
+        dict,
+    ],
+)
+def test_retrieve_for_application_terms_of_service_agreement_state_rest_call_success(
+    request_type,
+):
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "accounts/sample1"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = termsofserviceagreementstate.TermsOfServiceAgreementState(
+            name="name_value",
+            region_code="region_code_value",
+            terms_of_service_kind=termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = termsofserviceagreementstate.TermsOfServiceAgreementState.pb(
+            return_value
+        )
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.retrieve_for_application_terms_of_service_agreement_state(
+            request
+        )
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(
+        response, termsofserviceagreementstate.TermsOfServiceAgreementState
+    )
+    assert response.name == "name_value"
+    assert response.region_code == "region_code_value"
+    assert (
+        response.terms_of_service_kind
+        == termsofservicekind.TermsOfServiceKind.MERCHANT_CENTER
+    )
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_retrieve_for_application_terms_of_service_agreement_state_rest_interceptors(
+    null_interceptor,
+):
+    transport = transports.TermsOfServiceAgreementStateServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.TermsOfServiceAgreementStateServiceRestInterceptor(),
+    )
+    client = TermsOfServiceAgreementStateServiceClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.TermsOfServiceAgreementStateServiceRestInterceptor,
+        "post_retrieve_for_application_terms_of_service_agreement_state",
+    ) as post, mock.patch.object(
+        transports.TermsOfServiceAgreementStateServiceRestInterceptor,
+        "pre_retrieve_for_application_terms_of_service_agreement_state",
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest.pb(
+            termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = (
+            termsofserviceagreementstate.TermsOfServiceAgreementState.to_json(
+                termsofserviceagreementstate.TermsOfServiceAgreementState()
+            )
+        )
+        req.return_value.content = return_value
+
+        request = (
+            termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest()
+        )
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = termsofserviceagreementstate.TermsOfServiceAgreementState()
+
+        client.retrieve_for_application_terms_of_service_agreement_state(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_initialize_client_w_rest():
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    assert client is not None
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_terms_of_service_agreement_state_empty_call_rest():
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_terms_of_service_agreement_state), "__call__"
+    ) as call:
+        client.get_terms_of_service_agreement_state(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = (
+            termsofserviceagreementstate.GetTermsOfServiceAgreementStateRequest()
+        )
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_retrieve_for_application_terms_of_service_agreement_state_empty_call_rest():
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(
+            client.transport.retrieve_for_application_terms_of_service_agreement_state
+        ),
+        "__call__",
+    ) as call:
+        client.retrieve_for_application_terms_of_service_agreement_state(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = (
+            termsofserviceagreementstate.RetrieveForApplicationTermsOfServiceAgreementStateRequest()
+        )
+
+        assert args[0] == request_msg
 
 
 def test_transport_grpc_default():
@@ -3564,36 +3584,41 @@ def test_client_with_default_client_info():
         prep.assert_called_once_with(client_info)
 
 
-@pytest.mark.asyncio
-async def test_transport_close_async():
-    client = TermsOfServiceAgreementStateServiceAsyncClient(
-        credentials=ga_credentials.AnonymousCredentials(),
-        transport="grpc_asyncio",
+def test_transport_close_grpc():
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="grpc"
     )
     with mock.patch.object(
-        type(getattr(client.transport, "grpc_channel")), "close"
+        type(getattr(client.transport, "_grpc_channel")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transport_close_grpc_asyncio():
+    client = TermsOfServiceAgreementStateServiceAsyncClient(
+        credentials=async_anonymous_credentials(), transport="grpc_asyncio"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_grpc_channel")), "close"
     ) as close:
         async with client:
             close.assert_not_called()
         close.assert_called_once()
 
 
-def test_transport_close():
-    transports = {
-        "rest": "_session",
-        "grpc": "_grpc_channel",
-    }
-
-    for transport, close_name in transports.items():
-        client = TermsOfServiceAgreementStateServiceClient(
-            credentials=ga_credentials.AnonymousCredentials(), transport=transport
-        )
-        with mock.patch.object(
-            type(getattr(client.transport, close_name)), "close"
-        ) as close:
-            with client:
-                close.assert_not_called()
-            close.assert_called_once()
+def test_transport_close_rest():
+    client = TermsOfServiceAgreementStateServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    with mock.patch.object(
+        type(getattr(client.transport, "_session")), "close"
+    ) as close:
+        with client:
+            close.assert_not_called()
+        close.assert_called_once()
 
 
 def test_client_ctx():
